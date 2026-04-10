@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<title>Pusat Data RTLH - Kabupaten Ngawi</title>
+<title>e-RTLH - Kabupaten Ngawi</title>
 <meta name="description" content="Sistem Informasi Terpadu RTLH Kabupaten Ngawi">
 <meta name="theme-color" content="#0C2340">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -302,12 +302,12 @@ font-size:.55rem;font-weight:700;color:var(--gray-400);background:none;border:no
 </style>
 </head>
 <body>
-<div class="app-loading" id="appLoading"><div class="ld-spinner"></div><div style="font-size:1rem;font-weight:800;color:#fff">Pusat Data RTLH</div><div style="font-size:.72rem;color:rgba(255,255,255,.4);margin-top:4px">Kabupaten Ngawi</div></div>
+<div class="app-loading" id="appLoading"><div class="ld-spinner"></div><div style="font-size:1rem;font-weight:800;color:#fff">e-RTLH</div><div style="font-size:.72rem;color:rgba(255,255,255,.4);margin-top:4px">Kabupaten Ngawi</div></div>
 <div class="toast-wrap" id="toastWrap"></div>
 
 <!-- HEADER -->
 <header class="app-header">
-  <div class="brand" onclick="nav('home')"><img src="data/logo-ngawi.png" alt=""><div><div class="brand-sub">DPRKP Kabupaten Ngawi</div><div class="brand-title">Pusat Data <em>RTLH</em></div></div></div>
+  <div class="brand" onclick="nav('home')"><img src="data/logo-ngawi.png" alt=""><div><div class="brand-sub">DPRKP Kabupaten Ngawi</div><div class="brand-title"><em>e-RTLH</em></div></div></div>
   <div class="nav-tabs" id="navTabs">
     <button class="nav-tab active" data-p="home" onclick="nav('home')"><i class="fas fa-home"></i> Beranda</button>
     <button class="nav-tab" data-p="peta" onclick="nav('peta')"><i class="fas fa-map"></i> Peta Kabupaten</button>
@@ -322,7 +322,7 @@ font-size:.55rem;font-weight:700;color:var(--gray-400);background:none;border:no
 <div class="page active" id="page-home"><div class="page-scroll">
   <section class="hero"><div class="hero-inner">
     <div class="hero-chip"><i class="fas fa-shield-alt"></i> Sistem Informasi Terintegrasi</div>
-    <h1>Pusat Data Rumah<br>Tidak Layak Huni <span>Kab. Ngawi</span></h1>
+    <h1>e-RTLH<br>Rumah Tidak Layak Huni <span>Kab. Ngawi</span></h1>
     <p>Platform terpadu untuk pemetaan, analisis, dan penentuan prioritas penanganan RTLH. <span id="dbStatus" style="color:var(--gold)"></span></p>
   </div></section>
   <section class="section pull-up"><div class="grid-2">
@@ -339,7 +339,7 @@ font-size:.55rem;font-weight:700;color:var(--gray-400);background:none;border:no
     <div class="ov-card c3"><div class="ov-icon"><i class="fas fa-building"></i></div><div class="ov-val">217</div><div class="ov-label">Desa/Kelurahan</div></div>
     <div class="ov-card c4"><div class="ov-icon"><i class="fas fa-database"></i></div><div class="ov-val" id="ov-db">0</div><div class="ov-label">Database (Bringin)</div></div>
   </div></section>
-  <footer class="app-footer"><p>Pusat Data RTLH Kabupaten Ngawi &copy; 2025<br>Dikembangkan oleh <a href="https://github.com/mfauzimustofa" target="_blank">mfauzimustofa</a></p></footer>
+  <footer class="app-footer"><p>e-RTLH Kabupaten Ngawi &copy; 2025<br>Dikembangkan oleh <a href="https://github.com/mfauzimustofa" target="_blank">mfauzimustofa</a></p></footer>
 </div></div>
 
 <!-- PAGE: PETA -->
@@ -441,7 +441,7 @@ font-size:.55rem;font-weight:700;color:var(--gray-400);background:none;border:no
 <!-- LOGIN MODAL -->
 <div class="modal-bg" id="loginModal" onclick="if(event.target===this)closeLogin()">
   <div class="modal" style="max-width:400px">
-    <div class="modal-head"><div><h3>Masuk ke Sistem</h3><div class="sub">Pusat Data RTLH Kabupaten Ngawi</div></div><button class="modal-x" onclick="closeLogin()"><i class="fas fa-times"></i></button></div>
+    <div class="modal-head"><div><h3>Masuk ke Sistem</h3><div class="sub">e-RTLH Kabupaten Ngawi</div></div><button class="modal-x" onclick="closeLogin()"><i class="fas fa-times"></i></button></div>
     <div class="modal-body" style="padding:20px">
       <!-- Google Login -->
       <button onclick="loginGoogle()" style="width:100%;padding:12px;border:1px solid var(--gray-200);border-radius:var(--radius-xs);background:#fff;cursor:pointer;font-family:inherit;font-size:.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--gray-700);transition:var(--transition);margin-bottom:16px" onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background='#fff'">
