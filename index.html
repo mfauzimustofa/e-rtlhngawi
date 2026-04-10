@@ -806,20 +806,47 @@ function openForm(id){
           <input type="file" id="ff_photo" accept="image/*" style="display:none" onchange="previewPhoto(this)">
         </label>
       </div>
-      <div style="font-size:.6rem;color:var(--gray-400);margin-top:4px">Format: JPG, PNG. Maks 5MB.</div>
+      <div style="font-size:.6rem;color:var(--gray-400);margin-top:4px">Format: JPG, PNG. Auto-resize & kompres ke maks 1200px.</div>
     </div>`;
   document.getElementById('formModal').classList.add('open');
 }
 function previewPhoto(input){
   const file=input.files[0];if(!file)return;
-  if(file.size>5*1024*1024)return toast('Ukuran foto maks 5MB','error');
+  if(file.size>20*1024*1024)return toast('File terlalu besar (maks 20MB)','error');
   const reader=new FileReader();
   reader.onload=e=>{
     document.getElementById('photoPreviewImg').src=e.target.result;
     document.getElementById('photoPreview').style.display='block';
-    document.getElementById('photoFileName').textContent=file.name;
+    const sizeMB=(file.size/1024/1024).toFixed(1);
+    document.getElementById('photoFileName').textContent=`${file.name} (${sizeMB}MB → akan dikompres)`;
   };
   reader.readAsDataURL(file);
+}
+function compressImage(file,maxW=1200,quality=0.8){
+  return new Promise((resolve)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        const canvas=document.createElement('canvas');
+        let w=img.width,h=img.height;
+        if(w>maxW){h=Math.round(h*(maxW/w));w=maxW}
+        if(h>maxW){w=Math.round(w*(maxW/h));h=maxW}
+        canvas.width=w;canvas.height=h;
+        const ctx=canvas.getContext('2d');
+        ctx.drawImage(img,0,0,w,h);
+        canvas.toBlob(blob=>{
+          const compressed=new File([blob],file.name.replace(/\.[^.]+$/,'.jpg'),{type:'image/jpeg'});
+          const origMB=(file.size/1024/1024).toFixed(1);
+          const newMB=(compressed.size/1024/1024).toFixed(1);
+          document.getElementById('photoFileName').textContent=`${file.name} (${origMB}MB → ${newMB}MB)`;
+          resolve(compressed);
+        },'image/jpeg',quality);
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
 }
 function closeForm(){document.getElementById('formModal').classList.remove('open');editId=null}
 async function saveForm(){
@@ -839,7 +866,8 @@ async function saveForm(){
     // Upload photo if selected
     const photoInput=document.getElementById('ff_photo');
     if(photoInput&&photoInput.files[0]){
-      const file=photoInput.files[0];
+      const rawFile=photoInput.files[0];
+      const file=await compressImage(rawFile);
       const filePath=`${savedId}.jpg`;
       // Delete old photo first (in case of update)
       await sb.storage.from('rtlh-photos').remove([filePath]);
