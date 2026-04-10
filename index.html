@@ -339,7 +339,7 @@ font-size:.55rem;font-weight:700;color:var(--gray-400);background:none;border:no
     <div class="ov-card c3"><div class="ov-icon"><i class="fas fa-building"></i></div><div class="ov-val">217</div><div class="ov-label">Desa/Kelurahan</div></div>
     <div class="ov-card c4"><div class="ov-icon"><i class="fas fa-database"></i></div><div class="ov-val" id="ov-db">0</div><div class="ov-label">Database (Bringin)</div></div>
   </div></section>
-  <footer class="app-footer"><p>Pusat Data RTLH Kabupaten Ngawi &copy; 2026<br>Dikembangkan oleh <a href="https://github.com/mfauzimustofa" target="_blank">mfauzimustofa</a></p></footer>
+  <footer class="app-footer"><p>Pusat Data RTLH Kabupaten Ngawi &copy; 2025<br>Dikembangkan oleh <a href="https://github.com/mfauzimustofa" target="_blank">mfauzimustofa</a></p></footer>
 </div></div>
 
 <!-- PAGE: PETA -->
@@ -746,7 +746,14 @@ function showDetail(id){
       <div class="detail-item"><div class="dl">Dinding</div><div class="dv">${r.material_d||'-'} (${r.kondisi_di||'-'})</div></div>
       <div class="detail-item"><div class="dl">Atap</div><div class="dv">${r.material_a||'-'} (${r.kondisi_at||'-'})</div></div>
       <div class="detail-item"><div class="dl">Lantai</div><div class="dv">${r.material_l||'-'} (${r.kondisi_la||'-'})</div></div>
-    </div></div>`;
+    </div></div>
+    <div class="detail-section"><div class="detail-title"><i class="fas fa-camera"></i> Foto Kondisi Rumah</div>
+      <div id="dmPhoto" style="text-align:center">
+        <img src="${getPhotoUrl(r.id)}" style="width:100%;max-height:300px;object-fit:cover;border-radius:8px;cursor:pointer" 
+          onerror="this.parentElement.innerHTML='<div style=\\'padding:24px;background:var(--gray-50);border-radius:8px;color:var(--gray-400);font-size:.78rem\\'><i class=\\'fas fa-image\\' style=\\'font-size:2rem;display:block;margin-bottom:8px;opacity:.3\\'></i>Belum ada foto</div>'"
+          onclick="window.open(this.src,'_blank')">
+      </div>
+    </div>`;
   // Admin buttons
   const foot=document.getElementById('dmFoot');
   foot.innerHTML=`<button class="btn btn-outline btn-sm" onclick="closeDetail()"><i class="fas fa-times"></i> Tutup</button>`;
@@ -772,6 +779,7 @@ const FIELDS=[
   {key:'material_l',label:'Material Lantai',type:'text'},{key:'kondisi_la',label:'Kondisi Lantai',type:'text'},
   {key:'latitude',label:'Latitude',type:'number'},{key:'longitude',label:'Longitude',type:'number'},
 ];
+function getPhotoUrl(id){return`${SUPA_URL}/storage/v1/object/public/rtlh-photos/${id}.jpg`}
 function openForm(id){
   if(!isAdmin)return toast('Login sebagai admin untuk menambah data','error');
   editId=id||null;
@@ -784,7 +792,34 @@ function openForm(id){
     if(f.type==='select')return`<div class="${cls}"><label>${f.label}</label><select id="ff_${f.key}">${f.opts.map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('')}</select></div>`;
     return`<div class="${cls}"><label>${f.label}</label><input type="${f.type}" id="ff_${f.key}" value="${val}"></div>`;
   }).join('');
+  // Photo upload section
+  const existingPhoto=editId?`<img src="${getPhotoUrl(editId)}" style="width:100%;max-height:200px;object-fit:cover;border-radius:8px;margin-bottom:8px" onerror="this.style.display='none'" onload="this.style.display='block'">`:'';
+  grid.innerHTML+=`
+    <div class="form-group full" style="margin-top:8px;padding-top:12px;border-top:1px solid var(--gray-200)">
+      <label><i class="fas fa-camera" style="margin-right:4px"></i> Foto Kondisi Rumah</label>
+      ${existingPhoto}
+      <div id="photoPreview" style="display:none;margin-bottom:8px"><img id="photoPreviewImg" style="width:100%;max-height:200px;object-fit:cover;border-radius:8px"></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <label style="flex:1;padding:12px;background:var(--gray-50);border:2px dashed var(--gray-300);border-radius:var(--radius-xs);text-align:center;cursor:pointer;font-size:.78rem;color:var(--gray-500);font-weight:600;transition:var(--transition)" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--gray-300)'">
+          <i class="fas fa-cloud-upload-alt" style="font-size:1.2rem;display:block;margin-bottom:4px;color:var(--blue)"></i>
+          <span id="photoFileName">Pilih foto atau drag & drop</span>
+          <input type="file" id="ff_photo" accept="image/*" style="display:none" onchange="previewPhoto(this)">
+        </label>
+      </div>
+      <div style="font-size:.6rem;color:var(--gray-400);margin-top:4px">Format: JPG, PNG. Maks 5MB.</div>
+    </div>`;
   document.getElementById('formModal').classList.add('open');
+}
+function previewPhoto(input){
+  const file=input.files[0];if(!file)return;
+  if(file.size>5*1024*1024)return toast('Ukuran foto maks 5MB','error');
+  const reader=new FileReader();
+  reader.onload=e=>{
+    document.getElementById('photoPreviewImg').src=e.target.result;
+    document.getElementById('photoPreview').style.display='block';
+    document.getElementById('photoFileName').textContent=file.name;
+  };
+  reader.readAsDataURL(file);
 }
 function closeForm(){document.getElementById('formModal').classList.remove('open');editId=null}
 async function saveForm(){
@@ -792,13 +827,32 @@ async function saveForm(){
   FIELDS.forEach(f=>{const el=document.getElementById('ff_'+f.key);if(!el)return;let v=el.value;if(f.type==='number'&&v)v=parseFloat(v);obj[f.key]=v||null});
   obj.kec='BRINGIN';obj.updated_at=new Date().toISOString();
   try{
+    let savedId=editId;
     if(editId){
       const{error}=await sb.from('rtlh').update(obj).eq('id',editId);
-      if(error)throw error;toast('Data berhasil diupdate','success');
+      if(error)throw error;
     }else{
-      const{error}=await sb.from('rtlh').insert(obj);
-      if(error)throw error;toast('Data berhasil ditambahkan','success');
+      const{data,error}=await sb.from('rtlh').insert(obj).select('id').single();
+      if(error)throw error;
+      savedId=data.id;
     }
+    // Upload photo if selected
+    const photoInput=document.getElementById('ff_photo');
+    if(photoInput&&photoInput.files[0]){
+      const file=photoInput.files[0];
+      const filePath=`${savedId}.jpg`;
+      // Delete old photo first (in case of update)
+      await sb.storage.from('rtlh-photos').remove([filePath]);
+      const{error:uploadErr}=await sb.storage.from('rtlh-photos').upload(filePath,file,{
+        cacheControl:'3600',upsert:true,contentType:file.type
+      });
+      if(uploadErr){console.error(uploadErr);toast('Data tersimpan, tapi gagal upload foto','error')}
+      else{
+        // Save photo URL to database
+        await sb.from('rtlh').update({nama_foto:filePath}).eq('id',savedId);
+      }
+    }
+    toast(editId?'Data berhasil diupdate':'Data berhasil ditambahkan','success');
     closeForm();await loadBrData();renderBr();populateHome();
   }catch(e){console.error(e);toast('Gagal menyimpan: '+e.message,'error')}
 }
