@@ -311,7 +311,7 @@ font-size:.55rem;font-weight:700;color:var(--gray-400);background:none;border:no
   <div class="nav-tabs" id="navTabs">
     <button class="nav-tab active" data-p="home" onclick="nav('home')"><i class="fas fa-home"></i> Beranda</button>
     <button class="nav-tab" data-p="peta" onclick="nav('peta')"><i class="fas fa-map"></i> Peta Kabupaten</button>
-    <button class="nav-tab" data-p="bringin" onclick="nav('bringin')"><i class="fas fa-crosshairs"></i> WebGIS Bringin</button>
+    <button class="nav-tab" data-p="keclist" onclick="nav('keclist')"><i class="fas fa-th-list"></i> WebGIS Kecamatan</button>
   </div>
   <div class="header-right">
     <div id="authArea"></div>
@@ -331,7 +331,7 @@ font-size:.55rem;font-weight:700;color:var(--gray-400);background:none;border:no
       <div class="card-actions"><button class="btn btn-navy" onclick="nav('peta')"><i class="fas fa-external-link-alt"></i> Buka Peta</button></div></div>
     <div class="card"><div class="card-top"><div class="card-icon red"><i class="fas fa-crosshairs"></i></div><div class="card-meta"><h3>WebGIS RTLH Bringin</h3><p>Scoring prioritas per rumah tangga dengan database Supabase. CRUD + Google login.</p></div></div>
       <div class="card-stats"><div class="card-stat"><div class="cs-label">Data</div><div class="cs-val" id="h-total">0</div></div><div class="card-stat"><div class="cs-label">Pr. Tinggi</div><div class="cs-val" id="h-high" style="color:var(--danger)">0</div></div><div class="card-stat"><div class="cs-label">Desa</div><div class="cs-val" id="h-desa2">0</div></div></div>
-      <div class="card-actions"><button class="btn btn-navy" onclick="nav('bringin')"><i class="fas fa-external-link-alt"></i> Buka WebGIS</button></div></div>
+      <div class="card-actions"><button class="btn btn-navy" onclick="nav('keclist')"><i class="fas fa-external-link-alt"></i> Buka WebGIS</button></div></div>
   </div></section>
   <section class="section"><h2 class="section-head"><i class="fas fa-chart-line"></i> Ringkasan Data</h2><div class="grid-4">
     <div class="ov-card c1"><div class="ov-icon"><i class="fas fa-home"></i></div><div class="ov-val" id="ov-rtlh">0</div><div class="ov-label">Total RTLH 2025</div></div>
@@ -351,7 +351,7 @@ font-size:.55rem;font-weight:700;color:var(--gray-400);background:none;border:no
     <label class="filter-label">Desa</label><select class="filter-select" id="fDesa"><option value="">Semua Desa</option></select>
     <label class="filter-label">Tahun: <span style="color:var(--blue);font-weight:800" id="yrLbl">2025</span></label>
     <input type="range" id="yrSlider" min="2021" max="2025" value="2025" step="1">
-    <button style="width:100%;margin-top:8px;padding:9px;background:linear-gradient(135deg,var(--danger),var(--warning));color:#fff;border:none;border-radius:var(--radius-xs);font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit" onclick="nav('bringin')"><i class="fas fa-crosshairs"></i> Data Detail Kec. Bringin</button>
+    <button style="width:100%;margin-top:8px;padding:9px;background:linear-gradient(135deg,var(--danger),var(--warning));color:#fff;border:none;border-radius:var(--radius-xs);font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit" onclick="nav('keclist')"><i class="fas fa-th-list"></i> WebGIS Per Kecamatan</button>
   </div><div class="panel">
     <div class="panel-title"><i class="fas fa-chart-bar"></i> Statistik</div>
     <div class="stat-row"><div class="s-card"><div class="s-label">Total</div><div class="s-val" id="pTotal">0</div></div><div class="s-card"><div class="s-label">Desa</div><div class="s-val" id="pDesa">0</div></div><div class="s-card"><div class="s-label">Kec</div><div class="s-val" id="pKec">0</div></div></div>
@@ -364,7 +364,20 @@ font-size:.55rem;font-weight:700;color:var(--gray-400);background:none;border:no
   </div>
 </div>
 
-<!-- PAGE: BRINGIN -->
+<!-- PAGE: KECAMATAN LIST -->
+<div class="page" id="page-keclist"><div class="page-scroll" style="background:var(--gray-50)">
+  <div style="background:linear-gradient(135deg,var(--navy),var(--navy-80));padding:32px 28px 52px">
+    <div style="max-width:1200px;margin:0 auto">
+      <h1 style="font-size:1.6rem;font-weight:800;color:#fff;margin-bottom:6px">WebGIS Per Kecamatan</h1>
+      <p style="font-size:.85rem;color:rgba(255,255,255,.5)">Pilih kecamatan untuk melihat dan mengelola data RTLH</p>
+    </div>
+  </div>
+  <div style="max-width:1200px;margin:-28px auto 0;padding:0 24px 40px;position:relative;z-index:2">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px" id="kecGrid"></div>
+  </div>
+</div></div>
+
+<!-- PAGE: BRINGIN (DYNAMIC KECAMATAN) -->
 <div class="page" id="page-bringin">
   <aside class="br-sidebar collapsed" id="brSidebar">
     <div class="b-tabs">
@@ -403,6 +416,7 @@ font-size:.55rem;font-weight:700;color:var(--gray-400);background:none;border:no
   </aside>
   <div class="br-main">
     <div class="br-toolbar">
+      <button class="tb-toggle" onclick="nav('keclist')" title="Kembali ke daftar kecamatan"><i class="fas fa-arrow-left"></i></button>
       <button class="tb-toggle" onclick="togSB()"><i class="fas fa-bars"></i></button>
       <div class="tb-stats">
         <span class="tb-badge" style="color:var(--blue)"><i class="fas fa-database"></i> <span id="tbT">0</span> Data</span>
@@ -413,7 +427,7 @@ font-size:.55rem;font-weight:700;color:var(--gray-400);background:none;border:no
       <div class="tb-search"><i class="fas fa-search"></i><input id="srcIn" placeholder="Cari KK..." oninput="searchKK(this.value)"></div>
       <div style="display:flex;gap:5px">
         <button class="btn btn-outline btn-sm" onclick="exportCSV()" title="Export"><i class="fas fa-file-csv"></i></button>
-        <button class="btn btn-outline btn-sm" onclick="brMap?.flyTo([-7.38,111.57],13)" title="Reset"><i class="fas fa-compress-arrows-alt"></i></button>
+        <button class="btn btn-outline btn-sm" onclick="resetBrView()" title="Reset"><i class="fas fa-compress-arrows-alt"></i></button>
       </div>
     </div>
     <div id="map-bringin"></div>
@@ -488,7 +502,7 @@ font-size:.55rem;font-weight:700;color:var(--gray-400);background:none;border:no
 <nav class="mobile-nav"><div class="mobile-nav-inner">
   <button class="mn-btn active" data-p="home" onclick="nav('home')"><i class="fas fa-home"></i><span>Beranda</span></button>
   <button class="mn-btn" data-p="peta" onclick="nav('peta')"><i class="fas fa-map"></i><span>Peta</span></button>
-  <button class="mn-btn" data-p="bringin" onclick="nav('bringin')"><i class="fas fa-crosshairs"></i><span>Bringin</span></button>
+  <button class="mn-btn" data-p="keclist" onclick="nav('keclist')"><i class="fas fa-th-list"></i><span>Kecamatan</span></button>
 </div></nav>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -501,13 +515,28 @@ const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const sb=supabase.createClient(SUPA_URL,SUPA_KEY);
 
 // ═══ STATE ═══
-let user=null,isAdmin=false;
+let user=null,isAdmin=false,userKec=null;
 let ngawiData=null,brFeatures=[],brAll=[],forestPolys=[],forestLoaded=false;
 let petaMap=null,petaGeo=null,petaChart=null,petaLabels=null,petaRaw=null,petaDesaKec={};
 let brMap=null,brCluster=null,brFilter='all',brWeights={l:30,p:35,k:35};
 let brPie=null,brBar=null,currentFeat=null,editId=null;
+let currentKec=null; // currently selected kecamatan
 let inited={peta:false,br:false};
+let kecCounts={}; // rtlh count per kecamatan
 const iconCache={};
+
+const KEC_CONFIG={
+  "Bringin":{lat:-7.4028,lng:111.5873},"Geneng":{lat:-7.4936,lng:111.4404},
+  "Gerih":{lat:-7.5398,lng:111.3837},"Jogorogo":{lat:-7.5319,lng:111.2579},
+  "Karanganyar":{lat:-7.3179,lng:111.2218},"Karangjati":{lat:-7.4551,lng:111.6075},
+  "Kasreman":{lat:-7.3905,lng:111.5175},"Kedunggalar":{lat:-7.4288,lng:111.3073},
+  "Kendal":{lat:-7.5828,lng:111.2816},"Kwadungan":{lat:-7.5170,lng:111.5139},
+  "Mantingan":{lat:-7.3849,lng:111.1635},"Ngawi":{lat:-7.4019,lng:111.4576},
+  "Ngrambe":{lat:-7.5018,lng:111.2123},"Padas":{lat:-7.4466,lng:111.5308},
+  "Pangkur":{lat:-7.4972,lng:111.5426},"Paron":{lat:-7.4627,lng:111.3661},
+  "Pitu":{lat:-7.3659,lng:111.3680},"Sine":{lat:-7.5159,lng:111.1713},
+  "Widodaren":{lat:-7.4065,lng:111.2304}
+};
 
 // ═══ AUTH ═══
 async function initAuth(){
@@ -524,8 +553,8 @@ async function initAuth(){
 }
 async function setUser(u){
   user=u;
-  const{data}=await sb.from('admin_users').select('email').eq('email',u.email).single();
-  isAdmin=!!data;updAuth();
+  const{data}=await sb.from('admin_users').select('email,kecamatan').eq('email',u.email).single();
+  isAdmin=!!data;userKec=data?.kecamatan||null;updAuth();
 }
 function updAuth(){
   const a=document.getElementById('authArea');
@@ -537,7 +566,7 @@ function updAuth(){
       <div class="user-chip"><img src="${pic}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%231B6CA8%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2260%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2240%22>${name[0].toUpperCase()}</text></svg>'"><span>${name}</span></div>
       ${isAdmin?'<span style="font-size:.55rem;color:var(--gold);font-weight:700;background:rgba(200,169,81,.2);padding:2px 8px;border-radius:99px">ADMIN</span>':''}
       <button class="btn-logout" onclick="logout()">Keluar</button></div>`;
-    fab.classList.toggle('show',isAdmin);
+    fab.classList.toggle('show',isAdmin&&canEditCurrentKec());
   }else{
     a.innerHTML=`<button class="btn-login" onclick="openLogin()"><i class="fas fa-sign-in-alt"></i> Masuk</button>`;
     fab.classList.remove('show');
@@ -594,12 +623,31 @@ function catLabel(c){return c==='high'?'PRIORITAS TINGGI':c==='medium'?'PRIORITA
 // ═══ NAV ═══
 function nav(p){
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
-  document.getElementById('page-'+p).classList.add('active');
-  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.toggle('active',t.dataset.p===p));
-  document.querySelectorAll('.mn-btn').forEach(b=>b.classList.toggle('active',b.dataset.p===p));
+  const pageId=p==='keclist'?'page-keclist':p==='bringin'?'page-bringin':'page-'+p;
+  document.getElementById(pageId).classList.add('active');
+  const tabP=p==='bringin'?'keclist':p;
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.toggle('active',t.dataset.p===tabP));
+  document.querySelectorAll('.mn-btn').forEach(b=>b.classList.toggle('active',b.dataset.p===tabP));
   if(p==='peta'&&!inited.peta)initPeta();
   if(p==='bringin'&&!inited.br)initBr();
+  if(p==='keclist')buildKecGrid();
+  // Show/hide FAB based on current page and access
+  const fab=document.getElementById('fabAdd');
+  if(fab)fab.classList.toggle('show',p==='bringin'&&canEditCurrentKec());
   setTimeout(()=>{petaMap?.invalidateSize();brMap?.invalidateSize()},150);
+}
+function openKec(kec){
+  currentKec=kec.toUpperCase();
+  inited.br=false;brMap=null;brCluster=null;brPie=null;brBar=null;brFilter='all';
+  document.getElementById('map-bringin').innerHTML='';
+  // Update title
+  document.querySelector('#page-bringin .br-toolbar').querySelector('.tb-stats').innerHTML=`
+    <span class="tb-badge" style="color:var(--navy);font-weight:800"><i class="fas fa-map-marker-alt"></i> Kec. ${kec}</span>
+    <span class="tb-badge" style="color:var(--blue)"><i class="fas fa-database"></i> <span id="tbT">0</span> Data</span>
+    <span class="tb-badge" style="color:var(--danger)"><i class="fas fa-circle"></i> <span id="tbH">0</span> Tinggi</span>
+    <span class="tb-badge" style="color:var(--warning)"><i class="fas fa-circle"></i> <span id="tbM">0</span> Sedang</span>
+    <span class="tb-badge" style="color:var(--success)"><i class="fas fa-circle"></i> <span id="tbL">0</span> Rendah</span>`;
+  loadBrData().then(()=>{nav('bringin')});
 }
 
 // ═══ DATA LOADING ═══
@@ -617,30 +665,68 @@ async function loadAll(){
     if(hutan?.features){hutan.features.forEach(f=>{const g=f.geometry;if(g.type==='Polygon')forestPolys.push(g.coordinates[0]);else if(g.type==='MultiPolygon')g.coordinates.forEach(p=>forestPolys.push(p[0]))});forestLoaded=true}
     window._hutan=hutan;
     // Load from Supabase
+    currentKec=null;
     await loadBrData();
+    await loadKecCounts();
     populateHome();
     toast(`${brAll.length} data RTLH dari database`,'success');
   }catch(e){console.error(e);toast('Gagal memuat data','error')}
   const ld=document.getElementById('appLoading');ld.classList.add('hide');setTimeout(()=>ld.style.display='none',600);
 }
 async function loadBrData(){
-  const{data,error}=await sb.from('rtlh').select('*').order('id');
+  let query=sb.from('rtlh').select('*').order('id');
+  if(currentKec)query=query.eq('kec',currentKec);
+  const{data,error}=await query;
   if(error){console.error(error);return}
   brAll=data.map(r=>{r._score=calcScore(r);r._cat=getCat(r._score);return r});
   brFeatures=[...brAll];
+  // Update desa filter
+  const sel=document.getElementById('fBrD');
+  if(sel){
+    sel.innerHTML='<option value="all">Semua Desa</option>';
+    const dSet=new Set(brAll.map(r=>r.desa).filter(Boolean));
+    [...dSet].sort().forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;sel.appendChild(o)});
+  }
 }
 
 // ═══ HOME ═══
 function populateHome(){
   let total25=0;ngawiData.features.forEach(f=>{total25+=f.properties['RTLH 2025']||0});
   document.getElementById('ov-rtlh').textContent=total25.toLocaleString('id-ID');
-  document.getElementById('ov-db').textContent=brAll.length;
-  document.getElementById('h-total').textContent=brAll.length;
+  const totalDb=Object.values(kecCounts).reduce((a,b)=>a+b,0);
+  document.getElementById('ov-db').textContent=totalDb;
+  document.getElementById('h-total').textContent=totalDb;
   const hi=brAll.filter(r=>r._cat==='high').length;
   document.getElementById('h-high').textContent=hi;
   const dSet=new Set(brAll.map(r=>r.desa).filter(Boolean));
   document.getElementById('h-desa2').textContent=dSet.size;
-  document.getElementById('dbStatus').textContent=`✓ ${brAll.length} data terhubung ke database`;
+  document.getElementById('dbStatus').textContent=`✓ ${totalDb} data terhubung ke database`;
+}
+async function loadKecCounts(){
+  const{data,error}=await sb.from('rtlh').select('kec');
+  if(error)return;
+  kecCounts={};
+  data.forEach(r=>{const k=(r.kec||'').toUpperCase();kecCounts[k]=(kecCounts[k]||0)+1});
+}
+function buildKecGrid(){
+  const grid=document.getElementById('kecGrid');
+  grid.innerHTML=Object.keys(KEC_CONFIG).sort().map(k=>{
+    const kUp=k.toUpperCase();
+    const count=kecCounts[kUp]||0;
+    const hasData=count>0;
+    return`<div onclick="openKec('${k}')" style="background:#fff;border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);border:1px solid var(--gray-200);cursor:pointer;transition:var(--transition);display:flex;align-items:center;gap:14px" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='var(--shadow-lg)'" onmouseout="this.style.transform='';this.style.boxShadow='var(--shadow)'">
+      <div style="width:44px;height:44px;border-radius:12px;background:${hasData?'linear-gradient(135deg,var(--blue),var(--blue-light))':'var(--gray-100)'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <i class="fas fa-map-marker-alt" style="color:${hasData?'#fff':'var(--gray-400)'};font-size:1.1rem"></i>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:.88rem;font-weight:800;color:var(--gray-900)">${k}</div>
+        <div style="font-size:.68rem;color:${hasData?'var(--blue)':'var(--gray-400)'};font-weight:600;margin-top:2px">
+          ${hasData?`<i class="fas fa-database"></i> ${count} data`:'<i class="fas fa-plus-circle"></i> Belum ada data'}
+        </div>
+      </div>
+      <i class="fas fa-chevron-right" style="color:var(--gray-300);font-size:.75rem"></i>
+    </div>`;
+  }).join('');
 }
 
 // ═══ PETA KABUPATEN ═══
@@ -674,7 +760,10 @@ function initPeta(){
 // ═══ BRINGIN WEBGIS ═══
 function initBr(){
   if(inited.br)return;inited.br=true;
-  brMap=L.map('map-bringin',{zoomControl:false}).setView([-7.38,111.57],13);
+  const kecName=currentKec?Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===currentKec):null;
+  const center=kecName?[KEC_CONFIG[kecName].lat,KEC_CONFIG[kecName].lng]:[-7.4,111.4];
+  const zoom=currentKec?13:11;
+  brMap=L.map('map-bringin',{zoomControl:false}).setView(center,zoom);
   const base=L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:19}).addTo(brMap);
   const sat=L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{maxZoom:20});
   L.control.layers({"Peta":base,"Satelit":sat},{},{position:'topright',collapsed:true}).addTo(brMap);
@@ -702,6 +791,19 @@ function renderBr(){
   brMap.addLayer(brCluster);
   const hi=brFeatures.filter(r=>r._cat==='high').length,me=brFeatures.filter(r=>r._cat==='medium').length,lo=brFeatures.filter(r=>r._cat==='low').length;
   document.getElementById('tbT').textContent=brFeatures.length;document.getElementById('tbH').textContent=hi;document.getElementById('tbM').textContent=me;document.getElementById('tbL').textContent=lo;
+}
+
+// Helper functions
+function canEditCurrentKec(){
+  if(!isAdmin)return false;
+  if(!userKec)return true; // super admin
+  return userKec===currentKec;
+}
+function resetBrView(){
+  if(!brMap)return;
+  const kecName=currentKec?Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===currentKec):null;
+  const center=kecName?[KEC_CONFIG[kecName].lat,KEC_CONFIG[kecName].lng]:[-7.4,111.4];
+  brMap.flyTo(center,13,{duration:1});
 }
 
 // Controls
@@ -757,7 +859,7 @@ function showDetail(id){
   // Admin buttons
   const foot=document.getElementById('dmFoot');
   foot.innerHTML=`<button class="btn btn-outline btn-sm" onclick="closeDetail()"><i class="fas fa-times"></i> Tutup</button>`;
-  if(isAdmin){
+  if(canEditCurrentKec()){
     foot.innerHTML+=`<button class="btn btn-sm" style="background:var(--warning);color:#fff" onclick="closeDetail();openForm(${r.id})"><i class="fas fa-edit"></i> Edit</button>`;
     foot.innerHTML+=`<button class="btn btn-danger btn-sm" onclick="deleteRTLH(${r.id})"><i class="fas fa-trash"></i> Hapus</button>`;
   }
@@ -781,7 +883,7 @@ const FIELDS=[
 ];
 function getPhotoUrl(id){return`${SUPA_URL}/storage/v1/object/public/rtlh-photos/${id}.jpg`}
 function openForm(id){
-  if(!isAdmin)return toast('Login sebagai admin untuk menambah data','error');
+  if(!canEditCurrentKec())return toast('Anda tidak memiliki akses edit untuk kecamatan ini','error');
   editId=id||null;
   document.getElementById('fmTitle').textContent=editId?'Edit Data RTLH':'Tambah Data RTLH';
   const r=editId?brAll.find(x=>x.id===editId):{};
@@ -852,7 +954,7 @@ function closeForm(){document.getElementById('formModal').classList.remove('open
 async function saveForm(){
   const obj={};
   FIELDS.forEach(f=>{const el=document.getElementById('ff_'+f.key);if(!el)return;let v=el.value;if(f.type==='number'&&v)v=parseFloat(v);obj[f.key]=v||null});
-  obj.kec='BRINGIN';obj.updated_at=new Date().toISOString();
+  obj.kec=currentKec||'BRINGIN';obj.updated_at=new Date().toISOString();
   try{
     let savedId=editId;
     if(editId){
@@ -895,7 +997,7 @@ async function deleteRTLH(id){
 }
 
 // Export
-function exportCSV(){if(!brFeatures.length)return toast('Tidak ada data','error');const h=['ID','Desa','Nama KK','Umur','Pekerjaan','Luas Rumah','Penghuni','Skor','Kategori','Lat','Long'];const rows=brFeatures.map(r=>[r.id,r.desa,r.kep_kk,r.umur,r.pekerjaan,r.luas_rum,r.jml_peng,r._score?.toFixed(2),r._cat,r.latitude,r.longitude].map(v=>`"${String(v||'').replace(/"/g,'""')}"`));const csv=[h,...rows].map(r=>r.join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(["\uFEFF"+csv],{type:'text/csv'}));a.download=`rtlh_bringin_${new Date().toISOString().slice(0,10)}.csv`;a.click();toast(`${brFeatures.length} data diekspor`,'success')}
+function exportCSV(){if(!brFeatures.length)return toast('Tidak ada data','error');const h=['ID','Desa','Nama KK','Umur','Pekerjaan','Luas Rumah','Penghuni','Skor','Kategori','Lat','Long'];const rows=brFeatures.map(r=>[r.id,r.desa,r.kep_kk,r.umur,r.pekerjaan,r.luas_rum,r.jml_peng,r._score?.toFixed(2),r._cat,r.latitude,r.longitude].map(v=>`"${String(v||'').replace(/"/g,'""')}"`));const csv=[h,...rows].map(r=>r.join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(["\uFEFF"+csv],{type:'text/csv'}));a.download=`rtlh_${(currentKec||'semua').toLowerCase()}_${new Date().toISOString().slice(0,10)}.csv`;a.click();toast(`${brFeatures.length} data diekspor`,'success')}
 
 // Keyboard
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDetail();closeForm()}});
