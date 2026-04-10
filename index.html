@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pusat Data RTLH - Kabupaten Ngawi</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --navy: #0C2340;
+      --navy-light: #1B3A5C;
+      --gold: #C8A951;
+      --gold-light: #E8D48B;
+      --blue: #1B6CA8;
+      --blue-light: #2D8FD5;
+      --white: #FFFFFF;
+      --gray-50: #F8FAFC;
+      --gray-100: #F1F5F9;
+      --gray-200: #E2E8F0;
+      --gray-300: #CBD5E1;
+      --gray-400: #94A3B8;
+      --gray-500: #64748B;
+      --gray-600: #475569;
+      --gray-700: #334155;
+      --gray-800: #1E293B;
+      --gray-900: #0F172A;
+      --danger: #DC2626;
+      --warning: #F59E0B;
+      --success: #16A34A;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --shadow: 0 4px 24px rgba(12, 35, 64, 0.10);
+      --shadow-lg: 0 8px 40px rgba(12, 35, 64, 0.15);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-800);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    .main-header {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+      padding: 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.15);
+    }
+
+    .header-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .header-brand img {
+      width: 46px;
+      height: 46px;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    }
+
+    .header-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header-text .instansi {
+      font-size: 0.68rem;
+      color: var(--gold);
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .header-text .title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--white);
+      line-height: 1.2;
+    }
+
+    .header-text .title .accent {
+      color: var(--gold-light);
+    }
+
+    .header-nav {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 600;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+
+    .nav-link:hover, .nav-link.active {
+      background: rgba(255,255,255,0.1);
+      color: var(--white);
+      border-color: rgba(255,255,255,0.15);
+    }
+
+    .nav-link.active {
+      background: rgba(200,169,81,0.15);
+      border-color: var(--gold);
+      color: var(--gold-light);
+    }
+
+    .nav-link i { font-size: 0.9rem; }
+
+    /* ── HERO ── */
+    .hero {
+      background: linear-gradient(135deg, var(--navy) 0%, #14375A 50%, var(--navy-light) 100%);
+      padding: 48px 28px 72px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
+    }
+
+    .hero-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(200,169,81,0.15);
+      border: 1px solid rgba(200,169,81,0.3);
+      padding: 6px 16px;
+      border-radius: 99px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--gold-light);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 18px;
+    }
+
+    .hero-badge i { font-size: 0.65rem; }
+
+    .hero h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--white);
+      line-height: 1.15;
+      margin-bottom: 12px;
+    }
+
+    .hero h1 span { color: var(--gold); }
+
+    .hero p {
+      font-size: 1rem;
+      color: rgba(255,255,255,0.65);
+      max-width: 600px;
+      line-height: 1.6;
+    }
+
+    /* ── MODULE CARDS ── */
+    .modules-section {
+      max-width: 1400px;
+      margin: -44px auto 0;
+      padding: 0 28px 40px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .modules-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+
+    .module-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      transition: transform 0.3s, box-shadow 0.3s;
+      border: 1px solid var(--gray-200);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .module-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 48px rgba(12, 35, 64, 0.18);
+    }
+
+    .module-card-header {
+      padding: 24px 24px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .module-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+
+    .module-icon.koropleth {
+      background: linear-gradient(135deg, #1B6CA8, #2D8FD5);
+      color: white;
+    }
+
+    .module-icon.scoring {
+      background: linear-gradient(135deg, #DC2626, #F59E0B);
+      color: white;
+    }
+
+    .module-info h3 {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--gray-900);
+      margin-bottom: 4px;
+    }
+
+    .module-info p {
+      font-size: 0.8rem;
+      color: var(--gray-500);
+      line-height: 1.5;
+    }
+
+    .module-stats {
+      padding: 0 24px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .module-stat {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-100);
+      border-radius: 8px;
+      padding: 10px 14px;
+      flex: 1;
+      min-width: 100px;
+    }
+
+    .module-stat .stat-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: var(--gray-400);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .module-stat .stat-value {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--navy);
+    }
+
+    .module-preview {
+      padding: 16px 24px;
+      flex: 1;
+    }
+
+    .module-preview canvas {
+      width: 100% !important;
+      height: 120px !important;
+    }
+
+    .module-actions {
+      padding: 16px 24px 20px;
+      display: flex;
+      gap: 10px;
+      border-top: 1px solid var(--gray-100);
+    }
+
+    .btn-module {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .btn-module.primary {
+      background: var(--navy);
+      color: var(--white);
+    }
+
+    .btn-module.primary:hover {
+      background: var(--navy-light);
+      transform: translateY(-1px);
+    }
+
+    .btn-module.outline {
+      background: transparent;
+      color: var(--navy);
+      border: 1.5px solid var(--gray-300);
+    }
+
+    .btn-module.outline:hover {
+      border-color: var(--navy);
+      background: var(--gray-50);
+    }
+
+    /* ── OVERVIEW DASHBOARD ── */
+    .overview-section {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 28px 40px;
+    }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--gray-900);
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-title i {
+      color: var(--gold);
+      font-size: 0.9rem;
+    }
+
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .overview-card {
+      background: var(--white);
+      border-radius: var(--radius-sm);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--gray-100);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .overview-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+    }
+
+    .overview-card.c1::after { background: var(--blue); }
+    .overview-card.c2::after { background: var(--gold); }
+    .overview-card.c3::after { background: var(--success); }
+    .overview-card.c4::after { background: var(--danger); }
+
+    .overview-card .ov-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      margin-bottom: 12px;
+    }
+
+    .overview-card.c1 .ov-icon { background: #EBF5FF; color: var(--blue); }
+    .overview-card.c2 .ov-icon { background: #FFF8E1; color: #B8860B; }
+    .overview-card.c3 .ov-icon { background: #E8F5E9; color: var(--success); }
+    .overview-card.c4 .ov-icon { background: #FFEBEE; color: var(--danger); }
+
+    .overview-card .ov-value {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--gray-900);
+    }
+
+    .overview-card .ov-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--gray-400);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-top: 2px;
+    }
+
+    /* ── MINI MAP ── */
+    .map-section {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 28px 40px;
+    }
+
+    .map-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--gray-200);
+      overflow: hidden;
+    }
+
+    .map-card-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--gray-100);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .map-card-header h3 {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--gray-800);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .map-card-header h3 i { color: var(--gold); }
+
+    #overview-map {
+      height: 380px;
+      width: 100%;
+    }
+
+    /* ── FOOTER ── */
+    .main-footer {
+      background: var(--navy);
+      padding: 28px;
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .main-footer p {
+      color: rgba(255,255,255,0.5);
+      font-size: 0.75rem;
+    }
+
+    .main-footer a {
+      color: var(--gold);
+      text-decoration: none;
+    }
+
+    /* ── LOADING ── */
+    .portal-loading {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: var(--navy);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.5s, visibility 0.5s;
+    }
+
+    .portal-loading.hide {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .portal-loading .ld-ring {
+      width: 56px;
+      height: 56px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 18px;
+    }
+
+    .portal-loading .ld-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--white);
+    }
+
+    .portal-loading .ld-sub {
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.5);
+      margin-top: 4px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .modules-grid { grid-template-columns: 1fr; }
+      .overview-grid { grid-template-columns: repeat(2, 1fr); }
+      .hero h1 { font-size: 1.6rem; }
+      .header-nav { display: none; }
+    }
+
+    @media (max-width: 600px) {
+      .overview-grid { grid-template-columns: 1fr 1fr; }
+      .hero { padding: 32px 18px 56px; }
+      .modules-section, .overview-section, .map-section { padding-left: 16px; padding-right: 16px; }
+      .header-inner { padding: 12px 16px; }
+      .module-card-header { padding: 18px 18px 12px; }
+      .module-stats { padding: 0 18px; }
+      .module-preview { padding: 12px 18px; }
+      .module-actions { padding: 14px 18px 16px; }
+    }
+
+    /* ── MOBILE BOTTOM NAV ── */
+    .mobile-nav {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: var(--white);
+      border-top: 1px solid var(--gray-200);
+      padding: 6px 0 max(6px, env(safe-area-inset-bottom));
+    }
+
+    .mobile-nav-inner {
+      display: flex;
+      justify-content: space-around;
+    }
+
+    .mobile-nav-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 6px 12px;
+      font-size: 0.6rem;
+      font-weight: 600;
+      color: var(--gray-400);
+      text-decoration: none;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .mobile-nav-btn i { font-size: 1.1rem; }
+
+    .mobile-nav-btn.active, .mobile-nav-btn:hover {
+      color: var(--navy);
+    }
+
+    @media (max-width: 900px) {
+      .mobile-nav { display: block; }
+      body { padding-bottom: 70px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOADING -->
+  <div class="portal-loading" id="portalLoading">
+    <div class="ld-ring"></div>
+    <div class="ld-title">Pusat Data RTLH</div>
+    <div class="ld-sub">Kabupaten Ngawi</div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="main-header">
+    <div class="header-inner">
+      <div class="header-brand">
+        <img src="logo-ngawi.png" alt="Logo Ngawi">
+        <div class="header-text">
+          <div class="instansi">Dinas Perumahan Rakyat dan Kawasan Permukiman</div>
+          <div class="title">Pusat Data <span class="accent">RTLH</span></div>
+        </div>
+      </div>
+      <nav class="header-nav">
+        <a href="index.html" class="nav-link active"><i class="fas fa-home"></i> Beranda</a>
+        <a href="peta-ngawi.html" class="nav-link"><i class="fas fa-map"></i> Peta Kabupaten</a>
+        <a href="webgis-bringin.html" class="nav-link"><i class="fas fa-crosshairs"></i> WebGIS Bringin</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-badge"><i class="fas fa-shield-alt"></i> Sistem Informasi Terintegrasi</div>
+      <h1>Pusat Data Rumah<br>Tidak Layak Huni <span>Kab. Ngawi</span></h1>
+      <p>Platform terpadu untuk pemetaan, analisis, dan penentuan prioritas penanganan RTLH di seluruh Kabupaten Ngawi.</p>
+    </div>
+  </section>
+
+  <!-- MODULE CARDS -->
+  <section class="modules-section">
+    <div class="modules-grid">
+
+      <!-- Module 1: Peta Koropleth Kabupaten -->
+      <div class="module-card">
+        <div class="module-card-header">
+          <div class="module-icon koropleth"><i class="fas fa-map"></i></div>
+          <div class="module-info">
+            <h3>Peta RTLH Kabupaten Ngawi</h3>
+            <p>Peta koropleth sebaran RTLH per desa/kelurahan di seluruh kabupaten. Filter berdasarkan kecamatan, desa, dan tahun pendataan.</p>
+          </div>
+        </div>
+        <div class="module-stats">
+          <div class="module-stat">
+            <div class="stat-label">Total Desa</div>
+            <div class="stat-value" id="mod1-desa">217</div>
+          </div>
+          <div class="module-stat">
+            <div class="stat-label">Kecamatan</div>
+            <div class="stat-value" id="mod1-kec">19</div>
+          </div>
+          <div class="module-stat">
+            <div class="stat-label">Rentang Data</div>
+            <div class="stat-value" style="font-size:1rem;">2021-2025</div>
+          </div>
+        </div>
+        <div class="module-preview">
+          <canvas id="chartModule1"></canvas>
+        </div>
+        <div class="module-actions">
+          <a href="peta-ngawi.html" class="btn-module primary"><i class="fas fa-external-link-alt"></i> Buka Peta</a>
+          <a href="https://github.com/mfauzimustofa/peta-ngawi" target="_blank" class="btn-module outline"><i class="fab fa-github"></i> GitHub</a>
+        </div>
+      </div>
+
+      <!-- Module 2: WebGIS RTLH Bringin -->
+      <div class="module-card">
+        <div class="module-card-header">
+          <div class="module-icon scoring"><i class="fas fa-crosshairs"></i></div>
+          <div class="module-info">
+            <h3>WebGIS RTLH Kec. Bringin</h3>
+            <p>Sistem penilaian prioritas per rumah tangga dengan bobot yang bisa disesuaikan. Lengkap dengan overlay kawasan hutan lindung.</p>
+          </div>
+        </div>
+        <div class="module-stats">
+          <div class="module-stat">
+            <div class="stat-label">Data Rumah</div>
+            <div class="stat-value" id="mod2-total">0</div>
+          </div>
+          <div class="module-stat">
+            <div class="stat-label">Prioritas Tinggi</div>
+            <div class="stat-value" id="mod2-high" style="color:var(--danger);">0</div>
+          </div>
+          <div class="module-stat">
+            <div class="stat-label">Desa</div>
+            <div class="stat-value" id="mod2-desa">0</div>
+          </div>
+        </div>
+        <div class="module-preview">
+          <canvas id="chartModule2"></canvas>
+        </div>
+        <div class="module-actions">
+          <a href="webgis-bringin.html" class="btn-module primary"><i class="fas fa-external-link-alt"></i> Buka WebGIS</a>
+          <a href="https://github.com/mfauzimustofa/ertlhbringin" target="_blank" class="btn-module outline"><i class="fab fa-github"></i> GitHub</a>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- OVERVIEW STATS -->
+  <section class="overview-section">
+    <h2 class="section-title"><i class="fas fa-chart-line"></i> Ringkasan Data</h2>
+    <div class="overview-grid">
+      <div class="overview-card c1">
+        <div class="ov-icon"><i class="fas fa-home"></i></div>
+        <div class="ov-value" id="ov-total-rtlh">0</div>
+        <div class="ov-label">Total RTLH 2025</div>
+      </div>
+      <div class="overview-card c2">
+        <div class="ov-icon"><i class="fas fa-map-marker-alt"></i></div>
+        <div class="ov-value" id="ov-total-kec">19</div>
+        <div class="ov-label">Kecamatan</div>
+      </div>
+      <div class="overview-card c3">
+        <div class="ov-icon"><i class="fas fa-building"></i></div>
+        <div class="ov-value" id="ov-total-desa">217</div>
+        <div class="ov-label">Desa/Kelurahan</div>
+      </div>
+      <div class="overview-card c4">
+        <div class="ov-icon"><i class="fas fa-database"></i></div>
+        <div class="ov-value" id="ov-detail-data">0</div>
+        <div class="ov-label">Data Detail (Bringin)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MINI MAP -->
+  <section class="map-section">
+    <div class="map-card">
+      <div class="map-card-header">
+        <h3><i class="fas fa-globe-asia"></i> Peta Lokasi Kabupaten Ngawi</h3>
+        <a href="peta-ngawi.html" class="btn-module outline" style="flex:none;padding:8px 16px;font-size:0.75rem;">
+          <i class="fas fa-expand"></i> Peta Lengkap
+        </a>
+      </div>
+      <div id="overview-map"></div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="main-footer">
+    <p>Pusat Data RTLH Kabupaten Ngawi &copy; 2025 &mdash; Dinas Perumahan Rakyat dan Kawasan Permukiman<br>
+    Dikembangkan oleh <a href="https://github.com/mfauzimustofa" target="_blank">mfauzimustofa</a></p>
+  </footer>
+
+  <!-- MOBILE NAV -->
+  <nav class="mobile-nav">
+    <div class="mobile-nav-inner">
+      <a href="index.html" class="mobile-nav-btn active"><i class="fas fa-home"></i><span>Beranda</span></a>
+      <a href="peta-ngawi.html" class="mobile-nav-btn"><i class="fas fa-map"></i><span>Peta Kab.</span></a>
+      <a href="webgis-bringin.html" class="mobile-nav-btn"><i class="fas fa-crosshairs"></i><span>Bringin</span></a>
+    </div>
+  </nav>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // ── LOAD DATA & POPULATE DASHBOARD ──
+    let geoData = null;
+    let bringinData = null;
+
+    async function loadAllData() {
+      try {
+        const [geoRes, bringinRes] = await Promise.all([
+          fetch('data-bsps-rtlh.geojson'),
+          fetch('bringin_data.json')
+        ]);
+        geoData = await geoRes.json();
+        bringinData = await bringinRes.json();
+
+        populateDashboard();
+        initMiniMap();
+      } catch(e) {
+        console.error('Error loading data:', e);
+      }
+
+      // Hide loading
+      const ld = document.getElementById('portalLoading');
+      ld.classList.add('hide');
+      setTimeout(() => ld.style.display = 'none', 600);
+    }
+
+    function populateDashboard() {
+      // Module 1 stats
+      const kecSet = new Set();
+      const desaSet = new Set();
+      let totalRTLH2025 = 0;
+      const kecData = {};
+
+      geoData.features.forEach(f => {
+        const p = f.properties;
+        kecSet.add(p.KECAMATAN);
+        desaSet.add(p.DESA);
+        const val = p['RTLH 2025'] || 0;
+        totalRTLH2025 += val;
+        if (val > 0) {
+          kecData[p.KECAMATAN] = (kecData[p.KECAMATAN] || 0) + val;
+        }
+      });
+
+      document.getElementById('mod1-desa').textContent = desaSet.size;
+      document.getElementById('mod1-kec').textContent = kecSet.size;
+      document.getElementById('ov-total-rtlh').textContent = totalRTLH2025.toLocaleString('id-ID');
+      document.getElementById('ov-total-kec').textContent = kecSet.size;
+      document.getElementById('ov-total-desa').textContent = desaSet.size;
+
+      // Chart Module 1 - top 10 kecamatan
+      const sortedKec = Object.entries(kecData).sort((a,b) => b[1] - a[1]).slice(0, 10);
+      const ctx1 = document.getElementById('chartModule1').getContext('2d');
+      new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels: sortedKec.map(k => k[0]),
+          datasets: [{
+            data: sortedKec.map(k => k[1]),
+            backgroundColor: sortedKec.map((_, i) => `hsl(${210 + i * 8}, 55%, ${48 + i * 2}%)`),
+            borderRadius: 4,
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.parsed.x + ' unit' } } },
+          scales: {
+            x: { beginAtZero: true, ticks: { font: { size: 9, family: 'Plus Jakarta Sans' } }, grid: { color: 'rgba(0,0,0,0.04)' } },
+            y: { ticks: { font: { size: 9, family: 'Plus Jakarta Sans', weight: '600' } } }
+          }
+        }
+      });
+
+      // Module 2 stats
+      const bringinFeatures = bringinData.features || [];
+      document.getElementById('mod2-total').textContent = bringinFeatures.length;
+      document.getElementById('ov-detail-data').textContent = bringinFeatures.length;
+
+      const desaBringin = new Set();
+      let highCount = 0, medCount = 0, lowCount = 0;
+      bringinFeatures.forEach(f => {
+        const p = f.properties;
+        if (p.desa) desaBringin.add(p.desa);
+
+        // Quick priority calc
+        const luas = p.luas_rum || 50;
+        const jml = p.jml_peng || 1;
+        const job = (p.pekerjaan || '').toUpperCase();
+        let jobScore = 60;
+        if (job.includes('PETANI') || job.includes('BURUH') || job.includes('TIDAK BEKERJA') || job.includes('LANSIA')) jobScore = 90;
+        else if (job.includes('WIRAUSAHA') || job.includes('KARYAWAN')) jobScore = 50;
+
+        let luasScore = luas <= 20 ? 100 : luas >= 120 ? 0 : ((120 - luas) / 100) * 100;
+        let pengScore = Math.min(100, (jml / 10) * 100);
+        const score = (luasScore * 30 + pengScore * 35 + jobScore * 35) / 100;
+
+        if (score >= 70) highCount++;
+        else if (score >= 40) medCount++;
+        else lowCount++;
+      });
+
+      document.getElementById('mod2-high').textContent = highCount;
+      document.getElementById('mod2-desa').textContent = desaBringin.size;
+
+      // Chart Module 2
+      const ctx2 = document.getElementById('chartModule2').getContext('2d');
+      new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+          labels: ['Prioritas Tinggi', 'Prioritas Sedang', 'Prioritas Rendah'],
+          datasets: [{
+            data: [highCount, medCount, lowCount],
+            backgroundColor: ['#DC2626', '#F59E0B', '#16A34A'],
+            borderWidth: 3,
+            borderColor: '#fff',
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '55%',
+          plugins: {
+            legend: {
+              position: 'right',
+              labels: { font: { size: 10, family: 'Plus Jakarta Sans', weight: '600' }, padding: 8, usePointStyle: true }
+            },
+            tooltip: {
+              callbacks: {
+                label: c => ` ${c.label}: ${c.raw} KK (${((c.raw / bringinFeatures.length) * 100).toFixed(1)}%)`
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function initMiniMap() {
+      const map = L.map('overview-map', { zoomControl: false, attributionControl: false }).setView([-7.4, 111.4], 11);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19, subdomains: 'abcd'
+      }).addTo(map);
+
+      // Add choropleth
+      function getColor(val) {
+        return val > 50 ? '#084594' : val > 30 ? '#2171b5' : val > 20 ? '#4292c6' : val > 10 ? '#6baed6' : val > 0 ? '#9ecae1' : '#f1f1f1';
+      }
+
+      L.geoJSON(geoData, {
+        style: function(feature) {
+          const val = feature.properties['RTLH 2025'] || 0;
+          return {
+            fillColor: getColor(val),
+            fillOpacity: 0.7,
+            color: '#555',
+            weight: 0.8
+          };
+        },
+        onEachFeature: function(feature, layer) {
+          const p = feature.properties;
+          layer.bindPopup(`<b>${p.DESA}</b><br>Kec. ${p.KECAMATAN}<br>RTLH 2025: <b>${p['RTLH 2025'] || 0}</b>`);
+        }
+      }).addTo(map);
+
+      // Mark Bringin area
+      const bringinMarker = L.circleMarker([-7.38, 111.57], {
+        radius: 12, color: '#DC2626', weight: 3,
+        fillColor: '#DC2626', fillOpacity: 0.2
+      }).addTo(map);
+      bringinMarker.bindPopup(`<div style="font-family:'Plus Jakarta Sans';text-align:center;">
+        <b>Kec. Bringin</b><br>
+        <small>${bringinData.features.length} data detail RTLH</small><br>
+        <a href="webgis-bringin.html" style="color:#1B6CA8;font-weight:700;">Buka WebGIS &rarr;</a>
+      </div>`);
+      bringinMarker.bindTooltip('Kec. Bringin (Data Detail)', { direction: 'top', offset: [0, -14] });
+    }
+
+    document.addEventListener('DOMContentLoaded', loadAllData);
+  </script>
+</body>
+</html>
