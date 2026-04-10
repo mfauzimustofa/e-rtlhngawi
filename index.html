@@ -55,6 +55,8 @@ background:rgba(255,255,255,.1);border-radius:99px;cursor:pointer;border:none;fo
 font-size:.75rem;font-weight:800;border:none;cursor:pointer;font-family:inherit;
 display:flex;align-items:center;gap:6px;transition:var(--transition)}
 .btn-login:hover{background:var(--gold-light);transform:translateY(-1px)}
+.login-tab.active{background:var(--blue-bg)!important;color:var(--blue)!important}
+.login-tab:not(.active){background:#fff!important;color:var(--gray-400)!important}
 .btn-logout{padding:5px 10px;border-radius:6px;background:rgba(255,255,255,.1);
 color:rgba(255,255,255,.7);font-size:.65rem;font-weight:600;border:none;cursor:pointer;font-family:inherit}
 
@@ -436,6 +438,52 @@ font-size:.55rem;font-weight:700;color:var(--gray-400);background:none;border:no
   <div class="modal-foot"><button class="btn btn-outline btn-sm" onclick="closeForm()">Batal</button><button class="btn btn-success btn-sm" id="fmSave" onclick="saveForm()"><i class="fas fa-save"></i> Simpan</button></div>
 </div></div>
 
+<!-- LOGIN MODAL -->
+<div class="modal-bg" id="loginModal" onclick="if(event.target===this)closeLogin()">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-head"><div><h3>Masuk ke Sistem</h3><div class="sub">Pusat Data RTLH Kabupaten Ngawi</div></div><button class="modal-x" onclick="closeLogin()"><i class="fas fa-times"></i></button></div>
+    <div class="modal-body" style="padding:20px">
+      <!-- Google Login -->
+      <button onclick="loginGoogle()" style="width:100%;padding:12px;border:1px solid var(--gray-200);border-radius:var(--radius-xs);background:#fff;cursor:pointer;font-family:inherit;font-size:.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--gray-700);transition:var(--transition);margin-bottom:16px" onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background='#fff'">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Masuk dengan Google
+      </button>
+
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <div style="flex:1;height:1px;background:var(--gray-200)"></div>
+        <span style="font-size:.7rem;color:var(--gray-400);font-weight:600">atau</span>
+        <div style="flex:1;height:1px;background:var(--gray-200)"></div>
+      </div>
+
+      <!-- Tabs -->
+      <div style="display:flex;gap:0;margin-bottom:16px;border:1px solid var(--gray-200);border-radius:var(--radius-xs);overflow:hidden">
+        <button class="login-tab active" data-tab="login" onclick="switchLoginTab('login')" style="flex:1;padding:8px;border:none;font-family:inherit;font-size:.75rem;font-weight:700;cursor:pointer;background:var(--blue-bg);color:var(--blue)">Masuk</button>
+        <button class="login-tab" data-tab="register" onclick="switchLoginTab('register')" style="flex:1;padding:8px;border:none;font-family:inherit;font-size:.75rem;font-weight:700;cursor:pointer;background:#fff;color:var(--gray-400)">Daftar Baru</button>
+      </div>
+
+      <!-- Login Form -->
+      <div id="loginForm">
+        <div style="margin-bottom:10px"><label style="font-size:.65rem;font-weight:700;color:var(--gray-500);text-transform:uppercase;display:block;margin-bottom:3px">Email</label>
+        <input type="email" id="loginEmail" placeholder="email@contoh.com" style="width:100%;padding:10px 12px;border:1px solid var(--gray-200);border-radius:var(--radius-xs);font-size:.85rem;font-family:inherit;background:var(--gray-50)" onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--gray-200)'"></div>
+        <div style="margin-bottom:14px"><label style="font-size:.65rem;font-weight:700;color:var(--gray-500);text-transform:uppercase;display:block;margin-bottom:3px">Password</label>
+        <input type="password" id="loginPass" placeholder="Masukkan password" style="width:100%;padding:10px 12px;border:1px solid var(--gray-200);border-radius:var(--radius-xs);font-size:.85rem;font-family:inherit;background:var(--gray-50)" onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--gray-200)'" onkeydown="if(event.key==='Enter')loginEmail()"></div>
+        <button onclick="loginEmail()" style="width:100%;padding:12px;background:var(--blue);color:#fff;border:none;border-radius:var(--radius-xs);font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px"><i class="fas fa-sign-in-alt"></i> Masuk</button>
+      </div>
+
+      <!-- Register Form -->
+      <div id="registerForm" style="display:none">
+        <div style="margin-bottom:10px"><label style="font-size:.65rem;font-weight:700;color:var(--gray-500);text-transform:uppercase;display:block;margin-bottom:3px">Nama Lengkap</label>
+        <input type="text" id="regName" placeholder="Nama lengkap" style="width:100%;padding:10px 12px;border:1px solid var(--gray-200);border-radius:var(--radius-xs);font-size:.85rem;font-family:inherit;background:var(--gray-50)"></div>
+        <div style="margin-bottom:10px"><label style="font-size:.65rem;font-weight:700;color:var(--gray-500);text-transform:uppercase;display:block;margin-bottom:3px">Email</label>
+        <input type="email" id="regEmail" placeholder="email@contoh.com" style="width:100%;padding:10px 12px;border:1px solid var(--gray-200);border-radius:var(--radius-xs);font-size:.85rem;font-family:inherit;background:var(--gray-50)"></div>
+        <div style="margin-bottom:14px"><label style="font-size:.65rem;font-weight:700;color:var(--gray-500);text-transform:uppercase;display:block;margin-bottom:3px">Password <span style="color:var(--gray-400);text-transform:none;font-weight:400">(min. 6 karakter)</span></label>
+        <input type="password" id="regPass" placeholder="Buat password" style="width:100%;padding:10px 12px;border:1px solid var(--gray-200);border-radius:var(--radius-xs);font-size:.85rem;font-family:inherit;background:var(--gray-50)" onkeydown="if(event.key==='Enter')registerEmail()"></div>
+        <button onclick="registerEmail()" style="width:100%;padding:12px;background:var(--success);color:#fff;border:none;border-radius:var(--radius-xs);font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px"><i class="fas fa-user-plus"></i> Daftar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MOBILE NAV -->
 <nav class="mobile-nav"><div class="mobile-nav-inner">
   <button class="mn-btn active" data-p="home" onclick="nav('home')"><i class="fas fa-home"></i><span>Beranda</span></button>
@@ -468,7 +516,6 @@ async function initAuth(){
   sb.auth.onAuthStateChange(async(ev,session)=>{
     if(session)await setUser(session.user);else{user=null;isAdmin=false;updAuth()}
   });
-  // Check URL for auth callback
   if(window.location.hash.includes('access_token')){
     const{data:{session}}=await sb.auth.getSession();
     if(session)await setUser(session.user);
@@ -492,12 +539,44 @@ function updAuth(){
       <button class="btn-logout" onclick="logout()">Keluar</button></div>`;
     fab.classList.toggle('show',isAdmin);
   }else{
-    a.innerHTML=`<button class="btn-login" onclick="loginGoogle()"><i class="fab fa-google"></i> Masuk</button>`;
+    a.innerHTML=`<button class="btn-login" onclick="openLogin()"><i class="fas fa-sign-in-alt"></i> Masuk</button>`;
     fab.classList.remove('show');
   }
 }
+function openLogin(){document.getElementById('loginModal').classList.add('open')}
+function closeLogin(){document.getElementById('loginModal').classList.remove('open')}
 async function loginGoogle(){
+  closeLogin();
   await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+window.location.pathname}});
+}
+async function loginEmail(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const pass=document.getElementById('loginPass').value;
+  if(!email||!pass)return toast('Isi email dan password','error');
+  const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
+  if(error){
+    if(error.message.includes('Invalid login')){toast('Email atau password salah','error')}
+    else{toast('Gagal login: '+error.message,'error')}
+    return;
+  }
+  closeLogin();toast('Berhasil masuk','success');
+}
+async function registerEmail(){
+  const email=document.getElementById('regEmail').value.trim();
+  const pass=document.getElementById('regPass').value;
+  const name=document.getElementById('regName').value.trim();
+  if(!email||!pass)return toast('Isi email dan password','error');
+  if(pass.length<6)return toast('Password minimal 6 karakter','error');
+  const{data,error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name||email.split('@')[0]}}});
+  if(error)return toast('Gagal daftar: '+error.message,'error');
+  if(data.user?.identities?.length===0)return toast('Email sudah terdaftar','error');
+  toast('Berhasil daftar! Cek email untuk verifikasi.','success');
+  switchLoginTab('login');
+}
+function switchLoginTab(tab){
+  document.querySelectorAll('.login-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+  document.getElementById('loginForm').style.display=tab==='login'?'block':'none';
+  document.getElementById('registerForm').style.display=tab==='register'?'block':'none';
 }
 async function logout(){await sb.auth.signOut();user=null;isAdmin=false;updAuth();toast('Berhasil keluar','info')}
 
