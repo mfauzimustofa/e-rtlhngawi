@@ -430,8 +430,8 @@ font-size:.55rem;font-weight:700;color:var(--gray-400);background:none;border:no
         <div style="position:relative" id="excelMenu">
           <button class="btn btn-outline btn-sm" onclick="var d=document.getElementById('excelDrop');d.style.display=d.style.display==='block'?'none':'block'" title="Excel"><i class="fas fa-file-excel"></i></button>
           <div id="excelDrop" style="display:none;position:absolute;right:0;top:100%;margin-top:4px;background:#fff;border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,.15);border:1px solid var(--gray-200);width:200px;z-index:2000;overflow:hidden">
-            <div onclick="downloadExcel();document.getElementById('excelDrop').style.display='none'" style="padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:.78rem;font-weight:600;color:var(--gray-700);border-bottom:1px solid var(--gray-100)" onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''"><i class="fas fa-download" style="color:var(--success)"></i> Unduh Data (Excel)</div>
-            <label style="padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:.78rem;font-weight:600;color:var(--gray-700)" onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''"><i class="fas fa-upload" style="color:var(--blue)"></i> Upload Data (Excel)<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="uploadExcel(this);document.getElementById('excelDrop').style.display='none'"></label>
+            <div onclick="downloadExcel();document.getElementById('excelDrop').style.display='none'" style="padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:.78rem;font-weight:600;color:var(--gray-700);border-bottom:1px solid var(--gray-100)" onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''"><i class="fas fa-download" style="color:var(--success)"></i> Unduh Data</div>
+            <label style="padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:.78rem;font-weight:600;color:var(--gray-700)" onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''"><i class="fas fa-upload" style="color:var(--blue)"></i> Upload Data<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="uploadExcel(this);document.getElementById('excelDrop').style.display='none'"></label>
           </div>
         </div>
         <button class="btn btn-outline btn-sm" onclick="resetBrView()" title="Reset"><i class="fas fa-compress-arrows-alt"></i></button>
@@ -515,7 +515,8 @@ font-size:.55rem;font-weight:700;color:var(--gray-400);background:none;border:no
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>if(typeof XLSX==='undefined'){document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\/script>')}</script>
 <script>
 // ═══ SUPABASE INIT ═══
 const SUPA_URL='https://oiygddbzugipepatswxi.supabase.co';
@@ -1088,136 +1089,124 @@ async function deleteRTLH(id){
 // Export
 // ═══ EXCEL DOWNLOAD & UPLOAD ═══
 const EXCEL_COLS=[
-  {db:'id',label:'ID',width:8},
-  {db:'desa',label:'Desa',width:16},
-  {db:'kep_kk',label:'Nama KK',width:25},
-  {db:'jen_kel',label:'Jenis Kelamin',width:14,dropdown:['LAKI-LAKI','PEREMPUAN']},
-  {db:'umur',label:'Umur',width:8,type:'number'},
-  {db:'alamat',label:'Alamat',width:25},
-  {db:'pend_ter',label:'Pendidikan',width:14},
-  {db:'pekerjaan',label:'Pekerjaan',width:16},
-  {db:'pengh',label:'Penghasilan',width:14},
-  {db:'luas_rum',label:'Luas Rumah (m²)',width:14,type:'number'},
-  {db:'luas_tan',label:'Luas Tanah (m²)',width:14,type:'number'},
-  {db:'jml_peng',label:'Jml Penghuni',width:12,type:'number'},
-  {db:'status_kep',label:'Status Kepemilikan',width:18},
-  {db:'material_d',label:'Material Dinding',width:16},
-  {db:'kondisi_di',label:'Kondisi Dinding',width:16,dropdown:['Baik','Sedang','Rusak']},
-  {db:'material_a',label:'Material Atap',width:16},
-  {db:'kondisi_at',label:'Kondisi Atap',width:14,dropdown:['Baik','Sedang','Rusak']},
-  {db:'material_l',label:'Material Lantai',width:16},
-  {db:'kondisi_la',label:'Kondisi Lantai',width:14,dropdown:['Baik','Sedang','Rusak']},
-  {db:'status_rtlh',label:'Status RTLH',width:18,dropdown:['Belum Ditangani','Dalam Proses','Sudah Ditangani']},
-  {db:'tahun_bantuan',label:'Tahun Bantuan',width:14,dropdown:['2021','2022','2023','2024','2025','2026']},
-  {db:'sumber_dana',label:'Sumber Dana',width:14,dropdown:['APBD','APBN','DAK','CSR','Lainnya']},
-  {db:'dtsen',label:'DTSEN',width:14,dropdown:['Eligible','Non Eligible']},
-  {db:'backlog',label:'Backlog',width:12,dropdown:['Backlog 1','Backlog 2']},
-  {db:'desil',label:'Desil',width:10,dropdown:['Desil 1','Desil 2','Desil 3','Desil 4','Desil 5','Desil 6','Desil 7','Desil 8']},
-  {db:'latitude',label:'Latitude',width:14,type:'number'},
-  {db:'longitude',label:'Longitude',width:14,type:'number'},
+  {db:'id',label:'ID'},
+  {db:'desa',label:'Desa'},
+  {db:'kep_kk',label:'Nama KK'},
+  {db:'jen_kel',label:'Jenis Kelamin',dropdown:['LAKI-LAKI','PEREMPUAN']},
+  {db:'umur',label:'Umur',type:'number'},
+  {db:'alamat',label:'Alamat'},
+  {db:'pend_ter',label:'Pendidikan'},
+  {db:'pekerjaan',label:'Pekerjaan'},
+  {db:'pengh',label:'Penghasilan'},
+  {db:'luas_rum',label:'Luas Rumah (m2)',type:'number'},
+  {db:'luas_tan',label:'Luas Tanah (m2)',type:'number'},
+  {db:'jml_peng',label:'Jml Penghuni',type:'number'},
+  {db:'status_kep',label:'Status Kepemilikan'},
+  {db:'material_d',label:'Material Dinding'},
+  {db:'kondisi_di',label:'Kondisi Dinding',dropdown:['Baik','Sedang','Rusak']},
+  {db:'material_a',label:'Material Atap'},
+  {db:'kondisi_at',label:'Kondisi Atap',dropdown:['Baik','Sedang','Rusak']},
+  {db:'material_l',label:'Material Lantai'},
+  {db:'kondisi_la',label:'Kondisi Lantai',dropdown:['Baik','Sedang','Rusak']},
+  {db:'status_rtlh',label:'Status RTLH',dropdown:['Belum Ditangani','Dalam Proses','Sudah Ditangani']},
+  {db:'tahun_bantuan',label:'Tahun Bantuan',dropdown:['2021','2022','2023','2024','2025','2026']},
+  {db:'sumber_dana',label:'Sumber Dana',dropdown:['APBD','APBN','DAK','CSR','Lainnya']},
+  {db:'dtsen',label:'DTSEN',dropdown:['Eligible','Non Eligible']},
+  {db:'backlog',label:'Backlog',dropdown:['Backlog 1','Backlog 2']},
+  {db:'desil',label:'Desil',dropdown:['Desil 1','Desil 2','Desil 3','Desil 4','Desil 5','Desil 6','Desil 7','Desil 8']},
+  {db:'latitude',label:'Latitude',type:'number'},
+  {db:'longitude',label:'Longitude',type:'number'},
 ];
 
 function downloadExcel(){
   const kecTitle=currentKec?Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===currentKec)||currentKec:'SEMUA';
-  // Build data rows
   const headers=EXCEL_COLS.map(c=>c.label);
   const rows=brFeatures.map(r=>EXCEL_COLS.map(c=>r[c.db]??''));
-  const wsData=[headers,...rows];
-  const ws=XLSX.utils.aoa_to_sheet(wsData);
 
-  // Set column widths
-  ws['!cols']=EXCEL_COLS.map(c=>({wch:c.width}));
-
-  // Add data validation (dropdowns) for each column that has them
-  if(!ws['!dataValidation'])ws['!dataValidation']=[];
-  EXCEL_COLS.forEach((c,colIdx)=>{
-    if(!c.dropdown)return;
-    const colLetter=XLSX.utils.encode_col(colIdx);
-    // Apply to rows 2 to 10000
-    for(let row=2;row<=Math.max(rows.length+1,100);row++){
-      const ref=colLetter+row;
-      if(!ws[ref])ws[ref]={t:'s',v:''};
-    }
-  });
-
-  // Create dropdown reference sheet
-  const dvSheet=[['Kolom','Pilihan']];
-  const dvData=[];
-  EXCEL_COLS.forEach(c=>{
-    if(!c.dropdown)return;
-    dvData.push([c.label,c.dropdown.join(', ')]);
-  });
-  const ws2=XLSX.utils.aoa_to_sheet([['PANDUAN PENGISIAN'],[''],['Kolom dengan pilihan (dropdown):'],[''],...dvData.map(d=>([d[0],d[1]])),[''],['CATATAN:'],['- Kolom ID: jangan diubah untuk data yang sudah ada'],['- Kolom ID: kosongkan untuk data baru'],['- Latitude/Longitude: format desimal (contoh: -7.4028)'],['- Setelah diisi, upload kembali file ini ke sistem'],['- Pilihan yang tersedia untuk setiap kolom ada di atas']]);
-  ws2['!cols']=[{wch:25},{wch:60}];
-
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,'Data RTLH',ws);
-  XLSX.utils.book_append_sheet(wb,'Panduan',ws2);
-
-  // Style header row (bold via cell formatting)
-  headers.forEach((_,i)=>{
-    const ref=XLSX.utils.encode_cell({r:0,c:i});
-    if(ws[ref])ws[ref].s={font:{bold:true},fill:{fgColor:{rgb:'D5E8F0'}}};
-  });
-
-  XLSX.writeFile(wb,`rtlh_${kecTitle.toLowerCase()}_${new Date().toISOString().slice(0,10)}.xlsx`);
-  toast(`${brFeatures.length} data diunduh ke Excel`,'success');
+  if(typeof XLSX!=='undefined'){
+    // Excel format
+    const ws=XLSX.utils.aoa_to_sheet([headers,...rows]);
+    ws['!cols']=EXCEL_COLS.map(()=>({wch:18}));
+    // Panduan sheet
+    const panduan=[['PANDUAN PENGISIAN'],[''],['Kolom','Pilihan yang tersedia'],['']];
+    EXCEL_COLS.filter(c=>c.dropdown).forEach(c=>panduan.push([c.label,c.dropdown.join(', ')]));
+    panduan.push([''],['CATATAN:'],['ID ada = data diupdate'],['ID kosong = data baru ditambahkan'],['Latitude contoh: -7.4028'],['Longitude contoh: 111.5873']);
+    const ws2=XLSX.utils.aoa_to_sheet(panduan);
+    ws2['!cols']=[{wch:25},{wch:60}];
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Data RTLH');
+    XLSX.utils.book_append_sheet(wb,ws2,'Panduan');
+    XLSX.writeFile(wb,`rtlh_${kecTitle.toLowerCase()}_${new Date().toISOString().slice(0,10)}.xlsx`);
+  }else{
+    // Fallback CSV
+    const csv='\uFEFF'+[headers.map(h=>'"'+h+'"').join(','),...rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','))].join('\n');
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+    a.download=`rtlh_${kecTitle.toLowerCase()}_${new Date().toISOString().slice(0,10)}.csv`;a.click();
+  }
+  toast(`${brFeatures.length} data diunduh`,'success');
 }
 
 async function uploadExcel(input){
   const file=input.files[0];if(!file)return;
-  if(!canEditCurrentKec())return toast('Login sebagai admin untuk upload data','error');
-  if(!currentKec)return toast('Pilih kecamatan terlebih dahulu','error');
+  if(!canEditCurrentKec())return toast('Login sebagai admin untuk upload','error');
+  if(!currentKec)return toast('Pilih kecamatan dulu','error');
 
-  toast('Membaca file Excel...','info');
-  const data=await file.arrayBuffer();
-  const wb=XLSX.read(data);
-  const ws=wb.Sheets[wb.SheetNames[0]];
-  const jsonData=XLSX.utils.sheet_to_json(ws);
+  toast('Membaca file...','info');
+  let jsonData=[];
+
+  if(typeof XLSX!=='undefined'){
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(buf);
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    jsonData=XLSX.utils.sheet_to_json(ws,{defval:''});
+  }else{
+    // Fallback CSV parsing
+    const text=await file.text();
+    const lines=text.split('\n').filter(l=>l.trim());
+    if(lines.length<2)return toast('File kosong','error');
+    const parseCSVLine=line=>{const r=[];let cur='',inQ=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"')inQ=!inQ;else if(c===','&&!inQ){r.push(cur.trim().replace(/^"|"$/g,''));cur=''}else cur+=c}r.push(cur.trim().replace(/^"|"$/g,''));return r};
+    const headers=parseCSVLine(lines[0]);
+    for(let i=1;i<lines.length;i++){const vals=parseCSVLine(lines[i]);const obj={};headers.forEach((h,j)=>obj[h]=vals[j]||'');jsonData.push(obj)}
+  }
 
   if(!jsonData.length)return toast('File kosong','error');
 
-  // Map Excel headers back to DB columns
-  const headerMap={};
-  EXCEL_COLS.forEach(c=>{headerMap[c.label]=c.db});
+  // Map headers to DB columns
+  const headerMap={};EXCEL_COLS.forEach(c=>{headerMap[c.label]=c.db});
 
   let updated=0,inserted=0,errors=0;
-  toast(`Memproses ${jsonData.length} baris data...`,'info');
+  toast(`Memproses ${jsonData.length} baris...`,'info');
 
   for(const row of jsonData){
     const obj={};
-    Object.keys(row).forEach(excelKey=>{
-      const dbKey=headerMap[excelKey];
-      if(dbKey&&dbKey!=='id'){
-        let val=row[excelKey];
-        const col=EXCEL_COLS.find(c=>c.db===dbKey);
-        if(col?.type==='number'&&val!=='')val=parseFloat(val)||null;
-        else if(val==='')val=null;
-        obj[dbKey]=val;
-      }
+    Object.keys(row).forEach(key=>{
+      const dbKey=headerMap[key];
+      if(!dbKey||dbKey==='id')return;
+      let val=row[key];
+      if(typeof val==='string')val=val.trim();
+      const col=EXCEL_COLS.find(c=>c.db===dbKey);
+      if(col?.type==='number'&&val!=='')val=parseFloat(val)||null;
+      else if(val==='')val=null;
+      obj[dbKey]=val;
     });
+    if(!obj.kep_kk&&!obj.desa)continue;
     obj.kec=currentKec;obj.updated_at=new Date().toISOString();
 
     try{
       const id=row['ID']||row['id'];
-      if(id&&!isNaN(id)){
-        // Update existing
+      if(id&&!isNaN(id)&&parseInt(id)>0){
         const{error}=await sb.from('rtlh').update(obj).eq('id',parseInt(id));
-        if(error)throw error;
-        updated++;
+        if(error)throw error;updated++;
       }else{
-        // Insert new
         const{error}=await sb.from('rtlh').insert(obj);
-        if(error)throw error;
-        inserted++;
+        if(error)throw error;inserted++;
       }
     }catch(e){console.error(e);errors++}
   }
 
-  // Reload data
   if(currentKec)delete brCache[currentKec];
   await loadBrData();renderBr();loadKecCounts().then(populateHome);
-  toast(`Selesai! ${updated} diupdate, ${inserted} baru ditambahkan${errors?`, ${errors} error`:''}`,'success');
+  toast(`Selesai! ${updated} diupdate, ${inserted} baru${errors?', '+errors+' error':''}`,'success');
   input.value='';
 }
 
