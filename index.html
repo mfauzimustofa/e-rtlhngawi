@@ -428,7 +428,7 @@ font-size:.55rem;font-weight:700;color:var(--gray-400);background:none;border:no
       <div class="tb-search"><i class="fas fa-search"></i><input id="srcIn" placeholder="Cari KK..." oninput="searchKK(this.value)"></div>
       <div style="display:flex;gap:5px">
         <div style="position:relative" id="excelMenu">
-          <button class="btn btn-outline btn-sm" onclick="document.getElementById('excelDrop').classList.toggle('open')" title="Excel"><i class="fas fa-file-excel"></i></button>
+          <button class="btn btn-outline btn-sm" onclick="var d=document.getElementById('excelDrop');d.style.display=d.style.display==='block'?'none':'block'" title="Excel"><i class="fas fa-file-excel"></i></button>
           <div id="excelDrop" style="display:none;position:absolute;right:0;top:100%;margin-top:4px;background:#fff;border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,.15);border:1px solid var(--gray-200);width:200px;z-index:2000;overflow:hidden">
             <div onclick="downloadExcel();document.getElementById('excelDrop').style.display='none'" style="padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:.78rem;font-weight:600;color:var(--gray-700);border-bottom:1px solid var(--gray-100)" onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''"><i class="fas fa-download" style="color:var(--success)"></i> Unduh Data (Excel)</div>
             <label style="padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:.78rem;font-weight:600;color:var(--gray-700)" onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''"><i class="fas fa-upload" style="color:var(--blue)"></i> Upload Data (Excel)<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="uploadExcel(this);document.getElementById('excelDrop').style.display='none'"></label>
@@ -515,7 +515,7 @@ font-size:.55rem;font-weight:700;color:var(--gray-400);background:none;border:no
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 // ═══ SUPABASE INIT ═══
 const SUPA_URL='https://oiygddbzugipepatswxi.supabase.co';
@@ -1223,7 +1223,7 @@ async function uploadExcel(input){
 
 // Keyboard
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDetail();closeForm()}});
-document.addEventListener('click',e=>{const d=document.getElementById('excelDrop');if(d&&!document.getElementById('excelMenu').contains(e.target))d.classList.remove('open')});
+document.addEventListener('click',e=>{const d=document.getElementById('excelDrop');const m=document.getElementById('excelMenu');if(d&&m&&!m.contains(e.target))d.style.display='none'});
 
 // ═══ INIT ═══
 document.addEventListener('DOMContentLoaded',async()=>{await initAuth();await loadAll()});
