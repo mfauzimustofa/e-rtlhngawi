@@ -1026,58 +1026,55 @@ async function saveForm(){
   const obj={};
   FIELDS.forEach(f=>{const el=document.getElementById('ff_'+f.key);if(!el)return;let v=el.value;if(f.type==='number'&&v)v=parseFloat(v);obj[f.key]=v||null});
   obj.kec=currentKec||'BRINGIN';obj.updated_at=new Date().toISOString();
-  const hasPhoto=document.getElementById('ff_photo')?.files[0];
-  closeForm();
+  // Show loading on save button
+  const saveBtn=document.getElementById('fmSave');
+  saveBtn.disabled=true;saveBtn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
   try{
-    let savedId=editId;
+    let saved;
     if(editId){
-      // Instant local update
-      const idx=brAll.findIndex(r=>r.id===editId);
-      if(idx>=0){Object.assign(brAll[idx],obj);brAll[idx]._score=calcScore(brAll[idx]);brAll[idx]._cat=getCat(brAll[idx]._score)}
-      brFeatures=[...brAll];renderBr();
-      toast('Data diupdate','success');
-      // Sync to DB in background
-      sb.from('rtlh').update(obj).eq('id',editId).then(({error})=>{if(error)toast('Gagal sync: '+error.message,'error')});
+      const{data,error}=await sb.from('rtlh').update(obj).eq('id',editId).select('*').single();
+      if(error)throw error;saved=data;
     }else{
-      // Insert needs DB first to get ID
       const{data,error}=await sb.from('rtlh').insert(obj).select('*').single();
-      if(error)throw error;
-      savedId=data.id;
-      data._score=calcScore(data);data._cat=getCat(data._score);
-      brAll.push(data);brFeatures=[...brAll];renderBr();
-      toast('Data ditambahkan','success');
+      if(error)throw error;saved=data;
     }
-    // Update cache
+    // Upload photo if selected
+    const photoInput=document.getElementById('ff_photo');
+    if(photoInput&&photoInput.files[0]){
+      const file=await compressImage(photoInput.files[0]);
+      const filePath=`${saved.id}.jpg`;
+      await sb.storage.from('rtlh-photos').remove([filePath]);
+      const{error:upErr}=await sb.storage.from('rtlh-photos').upload(filePath,file,{cacheControl:'3600',upsert:true,contentType:file.type});
+      if(upErr){toast('Data tersimpan, foto gagal upload','error')}
+      else{await sb.from('rtlh').update({nama_foto:filePath}).eq('id',saved.id);saved.nama_foto=filePath}
+    }
+    // Update local data (no full reload)
+    saved._score=calcScore(saved);saved._cat=getCat(saved._score);
+    if(editId){
+      const idx=brAll.findIndex(r=>r.id===editId);
+      if(idx>=0)brAll[idx]=saved;
+    }else{brAll.push(saved)}
+    brFeatures=[...brAll];
     if(currentKec)brCache[currentKec]=brAll;
-    // Upload photo in background
-    if(hasPhoto){
-      const rawFile=hasPhoto;
-      compressImage(rawFile).then(file=>{
-        const filePath=`${savedId}.jpg`;
-        sb.storage.from('rtlh-photos').remove([filePath]).then(()=>{
-          sb.storage.from('rtlh-photos').upload(filePath,file,{cacheControl:'3600',upsert:true,contentType:file.type}).then(({error})=>{
-            if(error)toast('Gagal upload foto','error');
-            else{sb.from('rtlh').update({nama_foto:filePath}).eq('id',savedId);toast('Foto berhasil diupload','success')}
-          });
-        });
-      });
-    }
-    // Update counts in background
+    closeForm();renderBr();
+    toast(editId?'Data berhasil diupdate':'Data berhasil ditambahkan','success');
     loadKecCounts().then(populateHome);
-  }catch(e){console.error(e);toast('Gagal menyimpan: '+e.message,'error')}
+  }catch(e){
+    console.error(e);toast('Gagal menyimpan: '+e.message,'error');
+    saveBtn.disabled=false;saveBtn.innerHTML='<i class="fas fa-save"></i> Simpan';
+  }
 }
 async function deleteRTLH(id){
   if(!confirm('Yakin hapus data ini?'))return;
-  // Instant local removal
-  brAll=brAll.filter(r=>r.id!==id);brFeatures=[...brAll];
-  if(currentKec)brCache[currentKec]=brAll;
-  closeDetail();renderBr();
-  toast('Data dihapus','success');
-  // Sync to DB in background
-  sb.from('rtlh').delete().eq('id',id).then(({error})=>{
-    if(error)toast('Gagal sync hapus: '+error.message,'error');
-  });
-  loadKecCounts().then(populateHome);
+  try{
+    const{error}=await sb.from('rtlh').delete().eq('id',id);
+    if(error)throw error;
+    brAll=brAll.filter(r=>r.id!==id);brFeatures=[...brAll];
+    if(currentKec)brCache[currentKec]=brAll;
+    closeDetail();renderBr();
+    toast('Data berhasil dihapus','success');
+    loadKecCounts().then(populateHome);
+  }catch(e){toast('Gagal menghapus: '+e.message,'error')}
 }
 
 // Export
