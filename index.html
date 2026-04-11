@@ -801,6 +801,22 @@ function renderBr(){
   brMap.addLayer(brCluster);
   const hi=brFeatures.filter(r=>r._cat==='high').length,me=brFeatures.filter(r=>r._cat==='medium').length,lo=brFeatures.filter(r=>r._cat==='low').length;
   document.getElementById('tbT').textContent=brFeatures.length;document.getElementById('tbH').textContent=hi;document.getElementById('tbM').textContent=me;document.getElementById('tbL').textContent=lo;
+  // Empty state overlay
+  let emptyEl=document.getElementById('emptyState');
+  if(brFeatures.length===0&&currentKec){
+    if(!emptyEl){
+      emptyEl=document.createElement('div');emptyEl.id='emptyState';
+      emptyEl.style.cssText='position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:800;background:white;border-radius:16px;padding:32px 40px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.15);max-width:340px';
+      document.querySelector('.br-main').appendChild(emptyEl);
+    }
+    const kecTitle=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===currentKec)||currentKec;
+    emptyEl.innerHTML=`
+      <i class="fas fa-map-marked-alt" style="font-size:3rem;color:var(--gray-300);display:block;margin-bottom:12px"></i>
+      <div style="font-size:1.1rem;font-weight:800;color:var(--gray-800);margin-bottom:6px">Kec. ${kecTitle}</div>
+      <div style="font-size:.82rem;color:var(--gray-500);margin-bottom:18px;line-height:1.5">Belum ada data RTLH di kecamatan ini. ${isAdmin?'Klik tombol di bawah untuk mulai menambahkan data.':'Login sebagai admin untuk menambahkan data.'}</div>
+      ${canEditCurrentKec()?`<button onclick="openForm()" style="padding:12px 24px;background:var(--success);color:#fff;border:none;border-radius:10px;font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:8px"><i class="fas fa-plus"></i> Tambah Data RTLH</button>`:''}`;
+    emptyEl.style.display='block';
+  }else if(emptyEl){emptyEl.style.display='none'}
 }
 
 // Helper functions
@@ -880,7 +896,7 @@ function closeDetail(){document.getElementById('detailModal').classList.remove('
 // ═══ CRUD: FORM ═══
 const FIELDS=[
   {key:'kep_kk',label:'Nama KK',type:'text',full:true},
-  {key:'desa',label:'Desa',type:'text'},{key:'alamat',label:'Alamat',type:'text'},
+  {key:'desa',label:'Desa',type:'desa_select'},{key:'alamat',label:'Alamat',type:'text'},
   {key:'jen_kel',label:'Jenis Kelamin',type:'select',opts:['LAKI-LAKI','PEREMPUAN']},
   {key:'umur',label:'Umur',type:'number'},{key:'pend_ter',label:'Pendidikan',type:'text'},
   {key:'pekerjaan',label:'Pekerjaan',type:'text'},{key:'pengh',label:'Penghasilan',type:'text'},
@@ -891,6 +907,11 @@ const FIELDS=[
   {key:'material_l',label:'Material Lantai',type:'text'},{key:'kondisi_la',label:'Kondisi Lantai',type:'text'},
   {key:'latitude',label:'Latitude',type:'number'},{key:'longitude',label:'Longitude',type:'number'},
 ];
+function getDesaList(){
+  if(!window._batasNgawi||!currentKec)return[];
+  const kecTitle=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===currentKec)||'';
+  return[...new Set(window._batasNgawi.features.filter(f=>f.properties.WADMKC===kecTitle).map(f=>f.properties.NAMOBJ))].sort();
+}
 function getPhotoUrl(id){return`${SUPA_URL}/storage/v1/object/public/rtlh-photos/${id}.jpg`}
 function openForm(id){
   if(!canEditCurrentKec())return toast('Anda tidak memiliki akses edit untuk kecamatan ini','error');
@@ -901,8 +922,13 @@ function openForm(id){
   grid.innerHTML=FIELDS.map(f=>{
     const val=r[f.key]||'';
     const cls=f.full?'form-group full':'form-group';
+    if(f.type==='desa_select'){
+      const desaList=getDesaList();
+      if(desaList.length)return`<div class="${cls}"><label>${f.label}</label><select id="ff_${f.key}"><option value="">-- Pilih Desa --</option>${desaList.map(d=>`<option ${val.toUpperCase()===d.toUpperCase()?'selected':''}>${d.toUpperCase()}</option>`).join('')}</select></div>`;
+      return`<div class="${cls}"><label>${f.label}</label><input type="text" id="ff_${f.key}" value="${val}" placeholder="Nama desa"></div>`;
+    }
     if(f.type==='select')return`<div class="${cls}"><label>${f.label}</label><select id="ff_${f.key}">${f.opts.map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('')}</select></div>`;
-    return`<div class="${cls}"><label>${f.label}</label><input type="${f.type}" id="ff_${f.key}" value="${val}"></div>`;
+    return`<div class="${cls}"><label>${f.label}</label><input type="${f.type}" id="ff_${f.key}" value="${val}" step="${f.type==='number'?'any':''}"></div>`;
   }).join('');
   // Photo upload section
   const existingPhoto=editId?`<img src="${getPhotoUrl(editId)}" style="width:100%;max-height:200px;object-fit:cover;border-radius:8px;margin-bottom:8px" onerror="this.style.display='none'" onload="this.style.display='block'">`:'';
