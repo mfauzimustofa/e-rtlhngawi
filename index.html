@@ -453,6 +453,20 @@ font-size:.55rem;font-weight:700;color:var(--gray-400);background:none;border:no
   <div class="modal-foot" id="dmFoot"><button class="btn btn-outline btn-sm" onclick="closeDetail()"><i class="fas fa-times"></i> Tutup</button></div>
 </div></div>
 
+<!-- UPLOAD PROGRESS -->
+<div id="uploadProgress" style="display:none;position:fixed;inset:0;z-index:20000;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+  <div style="background:white;border-radius:16px;padding:32px 40px;text-align:center;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+    <i class="fas fa-file-upload" style="font-size:2.5rem;color:var(--blue);margin-bottom:12px"></i>
+    <div id="upTitle" style="font-size:1rem;font-weight:800;color:var(--navy);margin-bottom:4px">Mengupload Data...</div>
+    <div id="upDetail" style="font-size:.78rem;color:var(--gray);margin-bottom:16px">Mempersiapkan...</div>
+    <div style="background:var(--light);border-radius:99px;height:10px;overflow:hidden;margin-bottom:8px">
+      <div id="upBar" style="height:100%;background:linear-gradient(90deg,var(--blue),var(--blue2));border-radius:99px;width:0%;transition:width .2s"></div>
+    </div>
+    <div id="upCount" style="font-size:.72rem;font-weight:700;color:var(--navy)">0 / 0</div>
+    <div id="upStats" style="font-size:.65rem;color:var(--gray);margin-top:4px"></div>
+  </div>
+</div>
+
 <!-- FORM MODAL -->
 <div class="modal-bg" id="formModal" onclick="if(event.target===this)closeForm()">
   <div class="modal"><div class="modal-head"><div><h3 id="fmTitle">Tambah Data RTLH</h3></div><button class="modal-x" onclick="closeForm()"><i class="fas fa-times"></i></button></div>
@@ -1244,9 +1258,29 @@ async function uploadExcel(input){
 
   let updated=0,inserted=0,errors=0,skipped=0;
   const errorMsgs=[];
+  const total=jsonData.length;
 
-  for(let i=0;i<jsonData.length;i++){
+  // Show progress overlay
+  const prog=document.getElementById('uploadProgress');
+  prog.style.display='flex';
+  const upTitle=document.getElementById('upTitle');
+  const upDetail=document.getElementById('upDetail');
+  const upBar=document.getElementById('upBar');
+  const upCount=document.getElementById('upCount');
+  const upStats=document.getElementById('upStats');
+  upTitle.textContent='Mengupload Data...';
+  upBar.style.width='0%';
+
+  for(let i=0;i<total;i++){
     const row=jsonData[i];
+    const pct=Math.round(((i+1)/total)*100);
+    upBar.style.width=pct+'%';
+    upCount.textContent=`${i+1} / ${total}`;
+    upDetail.textContent=`Memproses baris ${i+1}...`;
+    upStats.textContent=`✓ ${updated} diupdate · + ${inserted} baru${errors?' · ✗ '+errors+' error':''}`;
+
+    // Allow UI to update
+    if(i%10===0)await new Promise(r=>setTimeout(r,0));
     const obj={};
 
     Object.keys(row).forEach(key=>{
@@ -1309,15 +1343,20 @@ async function uploadExcel(input){
       console.error(`Row ${i+2} error:`,e,obj);
     }
 
-    // Progress toast every 100 rows
-    if(i>0&&i%100===0)toast(`Memproses... ${i}/${jsonData.length}`,'info',1000);
+    // Progress updated via overlay above
   }
 
   // Reload data from database
+  upTitle.textContent='Memperbarui peta...';
+  upDetail.textContent='Memuat data terbaru dari database...';
+  upBar.style.width='100%';
   if(currentKec)delete brCache[currentKec];
   await loadBrData();
   renderBr();
   loadKecCounts().then(populateHome);
+
+  // Close progress overlay
+  prog.style.display='none';
 
   // Final report
   let msg=`Upload selesai: ${updated} diupdate, ${inserted} ditambahkan`;
