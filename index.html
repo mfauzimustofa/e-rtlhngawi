@@ -1184,59 +1184,137 @@ async function uploadExcel(input){
   toast('Membaca file...','info');
   let jsonData=[];
 
-  if(typeof XLSX!=='undefined'){
-    const buf=await file.arrayBuffer();
-    const wb=XLSX.read(buf);
-    const ws=wb.Sheets[wb.SheetNames[0]];
-    jsonData=XLSX.utils.sheet_to_json(ws,{defval:''});
-  }else{
-    // Fallback CSV parsing
-    const text=await file.text();
-    const lines=text.split('\n').filter(l=>l.trim());
-    if(lines.length<2)return toast('File kosong','error');
-    const parseCSVLine=line=>{const r=[];let cur='',inQ=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"')inQ=!inQ;else if(c===','&&!inQ){r.push(cur.trim().replace(/^"|"$/g,''));cur=''}else cur+=c}r.push(cur.trim().replace(/^"|"$/g,''));return r};
-    const headers=parseCSVLine(lines[0]);
-    for(let i=1;i<lines.length;i++){const vals=parseCSVLine(lines[i]);const obj={};headers.forEach((h,j)=>obj[h]=vals[j]||'');jsonData.push(obj)}
+  try{
+    if(typeof XLSX!=='undefined'&&(file.name.endsWith('.xlsx')||file.name.endsWith('.xls'))){
+      const buf=await file.arrayBuffer();
+      const wb=XLSX.read(buf);
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      jsonData=XLSX.utils.sheet_to_json(ws,{defval:''});
+    }else{
+      // CSV parsing
+      const text=await file.text();
+      const lines=text.split('\n').filter(l=>l.trim());
+      if(lines.length<2)return toast('File kosong','error');
+      const parseCSVLine=line=>{const r=[];let cur='',inQ=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"')inQ=!inQ;else if((c===','||c===';')&&!inQ){r.push(cur.trim().replace(/^"|"$/g,''));cur=''}else cur+=c}r.push(cur.trim().replace(/^"|"$/g,''));return r};
+      const headers=parseCSVLine(lines[0]);
+      for(let i=1;i<lines.length;i++){const vals=parseCSVLine(lines[i]);const obj={};headers.forEach((h,j)=>obj[h]=vals[j]||'');jsonData.push(obj)}
+    }
+  }catch(e){
+    console.error('Parse error:',e);
+    return toast('Gagal membaca file: '+e.message,'error');
   }
 
-  if(!jsonData.length)return toast('File kosong','error');
+  if(!jsonData.length)return toast('File kosong atau format tidak sesuai','error');
 
-  // Map headers to DB columns
-  const headerMap={};EXCEL_COLS.forEach(c=>{headerMap[c.label]=c.db});
+  // Map headers to DB columns - try exact match first, then fuzzy
+  const headerMap={};
+  EXCEL_COLS.forEach(c=>{headerMap[c.label]=c.db});
 
-  let updated=0,inserted=0,errors=0;
-  toast(`Memproses ${jsonData.length} baris...`,'info');
+  // Check first row to see what headers we got
+  const fileHeaders=Object.keys(jsonData[0]);
+  console.log('File headers:',fileHeaders);
+  console.log('Expected headers:',EXCEL_COLS.map(c=>c.label));
 
-  for(const row of jsonData){
+  // Build flexible mapping - match by exact label or by db column name
+  const flexMap={};
+  fileHeaders.forEach(fh=>{
+    const clean=fh.trim();
+    // Try exact match with label
+    if(headerMap[clean]){flexMap[clean]=headerMap[clean];return}
+    // Try match with db column name directly
+    const byDb=EXCEL_COLS.find(c=>c.db===clean.toLowerCase());
+    if(byDb){flexMap[clean]=byDb.db;return}
+    // Try partial match (header contains label or vice versa)
+    const partial=EXCEL_COLS.find(c=>clean.includes(c.label)||c.label.includes(clean));
+    if(partial){flexMap[clean]=partial.db;return}
+    // Try case-insensitive match
+    const ciMatch=EXCEL_COLS.find(c=>c.label.toLowerCase()===clean.toLowerCase());
+    if(ciMatch){flexMap[clean]=ciMatch.db;return}
+  });
+
+  console.log('Column mapping:',flexMap);
+  const mappedCols=Object.values(flexMap);
+  if(mappedCols.length===0)return toast('Tidak ada kolom yang cocok. Pastikan header sesuai template.','error');
+
+  let updated=0,inserted=0,errors=0,skipped=0;
+  const errorMsgs=[];
+
+  for(let i=0;i<jsonData.length;i++){
+    const row=jsonData[i];
     const obj={};
+
     Object.keys(row).forEach(key=>{
-      const dbKey=headerMap[key];
+      const dbKey=flexMap[key];
       if(!dbKey||dbKey==='id')return;
       let val=row[key];
       if(typeof val==='string')val=val.trim();
+      if(val===''||val===undefined||val===null){obj[dbKey]=null;return}
       const col=EXCEL_COLS.find(c=>c.db===dbKey);
-      if(col?.type==='number'&&val!=='')val=parseFloat(val)||null;
-      else if(val==='')val=null;
-      obj[dbKey]=val;
+      if(col?.type==='number'){
+        const num=parseFloat(String(val).replace(',','.'));
+        obj[dbKey]=isNaN(num)?null:num;
+      }else{
+        obj[dbKey]=String(val);
+      }
     });
-    if(!obj.kep_kk&&!obj.desa)continue;
-    obj.kec=currentKec;obj.updated_at=new Date().toISOString();
+
+    // Skip completely empty rows
+    if(!obj.kep_kk&&!obj.desa&&!obj.alamat){skipped++;continue}
+
+    obj.kec=currentKec;
+    obj.updated_at=new Date().toISOString();
+
+    // Find ID - try multiple possible column names
+    let id=null;
+    ['ID','id','Id','FID','fid'].forEach(k=>{
+      if(row[k]!==undefined&&row[k]!==''&&row[k]!==null){
+        const parsed=parseInt(row[k]);
+        if(!isNaN(parsed)&&parsed>0)id=parsed;
+      }
+    });
 
     try{
-      const id=row['ID']||row['id'];
-      if(id&&!isNaN(id)&&parseInt(id)>0){
-        const{error}=await sb.from('rtlh').update(obj).eq('id',parseInt(id));
-        if(error)throw error;updated++;
+      if(id){
+        // Check if this ID exists in database
+        const{data:existing}=await sb.from('rtlh').select('id').eq('id',id).single();
+        if(existing){
+          const{error}=await sb.from('rtlh').update(obj).eq('id',id);
+          if(error)throw error;
+          updated++;
+        }else{
+          // ID doesn't exist, insert as new (without the non-existent ID)
+          const{error}=await sb.from('rtlh').insert(obj);
+          if(error)throw error;
+          inserted++;
+        }
       }else{
         const{error}=await sb.from('rtlh').insert(obj);
-        if(error)throw error;inserted++;
+        if(error)throw error;
+        inserted++;
       }
-    }catch(e){console.error(e);errors++}
+    }catch(e){
+      errors++;
+      if(errorMsgs.length<3)errorMsgs.push(`Baris ${i+2}: ${e.message}`);
+      console.error(`Row ${i+2} error:`,e,obj);
+    }
+
+    // Progress toast every 100 rows
+    if(i>0&&i%100===0)toast(`Memproses... ${i}/${jsonData.length}`,'info',1000);
   }
 
+  // Reload data from database
   if(currentKec)delete brCache[currentKec];
-  await loadBrData();renderBr();loadKecCounts().then(populateHome);
-  toast(`Selesai! ${updated} diupdate, ${inserted} baru${errors?', '+errors+' error':''}`,'success');
+  await loadBrData();
+  renderBr();
+  loadKecCounts().then(populateHome);
+
+  // Final report
+  let msg=`Upload selesai: ${updated} diupdate, ${inserted} ditambahkan`;
+  if(skipped)msg+=`, ${skipped} dilewati`;
+  if(errors)msg+=`, ${errors} error`;
+  toast(msg,errors?'error':'success',5000);
+  if(errorMsgs.length)console.warn('Upload errors:',errorMsgs);
+
   input.value='';
 }
 
