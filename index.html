@@ -523,6 +523,7 @@ let brPie=null,brBar=null,currentFeat=null,editId=null;
 let currentKec=null; // currently selected kecamatan
 let inited={peta:false,br:false};
 let kecCounts={}; // rtlh count per kecamatan
+let brCache={}; // cache per kecamatan
 const iconCache={};
 
 const KEC_CONFIG={
@@ -638,16 +639,22 @@ function nav(p){
 }
 function openKec(kec){
   currentKec=kec.toUpperCase();
-  inited.br=false;brMap=null;brCluster=null;brPie=null;brBar=null;brFilter='all';
-  document.getElementById('map-bringin').innerHTML='';
-  // Update title
+  // Destroy old map properly
+  if(brMap){brMap.remove();brMap=null}
+  brCluster=null;brPie=null;brBar=null;brFilter='all';
+  inited.br=false;
+  // Remove empty state if exists
+  const emptyEl=document.getElementById('emptyState');if(emptyEl)emptyEl.remove();
+  // Update toolbar title
   document.querySelector('#page-bringin .br-toolbar').querySelector('.tb-stats').innerHTML=`
     <span class="tb-badge" style="color:var(--navy);font-weight:800"><i class="fas fa-map-marker-alt"></i> Kec. ${kec}</span>
-    <span class="tb-badge" style="color:var(--blue)"><i class="fas fa-database"></i> <span id="tbT">0</span> Data</span>
-    <span class="tb-badge" style="color:var(--danger)"><i class="fas fa-circle"></i> <span id="tbH">0</span> Tinggi</span>
-    <span class="tb-badge" style="color:var(--warning)"><i class="fas fa-circle"></i> <span id="tbM">0</span> Sedang</span>
-    <span class="tb-badge" style="color:var(--success)"><i class="fas fa-circle"></i> <span id="tbL">0</span> Rendah</span>`;
-  loadBrData().then(()=>{nav('bringin')});
+    <span class="tb-badge" style="color:var(--blue)"><i class="fas fa-database"></i> <span id="tbT">...</span> Data</span>
+    <span class="tb-badge" style="color:var(--danger)"><i class="fas fa-circle"></i> <span id="tbH">-</span> Tinggi</span>
+    <span class="tb-badge" style="color:var(--warning)"><i class="fas fa-circle"></i> <span id="tbM">-</span> Sedang</span>
+    <span class="tb-badge" style="color:var(--success)"><i class="fas fa-circle"></i> <span id="tbL">-</span> Rendah</span>`;
+  // Navigate first (show page), then load data
+  nav('bringin');
+  loadBrData().then(()=>renderBr());
 }
 
 // ═══ DATA LOADING ═══
@@ -664,9 +671,8 @@ async function loadAll(){
     // Process forest
     if(hutan?.features){hutan.features.forEach(f=>{const g=f.geometry;if(g.type==='Polygon')forestPolys.push(g.coordinates[0]);else if(g.type==='MultiPolygon')g.coordinates.forEach(p=>forestPolys.push(p[0]))});forestLoaded=true}
     window._hutan=hutan;
-    // Load from Supabase
+    // Load from Supabase - only counts, not full data
     currentKec=null;
-    await loadBrData();
     await loadKecCounts();
     populateHome();
     const totalDb=Object.values(kecCounts).reduce((a,b)=>a+b,0);
@@ -675,13 +681,23 @@ async function loadAll(){
   const ld=document.getElementById('appLoading');ld.classList.add('hide');setTimeout(()=>ld.style.display='none',600);
 }
 async function loadBrData(){
-  let query=sb.from('rtlh').select('*').order('id');
+  // Check cache first
+  if(currentKec&&brCache[currentKec]){
+    brAll=brCache[currentKec];brFeatures=[...brAll];updateDesaFilter();return;
+  }
+  // Load only columns needed for map rendering
+  const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto';
+  let query=sb.from('rtlh').select(cols).order('id');
   if(currentKec)query=query.eq('kec',currentKec);
   const{data,error}=await query;
   if(error){console.error(error);return}
   brAll=data.map(r=>{r._score=calcScore(r);r._cat=getCat(r._score);return r});
   brFeatures=[...brAll];
-  // Update desa filter
+  // Cache result
+  if(currentKec)brCache[currentKec]=brAll;
+  updateDesaFilter();
+}
+function updateDesaFilter(){
   const sel=document.getElementById('fBrD');
   if(sel){
     sel.innerHTML='<option value="all">Semua Desa</option>';
@@ -689,18 +705,23 @@ async function loadBrData(){
     [...dSet].sort().forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;sel.appendChild(o)});
   }
 }
+// Load full detail on demand (for detail modal)
+async function loadFullDetail(id){
+  const{data,error}=await sb.from('rtlh').select('*').eq('id',id).single();
+  if(error){console.error(error);return null}
+  return data;
+}
 
 // ═══ HOME ═══
 function populateHome(){
-  let total25=0;ngawiData.features.forEach(f=>{total25+=f.properties['RTLH 2025']||0});
+  let total25=0;if(ngawiData)ngawiData.features.forEach(f=>{total25+=f.properties['RTLH 2025']||0});
   document.getElementById('ov-rtlh').textContent=total25.toLocaleString('id-ID');
   const totalDb=Object.values(kecCounts).reduce((a,b)=>a+b,0);
   document.getElementById('ov-db').textContent=totalDb;
   document.getElementById('h-total').textContent=totalDb;
-  const hi=brAll.filter(r=>r._cat==='high').length;
-  document.getElementById('h-high').textContent=hi;
-  const dSet=new Set(brAll.map(r=>r.desa).filter(Boolean));
-  document.getElementById('h-desa2').textContent=dSet.size;
+  document.getElementById('h-high').textContent='-';
+  const dSet=new Set(Object.keys(kecCounts).filter(k=>kecCounts[k]>0));
+  document.getElementById('h-desa2').textContent=dSet.size+' kec';
   document.getElementById('dbStatus').textContent=`✓ ${totalDb} data terhubung ke database`;
 }
 async function loadKecCounts(){
@@ -944,7 +965,7 @@ function openForm(id){
           <input type="file" id="ff_photo" accept="image/*" style="display:none" onchange="previewPhoto(this)">
         </label>
       </div>
-      <div style="font-size:.6rem;color:var(--gray-400);margin-top:4px">Format: JPG, PNG. Auto-resize & kompres ke maks 1200px.</div>
+      <div style="font-size:.6rem;color:var(--gray-400);margin-top:4px">Format: JPG, PNG. Auto-kompres ke 1000px (~100KB/foto).</div>
     </div>`;
   document.getElementById('formModal').classList.add('open');
 }
@@ -960,7 +981,7 @@ function previewPhoto(input){
   };
   reader.readAsDataURL(file);
 }
-function compressImage(file,maxW=1200,quality=0.8){
+function compressImage(file,maxW=1000,quality=0.7){
   return new Promise((resolve)=>{
     const reader=new FileReader();
     reader.onload=e=>{
@@ -1019,7 +1040,10 @@ async function saveForm(){
       }
     }
     toast(editId?'Data berhasil diupdate':'Data berhasil ditambahkan','success');
-    closeForm();await loadBrData();renderBr();populateHome();
+    closeForm();
+    // Invalidate cache for current kecamatan and reload
+    if(currentKec)delete brCache[currentKec];
+    await loadBrData();renderBr();loadKecCounts().then(populateHome);
   }catch(e){console.error(e);toast('Gagal menyimpan: '+e.message,'error')}
 }
 async function deleteRTLH(id){
@@ -1028,7 +1052,8 @@ async function deleteRTLH(id){
     const{error}=await sb.from('rtlh').delete().eq('id',id);
     if(error)throw error;
     closeDetail();toast('Data berhasil dihapus','success');
-    await loadBrData();renderBr();populateHome();
+    if(currentKec)delete brCache[currentKec];
+    await loadBrData();renderBr();loadKecCounts().then(populateHome);
   }catch(e){toast('Gagal menghapus: '+e.message,'error')}
 }
 
