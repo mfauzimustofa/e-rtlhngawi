@@ -435,6 +435,7 @@ font-size:.55rem;font-weight:700;color:var(--gray-400);background:none;border:no
           </div>
         </div>
         <button class="btn btn-outline btn-sm" onclick="resetBrView()" title="Reset"><i class="fas fa-compress-arrows-alt"></i></button>
+        <button class="btn btn-sm" id="btnDeleteAll" style="display:none;background:var(--danger);color:#fff" onclick="deleteAllData()" title="Hapus Semua Data"><i class="fas fa-trash-alt"></i></button>
       </div>
     </div>
     <div id="map-bringin"></div>
@@ -652,6 +653,8 @@ function nav(p){
   // Show/hide FAB based on current page and access
   const fab=document.getElementById('fabAdd');
   if(fab)fab.classList.toggle('show',p==='bringin'&&canEditCurrentKec());
+  const delAll=document.getElementById('btnDeleteAll');
+  if(delAll)delAll.style.display=(p==='bringin'&&isSuperAdmin())?'inline-flex':'none';
   setTimeout(()=>{petaMap?.invalidateSize();brMap?.invalidateSize()},150);
 }
 function openKec(kec){
@@ -863,6 +866,7 @@ function canEditCurrentKec(){
   if(!userKec)return true; // super admin
   return userKec===currentKec;
 }
+function isSuperAdmin(){return isAdmin&&!userKec}
 function resetBrView(){
   if(!brMap)return;
   const kecName=currentKec?Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===currentKec):null;
@@ -1090,6 +1094,24 @@ async function deleteRTLH(id){
     if(currentKec)brCache[currentKec]=brAll;
     closeDetail();renderBr();
     toast('Data berhasil dihapus','success');
+    loadKecCounts().then(populateHome);
+  }catch(e){toast('Gagal menghapus: '+e.message,'error')}
+}
+async function deleteAllData(){
+  if(!isSuperAdmin())return toast('Hanya admin inti yang bisa menghapus semua data','error');
+  const kecTitle=currentKec?Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===currentKec)||currentKec:'SEMUA';
+  const count=brFeatures.length;
+  if(!count)return toast('Tidak ada data untuk dihapus','info');
+  if(!confirm(`Hapus SEMUA ${count} data RTLH di Kec. ${kecTitle}?\n\nData yang dihapus TIDAK BISA dikembalikan!`))return;
+  if(!confirm(`KONFIRMASI TERAKHIR:\nAnda akan menghapus ${count} data secara permanen.\n\nKetik OK untuk melanjutkan.`))return;
+  try{
+    toast('Menghapus data...','info');
+    const{error}=await sb.from('rtlh').delete().eq('kec',currentKec);
+    if(error)throw error;
+    brAll=[];brFeatures=[];
+    if(currentKec)brCache[currentKec]=[];
+    renderBr();
+    toast(`${count} data Kec. ${kecTitle} berhasil dihapus`,'success');
     loadKecCounts().then(populateHome);
   }catch(e){toast('Gagal menghapus: '+e.message,'error')}
 }
