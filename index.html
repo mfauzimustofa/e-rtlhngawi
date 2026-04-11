@@ -1026,49 +1026,58 @@ async function saveForm(){
   const obj={};
   FIELDS.forEach(f=>{const el=document.getElementById('ff_'+f.key);if(!el)return;let v=el.value;if(f.type==='number'&&v)v=parseFloat(v);obj[f.key]=v||null});
   obj.kec=currentKec||'BRINGIN';obj.updated_at=new Date().toISOString();
+  const hasPhoto=document.getElementById('ff_photo')?.files[0];
+  closeForm();
   try{
     let savedId=editId;
     if(editId){
-      const{error}=await sb.from('rtlh').update(obj).eq('id',editId);
-      if(error)throw error;
+      // Instant local update
+      const idx=brAll.findIndex(r=>r.id===editId);
+      if(idx>=0){Object.assign(brAll[idx],obj);brAll[idx]._score=calcScore(brAll[idx]);brAll[idx]._cat=getCat(brAll[idx]._score)}
+      brFeatures=[...brAll];renderBr();
+      toast('Data diupdate','success');
+      // Sync to DB in background
+      sb.from('rtlh').update(obj).eq('id',editId).then(({error})=>{if(error)toast('Gagal sync: '+error.message,'error')});
     }else{
-      const{data,error}=await sb.from('rtlh').insert(obj).select('id').single();
+      // Insert needs DB first to get ID
+      const{data,error}=await sb.from('rtlh').insert(obj).select('*').single();
       if(error)throw error;
       savedId=data.id;
+      data._score=calcScore(data);data._cat=getCat(data._score);
+      brAll.push(data);brFeatures=[...brAll];renderBr();
+      toast('Data ditambahkan','success');
     }
-    // Upload photo if selected
-    const photoInput=document.getElementById('ff_photo');
-    if(photoInput&&photoInput.files[0]){
-      const rawFile=photoInput.files[0];
-      const file=await compressImage(rawFile);
-      const filePath=`${savedId}.jpg`;
-      // Delete old photo first (in case of update)
-      await sb.storage.from('rtlh-photos').remove([filePath]);
-      const{error:uploadErr}=await sb.storage.from('rtlh-photos').upload(filePath,file,{
-        cacheControl:'3600',upsert:true,contentType:file.type
+    // Update cache
+    if(currentKec)brCache[currentKec]=brAll;
+    // Upload photo in background
+    if(hasPhoto){
+      const rawFile=hasPhoto;
+      compressImage(rawFile).then(file=>{
+        const filePath=`${savedId}.jpg`;
+        sb.storage.from('rtlh-photos').remove([filePath]).then(()=>{
+          sb.storage.from('rtlh-photos').upload(filePath,file,{cacheControl:'3600',upsert:true,contentType:file.type}).then(({error})=>{
+            if(error)toast('Gagal upload foto','error');
+            else{sb.from('rtlh').update({nama_foto:filePath}).eq('id',savedId);toast('Foto berhasil diupload','success')}
+          });
+        });
       });
-      if(uploadErr){console.error(uploadErr);toast('Data tersimpan, tapi gagal upload foto','error')}
-      else{
-        // Save photo URL to database
-        await sb.from('rtlh').update({nama_foto:filePath}).eq('id',savedId);
-      }
     }
-    toast(editId?'Data berhasil diupdate':'Data berhasil ditambahkan','success');
-    closeForm();
-    // Invalidate cache for current kecamatan and reload
-    if(currentKec)delete brCache[currentKec];
-    await loadBrData();renderBr();loadKecCounts().then(populateHome);
+    // Update counts in background
+    loadKecCounts().then(populateHome);
   }catch(e){console.error(e);toast('Gagal menyimpan: '+e.message,'error')}
 }
 async function deleteRTLH(id){
   if(!confirm('Yakin hapus data ini?'))return;
-  try{
-    const{error}=await sb.from('rtlh').delete().eq('id',id);
-    if(error)throw error;
-    closeDetail();toast('Data berhasil dihapus','success');
-    if(currentKec)delete brCache[currentKec];
-    await loadBrData();renderBr();loadKecCounts().then(populateHome);
-  }catch(e){toast('Gagal menghapus: '+e.message,'error')}
+  // Instant local removal
+  brAll=brAll.filter(r=>r.id!==id);brFeatures=[...brAll];
+  if(currentKec)brCache[currentKec]=brAll;
+  closeDetail();renderBr();
+  toast('Data dihapus','success');
+  // Sync to DB in background
+  sb.from('rtlh').delete().eq('id',id).then(({error})=>{
+    if(error)toast('Gagal sync hapus: '+error.message,'error');
+  });
+  loadKecCounts().then(populateHome);
 }
 
 // Export
