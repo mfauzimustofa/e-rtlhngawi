@@ -1144,14 +1144,20 @@ const EXCEL_COLS=[
   {db:'dtsen',label:'DTSEN',dropdown:['Eligible','Non Eligible']},
   {db:'backlog',label:'Backlog',dropdown:['Backlog 1','Backlog 2']},
   {db:'desil',label:'Desil',dropdown:['Desil 1','Desil 2','Desil 3','Desil 4','Desil 5','Desil 6','Desil 7','Desil 8']},
-  {db:'latitude',label:'Latitude',type:'number'},
-  {db:'longitude',label:'Longitude',type:'number'},
+  {db:'latitude',label:'Latitude'},
+  {db:'longitude',label:'Longitude'},
 ];
 
 function downloadExcel(){
   const kecTitle=currentKec?Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===currentKec)||currentKec:'SEMUA';
   const headers=EXCEL_COLS.map(c=>c.label);
-  const rows=brFeatures.map(r=>EXCEL_COLS.map(c=>r[c.db]??''));
+  const rows=brFeatures.map(r=>EXCEL_COLS.map(c=>{
+    const v=r[c.db];
+    if(v===null||v===undefined)return '';
+    // Koordinat: tulis sebagai string supaya Excel tidak ubah format
+    if(c.db==='latitude'||c.db==='longitude')return v!==null&&v!==undefined?String(v):'';
+    return v;
+  }));
 
   if(typeof XLSX!=='undefined'){
     // Excel format
@@ -1250,7 +1256,12 @@ async function uploadExcel(input){
       if(typeof val==='string')val=val.trim();
       if(val===''||val===undefined||val===null){obj[dbKey]=null;return}
       const col=EXCEL_COLS.find(c=>c.db===dbKey);
-      if(col?.type==='number'){
+      if(dbKey==='latitude'||dbKey==='longitude'){
+        // Koordinat: user nulis sebagai teks, parse ke angka untuk database
+        const s=String(val).replace(',','.').replace(/[^\d.\-]/g,'');
+        const num=parseFloat(s);
+        obj[dbKey]=isNaN(num)?null:num;
+      }else if(col?.type==='number'){
         const num=parseFloat(String(val).replace(',','.'));
         obj[dbKey]=isNaN(num)?null:num;
       }else{
