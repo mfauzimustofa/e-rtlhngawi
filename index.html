@@ -686,7 +686,7 @@ async function loadBrData(){
     brAll=brCache[currentKec];brFeatures=[...brAll];updateDesaFilter();return;
   }
   // Load only columns needed for map rendering
-  const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto';
+  const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,tahun_bantuan,sumber_dana,dtsen,backlog,desil';
   let query=sb.from('rtlh').select(cols).order('id');
   if(currentKec)query=query.eq('kec',currentKec);
   const{data,error}=await query;
@@ -816,7 +816,7 @@ function renderBr(){
     const color=catColor(r._cat);
     const mk=L.marker([r.latitude,r.longitude],{icon:getBrIcon(color,r._cat)});
     mk.on('click',()=>showDetail(r.id));
-    mk.bindPopup(()=>`<div style="font-family:var(--font);min-width:180px"><div style="font-weight:800;font-size:.85rem">${r.kep_kk||'KK'}</div><div style="font-size:.7rem;color:#64748B;margin:3px 0">${r.desa||'-'} · ${r.alamat||'-'}</div><div style="display:flex;justify-content:space-between;align-items:center"><span style="background:${color}18;color:${color};padding:2px 10px;border-radius:99px;font-size:.65rem;font-weight:700">${catLabel(r._cat)}</span><span style="font-weight:700;font-size:.72rem">Skor: ${Math.round(r._score)}</span></div></div>`,{maxWidth:260});
+    mk.bindPopup(()=>`<div style="font-family:var(--font);min-width:180px"><div style="font-weight:800;font-size:.85rem">${r.kep_kk||'KK'}</div><div style="font-size:.7rem;color:#64748B;margin:3px 0">${r.desa||'-'} · ${r.alamat||'-'}</div><div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:4px">${r.status_rtlh?`<span style="padding:1px 7px;border-radius:99px;font-size:.58rem;font-weight:700;${r.status_rtlh==='Sudah Ditangani'?'background:#E8F5E9;color:#16A34A':r.status_rtlh==='Dalam Proses'?'background:#FFF8E1;color:#F59E0B':'background:#FEF2F2;color:#DC2626'}">${r.status_rtlh}</span>`:''}${r.dtsen?`<span style="padding:1px 7px;border-radius:99px;font-size:.58rem;font-weight:700;${r.dtsen==='Eligible'?'background:#E8F5E9;color:#16A34A':'background:#FEF2F2;color:#DC2626'}">DTSEN: ${r.dtsen}</span>`:''}</div><div style="display:flex;justify-content:space-between;align-items:center"><span style="background:${color}18;color:${color};padding:2px 10px;border-radius:99px;font-size:.65rem;font-weight:700">${catLabel(r._cat)}</span><span style="font-weight:700;font-size:.72rem">Skor: ${Math.round(r._score)}</span></div></div>`,{maxWidth:260});
     brCluster.addLayer(mk);
   });
   brMap.addLayer(brCluster);
@@ -896,6 +896,14 @@ function showDetail(id){
       <div class="detail-item"><div class="dl">Atap</div><div class="dv">${r.material_a||'-'} (${r.kondisi_at||'-'})</div></div>
       <div class="detail-item"><div class="dl">Lantai</div><div class="dv">${r.material_l||'-'} (${r.kondisi_la||'-'})</div></div>
     </div></div>
+    <div class="detail-section"><div class="detail-title"><i class="fas fa-clipboard-check"></i> Status & Bantuan</div><div class="detail-grid">
+      <div class="detail-item"><div class="dl">Status RTLH</div><div class="dv">${r.status_rtlh?`<span style="padding:2px 8px;border-radius:99px;font-size:.68rem;font-weight:700;${r.status_rtlh==='Sudah Ditangani'?'background:var(--success-bg);color:var(--success)':r.status_rtlh==='Dalam Proses'?'background:var(--warning-bg);color:var(--warning)':'background:var(--danger-bg);color:var(--danger)'}">${r.status_rtlh}</span>`:'-'}</div></div>
+      <div class="detail-item"><div class="dl">Tahun Bantuan</div><div class="dv">${r.tahun_bantuan||'-'}</div></div>
+      <div class="detail-item"><div class="dl">Sumber Dana</div><div class="dv">${r.sumber_dana||'-'}</div></div>
+      <div class="detail-item"><div class="dl">DTSEN (Kemen PKP)</div><div class="dv">${r.dtsen?`<span style="padding:2px 8px;border-radius:99px;font-size:.68rem;font-weight:700;${r.dtsen==='Eligible'?'background:var(--success-bg);color:var(--success)':'background:var(--danger-bg);color:var(--danger)'}">${r.dtsen}</span>`:'-'}</div></div>
+      <div class="detail-item"><div class="dl">Backlog</div><div class="dv">${r.backlog||'-'}</div></div>
+      <div class="detail-item"><div class="dl">Desil</div><div class="dv">${r.desil||'-'}</div></div>
+    </div></div>
     <div class="detail-section"><div class="detail-title"><i class="fas fa-camera"></i> Foto Kondisi Rumah</div>
       <div id="dmPhoto" style="text-align:center">
         <img src="${getPhotoUrl(r.id)}" style="width:100%;max-height:300px;object-fit:cover;border-radius:8px;cursor:pointer" 
@@ -926,6 +934,12 @@ const FIELDS=[
   {key:'material_d',label:'Material Dinding',type:'text'},{key:'kondisi_di',label:'Kondisi Dinding',type:'text'},
   {key:'material_a',label:'Material Atap',type:'text'},{key:'kondisi_at',label:'Kondisi Atap',type:'text'},
   {key:'material_l',label:'Material Lantai',type:'text'},{key:'kondisi_la',label:'Kondisi Lantai',type:'text'},
+  {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['Belum Ditangani','Dalam Proses','Sudah Ditangani']},
+  {key:'tahun_bantuan',label:'Tahun Bantuan',type:'select',opts:['','2021','2022','2023','2024','2025','2026']},
+  {key:'sumber_dana',label:'Sumber Dana',type:'select',opts:['','APBD','APBN','DAK','CSR','Lainnya']},
+  {key:'dtsen',label:'DTSEN (Kemen PKP)',type:'select',opts:['','Eligible','Non Eligible']},
+  {key:'backlog',label:'Backlog',type:'select',opts:['','Backlog 1','Backlog 2']},
+  {key:'desil',label:'Desil',type:'select',opts:['','Desil 1','Desil 2','Desil 3','Desil 4','Desil 5','Desil 6','Desil 7','Desil 8']},
   {key:'latitude',label:'Latitude',type:'number'},{key:'longitude',label:'Longitude',type:'number'},
 ];
 function getDesaList(){
@@ -1058,7 +1072,7 @@ async function deleteRTLH(id){
 }
 
 // Export
-function exportCSV(){if(!brFeatures.length)return toast('Tidak ada data','error');const h=['ID','Desa','Nama KK','Umur','Pekerjaan','Luas Rumah','Penghuni','Skor','Kategori','Lat','Long'];const rows=brFeatures.map(r=>[r.id,r.desa,r.kep_kk,r.umur,r.pekerjaan,r.luas_rum,r.jml_peng,r._score?.toFixed(2),r._cat,r.latitude,r.longitude].map(v=>`"${String(v||'').replace(/"/g,'""')}"`));const csv=[h,...rows].map(r=>r.join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(["\uFEFF"+csv],{type:'text/csv'}));a.download=`rtlh_${(currentKec||'semua').toLowerCase()}_${new Date().toISOString().slice(0,10)}.csv`;a.click();toast(`${brFeatures.length} data diekspor`,'success')}
+function exportCSV(){if(!brFeatures.length)return toast('Tidak ada data','error');const h=['ID','Desa','Nama KK','Umur','Pekerjaan','Luas Rumah','Penghuni','Skor','Kategori','Status RTLH','Tahun Bantuan','Sumber Dana','DTSEN','Backlog','Desil','Lat','Long'];const rows=brFeatures.map(r=>[r.id,r.desa,r.kep_kk,r.umur,r.pekerjaan,r.luas_rum,r.jml_peng,r._score?.toFixed(2),r._cat,r.status_rtlh,r.tahun_bantuan,r.sumber_dana,r.dtsen,r.backlog,r.desil,r.latitude,r.longitude].map(v=>`"${String(v||'').replace(/"/g,'""')}"`));const csv=[h,...rows].map(r=>r.join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(["\uFEFF"+csv],{type:'text/csv'}));a.download=`rtlh_${(currentKec||'semua').toLowerCase()}_${new Date().toISOString().slice(0,10)}.csv`;a.click();toast(`${brFeatures.length} data diekspor`,'success')}
 
 // Keyboard
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDetail();closeForm()}});
