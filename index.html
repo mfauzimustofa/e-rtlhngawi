@@ -665,6 +665,7 @@ async function logout(){await sb.auth.signOut();user=null;isAdmin=false;userKec=
 
 // ═══ ADMIN PANEL ═══
 async function openAdminPanel(){
+  if(!isSuperAdmin())return toast('Hanya admin inti yang dapat mengelola admin','error');
   const{data:users}=await sb.from('admin_users').select('*').order('created_at',{ascending:false});
   const modal=document.getElementById('adminModal');
   const body=document.getElementById('adminBody');
@@ -760,6 +761,7 @@ function updateDesaOpts(uid,kecVal){
   }
 }
 async function registerByAdmin(){
+  if(!isSuperAdmin())return toast('Hanya admin inti','error');
   const nama=document.getElementById('newAdmNama').value.trim();
   const email=document.getElementById('newAdmEmail').value.trim();
   const kec=document.getElementById('newAdmKec').value||null;
@@ -774,6 +776,7 @@ async function registerByAdmin(){
   openAdminPanel(); // refresh
 }
 async function saveAdmin(uid){
+  if(!isSuperAdmin())return toast('Hanya admin inti','error');
   const status=document.getElementById('adm_status_'+uid).value;
   const kec=document.getElementById('adm_kec_'+uid).value||null;
   const desa=document.getElementById('adm_desa_'+uid).value||null;
@@ -783,6 +786,7 @@ async function saveAdmin(uid){
   openAdminPanel();
 }
 async function deleteAdmin(uid){
+  if(!isSuperAdmin())return toast('Hanya admin inti','error');
   if(!confirm('Hapus akses user ini? User tidak akan bisa mengedit data lagi.'))return;
   const{error}=await sb.from('admin_users').delete().eq('id',uid);
   if(error)return toast('Gagal menghapus: '+error.message,'error');
