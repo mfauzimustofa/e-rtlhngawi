@@ -1382,6 +1382,8 @@ function downloadExcel(){
     if(v===null||v===undefined)return '';
     // Koordinat: tulis sebagai string supaya Excel tidak ubah format
     if(c.db==='latitude'||c.db==='longitude')return v!==null&&v!==undefined?String(v):'';
+    // Nama: sensor untuk non-admin
+    if(c.db==='kep_kk'&&!canEditCurrentKec())return maskName(v);
     return v;
   }));
 
