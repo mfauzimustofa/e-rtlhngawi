@@ -662,42 +662,85 @@ async function logout(){await sb.auth.signOut();user=null;isAdmin=false;userKec=
 
 // ═══ ADMIN PANEL ═══
 async function openAdminPanel(){
-  const{data:users}=await sb.from('admin_users').select('*').order('status').order('nama');
+  const{data:users}=await sb.from('admin_users').select('*').order('created_at',{ascending:false});
   const modal=document.getElementById('adminModal');
   const body=document.getElementById('adminBody');
   const statusColors={approved:'var(--success)',pending:'var(--orange)',rejected:'var(--danger)'};
   const statusLabels={approved:'Disetujui',pending:'Menunggu',rejected:'Ditolak'};
+  const statusIcons={approved:'fa-check-circle',pending:'fa-clock',rejected:'fa-times-circle'};
+
+  // Separate users by status
+  const pending=(users||[]).filter(u=>u.status==='pending');
+  const approved=(users||[]).filter(u=>u.status==='approved');
+  const rejected=(users||[]).filter(u=>u.status==='rejected');
+
   body.innerHTML=`
-    <div style="margin-bottom:16px;font-size:.78rem;color:var(--gray)">Kelola hak akses pengguna. Tentukan kecamatan dan desa yang boleh diedit.</div>
-    ${(users||[]).map(u=>`
-      <div style="padding:14px;background:var(--cream);border-radius:10px;margin-bottom:8px;border-left:4px solid ${statusColors[u.status]||'var(--gray)'}">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-          <div>
-            <div style="font-weight:800;font-size:.85rem;color:var(--navy)">${u.nama||u.email}</div>
-            <div style="font-size:.68rem;color:var(--gray)">${u.email}</div>
-          </div>
-          <span style="font-size:.6rem;font-weight:700;padding:2px 8px;border-radius:99px;color:${statusColors[u.status]};background:${u.status==='approved'?'var(--success-bg)':u.status==='pending'?'#FFF7ED':'var(--danger-bg)'}">${statusLabels[u.status]||u.status}</span>
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-          <select id="adm_status_${u.id}" style="padding:5px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:.72rem;font-family:inherit;background:white">
-            <option value="pending" ${u.status==='pending'?'selected':''}>Menunggu</option>
-            <option value="approved" ${u.status==='approved'?'selected':''}>Disetujui</option>
-            <option value="rejected" ${u.status==='rejected'?'selected':''}>Ditolak</option>
-          </select>
-          <select id="adm_kec_${u.id}" style="padding:5px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:.72rem;font-family:inherit;background:white" onchange="updateDesaOpts('${u.id}',this.value)">
-            <option value="" ${!u.kecamatan?'selected':''}>Semua Kecamatan</option>
-            ${Object.keys(KEC_CONFIG).sort().map(k=>`<option value="${k.toUpperCase()}" ${u.kecamatan===k.toUpperCase()?'selected':''}>${k}</option>`).join('')}
-          </select>
-          <select id="adm_desa_${u.id}" style="padding:5px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:.72rem;font-family:inherit;background:white">
-            <option value="" ${!u.desa?'selected':''}>Semua Desa</option>
-            ${u.kecamatan?getDesaListForKec(u.kecamatan).map(d=>`<option value="${d}" ${u.desa===d?'selected':''}>${d}</option>`).join(''):''}
-          </select>
-          <button onclick="saveAdmin('${u.id}')" style="padding:5px 12px;background:var(--blue);color:white;border:none;border-radius:6px;font-size:.68rem;font-weight:700;cursor:pointer;font-family:inherit"><i class="fas fa-save"></i> Simpan</button>
-          ${u.email!=='muhammadfauzimustofa7@gmail.com'?`<button onclick="deleteAdmin('${u.id}')" style="padding:5px 8px;background:var(--danger);color:white;border:none;border-radius:6px;font-size:.68rem;cursor:pointer"><i class="fas fa-trash"></i></button>`:''}
-        </div>
+    <!-- FORM DAFTARKAN ADMIN BARU -->
+    <div style="padding:16px;background:linear-gradient(135deg,var(--navy),var(--navy2));border-radius:12px;margin-bottom:16px;color:white">
+      <div style="font-weight:800;font-size:.85rem;margin-bottom:10px"><i class="fas fa-user-plus"></i> Daftarkan Admin Baru</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input id="newAdmNama" placeholder="Nama lengkap" style="flex:1;min-width:120px;padding:8px 10px;border:1px solid rgba(255,255,255,.2);border-radius:6px;font-size:.78rem;font-family:inherit;background:rgba(255,255,255,.1);color:white">
+        <input id="newAdmEmail" placeholder="Email" type="email" style="flex:1;min-width:150px;padding:8px 10px;border:1px solid rgba(255,255,255,.2);border-radius:6px;font-size:.78rem;font-family:inherit;background:rgba(255,255,255,.1);color:white">
+        <select id="newAdmKec" style="padding:8px 10px;border:1px solid rgba(255,255,255,.2);border-radius:6px;font-size:.78rem;font-family:inherit;background:rgba(255,255,255,.1);color:white" onchange="updateDesaOpts('new',this.value)">
+          <option value="">Semua Kecamatan</option>
+          ${Object.keys(KEC_CONFIG).sort().map(k=>`<option value="${k.toUpperCase()}">${k}</option>`).join('')}
+        </select>
+        <select id="adm_desa_new" style="padding:8px 10px;border:1px solid rgba(255,255,255,.2);border-radius:6px;font-size:.78rem;font-family:inherit;background:rgba(255,255,255,.1);color:white">
+          <option value="">Semua Desa</option>
+        </select>
+        <button onclick="registerByAdmin()" style="padding:8px 16px;background:var(--gold);color:var(--navy);border:none;border-radius:6px;font-size:.78rem;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap"><i class="fas fa-plus"></i> Daftarkan</button>
       </div>
-    `).join('')}`;
+    </div>
+
+    <!-- PENDING (perlu konfirmasi) -->
+    ${pending.length?`
+      <div style="font-size:.72rem;font-weight:800;color:var(--orange);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:6px"><i class="fas fa-clock"></i> Menunggu Konfirmasi (${pending.length})</div>
+      ${pending.map(u=>renderAdminCard(u,statusColors,statusLabels)).join('')}
+    `:''}
+
+    <!-- APPROVED -->
+    <div style="font-size:.72rem;font-weight:800;color:var(--success);text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px;display:flex;align-items:center;gap:6px"><i class="fas fa-check-circle"></i> Admin Aktif (${approved.length})</div>
+    ${approved.map(u=>renderAdminCard(u,statusColors,statusLabels)).join('')}
+
+    <!-- REJECTED -->
+    ${rejected.length?`
+      <div style="font-size:.72rem;font-weight:800;color:var(--danger);text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px;display:flex;align-items:center;gap:6px"><i class="fas fa-times-circle"></i> Ditolak (${rejected.length})</div>
+      ${rejected.map(u=>renderAdminCard(u,statusColors,statusLabels)).join('')}
+    `:''}
+  `;
   modal.classList.add('open');
+}
+function renderAdminCard(u,statusColors,statusLabels){
+  const isSelf=u.email==='muhammadfauzimustofa7@gmail.com';
+  const aksesLabel=!u.kecamatan?'Semua Kecamatan (Super Admin)':u.desa?`${u.kecamatan} → ${u.desa}`:u.kecamatan;
+  return`<div style="padding:14px;background:white;border-radius:10px;margin-bottom:8px;border:1px solid var(--gray-200);border-left:4px solid ${statusColors[u.status]||'var(--gray)'}">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+      <div>
+        <div style="font-weight:800;font-size:.85rem;color:var(--navy)">${u.nama||u.email} ${isSelf?'<span style="font-size:.6rem;color:var(--gold)">(Admin Inti)</span>':''}</div>
+        <div style="font-size:.68rem;color:var(--gray)">${u.email}</div>
+        <div style="font-size:.65rem;color:var(--blue);margin-top:3px"><i class="fas fa-map-marker-alt"></i> ${aksesLabel}</div>
+      </div>
+      <span style="font-size:.6rem;font-weight:700;padding:2px 8px;border-radius:99px;color:${statusColors[u.status]};background:${u.status==='approved'?'var(--success-bg)':u.status==='pending'?'#FFF7ED':'var(--danger-bg)'}">${statusLabels[u.status]||u.status}</span>
+    </div>
+    ${isSelf?'<div style="font-size:.65rem;color:var(--gray);font-style:italic">Admin inti tidak dapat diubah</div>':`
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      <select id="adm_status_${u.id}" style="padding:5px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:.72rem;font-family:inherit;background:var(--gray-50)">
+        <option value="pending" ${u.status==='pending'?'selected':''}>⏳ Menunggu</option>
+        <option value="approved" ${u.status==='approved'?'selected':''}>✅ Disetujui</option>
+        <option value="rejected" ${u.status==='rejected'?'selected':''}>❌ Ditolak</option>
+      </select>
+      <select id="adm_kec_${u.id}" style="padding:5px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:.72rem;font-family:inherit;background:var(--gray-50)" onchange="updateDesaOpts('${u.id}',this.value)">
+        <option value="" ${!u.kecamatan?'selected':''}>Semua Kecamatan</option>
+        ${Object.keys(KEC_CONFIG).sort().map(k=>`<option value="${k.toUpperCase()}" ${u.kecamatan===k.toUpperCase()?'selected':''}>${k}</option>`).join('')}
+      </select>
+      <select id="adm_desa_${u.id}" style="padding:5px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:.72rem;font-family:inherit;background:var(--gray-50)">
+        <option value="" ${!u.desa?'selected':''}>Semua Desa</option>
+        ${u.kecamatan?getDesaListForKec(u.kecamatan).map(d=>`<option value="${d}" ${u.desa===d?'selected':''}>${d}</option>`).join(''):''}
+      </select>
+      <button onclick="saveAdmin('${u.id}')" style="padding:5px 12px;background:var(--blue);color:white;border:none;border-radius:6px;font-size:.68rem;font-weight:700;cursor:pointer;font-family:inherit"><i class="fas fa-save"></i> Simpan</button>
+      <button onclick="deleteAdmin('${u.id}')" style="padding:5px 8px;background:var(--danger);color:white;border:none;border-radius:6px;font-size:.68rem;cursor:pointer" title="Hapus akses"><i class="fas fa-trash"></i></button>
+    </div>`}
+  </div>`;
 }
 function closeAdminPanel(){document.getElementById('adminModal').classList.remove('open')}
 function getDesaListForKec(kec){
@@ -707,10 +750,25 @@ function getDesaListForKec(kec){
 }
 function updateDesaOpts(uid,kecVal){
   const sel=document.getElementById('adm_desa_'+uid);
+  if(!sel)return;
   sel.innerHTML='<option value="">Semua Desa</option>';
   if(kecVal){
     getDesaListForKec(kecVal).forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;sel.appendChild(o)});
   }
+}
+async function registerByAdmin(){
+  const nama=document.getElementById('newAdmNama').value.trim();
+  const email=document.getElementById('newAdmEmail').value.trim();
+  const kec=document.getElementById('newAdmKec').value||null;
+  const desa=document.getElementById('adm_desa_new').value||null;
+  if(!nama||!email)return toast('Isi nama dan email','error');
+  // Insert langsung sebagai approved
+  const{error}=await sb.from('admin_users').upsert({email,nama,kecamatan:kec,desa,status:'approved'},{onConflict:'email'});
+  if(error)return toast('Gagal mendaftarkan: '+error.message,'error');
+  toast(`${nama} berhasil didaftarkan sebagai admin`,'success');
+  document.getElementById('newAdmNama').value='';
+  document.getElementById('newAdmEmail').value='';
+  openAdminPanel(); // refresh
 }
 async function saveAdmin(uid){
   const status=document.getElementById('adm_status_'+uid).value;
@@ -719,13 +777,13 @@ async function saveAdmin(uid){
   const{error}=await sb.from('admin_users').update({status,kecamatan:kec,desa}).eq('id',uid);
   if(error)return toast('Gagal menyimpan: '+error.message,'error');
   toast('Hak akses diperbarui','success');
-  openAdminPanel(); // refresh
+  openAdminPanel();
 }
 async function deleteAdmin(uid){
-  if(!confirm('Hapus user ini?'))return;
+  if(!confirm('Hapus akses user ini? User tidak akan bisa mengedit data lagi.'))return;
   const{error}=await sb.from('admin_users').delete().eq('id',uid);
   if(error)return toast('Gagal menghapus: '+error.message,'error');
-  toast('User dihapus','success');
+  toast('Akses user dihapus','success');
   openAdminPanel();
 }
 
