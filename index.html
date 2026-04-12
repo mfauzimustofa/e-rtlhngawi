@@ -520,6 +520,15 @@ font-size:.55rem;font-weight:700;color:var(--gray-400);background:none;border:no
   </div>
 </div>
 
+<!-- ADMIN PANEL MODAL -->
+<div class="modal-bg" id="adminModal" onclick="if(event.target===this)closeAdminPanel()">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-head"><div><h3><i class="fas fa-users-cog"></i> Kelola Admin</h3><div class="sub">Konfirmasi pendaftaran dan atur hak akses per kecamatan/desa</div></div><button class="modal-x" onclick="closeAdminPanel()"><i class="fas fa-times"></i></button></div>
+    <div class="modal-body" id="adminBody" style="max-height:60vh;overflow-y:auto"></div>
+    <div class="modal-foot"><button class="btn btn-outline btn-sm" onclick="closeAdminPanel()"><i class="fas fa-times"></i> Tutup</button></div>
+  </div>
+</div>
+
 <!-- MOBILE NAV -->
 <nav class="mobile-nav"><div class="mobile-nav-inner">
   <button class="mn-btn active" data-p="home" onclick="nav('home')"><i class="fas fa-home"></i><span>Beranda</span></button>
@@ -539,7 +548,7 @@ const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const sb=supabase.createClient(SUPA_URL,SUPA_KEY);
 
 // ═══ STATE ═══
-let user=null,isAdmin=false,userKec=null;
+let user=null,isAdmin=false,userKec=null,userDesa=null,userStatus=null;
 let ngawiData=null,brFeatures=[],brAll=[],forestPolys=[],forestLoaded=false;
 let petaMap=null,petaGeo=null,petaChart=null,petaLabels=null,petaRaw=null,petaDesaKec={};
 let brMap=null,brCluster=null,brFilter='all',brWeights={l:30,p:35,k:35};
@@ -578,8 +587,16 @@ async function initAuth(){
 }
 async function setUser(u){
   user=u;
-  const{data}=await sb.from('admin_users').select('email,kecamatan').eq('email',u.email).single();
-  isAdmin=!!data;userKec=data?.kecamatan||null;updAuth();
+  const{data}=await sb.from('admin_users').select('email,kecamatan,desa,status').eq('email',u.email).single();
+  if(data&&data.status==='approved'){
+    isAdmin=true;userKec=data.kecamatan||null;userDesa=data.desa||null;
+  }else{
+    isAdmin=false;userKec=null;userDesa=null;
+    if(data&&data.status==='pending')userStatus='pending';
+    else if(data&&data.status==='rejected')userStatus='rejected';
+    else userStatus=null;
+  }
+  updAuth();
 }
 function updAuth(){
   const a=document.getElementById('authArea');
@@ -587,9 +604,16 @@ function updAuth(){
   if(user){
     const name=user.user_metadata?.full_name||user.email.split('@')[0];
     const pic=user.user_metadata?.avatar_url||'';
+    let badge='';
+    if(isAdmin&&isSuperAdmin())badge='<span style="font-size:.55rem;color:var(--gold);font-weight:700;background:rgba(200,169,81,.2);padding:2px 8px;border-radius:99px">SUPER ADMIN</span>';
+    else if(isAdmin)badge='<span style="font-size:.55rem;color:var(--gold);font-weight:700;background:rgba(200,169,81,.2);padding:2px 8px;border-radius:99px">ADMIN</span>';
+    else if(userStatus==='pending')badge='<span style="font-size:.55rem;color:var(--orange);font-weight:700;background:#FFF7ED;padding:2px 8px;border-radius:99px">MENUNGGU</span>';
+    else if(userStatus==='rejected')badge='<span style="font-size:.55rem;color:var(--danger);font-weight:700;background:#FEF2F2;padding:2px 8px;border-radius:99px">DITOLAK</span>';
+
     a.innerHTML=`<div style="display:flex;align-items:center;gap:6px">
+      ${isSuperAdmin()?'<button class="btn-logout" onclick="openAdminPanel()" style="background:var(--gold);color:var(--navy)"><i class="fas fa-users-cog"></i></button>':''}
       <div class="user-chip"><img src="${pic}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%231B6CA8%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2260%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2240%22>${name[0].toUpperCase()}</text></svg>'"><span>${name}</span></div>
-      ${isAdmin?'<span style="font-size:.55rem;color:var(--gold);font-weight:700;background:rgba(200,169,81,.2);padding:2px 8px;border-radius:99px">ADMIN</span>':''}
+      ${badge}
       <button class="btn-logout" onclick="logout()">Keluar</button></div>`;
     fab.classList.toggle('show',isAdmin&&canEditCurrentKec());
   }else{
@@ -624,7 +648,9 @@ async function registerEmail(){
   const{data,error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name||email.split('@')[0]}}});
   if(error)return toast('Gagal daftar: '+error.message,'error');
   if(data.user?.identities?.length===0)return toast('Email sudah terdaftar','error');
-  toast('Berhasil daftar! Cek email untuk verifikasi.','success');
+  // Auto-insert as pending admin
+  await sb.from('admin_users').upsert({email,nama:name||email.split('@')[0],status:'pending'},{onConflict:'email'});
+  toast('Berhasil daftar! Menunggu persetujuan admin.','success');
   switchLoginTab('login');
 }
 function switchLoginTab(tab){
@@ -632,7 +658,76 @@ function switchLoginTab(tab){
   document.getElementById('loginForm').style.display=tab==='login'?'block':'none';
   document.getElementById('registerForm').style.display=tab==='register'?'block':'none';
 }
-async function logout(){await sb.auth.signOut();user=null;isAdmin=false;updAuth();toast('Berhasil keluar','info')}
+async function logout(){await sb.auth.signOut();user=null;isAdmin=false;userKec=null;userDesa=null;userStatus=null;updAuth();toast('Berhasil keluar','info')}
+
+// ═══ ADMIN PANEL ═══
+async function openAdminPanel(){
+  const{data:users}=await sb.from('admin_users').select('*').order('status').order('nama');
+  const modal=document.getElementById('adminModal');
+  const body=document.getElementById('adminBody');
+  const statusColors={approved:'var(--success)',pending:'var(--orange)',rejected:'var(--danger)'};
+  const statusLabels={approved:'Disetujui',pending:'Menunggu',rejected:'Ditolak'};
+  body.innerHTML=`
+    <div style="margin-bottom:16px;font-size:.78rem;color:var(--gray)">Kelola hak akses pengguna. Tentukan kecamatan dan desa yang boleh diedit.</div>
+    ${(users||[]).map(u=>`
+      <div style="padding:14px;background:var(--cream);border-radius:10px;margin-bottom:8px;border-left:4px solid ${statusColors[u.status]||'var(--gray)'}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <div>
+            <div style="font-weight:800;font-size:.85rem;color:var(--navy)">${u.nama||u.email}</div>
+            <div style="font-size:.68rem;color:var(--gray)">${u.email}</div>
+          </div>
+          <span style="font-size:.6rem;font-weight:700;padding:2px 8px;border-radius:99px;color:${statusColors[u.status]};background:${u.status==='approved'?'var(--success-bg)':u.status==='pending'?'#FFF7ED':'var(--danger-bg)'}">${statusLabels[u.status]||u.status}</span>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          <select id="adm_status_${u.id}" style="padding:5px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:.72rem;font-family:inherit;background:white">
+            <option value="pending" ${u.status==='pending'?'selected':''}>Menunggu</option>
+            <option value="approved" ${u.status==='approved'?'selected':''}>Disetujui</option>
+            <option value="rejected" ${u.status==='rejected'?'selected':''}>Ditolak</option>
+          </select>
+          <select id="adm_kec_${u.id}" style="padding:5px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:.72rem;font-family:inherit;background:white" onchange="updateDesaOpts('${u.id}',this.value)">
+            <option value="" ${!u.kecamatan?'selected':''}>Semua Kecamatan</option>
+            ${Object.keys(KEC_CONFIG).sort().map(k=>`<option value="${k.toUpperCase()}" ${u.kecamatan===k.toUpperCase()?'selected':''}>${k}</option>`).join('')}
+          </select>
+          <select id="adm_desa_${u.id}" style="padding:5px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:.72rem;font-family:inherit;background:white">
+            <option value="" ${!u.desa?'selected':''}>Semua Desa</option>
+            ${u.kecamatan?getDesaListForKec(u.kecamatan).map(d=>`<option value="${d}" ${u.desa===d?'selected':''}>${d}</option>`).join(''):''}
+          </select>
+          <button onclick="saveAdmin('${u.id}')" style="padding:5px 12px;background:var(--blue);color:white;border:none;border-radius:6px;font-size:.68rem;font-weight:700;cursor:pointer;font-family:inherit"><i class="fas fa-save"></i> Simpan</button>
+          ${u.email!=='muhammadfauzimustofa7@gmail.com'?`<button onclick="deleteAdmin('${u.id}')" style="padding:5px 8px;background:var(--danger);color:white;border:none;border-radius:6px;font-size:.68rem;cursor:pointer"><i class="fas fa-trash"></i></button>`:''}
+        </div>
+      </div>
+    `).join('')}`;
+  modal.classList.add('open');
+}
+function closeAdminPanel(){document.getElementById('adminModal').classList.remove('open')}
+function getDesaListForKec(kec){
+  if(!window._batasNgawi||!kec)return[];
+  const kecTitle=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===kec.toUpperCase())||'';
+  return[...new Set(window._batasNgawi.features.filter(f=>f.properties.WADMKC===kecTitle).map(f=>f.properties.NAMOBJ))].sort();
+}
+function updateDesaOpts(uid,kecVal){
+  const sel=document.getElementById('adm_desa_'+uid);
+  sel.innerHTML='<option value="">Semua Desa</option>';
+  if(kecVal){
+    getDesaListForKec(kecVal).forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;sel.appendChild(o)});
+  }
+}
+async function saveAdmin(uid){
+  const status=document.getElementById('adm_status_'+uid).value;
+  const kec=document.getElementById('adm_kec_'+uid).value||null;
+  const desa=document.getElementById('adm_desa_'+uid).value||null;
+  const{error}=await sb.from('admin_users').update({status,kecamatan:kec,desa}).eq('id',uid);
+  if(error)return toast('Gagal menyimpan: '+error.message,'error');
+  toast('Hak akses diperbarui','success');
+  openAdminPanel(); // refresh
+}
+async function deleteAdmin(uid){
+  if(!confirm('Hapus user ini?'))return;
+  const{error}=await sb.from('admin_users').delete().eq('id',uid);
+  if(error)return toast('Gagal menghapus: '+error.message,'error');
+  toast('User dihapus','success');
+  openAdminPanel();
+}
 
 // ═══ UTILS ═══
 function maskName(name){
@@ -878,7 +973,16 @@ function renderBr(){
 function canEditCurrentKec(){
   if(!isAdmin)return false;
   if(!userKec)return true; // super admin
-  return userKec===currentKec;
+  if(userKec!==currentKec)return false;
+  // userDesa null = semua desa di kecamatan itu
+  return true;
+}
+function canEditDesa(desaName){
+  if(!isAdmin)return false;
+  if(!userKec)return true; // super admin
+  if(userKec!==currentKec)return false;
+  if(!userDesa)return true; // admin kecamatan, semua desa
+  return userDesa===desaName; // admin desa, hanya desa tertentu
 }
 function isSuperAdmin(){return isAdmin&&!userKec}
 function resetBrView(){
