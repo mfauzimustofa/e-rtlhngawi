@@ -589,12 +589,15 @@ async function setUser(u){
   user=u;
   const{data}=await sb.from('admin_users').select('email,kecamatan,desa,status').eq('email',u.email).single();
   if(data&&data.status==='approved'){
-    isAdmin=true;userKec=data.kecamatan||null;userDesa=data.desa||null;
-  }else{
+    isAdmin=true;userKec=data.kecamatan||null;userDesa=data.desa||null;userStatus='approved';
+  }else if(data){
     isAdmin=false;userKec=null;userDesa=null;
-    if(data&&data.status==='pending')userStatus='pending';
-    else if(data&&data.status==='rejected')userStatus='rejected';
-    else userStatus=null;
+    userStatus=data.status||'pending';
+  }else{
+    // User belum ada di admin_users, otomatis daftarkan sebagai pending
+    isAdmin=false;userKec=null;userDesa=null;userStatus='pending';
+    const nama=u.user_metadata?.full_name||u.email.split('@')[0];
+    await sb.from('admin_users').upsert({email:u.email,nama,status:'pending'},{onConflict:'email'});
   }
   updAuth();
 }
