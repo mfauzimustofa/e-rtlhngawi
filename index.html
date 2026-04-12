@@ -716,7 +716,10 @@ async function openAdminPanel(){
 }
 function renderAdminCard(u,statusColors,statusLabels){
   const isSelf=u.email==='muhammadfauzimustofa7@gmail.com';
-  const aksesLabel=!u.kecamatan?'Semua Kecamatan (Super Admin)':u.desa?`${u.kecamatan} → ${u.desa}`:u.kecamatan;
+  const userKecs=(u.kecamatan||'').split(',').filter(Boolean);
+  const userDesas=(u.desa||'').split(',').filter(Boolean);
+  const aksesLabel=!u.kecamatan?'Semua Kecamatan & Desa (Super Admin)':userKecs.length+' kecamatan'+(userDesas.length?', '+userDesas.length+' desa':'');
+  const uid=u.id;
   return`<div style="padding:14px;background:white;border-radius:10px;margin-bottom:8px;border:1px solid var(--gray-200);border-left:4px solid ${statusColors[u.status]||'var(--gray)'}">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
       <div>
@@ -727,22 +730,48 @@ function renderAdminCard(u,statusColors,statusLabels){
       <span style="font-size:.6rem;font-weight:700;padding:2px 8px;border-radius:99px;color:${statusColors[u.status]};background:${u.status==='approved'?'var(--success-bg)':u.status==='pending'?'#FFF7ED':'var(--danger-bg)'}">${statusLabels[u.status]||u.status}</span>
     </div>
     ${isSelf?'<div style="font-size:.65rem;color:var(--gray);font-style:italic">Admin inti tidak dapat diubah</div>':`
-    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-      <select id="adm_status_${u.id}" style="padding:5px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:.72rem;font-family:inherit;background:var(--gray-50)">
-        <option value="pending" ${u.status==='pending'?'selected':''}>⏳ Menunggu</option>
-        <option value="approved" ${u.status==='approved'?'selected':''}>✅ Disetujui</option>
-        <option value="rejected" ${u.status==='rejected'?'selected':''}>❌ Ditolak</option>
-      </select>
-      <select id="adm_kec_${u.id}" style="padding:5px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:.72rem;font-family:inherit;background:var(--gray-50)" onchange="updateDesaOpts('${u.id}',this.value)">
-        <option value="" ${!u.kecamatan?'selected':''}>Semua Kecamatan</option>
-        ${Object.keys(KEC_CONFIG).sort().map(k=>`<option value="${k.toUpperCase()}" ${u.kecamatan===k.toUpperCase()?'selected':''}>${k}</option>`).join('')}
-      </select>
-      <select id="adm_desa_${u.id}" style="padding:5px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:.72rem;font-family:inherit;background:var(--gray-50)">
-        <option value="" ${!u.desa?'selected':''}>Semua Desa</option>
-        ${u.kecamatan?getDesaListForKec(u.kecamatan).map(d=>`<option value="${d}" ${u.desa===d?'selected':''}>${d}</option>`).join(''):''}
-      </select>
-      <button onclick="saveAdmin('${u.id}')" style="padding:5px 12px;background:var(--blue);color:white;border:none;border-radius:6px;font-size:.68rem;font-weight:700;cursor:pointer;font-family:inherit"><i class="fas fa-save"></i> Simpan</button>
-      <button onclick="deleteAdmin('${u.id}')" style="padding:5px 8px;background:var(--danger);color:white;border:none;border-radius:6px;font-size:.68rem;cursor:pointer" title="Hapus akses"><i class="fas fa-trash"></i></button>
+    <div>
+      <!-- Status -->
+      <div style="margin-bottom:10px">
+        <select id="adm_status_${uid}" style="padding:5px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:.72rem;font-family:inherit;background:var(--gray-50)">
+          <option value="pending" ${u.status==='pending'?'selected':''}>⏳ Menunggu</option>
+          <option value="approved" ${u.status==='approved'?'selected':''}>✅ Disetujui</option>
+          <option value="rejected" ${u.status==='rejected'?'selected':''}>❌ Ditolak</option>
+        </select>
+      </div>
+      <!-- Kecamatan Checklist -->
+      <div style="margin-bottom:8px">
+        <div style="font-size:.65rem;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Akses Kecamatan:</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px" id="adm_kec_wrap_${uid}">
+          <label style="display:flex;align-items:center;gap:3px;padding:3px 8px;background:${!u.kecamatan?'var(--blue)':'var(--gray-50)'};color:${!u.kecamatan?'white':'var(--gray-700)'};border-radius:6px;font-size:.65rem;font-weight:700;cursor:pointer;border:1px solid ${!u.kecamatan?'var(--blue)':'var(--gray-200)'}">
+            <input type="checkbox" ${!u.kecamatan?'checked':''} onchange="toggleAllKec('${uid}',this.checked)" style="margin:0;width:12px;height:12px"> Semua
+          </label>
+          ${Object.keys(KEC_CONFIG).sort().map(k=>{
+            const kUp=k.toUpperCase();
+            const checked=userKecs.includes(kUp);
+            return`<label style="display:flex;align-items:center;gap:3px;padding:3px 8px;background:${checked?'#EBF5FF':'var(--gray-50)'};color:${checked?'var(--blue)':'var(--gray-500)'};border-radius:6px;font-size:.65rem;font-weight:600;cursor:pointer;border:1px solid ${checked?'var(--blue)':'var(--gray-200)'}">
+              <input type="checkbox" name="adm_kec_${uid}" value="${kUp}" ${checked?'checked':''} onchange="onKecCheck('${uid}')" style="margin:0;width:12px;height:12px"> ${k}
+            </label>`;
+          }).join('')}
+        </div>
+      </div>
+      <!-- Desa Checklist -->
+      <div style="margin-bottom:10px">
+        <div style="font-size:.65rem;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Akses Desa <span style="font-weight:400;text-transform:none">(kosong = semua desa di kecamatan terpilih)</span>:</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;max-height:120px;overflow-y:auto;padding:4px 0" id="adm_desa_wrap_${uid}">
+          ${userKecs.length?userKecs.map(kec=>getDesaListForKec(kec).map(d=>{
+            const checked=userDesas.includes(d);
+            return`<label style="display:flex;align-items:center;gap:3px;padding:2px 7px;background:${checked?'#E8F5E9':'var(--gray-50)'};color:${checked?'var(--success)':'var(--gray-500)'};border-radius:5px;font-size:.6rem;font-weight:600;cursor:pointer;border:1px solid ${checked?'var(--success)':'var(--gray-200)'}">
+              <input type="checkbox" name="adm_desa_${uid}" value="${d}" ${checked?'checked':''} style="margin:0;width:11px;height:11px"> ${d}
+            </label>`;
+          }).join('')).join(''):'<span style="font-size:.65rem;color:var(--gray);font-style:italic">Pilih kecamatan dulu</span>'}
+        </div>
+      </div>
+      <!-- Buttons -->
+      <div style="display:flex;gap:6px">
+        <button onclick="saveAdmin('${uid}')" style="padding:6px 14px;background:var(--blue);color:white;border:none;border-radius:6px;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit"><i class="fas fa-save"></i> Simpan</button>
+        <button onclick="deleteAdmin('${uid}')" style="padding:6px 10px;background:var(--danger);color:white;border:none;border-radius:6px;font-size:.72rem;cursor:pointer" title="Hapus akses"><i class="fas fa-trash"></i></button>
+      </div>
     </div>`}
   </div>`;
 }
@@ -752,13 +781,27 @@ function getDesaListForKec(kec){
   const kecTitle=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===kec.toUpperCase())||'';
   return[...new Set(window._batasNgawi.features.filter(f=>f.properties.WADMKC===kecTitle).map(f=>f.properties.NAMOBJ))].sort();
 }
-function updateDesaOpts(uid,kecVal){
-  const sel=document.getElementById('adm_desa_'+uid);
-  if(!sel)return;
-  sel.innerHTML='<option value="">Semua Desa</option>';
-  if(kecVal){
-    getDesaListForKec(kecVal).forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;sel.appendChild(o)});
-  }
+function updateDesaOpts(uid,kecVal){}
+function toggleAllKec(uid,checked){
+  document.querySelectorAll(`input[name="adm_kec_${uid}"]`).forEach(cb=>{cb.checked=false});
+  onKecCheck(uid);
+}
+function onKecCheck(uid){
+  const kecs=[...document.querySelectorAll(`input[name="adm_kec_${uid}"]:checked`)].map(cb=>cb.value);
+  const wrap=document.getElementById('adm_desa_wrap_'+uid);
+  if(!wrap)return;
+  if(!kecs.length){wrap.innerHTML='<span style="font-size:.65rem;color:var(--gray);font-style:italic">Pilih kecamatan dulu, atau centang "Semua"</span>';return}
+  let html='';
+  kecs.forEach(kec=>{
+    const desas=getDesaListForKec(kec);
+    if(desas.length){
+      html+=`<div style="font-size:.58rem;font-weight:700;color:var(--navy);width:100%;margin-top:4px">${kec}:</div>`;
+      desas.forEach(d=>{
+        html+=`<label style="display:flex;align-items:center;gap:3px;padding:2px 7px;background:var(--gray-50);color:var(--gray-500);border-radius:5px;font-size:.6rem;font-weight:600;cursor:pointer;border:1px solid var(--gray-200)"><input type="checkbox" name="adm_desa_${uid}" value="${d}" style="margin:0;width:11px;height:11px"> ${d}</label>`;
+      });
+    }
+  });
+  wrap.innerHTML=html||'<span style="font-size:.65rem;color:var(--gray)">Tidak ada data desa</span>';
 }
 async function registerByAdmin(){
   if(!isSuperAdmin())return toast('Hanya admin inti','error');
@@ -767,19 +810,23 @@ async function registerByAdmin(){
   const kec=document.getElementById('newAdmKec').value||null;
   const desa=document.getElementById('adm_desa_new').value||null;
   if(!nama||!email)return toast('Isi nama dan email','error');
-  // Insert langsung sebagai approved
   const{error}=await sb.from('admin_users').upsert({email,nama,kecamatan:kec,desa,status:'approved'},{onConflict:'email'});
   if(error)return toast('Gagal mendaftarkan: '+error.message,'error');
   toast(`${nama} berhasil didaftarkan sebagai admin`,'success');
   document.getElementById('newAdmNama').value='';
   document.getElementById('newAdmEmail').value='';
-  openAdminPanel(); // refresh
+  openAdminPanel();
 }
 async function saveAdmin(uid){
   if(!isSuperAdmin())return toast('Hanya admin inti','error');
   const status=document.getElementById('adm_status_'+uid).value;
-  const kec=document.getElementById('adm_kec_'+uid).value||null;
-  const desa=document.getElementById('adm_desa_'+uid).value||null;
+  // Cek "Semua" checkbox
+  const allCb=document.querySelector(`#adm_kec_wrap_${uid}>label:first-child input[type="checkbox"]`);
+  const isAll=allCb&&allCb.checked;
+  const kecChecked=[...document.querySelectorAll(`input[name="adm_kec_${uid}"]:checked`)].map(cb=>cb.value);
+  const kec=isAll?null:(kecChecked.length?kecChecked.join(','):null);
+  const desaChecked=[...document.querySelectorAll(`input[name="adm_desa_${uid}"]:checked`)].map(cb=>cb.value);
+  const desa=desaChecked.length?desaChecked.join(','):null;
   const{error}=await sb.from('admin_users').update({status,kecamatan:kec,desa}).eq('id',uid);
   if(error)return toast('Gagal menyimpan: '+error.message,'error');
   toast('Hak akses diperbarui','success');
@@ -1081,16 +1128,18 @@ function renderBr(){
 function canEditCurrentKec(){
   if(!isAdmin)return false;
   if(!userKec)return true; // super admin
-  if(userKec!==currentKec)return false;
-  // userDesa null = semua desa di kecamatan itu
-  return true;
+  // userKec bisa comma-separated: "BRINGIN,GENENG"
+  const kecs=userKec.split(',');
+  return kecs.includes(currentKec);
 }
 function canEditDesa(desaName){
   if(!isAdmin)return false;
   if(!userKec)return true; // super admin
-  if(userKec!==currentKec)return false;
-  if(!userDesa)return true; // admin kecamatan, semua desa
-  return userDesa===desaName; // admin desa, hanya desa tertentu
+  const kecs=userKec.split(',');
+  if(!kecs.includes(currentKec))return false;
+  if(!userDesa)return true; // semua desa di kecamatan itu
+  const desas=userDesa.split(',');
+  return desas.includes(desaName);
 }
 function isSuperAdmin(){return isAdmin&&!userKec}
 function resetBrView(){
