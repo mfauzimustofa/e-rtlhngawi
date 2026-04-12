@@ -1456,10 +1456,36 @@ async function uploadExcel(input){
       if(val===''||val===undefined||val===null){obj[dbKey]=null;return}
       const col=EXCEL_COLS.find(c=>c.db===dbKey);
       if(dbKey==='latitude'||dbKey==='longitude'){
-        // Koordinat: user nulis sebagai teks, parse ke angka untuk database
-        const s=String(val).replace(',','.').replace(/[^\d.\-]/g,'');
-        const num=parseFloat(s);
-        obj[dbKey]=isNaN(num)?null:num;
+        // Koordinat: akalin format dari Excel yang hilang titik desimalnya
+        let s=String(val).replace(',','.').replace(/[^\d.\-]/g,'');
+        let num=parseFloat(s);
+        if(!isNaN(num)){
+          // Cek apakah koordinat sudah benar (Ngawi: lat -7.xx, lng 111.xx)
+          if(dbKey==='latitude'){
+            // Latitude Ngawi harusnya antara -7.0 sampai -8.0
+            if(num<-100){
+              // Contoh: -7482354 -> -7.482354
+              const str=String(Math.abs(num));
+              num=-parseFloat(str[0]+'.'+str.slice(1));
+            }else if(num>100){
+              // Contoh: 7482354 -> -7.482354 (lupa minus)
+              const str=String(num);
+              num=-parseFloat(str[0]+'.'+str.slice(1));
+            }
+          }else if(dbKey==='longitude'){
+            // Longitude Ngawi harusnya antara 111.0 sampai 112.0
+            if(num>1000){
+              // Contoh: 111414445 -> 111.414445
+              const str=String(Math.abs(num));
+              num=parseFloat(str.slice(0,3)+'.'+str.slice(3));
+            }else if(num<-1000){
+              // Contoh: -111414445 -> 111.414445
+              const str=String(Math.abs(num));
+              num=parseFloat(str.slice(0,3)+'.'+str.slice(3));
+            }
+          }
+          obj[dbKey]=num;
+        }else{obj[dbKey]=null}
       }else if(col?.type==='number'){
         const num=parseFloat(String(val).replace(',','.'));
         obj[dbKey]=isNaN(num)?null:num;
