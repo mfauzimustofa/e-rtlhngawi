@@ -791,6 +791,49 @@ async function deleteAdmin(uid){
 }
 
 // ═══ UTILS ═══
+function fixCoord(num,type){
+  // Fix titik desimal yang hilang dari Excel
+  const abs=Math.abs(num);const neg=num<0;
+  if(abs>1000){
+    const s=String(abs);
+    // Cek apakah ini latitude (-7.xxx) atau longitude (111.xxx)
+    if(s.startsWith('111')||s.startsWith('112')){
+      // Ini longitude: 111407000 -> 111.407000
+      return parseFloat(s.slice(0,3)+'.'+s.slice(3));
+    }else if(s[0]==='7'||s[0]==='8'){
+      // Ini latitude: 7481960 -> -7.481960
+      return -parseFloat(s[0]+'.'+s.slice(1));
+    }
+  }else if(abs>100){
+    const s=String(abs);
+    if(s.startsWith('111')||s.startsWith('112')){
+      return parseFloat(s);
+    }else if(s[0]==='7'||s[0]==='8'){
+      return -parseFloat(s[0]+'.'+s.slice(1));
+    }
+  }
+  // Sudah benar atau tidak bisa dideteksi
+  return num;
+}
+function fixLatLng(obj){
+  // Deteksi dan perbaiki lat/lng yang kebalik
+  // Ngawi: lat harusnya -7.xx sampai -8.xx, lng harusnya 111.xx sampai 112.xx
+  let lat=obj.latitude,lng=obj.longitude;
+  if(lat===null||lng===null)return;
+  // Kalau lat positif dan di range 111-112, berarti kebalik
+  if(lat>100&&lng<0){
+    // Kebalik: lat=111.407, lng=-7.481 -> swap
+    obj.latitude=lng;obj.longitude=lat;
+  }else if(lat>100&&lng>100){
+    // Dua-duanya positif besar, cek mana yang 111.xx
+    if(String(lat).startsWith('111')||String(lat).startsWith('112')){
+      obj.longitude=lat;obj.latitude=-lng;
+    }
+  }else if(lat>0&&lat<10&&lng>100){
+    // lat=7.48 (lupa minus), lng=111.xx
+    obj.latitude=-lat;
+  }
+}
 function maskName(name){
   if(!name)return'-';
   return name.split(' ').map(w=>{
@@ -1226,6 +1269,10 @@ async function saveForm(){
   const obj={};
   FIELDS.forEach(f=>{const el=document.getElementById('ff_'+f.key);if(!el)return;let v=el.value;if(f.type==='number'&&v)v=parseFloat(v);obj[f.key]=v||null});
   obj.kec=currentKec||'BRINGIN';obj.updated_at=new Date().toISOString();
+  // Auto-fix koordinat dari form
+  if(obj.latitude)obj.latitude=fixCoord(parseFloat(obj.latitude)||0,'latitude');
+  if(obj.longitude)obj.longitude=fixCoord(parseFloat(obj.longitude)||0,'longitude');
+  fixLatLng(obj);
   // Show loading on save button
   const saveBtn=document.getElementById('fmSave');
   saveBtn.disabled=true;saveBtn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
@@ -1456,34 +1503,12 @@ async function uploadExcel(input){
       if(val===''||val===undefined||val===null){obj[dbKey]=null;return}
       const col=EXCEL_COLS.find(c=>c.db===dbKey);
       if(dbKey==='latitude'||dbKey==='longitude'){
-        // Koordinat: akalin format dari Excel yang hilang titik desimalnya
+        // Koordinat: akalin format dari Excel
         let s=String(val).replace(',','.').replace(/[^\d.\-]/g,'');
         let num=parseFloat(s);
         if(!isNaN(num)){
-          // Cek apakah koordinat sudah benar (Ngawi: lat -7.xx, lng 111.xx)
-          if(dbKey==='latitude'){
-            // Latitude Ngawi harusnya antara -7.0 sampai -8.0
-            if(num<-100){
-              // Contoh: -7482354 -> -7.482354
-              const str=String(Math.abs(num));
-              num=-parseFloat(str[0]+'.'+str.slice(1));
-            }else if(num>100){
-              // Contoh: 7482354 -> -7.482354 (lupa minus)
-              const str=String(num);
-              num=-parseFloat(str[0]+'.'+str.slice(1));
-            }
-          }else if(dbKey==='longitude'){
-            // Longitude Ngawi harusnya antara 111.0 sampai 112.0
-            if(num>1000){
-              // Contoh: 111414445 -> 111.414445
-              const str=String(Math.abs(num));
-              num=parseFloat(str.slice(0,3)+'.'+str.slice(3));
-            }else if(num<-1000){
-              // Contoh: -111414445 -> 111.414445
-              const str=String(Math.abs(num));
-              num=parseFloat(str.slice(0,3)+'.'+str.slice(3));
-            }
-          }
+          // Fix titik desimal yang hilang
+          num=fixCoord(num,dbKey);
           obj[dbKey]=num;
         }else{obj[dbKey]=null}
       }else if(col?.type==='number'){
@@ -1496,6 +1521,9 @@ async function uploadExcel(input){
 
     // Skip completely empty rows
     if(!obj.kep_kk&&!obj.desa&&!obj.alamat){skipped++;continue}
+
+    // Auto-fix koordinat kebalik
+    fixLatLng(obj);
 
     obj.kec=currentKec;
     obj.updated_at=new Date().toISOString();
