@@ -2021,37 +2021,37 @@ function teSelectChange(el){
 let teSaveTimer={};
 async function teSaveRow(id){
   id=parseInt(id);
-  // Batalkan timer sebelumnya
+  // Debounce 500ms — tunggu user selesai ketik semua field di baris ini
   if(teSaveTimer[id])clearTimeout(teSaveTimer[id]);
-  // Simpan referensi, jalankan langsung tanpa setTimeout
-  const changes=teDirty[id]||teDirty[String(id)];
-  if(!changes||!Object.keys(changes).length)return;
-  const row=document.getElementById('ter_'+id);
-  if(row)row.classList.add('saving');
-  teShowStatus('Menyimpan...','info');
-  const{error}=await sb.from('rtlh').update(changes).eq('id',id);
-  if(error){
-    if(row){row.classList.remove('saving');row.classList.add('error-row');}
-    toast('Gagal simpan: '+error.message,'error');
-    return;
-  }
-  delete teDirty[id];
-  delete teDirty[String(id)];
-  delete teSaveTimer[id];
-  const ri=brAll.findIndex(x=>x.id===id);
-  if(ri>=0){
-    Object.assign(brAll[ri],changes);
-    brAll[ri]._score=calcScore(brAll[ri]);
-    brAll[ri]._cat=getCat(brAll[ri]._score);
-  }
-  if(currentKec)brCache[currentKec]=brAll;
-  brFeatures=[...brAll];
-  if(row){row.classList.remove('saving','dirty','error-row');}
-  const remaining=Object.keys(teDirty).length;
-  teShowStatus(remaining?`${remaining} baris belum disimpan`:'Semua tersimpan ✓',remaining?'warning':'success');
-  if(!remaining)setTimeout(()=>teShowStatus('',''),2000);
+  teSaveTimer[id]=setTimeout(async()=>{
+    const changes=teDirty[id]||teDirty[String(id)];
+    if(!changes||!Object.keys(changes).length)return;
+    const row=document.getElementById('ter_'+id);
+    if(row)row.classList.add('saving');
+    teShowStatus('Menyimpan...','info');
+    const{error}=await sb.from('rtlh').update(changes).eq('id',id);
+    if(error){
+      if(row){row.classList.remove('saving');row.classList.add('error-row');}
+      toast('Gagal simpan: '+error.message,'error');
+      return;
+    }
+    delete teDirty[id];
+    delete teDirty[String(id)];
+    delete teSaveTimer[id];
+    const ri=brAll.findIndex(x=>x.id===id);
+    if(ri>=0){
+      Object.assign(brAll[ri],changes);
+      brAll[ri]._score=calcScore(brAll[ri]);
+      brAll[ri]._cat=getCat(brAll[ri]._score);
+    }
+    if(currentKec)brCache[currentKec]=brAll;
+    brFeatures=[...brAll];
+    if(row){row.classList.remove('saving','dirty','error-row');}
+    const remaining=Object.keys(teDirty).length;
+    teShowStatus(remaining?`${remaining} baris belum disimpan`:'Semua tersimpan ✓',remaining?'warning':'success');
+    if(!remaining)setTimeout(()=>teShowStatus('',''),2000);
+  },500);
 }
-
 async function teSaveAll(){
   const ids=Object.keys(teDirty);
   if(!ids.length)return;
