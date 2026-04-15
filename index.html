@@ -701,7 +701,7 @@ function nav(pg){
     document.getElementById('pgKecList').classList.add('active');
     document.getElementById('ntWebgis')?.classList.add('active');
     document.getElementById('mnWebgis')?.classList.add('active');
-    renderKecList();
+    ensureKecCounts().then(()=>renderKecList());
   } else if(pg==='webgis'){
     document.getElementById('pgWebgis').classList.add('active');
     document.getElementById('ntWebgis')?.classList.add('active');
@@ -736,7 +736,7 @@ async function hardRefresh(){
     const activePage=document.querySelector('.page.active')?.id;
     if(activePage==='pgBeranda')await loadGlobalStats();
     else if(activePage==='pgWebgis'&&currentKec){brAll=[];await loadKec();}
-    else if(activePage==='pgKecList')renderKecList();
+    else if(activePage==='pgKecList'){await ensureKecCounts(true);renderKecList();}
     toast('Data diperbarui','success');
   }catch(e){toast('Gagal refresh: '+e.message,'error');}
   setTimeout(()=>ico.classList.remove('spinning'),600);
@@ -1074,6 +1074,24 @@ function selectKec(k){
   if(!kKey)return;
   currentKec=kKey.toUpperCase();
   nav('webgis');
+}
+
+// Load kecCounts from DB if not yet populated (e.g. direct refresh to keclist page)
+async function ensureKecCounts(force=false){
+  if(!force && Object.keys(kecCounts).length>0)return; // already loaded
+  try{
+    const{data}=await sb.from('rtlh').select('kec,status_rtlh');
+    if(!data)return;
+    kecCounts={};
+    data.forEach(r=>{
+      const k=(r.kec||'').toUpperCase();
+      if(!kecCounts[k])kecCounts[k]={total:0,sudah:0,proses:0,belum:0};
+      kecCounts[k].total++;
+      if(r.status_rtlh==='Sudah Ditangani')kecCounts[k].sudah++;
+      else if(r.status_rtlh==='Dalam Proses')kecCounts[k].proses++;
+      else kecCounts[k].belum++;
+    });
+  }catch(e){console.error(e);}
 }
 
 function renderKecList(){
