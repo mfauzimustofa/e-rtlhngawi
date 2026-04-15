@@ -1987,21 +1987,17 @@ function teCellChange(el){
   const key=el.dataset.key;
   const orig=el.dataset.orig;
   let val=el.textContent.trim();
-  // NIK validation
   if(key==='nik'||key==='no_kk'){
     val=val.replace(/\D/g,'');
     el.textContent=val;
     if(val&&val.length!==16){el.style.color='var(--danger)';return;}
     else el.style.color='';
   }
-  if(val===orig)return; // no change
-  // Mark dirty
+  if(val===orig)return;
   if(!teDirty[id])teDirty[id]={};
   teDirty[id][key]=val||null;
-  // Update local data
   const r=teData.find(x=>x.id===id);
   if(r)r[key]=val||null;
-  // Visual feedback
   const row=document.getElementById('ter_'+id);
   if(row)row.classList.add('dirty');
   teShowStatus(`${Object.keys(teDirty).length} baris belum disimpan`,'warning');
@@ -2018,36 +2014,38 @@ function teSelectChange(el){
   const row=document.getElementById('ter_'+id);
   if(row)row.classList.add('dirty');
   teShowStatus(`${Object.keys(teDirty).length} baris belum disimpan`,'warning');
-  // Auto-save select changes immediately
   teSaveRow(id);
 }
 
 async function teSaveRow(id){
-  const changes=teDirty[id];
+  id=parseInt(id); // pastikan integer
+  const changes=teDirty[id]||teDirty[String(id)]; // cek kedua kemungkinan key
   if(!changes||!Object.keys(changes).length)return;
   const row=document.getElementById('ter_'+id);
   if(row)row.classList.add('saving');
   teShowStatus('Menyimpan...','info');
+  console.log('[teSaveRow] id:', id, '| changes:', changes);
   const{error}=await sb.from('rtlh').update(changes).eq('id',id);
   if(error){
+    console.error('[teSaveRow] error:', error);
     if(row){row.classList.remove('saving');row.classList.add('error-row');}
-    toast('Gagal simpan baris '+id+': '+error.message,'error');
+    toast('Gagal simpan: '+error.message,'error');
     return;
   }
+  console.log('[teSaveRow] success');
   delete teDirty[id];
-  // Update brAll cache too
+  delete teDirty[String(id)];
   const ri=brAll.findIndex(x=>x.id===id);
   if(ri>=0){
     Object.assign(brAll[ri],changes);
     brAll[ri]._score=calcScore(brAll[ri]);
     brAll[ri]._cat=getCat(brAll[ri]._score);
   }
-  // Sync brCache
   if(currentKec)brCache[currentKec]=brAll;
   brFeatures=[...brAll];
   if(row){row.classList.remove('saving','dirty','error-row');}
   const remaining=Object.keys(teDirty).length;
-  teShowStatus(remaining?`${remaining} baris belum disimpan`:'Semua tersimpan ✓', remaining?'warning':'success');
+  teShowStatus(remaining?`${remaining} baris belum disimpan`:'Semua tersimpan ✓',remaining?'warning':'success');
   if(!remaining)setTimeout(()=>teShowStatus('',''),2000);
 }
 
