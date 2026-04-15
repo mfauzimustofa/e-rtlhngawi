@@ -1992,16 +1992,30 @@ function teCellChange(el){
     else el.style.color='';
   }
   if(val===orig)return;
+  // Update local
   if(!teDirty[id])teDirty[id]={};
   teDirty[id][key]=val||null;
-  // Update local data
   const r=teData.find(x=>x.id===id);
   if(r)r[key]=val||null;
   const row=document.getElementById('ter_'+id);
   if(row)row.classList.add('dirty');
-  teShowStatus(`${Object.keys(teDirty).length} baris belum disimpan`,'warning');
-  // Auto-save langsung seperti select
-  teSaveRow(id);
+  teShowStatus('Menyimpan...','info');
+  // Simpan langsung ke Supabase — 1 kolom, pakai .then() bukan async/await
+  const obj={};obj[key]=val||null;
+  sb.from('rtlh').update(obj).eq('id',id).then(({error})=>{
+    if(error){
+      toast('Gagal simpan '+key+': '+error.message,'error');
+      teShowStatus('Gagal!','error');
+      return;
+    }
+    delete teDirty[id];
+    if(row)row.classList.remove('dirty','error-row');
+    const ri=brAll.findIndex(x=>x.id===id);
+    if(ri>=0)brAll[ri][key]=val||null;
+    if(currentKec)brCache[currentKec]=brAll;
+    teShowStatus('Tersimpan ✓','success');
+    setTimeout(()=>teShowStatus('',''),1500);
+  });
 }
 
 function teSelectChange(el){
@@ -2014,8 +2028,18 @@ function teSelectChange(el){
   if(r)r[key]=val||null;
   const row=document.getElementById('ter_'+id);
   if(row)row.classList.add('dirty');
-  teShowStatus(`${Object.keys(teDirty).length} baris belum disimpan`,'warning');
-  teSaveRow(id);
+  teShowStatus('Menyimpan...','info');
+  const obj={};obj[key]=val||null;
+  sb.from('rtlh').update(obj).eq('id',id).then(({error})=>{
+    if(error){toast('Gagal: '+error.message,'error');return;}
+    delete teDirty[id];
+    if(row)row.classList.remove('dirty','error-row');
+    const ri=brAll.findIndex(x=>x.id===id);
+    if(ri>=0)brAll[ri][key]=val||null;
+    if(currentKec)brCache[currentKec]=brAll;
+    teShowStatus('Tersimpan ✓','success');
+    setTimeout(()=>teShowStatus('',''),1500);
+  });
 }
 
 let teSaveTimer={};
