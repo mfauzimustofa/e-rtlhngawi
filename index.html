@@ -1988,17 +1988,20 @@ function teCellChange(el){
   if(key==='nik'||key==='no_kk'){
     val=val.replace(/\D/g,'');
     el.textContent=val;
-    if(val&&val.length!==16){el.style.color='var(--danger)';return;}
+    if(val&&val.length!==16){el.style.color='var(--danger)';toast('NIK/KK harus 16 digit','error');return;}
     else el.style.color='';
   }
   if(val===orig)return;
   if(!teDirty[id])teDirty[id]={};
   teDirty[id][key]=val||null;
+  // Update local data
   const r=teData.find(x=>x.id===id);
   if(r)r[key]=val||null;
   const row=document.getElementById('ter_'+id);
   if(row)row.classList.add('dirty');
   teShowStatus(`${Object.keys(teDirty).length} baris belum disimpan`,'warning');
+  // Auto-save langsung seperti select
+  teSaveRow(id);
 }
 
 function teSelectChange(el){
