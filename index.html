@@ -2030,7 +2030,8 @@ async function _doSaveRow(id){
   if(row)row.classList.add('saving');
   teShowStatus('Menyimpan...','info');
   console.log('[teSaveRow] id:', id, '| changes:', changes);
-  const{error}=await sb.from('rtlh').update(changes).eq('id',id);
+  const{data:updData, error, status, statusText}=await sb.from('rtlh').update(changes).eq('id',id).select();
+  console.log('[teSaveRow] response status:', status, statusText, '| data:', updData, '| error:', error);
   if(error){
     console.error('[teSaveRow] error:', error);
     if(row){row.classList.remove('saving');row.classList.add('error-row');}
