@@ -1860,12 +1860,10 @@ function closeTableEditor(){
   }
   document.getElementById('ovTableEditor').style.display='none';
   teDirty={};
-  // Sync cache and re-render map & sidebar
+  // Force reload from Supabase to ensure fresh data
   if(currentKec){
-    brCache[currentKec]=brAll;
-    brFeatures=[...brAll];
-    renderSidebar();
-    updateMap();
+    delete brCache[currentKec];
+    loadKec();
   }
 }
 
@@ -2017,8 +2015,15 @@ function teSelectChange(el){
   teSaveRow(id);
 }
 
+let teSaveTimer={};
 async function teSaveRow(id){
-  id=parseInt(id); // pastikan integer
+  id=parseInt(id);
+  // Debounce — batalkan timer sebelumnya untuk id yang sama
+  if(teSaveTimer[id])clearTimeout(teSaveTimer[id]);
+  teSaveTimer[id]=setTimeout(()=>_doSaveRow(id),300);
+}
+
+async function _doSaveRow(id){
   const changes=teDirty[id]||teDirty[String(id)]; // cek kedua kemungkinan key
   if(!changes||!Object.keys(changes).length)return;
   const row=document.getElementById('ter_'+id);
@@ -2033,6 +2038,7 @@ async function teSaveRow(id){
     return;
   }
   console.log('[teSaveRow] success');
+  delete teSaveTimer[id];
   delete teDirty[id];
   delete teDirty[String(id)];
   const ri=brAll.findIndex(x=>x.id===id);
