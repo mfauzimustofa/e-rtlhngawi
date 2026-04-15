@@ -289,6 +289,29 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
   #pgWebgis .map-wrap{padding-bottom:54px}
 }
 
+/* TABLE EDITOR */
+.te-th{background:var(--navy);color:#fff;padding:8px 10px;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;position:sticky;top:0;border-right:1px solid rgba(255,255,255,.1);user-select:none;cursor:pointer}
+.te-th:hover{background:var(--navy-80)}
+.te-th.sorted-asc::after{content:' ▲';font-size:.55rem}
+.te-th.sorted-desc::after{content:' ▼';font-size:.55rem}
+.te-row{border-bottom:1px solid var(--gray-100)}
+.te-row:hover{background:#F0F7FF}
+.te-row.dirty{background:#FFFBEB}
+.te-row.saving{background:#F0FDF4;opacity:.7}
+.te-row.error-row{background:#FEF2F2}
+.te-cell{padding:0;border-right:1px solid var(--gray-100);min-width:100px;max-width:220px;position:relative}
+.te-cell.cell-id{min-width:50px;max-width:60px;text-align:center;color:var(--gray-400);font-size:.65rem;font-weight:600;padding:6px 4px;background:var(--gray-50)}
+.te-cell.cell-nik{min-width:160px;font-family:monospace}
+.te-cell-inner{padding:6px 8px;font-size:.75rem;color:var(--gray-800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:cell;min-height:32px;display:flex;align-items:center}
+.te-cell-inner:focus{outline:2px solid var(--blue);outline-offset:-2px;background:#fff;white-space:normal;overflow:visible;z-index:10;position:relative}
+.te-cell-inner[contenteditable=true]{cursor:text}
+.te-select{width:100%;border:none;background:transparent;font-family:inherit;font-size:.75rem;color:var(--gray-800);padding:6px 8px;cursor:pointer;outline:none}
+.te-select:focus{outline:2px solid var(--blue);background:#fff}
+.te-save-btn{position:absolute;right:2px;top:50%;transform:translateY(-50%);background:var(--blue);color:#fff;border:none;border-radius:4px;padding:2px 6px;font-size:.58rem;cursor:pointer;display:none;font-family:inherit;font-weight:700;z-index:20}
+.te-row.dirty .te-save-indicator{display:flex!important}
+.te-save-indicator{display:none;position:sticky;right:0;background:var(--warning-bg);border-left:2px solid var(--warning);padding:4px 8px;font-size:.62rem;color:#92400E;font-weight:700;white-space:nowrap;align-items:center;gap:4px;cursor:pointer}
+.te-save-indicator:hover{background:var(--warning);color:#fff}
+
 /* SPINNING REFRESH ICON */
 @keyframes spin{to{transform:rotate(360deg)}}
 .spinning{animation:spin .7s linear infinite}
@@ -475,6 +498,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
     <div class="tb-sep"></div>
     <button class="tb-btn mob-sidebar-toggle" id="btnMobSidebar" onclick="toggleMobSidebar()"><i class="fas fa-list"></i></button>
     <button class="tb-btn" id="btnAddRtlh" onclick="openForm(null)" style="display:none"><i class="fas fa-plus"></i> <span class="tb-label">Tambah</span></button>
+    <button class="tb-btn" id="btnTableEditor" onclick="openTableEditor()" style="display:none" title="Table Editor — Edit seperti spreadsheet"><i class="fas fa-table"></i> <span class="tb-label">Tabel</span></button>
     <button class="tb-btn" id="btnDownload" onclick="openDownloadModal()"><i class="fas fa-download"></i></button>
     <button class="tb-btn danger" id="btnDelAll" onclick="deleteAllKec()" style="display:none"><i class="fas fa-trash-alt"></i></button>
   </div>
@@ -630,6 +654,43 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 </div>
 
 
+
+<!-- TABLE EDITOR MODAL (fullscreen spreadsheet) -->
+<div id="ovTableEditor" style="display:none;position:fixed;inset:0;z-index:20000;background:#fff;flex-direction:column;font-family:var(--font)">
+  <!-- Toolbar -->
+  <div style="height:50px;background:var(--navy);display:flex;align-items:center;padding:0 14px;gap:8px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.3)">
+    <button onclick="closeTableEditor()" style="background:rgba(255,255,255,.12);border:none;color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center"><i class="fas fa-times"></i></button>
+    <div style="font-size:.88rem;font-weight:800;color:#fff;flex:1"><i class="fas fa-table" style="color:var(--gold);margin-right:7px"></i>Table Editor — <span id="teTitle" style="color:var(--gold-light)"></span></div>
+    <div id="teSaveStatus" style="font-size:.7rem;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:5px"></div>
+    <button onclick="teAddRow()" id="btnTeAdd" style="display:none;background:var(--success);border:none;color:#fff;padding:6px 12px;border-radius:7px;cursor:pointer;font-size:.72rem;font-weight:700;font-family:inherit;gap:5px;align-items:center"><i class="fas fa-plus"></i> Tambah Baris</button>
+    <button onclick="teExport()" style="background:rgba(255,255,255,.1);border:none;color:#fff;padding:6px 12px;border-radius:7px;cursor:pointer;font-size:.72rem;font-weight:700;font-family:inherit;display:flex;align-items:center;gap:5px"><i class="fas fa-file-excel"></i> Export</button>
+  </div>
+  <!-- Filter bar -->
+  <div style="height:40px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);display:flex;align-items:center;padding:0 12px;gap:8px;flex-shrink:0">
+    <i class="fas fa-search" style="color:var(--gray-400);font-size:.75rem"></i>
+    <input id="teSearch" type="text" placeholder="Cari nama, desa, NIK..." oninput="teFilter()" style="border:none;background:transparent;font-family:inherit;font-size:.78rem;outline:none;flex:1;color:var(--gray-800)">
+    <span id="teCount" style="font-size:.68rem;color:var(--gray-400);white-space:nowrap"></span>
+    <select id="teFilterStatus" onchange="teFilter()" style="border:1px solid var(--gray-200);border-radius:6px;padding:3px 8px;font-size:.7rem;font-family:inherit;background:#fff">
+      <option value="">Semua Status</option>
+      <option>Belum Ditangani</option>
+      <option>Dalam Proses</option>
+      <option>Sudah Ditangani</option>
+    </select>
+    <select id="teFilterDesil" onchange="teFilter()" style="border:1px solid var(--gray-200);border-radius:6px;padding:3px 8px;font-size:.7rem;font-family:inherit;background:#fff">
+      <option value="">Semua Desil</option>
+      <option>Desil 1</option><option>Desil 2</option><option>Desil 3</option><option>Desil 4</option>
+      <option>Desil 5</option><option>Desil 6</option><option>Desil 7</option><option>Desil 8</option>
+    </select>
+  </div>
+  <!-- Table container -->
+  <div style="flex:1;overflow:auto;position:relative" id="teTableWrap">
+    <div style="text-align:center;padding:40px;color:var(--gray-400)" id="teLoading"><i class="fas fa-circle-notch fa-spin" style="font-size:1.5rem"></i><div style="margin-top:10px;font-size:.85rem">Memuat data...</div></div>
+    <table id="teTable" style="display:none;border-collapse:collapse;width:max-content;min-width:100%">
+      <thead id="teThead" style="position:sticky;top:0;z-index:100"></thead>
+      <tbody id="teTbody"></tbody>
+    </table>
+  </div>
+</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
@@ -821,6 +882,7 @@ function updAuth(){
   }
   // Update toolbar buttons
   document.getElementById('btnAddRtlh').style.display=canEdit()?'flex':'none';
+  document.getElementById('btnTableEditor').style.display=isAdmin?'flex':'none';
   document.getElementById('btnDelAll').style.display=(isSuperAdmin()&&currentKec)?'flex':'none';
   document.getElementById('btnDlFull') && (document.getElementById('btnDlFull').style.display=isSuperAdmin()?'flex':'none');
   // Update sidebar NIK visibility
@@ -1751,8 +1813,289 @@ function toggleMobSidebar(){
 }
 
 // ══════════════════════════════════════════════════
-// BOOT
+// TABLE EDITOR
 // ══════════════════════════════════════════════════
+const TE_COLS=[
+  {key:'id',label:'ID',type:'id',width:55,readonly:true},
+  {key:'kep_kk',label:'Nama KK',type:'text',width:180},
+  {key:'nik',label:'NIK',type:'nik',width:165,sensitive:true},
+  {key:'no_kk',label:'No. KK',type:'nik',width:165,sensitive:true},
+  {key:'desa',label:'Desa',type:'text',width:140},
+  {key:'alamat',label:'Alamat',type:'text',width:200},
+  {key:'jen_kel',label:'JK',type:'select',opts:['LAKI-LAKI','PEREMPUAN'],width:100},
+  {key:'umur',label:'Umur',type:'number',width:65},
+  {key:'pekerjaan',label:'Pekerjaan',type:'text',width:120},
+  {key:'pengh',label:'Penghasilan',type:'text',width:130},
+  {key:'luas_rum',label:'L.Rumah',type:'number',width:75},
+  {key:'jml_peng',label:'Penghuni',type:'number',width:75},
+  {key:'desil',label:'Desil',type:'select',opts:['','Desil 1','Desil 2','Desil 3','Desil 4','Desil 5','Desil 6','Desil 7','Desil 8'],width:90},
+  {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['Belum Ditangani','Dalam Proses','Sudah Ditangani'],width:140},
+  {key:'tahun_bantuan',label:'Tahun',type:'select',opts:['','2021','2022','2023','2024','2025','2026'],width:75},
+  {key:'sumber_dana',label:'Sumber Dana',type:'select',opts:['','APBD','APBN','DAK','CSR','Lainnya'],width:110},
+  {key:'dtsen',label:'DTSEN',type:'select',opts:['','Eligible','Non Eligible'],width:110},
+  {key:'material_d',label:'Mat.Dinding',type:'text',width:110},
+  {key:'kondisi_di',label:'Kond.Dinding',type:'text',width:110},
+  {key:'material_a',label:'Mat.Atap',type:'text',width:100},
+  {key:'kondisi_at',label:'Kond.Atap',type:'text',width:100},
+  {key:'material_l',label:'Mat.Lantai',type:'text',width:100},
+  {key:'kondisi_la',label:'Kond.Lantai',type:'text',width:100},
+  {key:'latitude',label:'Lat',type:'number',width:100},
+  {key:'longitude',label:'Lng',type:'number',width:100},
+];
+
+let teData=[],teFiltered=[],teDirty={},teSortCol=null,teSortDir=1;
+
+function openTableEditor(){
+  if(!isAdmin)return toast('Login dulu','error');
+  document.getElementById('ovTableEditor').style.display='flex';
+  document.getElementById('teTitle').textContent='Kec. '+(Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===currentKec)||currentKec||'Semua');
+  document.getElementById('btnTeAdd').style.display=canEdit()?'flex':'none';
+  teLoadData();
+}
+
+function closeTableEditor(){
+  // Warn if there are unsaved changes
+  if(Object.keys(teDirty).length>0){
+    if(!confirm('Ada '+Object.keys(teDirty).length+' baris belum disimpan. Tutup tetap?'))return;
+  }
+  document.getElementById('ovTableEditor').style.display='none';
+  teDirty={};
+}
+
+async function teLoadData(){
+  document.getElementById('teLoading').style.display='block';
+  document.getElementById('teTable').style.display='none';
+  teDirty={};
+  const cols=TE_COLS.map(c=>c.key).join(',');
+  let q=sb.from('rtlh').select(cols).order('id');
+  if(currentKec)q=q.eq('kec',currentKec);
+  const{data,error}=await q;
+  if(error){toast('Gagal load: '+error.message,'error');return;}
+  teData=data||[];
+  teFiltered=[...teData];
+  teRender();
+  document.getElementById('teLoading').style.display='none';
+  document.getElementById('teTable').style.display='table';
+  document.getElementById('teCount').textContent=teFiltered.length+' baris';
+}
+
+function teFilter(){
+  const q=(document.getElementById('teSearch').value||'').toLowerCase();
+  const st=document.getElementById('teFilterStatus').value;
+  const ds=document.getElementById('teFilterDesil').value;
+  teFiltered=teData.filter(r=>{
+    if(st&&r.status_rtlh!==st)return false;
+    if(ds&&r.desil!==ds)return false;
+    if(q){
+      const hay=(r.kep_kk||'')+(r.desa||'')+(r.nik||'')+(r.alamat||'');
+      if(!hay.toLowerCase().includes(q))return false;
+    }
+    return true;
+  });
+  if(teSortCol)teSort(teSortCol,true);
+  else teRender();
+  document.getElementById('teCount').textContent=teFiltered.length+' baris';
+}
+
+function teSort(key,noToggle=false){
+  if(!noToggle){teSortDir=teSortCol===key?-teSortDir:1;}
+  teSortCol=key;
+  teFiltered.sort((a,b)=>{
+    const av=a[key]||'',bv=b[key]||'';
+    return typeof av==='number'?(av-bv)*teSortDir:String(av).localeCompare(String(bv))*teSortDir;
+  });
+  teRender();
+  // Update header sort indicator
+  document.querySelectorAll('.te-th').forEach(th=>{
+    th.classList.remove('sorted-asc','sorted-desc');
+    if(th.dataset.key===key)th.classList.add(teSortDir===1?'sorted-asc':'sorted-desc');
+  });
+}
+
+function teRender(){
+  const superAdmin=isAdmin&&(!userKec||userKec==='');
+  const thead=document.getElementById('teThead');
+  const tbody=document.getElementById('teTbody');
+
+  // Header
+  thead.innerHTML=`<tr>${TE_COLS.map(c=>`
+    <th class="te-th" data-key="${c.key}" style="min-width:${c.width}px" onclick="teSort('${c.key}')">
+      ${c.label}${c.sensitive?'<i class="fas fa-lock" style="font-size:.5rem;opacity:.5;margin-left:3px"></i>':''}
+    </th>`).join('')}
+    <th class="te-th" style="min-width:80px;position:sticky;right:0">Aksi</th>
+  </tr>`;
+
+  // Rows
+  tbody.innerHTML=teFiltered.map(r=>{
+    const dirty=teDirty[r.id];
+    return`<tr class="te-row${dirty?' dirty':''}" id="ter_${r.id}" data-id="${r.id}">
+      ${TE_COLS.map(c=>{
+        const val=r[c.key]!=null?r[c.key]:'';
+        // ID column
+        if(c.type==='id')return`<td class="te-cell cell-id">${val}</td>`;
+        // Sensitive — only super admin can edit
+        const canEditCell=canEdit()&&(!c.sensitive||superAdmin)&&!c.readonly;
+        // NIK column — monospace display
+        if(c.type==='nik'){
+          const display=c.sensitive&&!superAdmin?maskNIK(val):val;
+          return`<td class="te-cell cell-nik">
+            <div class="te-cell-inner" contenteditable="${canEditCell}" data-id="${r.id}" data-key="${c.key}" data-orig="${val}"
+              onblur="teCellChange(this)" onkeydown="teCellKey(event,this)" style="font-family:monospace;letter-spacing:1px">${display}</div>
+          </td>`;
+        }
+        // Select column
+        if(c.type==='select'){
+          if(!canEditCell)return`<td class="te-cell"><div class="te-cell-inner">${val}</div></td>`;
+          return`<td class="te-cell" style="min-width:${c.width}px">
+            <select class="te-select" data-id="${r.id}" data-key="${c.key}" onchange="teSelectChange(this)">
+              ${c.opts.map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('')}
+            </select>
+          </td>`;
+        }
+        // Text/number column
+        return`<td class="te-cell" style="min-width:${c.width}px">
+          <div class="te-cell-inner" contenteditable="${canEditCell}" data-id="${r.id}" data-key="${c.key}" data-orig="${val}"
+            onblur="teCellChange(this)" onkeydown="teCellKey(event,this)">${val}</div>
+        </td>`;
+      }).join('')}
+      <td class="te-save-indicator" onclick="teSaveRow(${r.id})" title="Klik untuk simpan baris ini">
+        <i class="fas fa-save"></i> Simpan
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function teCellKey(e,el){
+  if(e.key==='Enter'){e.preventDefault();el.blur();}
+  if(e.key==='Escape'){el.textContent=el.dataset.orig;el.blur();}
+  if(e.key==='Tab'){e.preventDefault();
+    const cells=document.querySelectorAll('.te-cell-inner[contenteditable=true]');
+    const idx=[...cells].indexOf(el);
+    if(cells[idx+1])cells[idx+1].focus();
+  }
+}
+
+function teCellChange(el){
+  const id=parseInt(el.dataset.id);
+  const key=el.dataset.key;
+  const orig=el.dataset.orig;
+  let val=el.textContent.trim();
+  // NIK validation
+  if(key==='nik'||key==='no_kk'){
+    val=val.replace(/\D/g,'');
+    el.textContent=val;
+    if(val&&val.length!==16){el.style.color='var(--danger)';return;}
+    else el.style.color='';
+  }
+  if(val===orig)return; // no change
+  // Mark dirty
+  if(!teDirty[id])teDirty[id]={};
+  teDirty[id][key]=val||null;
+  // Update local data
+  const r=teData.find(x=>x.id===id);
+  if(r)r[key]=val||null;
+  // Visual feedback
+  const row=document.getElementById('ter_'+id);
+  if(row)row.classList.add('dirty');
+  teShowStatus(`${Object.keys(teDirty).length} baris belum disimpan`,'warning');
+}
+
+function teSelectChange(el){
+  const id=parseInt(el.dataset.id);
+  const key=el.dataset.key;
+  const val=el.value;
+  if(!teDirty[id])teDirty[id]={};
+  teDirty[id][key]=val||null;
+  const r=teData.find(x=>x.id===id);
+  if(r)r[key]=val||null;
+  const row=document.getElementById('ter_'+id);
+  if(row)row.classList.add('dirty');
+  teShowStatus(`${Object.keys(teDirty).length} baris belum disimpan`,'warning');
+  // Auto-save select changes immediately
+  teSaveRow(id);
+}
+
+async function teSaveRow(id){
+  const changes=teDirty[id];
+  if(!changes||!Object.keys(changes).length)return;
+  const row=document.getElementById('ter_'+id);
+  if(row)row.classList.add('saving');
+  teShowStatus('Menyimpan...','info');
+  const{error}=await sb.from('rtlh').update(changes).eq('id',id);
+  if(error){
+    if(row){row.classList.remove('saving');row.classList.add('error-row');}
+    toast('Gagal simpan baris '+id+': '+error.message,'error');
+    return;
+  }
+  delete teDirty[id];
+  // Update brAll cache too
+  const ri=brAll.findIndex(x=>x.id===id);
+  if(ri>=0)Object.assign(brAll[ri],changes);
+  if(row){row.classList.remove('saving','dirty','error-row');}
+  const remaining=Object.keys(teDirty).length;
+  teShowStatus(remaining?`${remaining} baris belum disimpan`:'Semua tersimpan ✓', remaining?'warning':'success');
+  if(!remaining)setTimeout(()=>teShowStatus('',''),2000);
+}
+
+async function teSaveAll(){
+  const ids=Object.keys(teDirty);
+  if(!ids.length)return;
+  teShowStatus(`Menyimpan ${ids.length} baris...`,'info');
+  let ok=0,fail=0;
+  for(const id of ids){
+    const changes=teDirty[id];
+    const{error}=await sb.from('rtlh').update(changes).eq('id',parseInt(id));
+    if(error)fail++;
+    else{
+      ok++;delete teDirty[id];
+      const row=document.getElementById('ter_'+id);
+      if(row)row.classList.remove('dirty','saving');
+      const ri=brAll.findIndex(x=>x.id===parseInt(id));
+      if(ri>=0)Object.assign(brAll[ri],changes);
+    }
+  }
+  teShowStatus(fail?`${ok} tersimpan, ${fail} gagal`:'Semua tersimpan ✓',fail?'error':'success');
+  if(!fail)setTimeout(()=>teShowStatus('',''),2000);
+}
+
+function teShowStatus(msg,type){
+  const el=document.getElementById('teSaveStatus');
+  if(!msg){el.innerHTML='';return;}
+  const colors={warning:'#FCD34D',success:'#86EFAC',error:'#FCA5A5',info:'rgba(255,255,255,.5)'};
+  el.innerHTML=`<span style="color:${colors[type]||colors.info}">${msg}</span>
+    ${type==='warning'?`<button onclick="teSaveAll()" style="background:var(--gold);border:none;color:var(--navy);padding:3px 10px;border-radius:5px;font-size:.65rem;font-weight:700;cursor:pointer;font-family:inherit;margin-left:4px">Simpan Semua</button>`:''}`;
+}
+
+function teAddRow(){
+  if(!canEdit())return;
+  const kecName=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===currentKec)||currentKec;
+  openForm(null);
+  closeTableEditor();
+}
+
+function teExport(){
+  const rows=teFiltered.map(r=>{
+    const obj={};
+    TE_COLS.forEach(c=>{
+      if(c.type==='id')return;
+      const superAdmin=isAdmin&&(!userKec||userKec==='');
+      if(c.sensitive&&!superAdmin)obj[c.label]='***';
+      else obj[c.label]=r[c.key]||'';
+    });
+    return obj;
+  });
+  const ws=XLSX.utils.json_to_sheet(rows);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'RTLH');
+  XLSX.writeFile(wb,`TableEditor_${currentKec||'Semua'}_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// Keyboard shortcut: Ctrl+S to save all
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='s'&&document.getElementById('ovTableEditor').style.display!=='none'){
+    e.preventDefault();teSaveAll();
+  }
+});
 window.addEventListener('DOMContentLoaded',async()=>{
   await initAuth();
   restoreSession();
