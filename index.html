@@ -2021,30 +2021,23 @@ function teSelectChange(el){
 let teSaveTimer={};
 async function teSaveRow(id){
   id=parseInt(id);
-  // Debounce — batalkan timer sebelumnya untuk id yang sama
+  // Batalkan timer sebelumnya
   if(teSaveTimer[id])clearTimeout(teSaveTimer[id]);
-  teSaveTimer[id]=setTimeout(()=>_doSaveRow(id),300);
-}
-
-async function _doSaveRow(id){
-  const changes=teDirty[id]||teDirty[String(id)]; // cek kedua kemungkinan key
+  // Simpan referensi, jalankan langsung tanpa setTimeout
+  const changes=teDirty[id]||teDirty[String(id)];
   if(!changes||!Object.keys(changes).length)return;
   const row=document.getElementById('ter_'+id);
   if(row)row.classList.add('saving');
   teShowStatus('Menyimpan...','info');
-  console.log('[teSaveRow] id:', id, '| changes:', changes);
-  const{data:updData, error, status, statusText}=await sb.from('rtlh').update(changes).eq('id',id).select();
-  console.log('[teSaveRow] response status:', status, statusText, '| data:', updData, '| error:', error);
+  const{error}=await sb.from('rtlh').update(changes).eq('id',id);
   if(error){
-    console.error('[teSaveRow] error:', error);
     if(row){row.classList.remove('saving');row.classList.add('error-row');}
     toast('Gagal simpan: '+error.message,'error');
     return;
   }
-  console.log('[teSaveRow] success');
-  delete teSaveTimer[id];
   delete teDirty[id];
   delete teDirty[String(id)];
+  delete teSaveTimer[id];
   const ri=brAll.findIndex(x=>x.id===id);
   if(ri>=0){
     Object.assign(brAll[ri],changes);
