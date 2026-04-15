@@ -1448,28 +1448,30 @@ async function saveForm(){
   for(const f of FIELDS){
     const el=document.getElementById('ff_'+f.key);
     if(!el)continue;
+    // Skip NIK/KK for non-super-admin — don't even include in obj
+    if(f.sensitive&&!isSuperAdmin())continue;
     const v=el.value.trim();
     if(f.key==='nik'){
-      if(!isSuperAdmin())continue; // skip locked
       if(v&&v.length!==16)return toast('NIK harus 16 digit','error');
-      // Check uniqueness
       if(v){
-        const chk=await sb.from('rtlh').select('id').eq('nik',v).neq('id',editId||0).single();
+        const chk=await sb.from('rtlh').select('id').eq('nik',v).neq('id',editId||0).maybeSingle();
         if(chk.data)return toast('NIK sudah terdaftar oleh orang lain','error');
       }
+      obj[f.key]=v||null;
+      continue;
     }
     obj[f.key]=f.type==='number'&&v?parseFloat(v):(v||null);
   }
   let saved;
   if(editId){
     const{data,error}=await sb.from('rtlh').update(obj).eq('id',editId).select('*').single();
-    if(error)return toast('Gagal update: '+error.message,'error');
+    if(error){console.error('Update error:',error);return toast('Gagal update: '+error.message,'error');}
     saved=data;
     const i=brAll.findIndex(x=>x.id===editId);
     if(i>=0){saved._score=calcScore(saved);saved._cat=getCat(saved._score);brAll[i]=saved;}
   }else{
     const{data,error}=await sb.from('rtlh').insert(obj).select('*').single();
-    if(error)return toast('Gagal simpan: '+error.message,'error');
+    if(error){console.error('Insert error:',error);return toast('Gagal simpan: '+error.message,'error');}
     saved=data;saved._score=calcScore(saved);saved._cat=getCat(saved._score);
     brAll.push(saved);
   }
