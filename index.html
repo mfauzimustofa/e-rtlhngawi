@@ -1860,6 +1860,13 @@ function closeTableEditor(){
   }
   document.getElementById('ovTableEditor').style.display='none';
   teDirty={};
+  // Sync cache and re-render map & sidebar
+  if(currentKec){
+    brCache[currentKec]=brAll;
+    brFeatures=[...brAll];
+    renderSidebar();
+    updateMap();
+  }
 }
 
 async function teLoadData(){
@@ -2030,7 +2037,14 @@ async function teSaveRow(id){
   delete teDirty[id];
   // Update brAll cache too
   const ri=brAll.findIndex(x=>x.id===id);
-  if(ri>=0)Object.assign(brAll[ri],changes);
+  if(ri>=0){
+    Object.assign(brAll[ri],changes);
+    brAll[ri]._score=calcScore(brAll[ri]);
+    brAll[ri]._cat=getCat(brAll[ri]._score);
+  }
+  // Sync brCache
+  if(currentKec)brCache[currentKec]=brAll;
+  brFeatures=[...brAll];
   if(row){row.classList.remove('saving','dirty','error-row');}
   const remaining=Object.keys(teDirty).length;
   teShowStatus(remaining?`${remaining} baris belum disimpan`:'Semua tersimpan ✓', remaining?'warning':'success');
@@ -2051,7 +2065,11 @@ async function teSaveAll(){
       const row=document.getElementById('ter_'+id);
       if(row)row.classList.remove('dirty','saving');
       const ri=brAll.findIndex(x=>x.id===parseInt(id));
-      if(ri>=0)Object.assign(brAll[ri],changes);
+      if(ri>=0){
+        Object.assign(brAll[ri],changes);
+        brAll[ri]._score=calcScore(brAll[ri]);
+        brAll[ri]._cat=getCat(brAll[ri]._score);
+      }
     }
   }
   teShowStatus(fail?`${ok} tersimpan, ${fail} gagal`:'Semua tersimpan ✓',fail?'error':'success');
