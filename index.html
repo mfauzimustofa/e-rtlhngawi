@@ -341,6 +341,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
   </nav>
   <div class="header-right">
     <button class="btn-icon-sm" onclick="hardRefresh()" title="Refresh Data (tanpa reload halaman)"><i class="fas fa-sync-alt" id="icoRefresh"></i></button>
+    <button class="btn-icon-sm" id="btnExcelKab" onclick="openExcelKab()" title="Unduh / Unggah Excel Kabupaten" style="display:none"><i class="fas fa-file-excel"></i></button>
     <div id="authArea"></div>
   </div>
 </header>
@@ -464,7 +465,10 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
     <!-- GRID KARTU KECAMATAN -->
     <div class="section">
       <div class="section-head"><i class="fas fa-map-marker-alt"></i> Sebaran per Kecamatan
-        <span style="margin-left:auto"><input type="text" id="kecSearch" placeholder="🔍 Cari kecamatan..." oninput="renderKecGrid()" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.72rem;font-family:inherit;outline:none;width:160px"></span>
+        <span style="margin-left:auto;display:flex;align-items:center;gap:8px">
+          <button id="btnExcelKabSection" onclick="openExcelKab()" style="display:none;padding:5px 12px;border-radius:8px;background:var(--success);color:#fff;border:none;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;align-items:center;gap:5px"><i class="fas fa-file-excel"></i> Excel Kabupaten</button>
+          <input type="text" id="kecSearch" placeholder="🔍 Cari kecamatan..." oninput="renderKecGrid()" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.72rem;font-family:inherit;outline:none;width:160px">
+        </span>
       </div>
       <div class="grid-kec" id="kecGrid">
         <div class="empty-state" style="grid-column:1/-1"><i class="fas fa-circle-notch fa-spin"></i><p>Memuat data...</p></div>
@@ -692,6 +696,82 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
   </div>
 </div>
 
+<!-- EXCEL KABUPATEN MODAL -->
+<div class="overlay" id="ovExcelKab">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-head">
+      <div>
+        <h3><i class="fas fa-file-excel" style="color:#16A34A"></i> Excel Kabupaten Ngawi</h3>
+        <div class="sub">Unduh atau unggah data RTLH seluruh kabupaten</div>
+      </div>
+      <button class="modal-x" onclick="closeModal('ovExcelKab')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+
+      <!-- FILTER DOWNLOAD -->
+      <div style="background:var(--gray-50);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px">
+        <div style="font-size:.75rem;font-weight:700;color:var(--gray-700);margin-bottom:10px"><i class="fas fa-filter" style="color:var(--gold)"></i> Filter Unduhan</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="form-group">
+            <label>Kecamatan</label>
+            <select id="exKec" style="padding:7px 10px;border-radius:7px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.78rem">
+              <option value="">Semua Kecamatan</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Status RTLH</label>
+            <select id="exStatus" style="padding:7px 10px;border-radius:7px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.78rem">
+              <option value="">Semua Status</option>
+              <option>Belum Ditangani</option>
+              <option>Dalam Proses</option>
+              <option>Sudah Ditangani</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Desil</label>
+            <select id="exDesil" style="padding:7px 10px;border-radius:7px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.78rem">
+              <option value="">Semua Desil</option>
+              <option>Desil 1</option><option>Desil 2</option><option>Desil 3</option><option>Desil 4</option>
+              <option>Desil 5</option><option>Desil 6</option><option>Desil 7</option><option>Desil 8</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Tahun Bantuan</label>
+            <select id="exTahun" style="padding:7px 10px;border-radius:7px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.78rem">
+              <option value="">Semua Tahun</option>
+              <option>2021</option><option>2022</option><option>2023</option><option>2024</option><option>2025</option><option>2026</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- DOWNLOAD BUTTONS -->
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+        <button class="btn btn-success" style="justify-content:center" onclick="downloadExcelKab(false)">
+          <i class="fas fa-download"></i> Unduh Excel (NIK/KK disensor)
+        </button>
+        <button class="btn" id="btnDlKabFull" style="justify-content:center;background:#059669;color:#fff;display:none" onclick="downloadExcelKab(true)">
+          <i class="fas fa-download"></i> Unduh Excel Lengkap + NIK/KK (Super Admin)
+        </button>
+      </div>
+
+      <div style="border-top:1px solid var(--gray-200);padding-top:14px">
+        <div style="font-size:.75rem;font-weight:700;color:var(--gray-700);margin-bottom:8px"><i class="fas fa-upload" style="color:var(--blue)"></i> Unggah / Import Excel</div>
+        <div style="background:var(--blue-bg);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:.7rem;color:var(--blue)">
+          <i class="fas fa-info-circle"></i> Format: kolom harus sesuai template. Gunakan tombol Unduh dulu sebagai template.
+          Kolom <b>ID</b> wajib ada untuk update data yang sudah ada. Tanpa ID = tambah data baru.
+        </div>
+        <div class="upload-zone" onclick="document.getElementById('xlsxKabFile').click()" id="exUploadZone">
+          <i class="fas fa-file-upload" style="display:block;font-size:1.5rem;color:var(--gray-400);margin-bottom:8px"></i>
+          <p style="font-size:.78rem;color:var(--gray-500)">Klik atau seret file Excel (.xlsx) di sini</p>
+          <input type="file" id="xlsxKabFile" accept=".xlsx" style="display:none" onchange="importExcelKab(this)">
+        </div>
+        <div id="exImportLog" style="margin-top:10px;font-size:.72rem;display:none"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -884,6 +964,9 @@ function updAuth(){
   document.getElementById('btnAddRtlh').style.display=canEdit()?'flex':'none';
   document.getElementById('btnTableEditor').style.display=isAdmin?'flex':'none';
   document.getElementById('btnDelAll').style.display=(isSuperAdmin()&&currentKec)?'flex':'none';
+  document.getElementById('btnExcelKab').style.display=isAdmin?'flex':'none';
+  const exSec=document.getElementById('btnExcelKabSection');
+  if(exSec)exSec.style.display=isAdmin?'flex':'none';
   document.getElementById('btnDlFull') && (document.getElementById('btnDlFull').style.display=isSuperAdmin()?'flex':'none');
   // Update sidebar NIK visibility
   if(brAll.length)renderSidebar();
@@ -2139,6 +2222,137 @@ document.addEventListener('keydown',e=>{
     e.preventDefault();teSaveAll();
   }
 });
+
+// ══════════════════════════════════════════════════
+// EXCEL KABUPATEN
+// ══════════════════════════════════════════════════
+function openExcelKab(){
+  if(!isAdmin)return toast('Login dulu','error');
+  const sel=document.getElementById('exKec');
+  if(sel.options.length===1){
+    Object.keys(KEC_CONFIG).sort().forEach(k=>{
+      const o=document.createElement('option');o.value=k.toUpperCase();o.textContent=k;sel.appendChild(o);
+    });
+  }
+  document.getElementById('btnDlKabFull').style.display=isSuperAdmin()?'flex':'none';
+  document.getElementById('exImportLog').style.display='none';
+  document.getElementById('xlsxKabFile').value='';
+  document.getElementById('ovExcelKab').classList.add('open');
+}
+
+async function downloadExcelKab(withNIK){
+  const kec=document.getElementById('exKec').value;
+  const status=document.getElementById('exStatus').value;
+  const desil=document.getElementById('exDesil').value;
+  const tahun=document.getElementById('exTahun').value;
+  toast('Mengambil data...','info');
+  let q=sb.from('rtlh').select('*').order('kec').order('id');
+  if(kec)q=q.eq('kec',kec);
+  if(status)q=q.eq('status_rtlh',status);
+  if(desil)q=q.eq('desil',desil);
+  if(tahun)q=q.eq('tahun_bantuan',tahun);
+  const{data,error}=await q;
+  if(error)return toast('Gagal: '+error.message,'error');
+  if(!data||!data.length)return toast('Tidak ada data sesuai filter','error');
+  const superAdmin=isSuperAdmin();
+  const rows=data.map(r=>({
+    ID:r.id,Kecamatan:r.kec,Desa:r.desa,'Nama KK':r.kep_kk,
+    NIK:withNIK&&superAdmin?(r.nik||''):'***',
+    'No. KK':withNIK&&superAdmin?(r.no_kk||''):'***',
+    Alamat:r.alamat,'Jenis Kelamin':r.jen_kel,Umur:r.umur,
+    Pendidikan:r.pend_ter,Pekerjaan:r.pekerjaan,Penghasilan:r.pengh,
+    'Luas Rumah':r.luas_rum,'Luas Tanah':r.luas_tan,'Jml Penghuni':r.jml_peng,
+    'Status Kepemilikan':r.status_kep,
+    'Material Dinding':r.material_d,'Kondisi Dinding':r.kondisi_di,
+    'Material Atap':r.material_a,'Kondisi Atap':r.kondisi_at,
+    'Material Lantai':r.material_l,'Kondisi Lantai':r.kondisi_la,
+    'Status RTLH':r.status_rtlh,'Tahun Bantuan':r.tahun_bantuan,
+    'Sumber Dana':r.sumber_dana,DTSEN:r.dtsen,Backlog:r.backlog,
+    Desil:r.desil,Latitude:r.latitude,Longitude:r.longitude,
+  }));
+  const ws=XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=Object.keys(rows[0]).map(k=>({wch:Math.max(k.length+2,14)}));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'RTLH');
+  const fn=`RTLH_${kec||'Kab-Ngawi'}${status?'_'+status:''}${desil?'_'+desil:''}${tahun?'_'+tahun:''}_${new Date().toISOString().slice(0,10)}.xlsx`;
+  XLSX.writeFile(wb,fn);
+  toast(`${data.length} data diunduh`,'success');
+}
+
+async function importExcelKab(input){
+  const file=input.files[0];if(!file)return;
+  if(!isAdmin)return toast('Tidak ada akses','error');
+  const log=document.getElementById('exImportLog');
+  log.style.display='block';
+  log.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Membaca file...';
+  const reader=new FileReader();
+  reader.onload=async(e)=>{
+    const wb=XLSX.read(e.target.result,{type:'binary'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+    if(!rows.length){log.innerHTML='<span style="color:var(--danger)">File kosong</span>';return;}
+    log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memproses ${rows.length} baris...`;
+    const superAdmin=isSuperAdmin();
+    let ins=0,upd=0,fail=0,skip=0;
+    for(let i=0;i<rows.length;i++){
+      const row=rows[i];
+      const id=row['ID']||row['id']||null;
+      const obj={
+        kec:(row['Kecamatan']||row['kec']||'').toUpperCase()||null,
+        desa:row['Desa']||row['desa']||null,
+        kep_kk:row['Nama KK']||row['kep_kk']||null,
+        alamat:row['Alamat']||row['alamat']||null,
+        jen_kel:row['Jenis Kelamin']||row['jen_kel']||null,
+        umur:parseInt(row['Umur']||row['umur'])||null,
+        pend_ter:row['Pendidikan']||row['pend_ter']||null,
+        pekerjaan:row['Pekerjaan']||row['pekerjaan']||null,
+        pengh:row['Penghasilan']||row['pengh']||null,
+        luas_rum:parseFloat(row['Luas Rumah']||row['luas_rum'])||null,
+        luas_tan:parseFloat(row['Luas Tanah']||row['luas_tan'])||null,
+        jml_peng:parseInt(row['Jml Penghuni']||row['jml_peng'])||null,
+        status_kep:row['Status Kepemilikan']||row['status_kep']||null,
+        material_d:row['Material Dinding']||row['material_d']||null,
+        kondisi_di:row['Kondisi Dinding']||row['kondisi_di']||null,
+        material_a:row['Material Atap']||row['material_a']||null,
+        kondisi_at:row['Kondisi Atap']||row['kondisi_at']||null,
+        material_l:row['Material Lantai']||row['material_l']||null,
+        kondisi_la:row['Kondisi Lantai']||row['kondisi_la']||null,
+        status_rtlh:row['Status RTLH']||row['status_rtlh']||null,
+        tahun_bantuan:String(row['Tahun Bantuan']||row['tahun_bantuan']||'').replace(/\.0$/,'')||null,
+        sumber_dana:row['Sumber Dana']||row['sumber_dana']||null,
+        dtsen:row['DTSEN']||row['dtsen']||null,
+        backlog:row['Backlog']||row['backlog']||null,
+        desil:row['Desil']||row['desil']||null,
+        latitude:parseFloat(row['Latitude']||row['latitude'])||null,
+        longitude:parseFloat(row['Longitude']||row['longitude'])||null,
+      };
+      if(superAdmin){
+        const nik=String(row['NIK']||row['nik']||'').replace(/\D/g,'');
+        const nokk=String(row['No. KK']||row['no_kk']||'').replace(/\D/g,'');
+        if(nik&&nik!=='***'&&nik.length===16)obj.nik=nik;
+        if(nokk&&nokk!=='***'&&nokk.length===16)obj.no_kk=nokk;
+      }
+      Object.keys(obj).forEach(k=>{if(obj[k]===null||obj[k]==='')delete obj[k];});
+      if(id&&String(id).match(/^\d+$/)){
+        const{error}=await sb.from('rtlh').update(obj).eq('id',parseInt(id));
+        error?fail++:upd++;
+      }else if(obj.kec&&obj.kep_kk){
+        const{error}=await sb.from('rtlh').insert(obj);
+        error?fail++:ins++;
+      }else skip++;
+      if(i%20===0)log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memproses... ${i+1}/${rows.length}`;
+    }
+    brCache={};
+    log.innerHTML=`<div style="background:var(--success-bg);border-radius:8px;padding:10px;color:var(--success);font-size:.75rem">
+      <i class="fas fa-check-circle"></i> <b>Selesai!</b><br>
+      ✓ Update: <b>${upd}</b> &nbsp;|&nbsp; + Tambah: <b>${ins}</b> &nbsp;|&nbsp; ✗ Gagal: <b>${fail}</b> &nbsp;|&nbsp; ⊘ Skip: <b>${skip}</b>
+    </div>`;
+    toast(`Import selesai: ${upd} update, ${ins} tambah`,'success');
+    loadGlobalStats();
+  };
+  reader.readAsBinaryString(file);
+}
+
 window.addEventListener('DOMContentLoaded',async()=>{
   await initAuth();
   restoreSession();
