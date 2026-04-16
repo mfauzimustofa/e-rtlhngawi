@@ -624,13 +624,60 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
 <!-- ADMIN PANEL MODAL -->
 <div class="overlay" id="ovAdmin">
-  <div class="modal">
+  <div class="modal" style="max-width:680px">
     <div class="modal-head">
-      <div><h3><i class="fas fa-users-cog"></i> Kelola Admin</h3><div class="sub">Konfirmasi, atur akses, dan hapus admin</div></div>
+      <div>
+        <h3><i class="fas fa-users-cog"></i> Kelola Admin</h3>
+        <div class="sub">Atur hak akses dan kelola akun admin</div>
+      </div>
       <button class="modal-x" onclick="closeModal('ovAdmin')"><i class="fas fa-times"></i></button>
     </div>
-    <div class="modal-body" id="adminPanelBody">
-      <div class="empty-state"><i class="fas fa-circle-notch fa-spin"></i><p>Memuat...</p></div>
+    <div class="modal-body" id="adminPanelBody" style="padding:0">
+      <div class="empty-state" style="padding:40px"><i class="fas fa-circle-notch fa-spin"></i><p>Memuat...</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- FORM APPROVE ADMIN (inline modal) -->
+<div class="overlay" id="ovApproveAdmin">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head">
+      <div><h3 id="approveTitle"><i class="fas fa-user-check"></i> Atur Akses Admin</h3><div class="sub" id="approveSub"></div></div>
+      <button class="modal-x" onclick="closeModal('ovApproveAdmin')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:14px">
+        <label style="font-size:.72rem;font-weight:700;color:var(--gray-600);display:block;margin-bottom:8px">USERNAME (opsional)</label>
+        <input type="text" id="approveUsername" placeholder="contoh: admin_bringin" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.82rem">
+        <div style="font-size:.65rem;color:var(--gray-400);margin-top:4px">Hanya huruf kecil, angka, underscore. Biarkan kosong jika tidak ingin set username.</div>
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:.72rem;font-weight:700;color:var(--gray-600);display:block;margin-bottom:8px">LEVEL AKSES</label>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:2px solid var(--gray-200);cursor:pointer;transition:.2s" id="lblSuperAdmin">
+            <input type="radio" name="aksesLevel" value="super" onchange="toggleAksesLevel()" style="accent-color:var(--gold)">
+            <div>
+              <div style="font-size:.8rem;font-weight:700;color:var(--gray-900)">🌟 Super Admin</div>
+              <div style="font-size:.68rem;color:var(--gray-500)">Akses penuh semua kecamatan, data NIK/KK, dan kelola admin</div>
+            </div>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:2px solid var(--blue);cursor:pointer;background:var(--blue-bg)" id="lblKecAdmin">
+            <input type="radio" name="aksesLevel" value="kec" checked onchange="toggleAksesLevel()" style="accent-color:var(--blue)">
+            <div>
+              <div style="font-size:.8rem;font-weight:700;color:var(--gray-900)">🗺️ Admin Kecamatan</div>
+              <div style="font-size:.68rem;color:var(--gray-500)">Akses terbatas sesuai kecamatan yang dipilih di bawah</div>
+            </div>
+          </label>
+        </div>
+      </div>
+      <div id="kecamatanPicker" style="margin-bottom:14px">
+        <label style="font-size:.72rem;font-weight:700;color:var(--gray-600);display:block;margin-bottom:8px">PILIH KECAMATAN</label>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;max-height:180px;overflow-y:auto;padding:2px" id="kecCheckboxes"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ovApproveAdmin')">Batal</button>
+      <button class="btn btn-primary" onclick="submitApproveAdmin()"><i class="fas fa-check"></i> Simpan & Approve</button>
     </div>
   </div>
 </div>
@@ -1827,62 +1874,139 @@ async function importExcel(input){
 async function openAdminPanel(){
   if(!isSuperAdmin())return toast('Hanya admin inti','error');
   document.getElementById('ovAdmin').classList.add('open');
+  renderAdminPanel();
+}
+
+async function renderAdminPanel(){
   const body=document.getElementById('adminPanelBody');
-  body.innerHTML='<div class="empty-state"><i class="fas fa-circle-notch fa-spin"></i><p>Memuat...</p></div>';
+  body.innerHTML='<div class="empty-state" style="padding:40px"><i class="fas fa-circle-notch fa-spin"></i><p>Memuat...</p></div>';
   const{data:users}=await sb.from('admin_users').select('*').order('created_at',{ascending:false});
-  if(!users||!users.length){body.innerHTML='<div class="empty-state"><i class="fas fa-users-slash"></i><p>Belum ada admin</p></div>';return;}
+  if(!users||!users.length){
+    body.innerHTML='<div class="empty-state" style="padding:40px"><i class="fas fa-users-slash"></i><p>Belum ada admin terdaftar</p></div>';
+    return;
+  }
   const me=user?.email;
-  body.innerHTML=users.map(u=>{
+  // Group: self, approved, pending
+  const sorted=[...users].sort((a,b)=>{
+    if(a.email===me)return-1;if(b.email===me)return 1;
+    if(a.status==='approved'&&b.status!=='approved')return-1;
+    if(b.status==='approved'&&a.status!=='approved')return 1;
+    return 0;
+  });
+  body.innerHTML=sorted.map(u=>{
     const uid=u.id;
     const isSelf=u.email===me;
-    const statusColor=u.status==='approved'?'var(--success)':'var(--warning)';
+    const approved=u.status==='approved';
+    const superA=!u.kecamatan;
     const kecs=(u.kecamatan||'').split(',').filter(Boolean);
-    const akses=!u.kecamatan?'Super Admin':kecs.join(', ')||'Semua Kec';
-    return`<div class="admin-user-row">
-      <div class="au-avatar"><i class="fas fa-user"></i></div>
-      <div class="au-info">
-        <div class="au-name">${u.nama||u.email}</div>
-        <div class="au-sub">${u.email}${u.username?` · @${u.username}`:''}</div>
-        <div style="margin-top:4px;display:flex;gap:5px;flex-wrap:wrap">
-          <span class="au-badge" style="background:${statusColor}22;color:${statusColor}">${u.status||'pending'}</span>
-          <span class="au-badge" style="background:var(--blue-bg);color:var(--blue)">${akses}</span>
+    const aksesLabel=superA?'Super Admin':kecs.length?kecs.join(', '):'—';
+    const initials=(u.nama||u.email||'?')[0].toUpperCase();
+    const avatarColor=isSelf?'var(--gold)':approved?'var(--blue)':'var(--gray-400)';
+    return`<div style="display:flex;align-items:flex-start;gap:14px;padding:16px 20px;border-bottom:1px solid var(--gray-100);${isSelf?'background:#FFFBEB':''}">
+      <!-- Avatar -->
+      <div style="width:44px;height:44px;border-radius:12px;background:${avatarColor}22;color:${avatarColor};display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:800;flex-shrink:0">${initials}</div>
+      <!-- Info -->
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:.88rem;font-weight:700;color:var(--gray-900)">${u.nama||u.email.split('@')[0]}</span>
+          ${isSelf?'<span style="font-size:.6rem;background:var(--gold)22;color:var(--gold);padding:2px 8px;border-radius:99px;font-weight:700">AKUN ANDA</span>':''}
+          ${approved&&superA?'<span style="font-size:.6rem;background:#FEF9C322;color:#CA8A04;padding:2px 8px;border-radius:99px;font-weight:700;border:1px solid #FDE04788">🌟 SUPER ADMIN</span>':''}
+          <span style="font-size:.62rem;padding:2px 8px;border-radius:99px;font-weight:700;background:${approved?'var(--success-bg)':'var(--warning-bg)'};color:${approved?'var(--success)':'var(--warning)'}">${approved?'✓ Aktif':'⏳ Pending'}</span>
         </div>
-        ${isSelf?'<div style="font-size:.65rem;color:var(--gray);font-style:italic;margin-top:4px">Admin inti (akun ini)</div>':`
-        <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap">
-          <button class="btn btn-ghost" style="font-size:.65rem;padding:4px 8px" onclick="setAdminUsername('${uid}','${u.email}')"><i class="fas fa-at"></i> Set Username</button>
-          <button class="btn" style="font-size:.65rem;padding:4px 8px;background:var(--success-bg);color:var(--success)" onclick="approveAdmin('${uid}')"><i class="fas fa-check"></i> Approve</button>
-          <button class="btn btn-danger" style="font-size:.65rem;padding:4px 8px" onclick="deleteAdmin('${uid}','${u.nama||u.email}')"><i class="fas fa-trash"></i> Hapus</button>
-        </div>`}
+        <div style="font-size:.72rem;color:var(--gray-500);margin-top:3px">${u.email}${u.username?` · <b>@${u.username}</b>`:' · <span style="color:var(--gray-300)">belum ada username</span>'}</div>
+        <div style="font-size:.7rem;color:var(--blue);margin-top:4px;font-weight:600"><i class="fas fa-map-marker-alt" style="font-size:.6rem"></i> ${aksesLabel}</div>
       </div>
+      <!-- Actions -->
+      ${isSelf?'':`<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+        <button onclick="openApproveAdmin('${uid}','${u.nama||u.email}','${u.email}','${u.username||''}','${u.kecamatan||''}')"
+          style="padding:6px 12px;border-radius:7px;background:var(--blue);color:#fff;border:none;font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">
+          <i class="fas fa-${approved?'edit':'user-check'}"></i> ${approved?'Edit Akses':'Approve'}
+        </button>
+        <button onclick="deleteAdmin('${uid}','${u.nama||u.email}')"
+          style="padding:6px 12px;border-radius:7px;background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger);font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">
+          <i class="fas fa-trash"></i> Hapus
+        </button>
+      </div>`}
     </div>`;
   }).join('');
 }
 
-async function approveAdmin(uid){
-  const kec=prompt('Akses kecamatan (pisah koma, kosong = Super Admin):','');
-  const desa=prompt('Akses desa (pisah koma, kosong = semua):','');
-  const{error}=await sb.from('admin_users').update({status:'approved',kecamatan:kec||null,desa:desa||null}).eq('id',uid);
+let _approveUid=null;
+function openApproveAdmin(uid,nama,email,username,kecamatan){
+  _approveUid=uid;
+  document.getElementById('approveTitle').innerHTML=`<i class="fas fa-user-check"></i> Atur Akses Admin`;
+  document.getElementById('approveSub').textContent=nama+' · '+email;
+  document.getElementById('approveUsername').value=username||'';
+  // Build kec checkboxes
+  const wrap=document.getElementById('kecCheckboxes');
+  const kecs=(kecamatan||'').split(',').filter(Boolean).map(k=>k.trim().toUpperCase());
+  wrap.innerHTML=Object.keys(KEC_CONFIG).sort().map(k=>`
+    <label style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:7px;border:1.5px solid var(--gray-200);cursor:pointer;font-size:.75rem;font-weight:600;transition:.15s;background:${kecs.includes(k.toUpperCase())?'var(--blue-bg)':'#fff'};border-color:${kecs.includes(k.toUpperCase())?'var(--blue)':'var(--gray-200)'}">
+      <input type="checkbox" value="${k.toUpperCase()}" ${kecs.includes(k.toUpperCase())?'checked':''} onchange="this.closest('label').style.background=this.checked?'var(--blue-bg)':'#fff';this.closest('label').style.borderColor=this.checked?'var(--blue)':'var(--gray-200)'" style="accent-color:var(--blue);margin:0">
+      ${k}
+    </label>`).join('');
+  // Set radio
+  const isSuperA=!kecamatan;
+  document.querySelector('input[name=aksesLevel][value='+(isSuperA?'super':'kec')+']').checked=true;
+  toggleAksesLevel();
+  document.getElementById('ovApproveAdmin').classList.add('open');
+}
+
+function toggleAksesLevel(){
+  const val=document.querySelector('input[name=aksesLevel]:checked')?.value;
+  document.getElementById('kecamatanPicker').style.display=val==='kec'?'block':'none';
+  document.getElementById('lblSuperAdmin').style.borderColor=val==='super'?'var(--gold)':'var(--gray-200)';
+  document.getElementById('lblSuperAdmin').style.background=val==='super'?'#FFFBEB':'#fff';
+  document.getElementById('lblKecAdmin').style.borderColor=val==='kec'?'var(--blue)':'var(--gray-200)';
+  document.getElementById('lblKecAdmin').style.background=val==='kec'?'var(--blue-bg)':'#fff';
+}
+
+async function submitApproveAdmin(){
+  if(!_approveUid)return;
+  const level=document.querySelector('input[name=aksesLevel]:checked')?.value;
+  const username=document.getElementById('approveUsername').value.trim().toLowerCase();
+  const kecChecked=[...document.querySelectorAll('#kecCheckboxes input:checked')].map(el=>el.value);
+
+  if(username&&!/^[a-z0-9_]+$/.test(username))return toast('Username hanya huruf kecil, angka, underscore','error');
+  if(level==='kec'&&!kecChecked.length)return toast('Pilih minimal 1 kecamatan','error');
+
+  // Check username unique
+  if(username){
+    const{data:ex}=await sb.from('admin_users').select('id').eq('username',username).neq('id',_approveUid).maybeSingle();
+    if(ex)return toast('Username sudah dipakai admin lain','error');
+  }
+
+  const obj={status:'approved',kecamatan:level==='super'?null:kecChecked.join(',')};
+  if(username)obj.username=username;
+
+  const{error}=await sb.from('admin_users').update(obj).eq('id',_approveUid);
   if(error)return toast('Gagal: '+error.message,'error');
-  toast('Admin diapprove','success');openAdminPanel();
+  closeModal('ovApproveAdmin');
+  toast('Akses admin berhasil disimpan','success');
+  renderAdminPanel();
 }
 
 async function deleteAdmin(uid,nama){
-  if(!confirm(`Hapus admin "${nama}"? Mereka tidak bisa login lagi.`))return;
+  if(!confirm(`Hapus admin "${nama}"?\n\nMereka tidak bisa login lagi ke sistem.`))return;
   const{error}=await sb.from('admin_users').delete().eq('id',uid);
   if(error)return toast('Gagal hapus: '+error.message,'error');
-  toast('Admin dihapus','success');openAdminPanel();
+  toast('Admin dihapus','success');
+  renderAdminPanel();
 }
 
 async function setAdminUsername(uid,email){
   const uname=prompt('Set username untuk '+email+'\n(hanya huruf kecil, angka, underscore)','');
   if(!uname)return;
-  if(!/^[a-z0-9_]+$/.test(uname))return toast('Username hanya boleh huruf kecil, angka, underscore','error');
-  // Check unique
-  const{data}=await sb.from('admin_users').select('id').eq('username',uname).single();
+  if(!/^[a-z0-9_]+$/.test(uname))return toast('Username tidak valid','error');
+  const{data}=await sb.from('admin_users').select('id').eq('username',uname).maybeSingle();
   if(data)return toast('Username sudah dipakai','error');
   const{error}=await sb.from('admin_users').update({username:uname}).eq('id',uid);
   if(error)return toast('Gagal: '+error.message,'error');
-  toast('Username berhasil diset','success');openAdminPanel();
+  toast('Username diset','success');renderAdminPanel();
+}
+
+async function approveAdmin(uid){
+  openApproveAdmin(uid,'','','','');
 }
 
 // ══════════════════════════════════════════════════
