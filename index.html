@@ -2411,67 +2411,125 @@ async function importExcelKab(input){
   log.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Membaca file...';
   const reader=new FileReader();
   reader.onload=async(e)=>{
-    const wb=XLSX.read(e.target.result,{type:'binary'});
+    const wb=XLSX.read(e.target.result,{type:'binary',cellText:false,cellDates:true});
     const ws=wb.Sheets[wb.SheetNames[0]];
-    const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+    const rows=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});
     if(!rows.length){log.innerHTML='<span style="color:var(--danger)">File kosong</span>';return;}
     log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memproses ${rows.length} baris...`;
     const superAdmin=isSuperAdmin();
     let ins=0,upd=0,fail=0,skip=0;
+    const errors=[]; // kumpulkan detail error
+
     for(let i=0;i<rows.length;i++){
       const row=rows[i];
       const id=row['ID']||row['id']||null;
-      const obj={
-        kec:(row['Kecamatan']||row['kec']||'').toUpperCase()||null,
-        desa:row['Desa']||row['desa']||null,
-        kep_kk:row['Nama KK']||row['kep_kk']||null,
-        alamat:row['Alamat']||row['alamat']||null,
-        jen_kel:row['Jenis Kelamin']||row['jen_kel']||null,
-        umur:parseInt(row['Umur']||row['umur'])||null,
-        pend_ter:row['Pendidikan']||row['pend_ter']||null,
-        pekerjaan:row['Pekerjaan']||row['pekerjaan']||null,
-        pengh:row['Penghasilan']||row['pengh']||null,
-        luas_rum:parseFloat(row['Luas Rumah']||row['luas_rum'])||null,
-        luas_tan:parseFloat(row['Luas Tanah']||row['luas_tan'])||null,
-        jml_peng:parseInt(row['Jml Penghuni']||row['jml_peng'])||null,
-        status_kep:row['Status Kepemilikan']||row['status_kep']||null,
-        material_d:row['Material Dinding']||row['material_d']||null,
-        kondisi_di:row['Kondisi Dinding']||row['kondisi_di']||null,
-        material_a:row['Material Atap']||row['material_a']||null,
-        kondisi_at:row['Kondisi Atap']||row['kondisi_at']||null,
-        material_l:row['Material Lantai']||row['material_l']||null,
-        kondisi_la:row['Kondisi Lantai']||row['kondisi_la']||null,
-        status_rtlh:row['Status RTLH']||row['status_rtlh']||null,
-        tahun_bantuan:String(row['Tahun Bantuan']||row['tahun_bantuan']||'').replace(/\.0$/,'')||null,
-        sumber_dana:row['Sumber Dana']||row['sumber_dana']||null,
-        dtsen:row['DTSEN']||row['dtsen']||null,
-        backlog:row['Backlog']||row['backlog']||null,
-        desil:row['Desil']||row['desil']||null,
-        latitude:parseFloat(row['Latitude']||row['latitude'])||null,
-        longitude:parseFloat(row['Longitude']||row['longitude'])||null,
+      const nama=row['Nama KK']||row['kep_kk']||'(tanpa nama)';
+
+      // Build object — strip nilai kosong setelah build
+      const obj={};
+      const kec=(row['Kecamatan']||row['kec']||'').toString().toUpperCase().trim();
+      if(kec)obj.kec=kec;
+      const fields={
+        desa:row['Desa']||row['desa'],
+        kep_kk:row['Nama KK']||row['kep_kk'],
+        alamat:row['Alamat']||row['alamat'],
+        jen_kel:row['Jenis Kelamin']||row['jen_kel'],
+        pend_ter:row['Pendidikan']||row['pend_ter'],
+        pekerjaan:row['Pekerjaan']||row['pekerjaan'],
+        pengh:row['Penghasilan']||row['pengh'],
+        status_kep:row['Status Kepemilikan']||row['status_kep'],
+        material_d:row['Material Dinding']||row['material_d'],
+        kondisi_di:row['Kondisi Dinding']||row['kondisi_di'],
+        material_a:row['Material Atap']||row['material_a'],
+        kondisi_at:row['Kondisi Atap']||row['kondisi_at'],
+        material_l:row['Material Lantai']||row['material_l'],
+        kondisi_la:row['Kondisi Lantai']||row['kondisi_la'],
+        status_rtlh:row['Status RTLH']||row['status_rtlh'],
+        sumber_dana:row['Sumber Dana']||row['sumber_dana'],
+        dtsen:row['DTSEN']||row['dtsen'],
+        backlog:row['Backlog']||row['backlog'],
+        desil:row['Desil']||row['desil'],
       };
+      Object.entries(fields).forEach(([k,v])=>{const s=String(v||'').trim();if(s&&s!=='undefined')obj[k]=s;});
+
+      // Numerik
+      const umur=parseInt(row['Umur']||row['umur']);if(!isNaN(umur)&&umur>0)obj.umur=umur;
+      const luasRum=parseFloat(row['Luas Rumah']||row['luas_rum']);if(!isNaN(luasRum)&&luasRum>0)obj.luas_rum=luasRum;
+      const luasTan=parseFloat(row['Luas Tanah']||row['luas_tan']);if(!isNaN(luasTan)&&luasTan>0)obj.luas_tan=luasTan;
+      const jmlPeng=parseInt(row['Jml Penghuni']||row['jml_peng']);if(!isNaN(jmlPeng)&&jmlPeng>0)obj.jml_peng=jmlPeng;
+      const lat=parseFloat(row['Latitude']||row['latitude']);if(!isNaN(lat)&&lat!==0)obj.latitude=lat;
+      const lng=parseFloat(row['Longitude']||row['longitude']);if(!isNaN(lng)&&lng!==0)obj.longitude=lng;
+
+      // Tahun bantuan — hindari format angka desimal dari Excel
+      const thn=String(row['Tahun Bantuan']||row['tahun_bantuan']||'').replace(/\.0+$/,'').trim();
+      if(thn&&thn!=='0')obj.tahun_bantuan=thn;
+
+      // NIK / No KK — super admin only, hanya kalau bukan *** dan 16 digit
       if(superAdmin){
         const nik=String(row['NIK']||row['nik']||'').replace(/\D/g,'');
         const nokk=String(row['No. KK']||row['no_kk']||'').replace(/\D/g,'');
-        if(nik&&nik!=='***'&&nik.length===16)obj.nik=nik;
-        if(nokk&&nokk!=='***'&&nokk.length===16)obj.no_kk=nokk;
+        if(nik&&nik.length===16)obj.nik=nik;
+        if(nokk&&nokk.length===16)obj.no_kk=nokk;
       }
-      Object.keys(obj).forEach(k=>{if(obj[k]===null||obj[k]==='')delete obj[k];});
+
+      // Jalankan update atau insert
       if(id&&String(id).match(/^\d+$/)){
         const{error}=await sb.from('rtlh').update(obj).eq('id',parseInt(id));
-        error?fail++:upd++;
+        if(error){
+          fail++;
+          errors.push({baris:i+2,id,nama,pesan:error.message,kode:error.code});
+        }else upd++;
       }else if(obj.kec&&obj.kep_kk){
         const{error}=await sb.from('rtlh').insert(obj);
-        error?fail++:ins++;
-      }else skip++;
+        if(error){
+          fail++;
+          errors.push({baris:i+2,id:'(baru)',nama,pesan:error.message,kode:error.code});
+        }else ins++;
+      }else{
+        skip++;
+        if(!obj.kep_kk||!obj.kec)errors.push({baris:i+2,id,nama,pesan:'Skip — Kecamatan atau Nama KK kosong',kode:'SKIP'});
+      }
+
       if(i%20===0)log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memproses... ${i+1}/${rows.length}`;
     }
+
     brCache={};
-    log.innerHTML=`<div style="background:var(--success-bg);border-radius:8px;padding:10px;color:var(--success);font-size:.75rem">
-      <i class="fas fa-check-circle"></i> <b>Selesai!</b><br>
+
+    // Tampilkan hasil
+    const statusColor=fail>0?'var(--warning-bg)':'var(--success-bg)';
+    const statusTextColor=fail>0?'#92400E':'var(--success)';
+    let html=`<div style="background:${statusColor};border-radius:8px;padding:10px 12px;color:${statusTextColor};font-size:.75rem;margin-bottom:${errors.length?'10px':'0'}">
+      <i class="fas fa-${fail>0?'exclamation-triangle':'check-circle'}"></i> <b>Selesai!</b><br>
       ✓ Update: <b>${upd}</b> &nbsp;|&nbsp; + Tambah: <b>${ins}</b> &nbsp;|&nbsp; ✗ Gagal: <b>${fail}</b> &nbsp;|&nbsp; ⊘ Skip: <b>${skip}</b>
     </div>`;
-    toast(`Import selesai: ${upd} update, ${ins} tambah`,'success');
+
+    // Detail error
+    if(errors.length){
+      html+=`<div style="margin-top:8px">
+        <div style="font-size:.72rem;font-weight:700;color:var(--danger);margin-bottom:6px"><i class="fas fa-exclamation-circle"></i> Detail Gagal/Skip (${errors.length} baris):</div>
+        <div style="max-height:200px;overflow-y:auto;border:1px solid var(--danger);border-radius:8px;background:#fff">
+          <table style="width:100%;border-collapse:collapse;font-size:.68rem">
+            <thead><tr style="background:var(--danger-bg)">
+              <th style="padding:6px 8px;text-align:left;font-weight:700;color:var(--danger)">Baris</th>
+              <th style="padding:6px 8px;text-align:left;font-weight:700;color:var(--danger)">ID</th>
+              <th style="padding:6px 8px;text-align:left;font-weight:700;color:var(--danger)">Nama KK</th>
+              <th style="padding:6px 8px;text-align:left;font-weight:700;color:var(--danger)">Keterangan</th>
+            </tr></thead>
+            <tbody>
+              ${errors.map((e,i)=>`<tr style="border-top:1px solid var(--gray-100);background:${i%2?'#fff':'var(--gray-50)'}">
+                <td style="padding:5px 8px;color:var(--gray-600)">${e.baris}</td>
+                <td style="padding:5px 8px;color:var(--gray-600)">${e.id||'—'}</td>
+                <td style="padding:5px 8px;font-weight:600;color:var(--gray-900)">${e.nama}</td>
+                <td style="padding:5px 8px;color:var(--danger)">${e.pesan}${e.kode&&e.kode!=='SKIP'?` <span style="opacity:.6">[${e.kode}]</span>`:''}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+    }
+
+    log.innerHTML=html;
+    toast(`Import selesai: ${upd} update, ${ins} tambah, ${fail} gagal`,'success');
     loadGlobalStats();
   };
   reader.readAsBinaryString(file);
