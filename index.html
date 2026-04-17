@@ -117,8 +117,8 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 .kc-mb-seg{height:100%}
 
 /* WEBGIS PAGE */
-#pgWebgis{flex-direction:column}
-.webgis-toolbar{height:48px;background:#fff;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;padding:0 12px;gap:6px;position:relative;z-index:8000;flex-shrink:0}
+#pgWebgis{flex-direction:column;overflow-y:auto}
+.webgis-toolbar{height:48px;background:#fff;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;padding:0 12px;gap:6px;position:sticky;top:0;z-index:8000;flex-shrink:0}
 .tb-btn{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;background:var(--gray-50);border:1px solid var(--gray-200);color:var(--gray-700);font-size:.72rem;font-weight:600;cursor:pointer;font-family:inherit;transition:var(--transition);white-space:nowrap}
 .tb-btn:hover{background:var(--blue-bg);border-color:var(--blue);color:var(--blue)}
 .tb-btn.active{background:var(--blue-bg);border-color:var(--blue);color:var(--blue)}
@@ -127,19 +127,19 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 .tb-btn.gold:hover{background:var(--gold-light)}
 .tb-sep{width:1px;height:24px;background:var(--gray-200);margin:0 2px;flex-shrink:0}
 .tb-title{font-size:.82rem;font-weight:800;color:var(--gray-900);flex:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.map-wrap{display:flex;flex:1;overflow:hidden}
-#map{flex:1}
-.sidebar{width:320px;flex-shrink:0;background:#fff;border-left:1px solid var(--gray-200);overflow-y:auto;display:flex;flex-direction:column}
-.sidebar-head{padding:14px 16px;border-bottom:1px solid var(--gray-200);background:var(--gray-50)}
-.sidebar-head h3{font-size:.82rem;font-weight:800;color:var(--gray-900)}
-.sidebar-head p{font-size:.68rem;color:var(--gray-500);margin-top:2px}
-.filter-row{display:flex;gap:6px;margin:10px 12px;flex-wrap:wrap}
+.map-wrap{display:block;height:340px;flex-shrink:0}
+#map{width:100%;height:100%}
+.sidebar{display:none}
+.wg-body{padding:14px 16px;max-width:1100px;margin:0 auto;width:100%}
+.filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
 .filter-chip{padding:4px 10px;border-radius:99px;border:1.5px solid var(--gray-200);font-size:.65rem;font-weight:700;cursor:pointer;font-family:inherit;background:#fff;color:var(--gray-600);transition:var(--transition)}
 .filter-chip.active{background:var(--navy);border-color:var(--navy);color:#fff}
-.sidebar-list{padding:8px}
-.rtlh-item{border-radius:var(--radius-xs);border:1.5px solid var(--gray-200);padding:10px 12px;margin-bottom:6px;cursor:pointer;transition:var(--transition);background:#fff}
+.sidebar-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px;margin-top:10px}
+.rtlh-item{border-radius:var(--radius-xs);border:1.5px solid var(--gray-200);padding:10px 12px;cursor:pointer;transition:var(--transition);background:#fff}
 .rtlh-item:hover{border-color:var(--blue);background:var(--blue-bg)}
-.rtlh-item.selected{border-color:var(--blue);background:var(--blue-bg)}
+.rtlh-item.selected{border-color:var(--blue);box-shadow:0 0 0 3px rgba(27,108,168,.1)}
+.rtlh-item .ri-detail{display:none;border-top:1px solid var(--gray-100);margin-top:10px;padding-top:10px}
+.rtlh-item.selected .ri-detail{display:block}
 .ri-name{font-size:.8rem;font-weight:700;color:var(--gray-900)}
 .ri-sub{font-size:.65rem;color:var(--gray-500);margin-top:1px}
 .ri-badges{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
@@ -149,12 +149,12 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 .badge.sudah{background:#F0FDF4;color:var(--success)}
 .badge.desil{background:var(--blue-bg);color:var(--blue)}
 .badge.skor{background:var(--gray-100);color:var(--gray-700)}
-.kec-dashboard{padding:12px}
-.kd-stat{display:flex;justify-content:space-between;gap:8px;margin-bottom:12px}
+.kec-dashboard{padding:0;margin-bottom:14px}
+.kd-stat{display:flex;justify-content:space-between;gap:8px;margin-bottom:10px}
 .kd-stat-item{flex:1;background:var(--gray-50);border-radius:var(--radius-xs);padding:10px;text-align:center;border:1px solid var(--gray-100)}
 .kd-stat-item .kdsi-val{font-size:1.1rem;font-weight:800;color:var(--gray-900)}
 .kd-stat-item .kdsi-lbl{font-size:.58rem;font-weight:700;color:var(--gray-400);text-transform:uppercase}
-.canvas-wrap{position:relative;height:160px;margin-bottom:12px}
+.canvas-wrap{position:relative;height:140px;margin-bottom:10px}
 
 /* KECLIST PAGE */
 #pgKecList{flex-direction:column}
@@ -382,10 +382,10 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
     <!-- STAT CARDS (pull up over hero) -->
     <div class="section pull-up">
       <div class="grid-4">
-        <div class="mini-stat" onclick="showPage('pgData')" title="Lihat semua data RTLH"><div class="ms-icon" style="background:linear-gradient(135deg,var(--blue),var(--blue-light))"><i class="fas fa-house-damage"></i></div><div class="ms-texts"><div class="ms-val" id="gs-total">-</div><div class="ms-label">Total RTLH</div></div></div>
-        <div class="mini-stat" onclick="showPage('pgData')" title="Lihat data sudah ditangani"><div class="ms-icon" style="background:linear-gradient(135deg,#16A34A,#22C55E)"><i class="fas fa-check-circle"></i></div><div class="ms-texts"><div class="ms-val" id="gs-sudah">-</div><div class="ms-label">Sudah Ditangani</div></div></div>
-        <div class="mini-stat" onclick="showPage('pgData')" title="Lihat data dalam proses"><div class="ms-icon" style="background:linear-gradient(135deg,#F59E0B,#FBBF24)"><i class="fas fa-clock"></i></div><div class="ms-texts"><div class="ms-val" id="gs-proses">-</div><div class="ms-label">Dalam Proses</div></div></div>
-        <div class="mini-stat" onclick="showPage('pgData')" title="Lihat data belum ditangani"><div class="ms-icon" style="background:linear-gradient(135deg,var(--danger),#F87171)"><i class="fas fa-exclamation-triangle"></i></div><div class="ms-texts"><div class="ms-val" id="gs-belum">-</div><div class="ms-label">Belum Ditangani</div></div></div>
+        <div class="mini-stat" onclick="nav('keclist')" title="Lihat data per kecamatan"><div class="ms-icon" style="background:linear-gradient(135deg,var(--blue),var(--blue-light))"><i class="fas fa-house-damage"></i></div><div class="ms-texts"><div class="ms-val" id="gs-total">-</div><div class="ms-label">Total RTLH</div></div></div>
+        <div class="mini-stat" onclick="nav('keclist')" title="Lihat data sudah ditangani"><div class="ms-icon" style="background:linear-gradient(135deg,#16A34A,#22C55E)"><i class="fas fa-check-circle"></i></div><div class="ms-texts"><div class="ms-val" id="gs-sudah">-</div><div class="ms-label">Sudah Ditangani</div></div></div>
+        <div class="mini-stat" onclick="nav('keclist')" title="Lihat data dalam proses"><div class="ms-icon" style="background:linear-gradient(135deg,#F59E0B,#FBBF24)"><i class="fas fa-clock"></i></div><div class="ms-texts"><div class="ms-val" id="gs-proses">-</div><div class="ms-label">Dalam Proses</div></div></div>
+        <div class="mini-stat" onclick="nav('keclist')" title="Lihat data belum ditangani"><div class="ms-icon" style="background:linear-gradient(135deg,var(--danger),#F87171)"><i class="fas fa-exclamation-triangle"></i></div><div class="ms-texts"><div class="ms-val" id="gs-belum">-</div><div class="ms-label">Belum Ditangani</div></div></div>
       </div>
     </div>
 
@@ -508,7 +508,6 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
     <div class="tb-sep"></div>
     <span class="tb-title" id="tbTitle">WebGIS RTLH</span>
     <div class="tb-sep"></div>
-    <button class="tb-btn mob-sidebar-toggle" id="btnMobSidebar" onclick="toggleMobSidebar()"><i class="fas fa-list"></i></button>
     <button class="tb-btn" id="btnAddRtlh" onclick="openForm(null)" style="display:none"><i class="fas fa-plus"></i> <span class="tb-label">Tambah</span></button>
     <button class="tb-btn" id="btnTableEditor" onclick="openTableEditor()" style="display:none" title="Table Editor — Edit seperti spreadsheet"><i class="fas fa-table"></i> <span class="tb-label">Tabel</span></button>
     <button class="tb-btn" id="btnDownload" onclick="openDownloadModal()"><i class="fas fa-download"></i></button>
@@ -516,19 +515,8 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
   </div>
   <div class="map-wrap">
     <div id="map"></div>
-    <div class="sidebar" id="sidebar">
-      <div id="sidebarContent"></div>
-    </div>
   </div>
-  <!-- Detail panel float -->
-  <div class="detail-panel" id="detailPanel">
-    <div class="dp-head">
-      <h4 id="dpTitle">Detail RTLH</h4>
-      <button class="dp-close" onclick="closeDetail()"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="dp-body" id="dpBody"></div>
-    <div class="dp-actions" id="dpActions"></div>
-  </div>
+  <div class="wg-body" id="wgBody"></div>
 </div>
 
 <!-- ═══════════════════════════════ MODALS ═══════════════════════════════ -->
@@ -1583,31 +1571,31 @@ function toggleScoring(){scoringOpen=!scoringOpen;renderSidebar();}
 // SIDEBAR
 // ══════════════════════════════════════════════════
 function renderSidebar(){
-  const sc=document.getElementById('sidebarContent');
+  const sc=document.getElementById('wgBody');
   if(!sc)return;
   const kecName=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===currentKec)||currentKec;
-
-  // Dashboard tab
   sc.innerHTML=`
-    <div class="sidebar-head">
-      <h3>${kecName} — BNBA RTLH</h3>
-      <p>${brAll.length} jiwa terdaftar</p>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:.88rem;font-weight:800;color:var(--gray-900)">${kecName} — BNBA RTLH</div>
+        <div style="font-size:.65rem;color:var(--gray-500);margin-top:2px">${brAll.length} jiwa terdaftar</div>
+      </div>
     </div>
-    <div class="filter-row">
+    <div class="kec-dashboard" id="kecDashboard"></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+      <span style="font-size:.68rem;font-weight:700;color:var(--gray-500)">Status:</span>
       <button class="filter-chip ${filterStatus==='all'?'active':''}" onclick="setFilterStatus('all')">Semua</button>
       <button class="filter-chip ${filterStatus==='Belum Ditangani'?'active':''}" onclick="setFilterStatus('Belum Ditangani')">Belum</button>
       <button class="filter-chip ${filterStatus==='Dalam Proses'?'active':''}" onclick="setFilterStatus('Dalam Proses')">Proses</button>
       <button class="filter-chip ${filterStatus==='Sudah Ditangani'?'active':''}" onclick="setFilterStatus('Sudah Ditangani')">Sudah</button>
-    </div>
-    <div class="filter-row" style="margin-top:0">
-      <button class="filter-chip ${filterDesil==='all'?'active':''}" onclick="setFilterDesil('all')">All Desil</button>
+      <span style="font-size:.68rem;font-weight:700;color:var(--gray-500);margin-left:6px">Desil:</span>
+      <button class="filter-chip ${filterDesil==='all'?'active':''}" onclick="setFilterDesil('all')">Semua</button>
       <button class="filter-chip ${filterDesil==='1'?'active':''}" onclick="setFilterDesil('1')" style="color:#BE123C">D1</button>
       <button class="filter-chip ${filterDesil==='2'?'active':''}" onclick="setFilterDesil('2')" style="color:#DC2626">D2</button>
       <button class="filter-chip ${filterDesil==='3'?'active':''}" onclick="setFilterDesil('3')" style="color:#EA580C">D3</button>
       <button class="filter-chip ${filterDesil==='4'?'active':''}" onclick="setFilterDesil('4')" style="color:#D97706">D4</button>
-      <button class="filter-chip" onclick="setFilterDesil('5+')" style="${filterDesil==='5+'?'background:var(--navy);border-color:var(--navy);color:#fff':''}">D5+</button>
+      <button class="filter-chip ${filterDesil==='5+'?'active':''}" onclick="setFilterDesil('5+')">D5+</button>
     </div>
-    <div class="kec-dashboard" id="kecDashboard"></div>
     <div class="sidebar-list" id="sidebarList"></div>`;
   renderKecDashboard();
   renderSidebarList();
@@ -1661,29 +1649,47 @@ function applyFilters(){
 function renderSidebarList(){
   const l=document.getElementById('sidebarList');
   if(!l)return;
-  if(!brFeatures.length){l.innerHTML='<div class="empty-state"><i class="fas fa-search"></i><p>Tidak ada data sesuai filter</p></div>';return;}
+  if(!brFeatures.length){l.innerHTML='<div style="padding:24px;text-align:center;color:var(--gray-400);font-size:.78rem">Tidak ada data sesuai filter</div>';return;}
   const sorted=[...brFeatures].sort((a,b)=>b._score-a._score);
   l.innerHTML=sorted.map((r,i)=>{
     const color=getCatColor(r._score);
     const statusCls=r.status_rtlh==='Sudah Ditangani'?'sudah':r.status_rtlh==='Dalam Proses'?'proses':'belum';
     const desilNum=String(r.desil||'').match(/\d+/)?.[0];
+    const desilColor=desilNum?DESIL_COLORS[parseInt(desilNum)]:'#888';
     return`<div class="rtlh-item" id="ri_${r.id}" onclick="selectItem(${r.id})">
       <div style="display:flex;align-items:center;gap:8px">
-        <div style="width:24px;height:24px;border-radius:6px;background:${color}18;color:${color};font-size:.62rem;font-weight:800;display:flex;align-items:center;justify-content:center">${i+1}</div>
+        <div style="width:22px;height:22px;border-radius:6px;background:${color}18;color:${color};font-size:.6rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div>
         <div style="flex:1;min-width:0">
           <div class="ri-name">${dn(r.kep_kk)}</div>
-          <div class="ri-sub">${dn(r.desa)} · NIK: ${showNIK(r.nik)}</div>
+          <div class="ri-sub">${dn(r.desa)}</div>
         </div>
-        <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:.7rem;font-weight:800;color:${color}">${Math.round(r._score)}</div>
-          <div style="font-size:.55rem;color:var(--gray-400)">skor</div>
-        </div>
+        <div style="font-size:.62rem;color:var(--gray-400);flex-shrink:0"><i class="fas fa-chevron-down" id="ico_${r.id}"></i></div>
       </div>
       <div class="ri-badges">
         <span class="badge ${statusCls}">${r.status_rtlh||'Belum'}</span>
-        ${desilNum?`<span class="badge desil" style="background:${DESIL_COLORS[parseInt(desilNum)]}22;color:${DESIL_COLORS[parseInt(desilNum)]}">Desil ${desilNum}</span>`:''}
-        <span class="badge skor">${getCat(r._score)}</span>
+        ${desilNum?`<span class="badge desil" style="background:${desilColor}22;color:${desilColor}">Desil ${desilNum}</span>`:''}
         ${r.dtsen?`<span class="badge" style="background:#EFF6FF;color:#1D4ED8">DTSEN:${r.dtsen}</span>`:''}
+      </div>
+      <div class="ri-detail" id="det_${r.id}">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+          ${[
+            ['NIK',showNIK(r.nik)],['No. KK',showKK(r.no_kk)],
+            ['Desa',dn(r.desa)],['Alamat',dn(r.alamat)],
+            ['Jenis Kelamin',dn(r.jen_kel)],['Umur',dn(r.umur)+' thn'],
+            ['Pekerjaan',dn(r.pekerjaan)],['Penghasilan',dn(r.pengh)],
+            ['Jml Penghuni',dn(r.jml_peng)],['Luas Rumah',dn(r.luas_rum)+' m²'],
+            ['Desil',dn(r.desil)],['Tahun Bantuan',dn(r.tahun_bantuan)],
+            ['Sumber Dana',dn(r.sumber_dana)],['DTSEN',dn(r.dtsen)],
+            ['Material Dinding',dn(r.material_d)],['Kondisi Dinding',dn(r.kondisi_di)],
+            ['Material Atap',dn(r.material_a)],['Kondisi Atap',dn(r.kondisi_at)],
+            ['Material Lantai',dn(r.material_l)],['Kondisi Lantai',dn(r.kondisi_la)],
+          ].map(([lbl,val])=>`<div style="padding:5px 0;border-bottom:1px solid var(--gray-100)"><div style="font-size:.58rem;font-weight:700;color:var(--gray-400);text-transform:uppercase">${lbl}</div><div style="font-size:.75rem;font-weight:600;color:var(--gray-800);margin-top:1px">${val}</div></div>`).join('')}
+        </div>
+        ${canEdit()?`<div style="display:flex;gap:6px;margin-top:10px">
+          <button class="btn btn-primary" style="font-size:.7rem;padding:5px 12px" onclick="event.stopPropagation();openForm(${r.id})"><i class="fas fa-edit"></i> Edit</button>
+          <button class="btn btn-danger" style="font-size:.7rem;padding:5px 12px" onclick="event.stopPropagation();deleteItem(${r.id})"><i class="fas fa-trash"></i> Hapus</button>
+          ${isSuperAdmin()?`<button class="btn" style="font-size:.7rem;padding:5px 12px;background:var(--warning-bg);color:#B45309;border:1px solid var(--warning)" onclick="event.stopPropagation();openNIKModal(${r.id})"><i class="fas fa-id-card"></i> NIK/KK</button>`:''}
+        </div>`:''}
       </div>
     </div>`;
   }).join('');
@@ -1710,12 +1716,22 @@ function updateMap(){
 }
 
 function selectItem(id){
-  document.querySelectorAll('.rtlh-item').forEach(el=>el.classList.remove('selected'));
+  const wasSelected=document.getElementById('ri_'+id)?.classList.contains('selected');
+  document.querySelectorAll('.rtlh-item').forEach(el=>{
+    el.classList.remove('selected');
+    const ico=el.querySelector('[id^="ico_"]');
+    if(ico){ico.className='fas fa-chevron-down';}
+  });
+  if(wasSelected)return; // toggle off
   const el=document.getElementById('ri_'+id);
-  if(el){el.classList.add('selected');el.scrollIntoView({block:'nearest',behavior:'smooth'});}
+  if(el){
+    el.classList.add('selected');
+    const ico=document.getElementById('ico_'+id);
+    if(ico)ico.className='fas fa-chevron-up';
+    el.scrollIntoView({block:'nearest',behavior:'smooth'});
+  }
   const r=brAll.find(x=>x.id===id);
   if(!r)return;
-  showDetail(r);
   if(r.latitude&&r.longitude)map.setView([r.latitude,r.longitude],15);
 }
 
@@ -2172,12 +2188,7 @@ async function approveAdmin(uid){
 // ══════════════════════════════════════════════════
 // MOB SIDEBAR
 // ══════════════════════════════════════════════════
-function toggleMobSidebar(){
-  mobSidebarOpen=!mobSidebarOpen;
-  const sb2=document.getElementById('sidebar');
-  sb2.classList.toggle('mob-open',mobSidebarOpen);
-  document.getElementById('btnMobSidebar').classList.toggle('active',mobSidebarOpen);
-}
+function toggleMobSidebar(){}
 
 // ══════════════════════════════════════════════════
 // TABLE EDITOR
