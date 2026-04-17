@@ -312,6 +312,9 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 .te-save-indicator{display:none;position:sticky;right:0;background:var(--warning-bg);border-left:2px solid var(--warning);padding:4px 8px;font-size:.62rem;color:#92400E;font-weight:700;white-space:nowrap;align-items:center;gap:4px;cursor:pointer}
 .te-save-indicator:hover{background:var(--warning);color:#fff}
 
+/* MAP TOOLTIP */
+.leaflet-tooltip-clean{background:#fff;border:1px solid var(--gray-200);border-radius:8px;box-shadow:var(--shadow);padding:8px 10px;font-family:var(--font)}
+
 /* SPINNING REFRESH ICON */
 @keyframes spin{to{transform:rotate(360deg)}}
 .spinning{animation:spin .7s linear infinite}
@@ -337,7 +340,6 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
   </div>
   <nav class="nav-tabs" id="navTabs">
     <button class="nav-tab active" id="ntBeranda" onclick="nav('beranda')"><i class="fas fa-home"></i> Beranda</button>
-    <button class="nav-tab" id="ntWebgis" onclick="nav('keclist')"><i class="fas fa-map-marked-alt"></i> WebGIS per Kecamatan</button>
   </nav>
   <div class="header-right">
     <button class="btn-icon-sm" onclick="hardRefresh()" title="Refresh Data (tanpa reload halaman)"><i class="fas fa-sync-alt" id="icoRefresh"></i></button>
@@ -349,7 +351,6 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 <!-- MOBILE BOTTOM NAV -->
 <nav class="mob-bottom-nav">
   <button class="mob-nav-btn active" id="mnBeranda" onclick="nav('beranda')"><i class="fas fa-home"></i>Beranda</button>
-  <button class="mob-nav-btn" id="mnWebgis" onclick="nav('keclist')"><i class="fas fa-map-marked-alt"></i>WebGIS</button>
 </nav>
 
 <!-- TOAST -->
@@ -364,7 +365,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
       <div class="hero-inner">
         <div class="hero-chip"><i class="fas fa-shield-alt"></i> Sistem Informasi RTLH Terpadu</div>
         <h1>e-<span>RTLH</span> Kabupaten Ngawi</h1>
-        <p>Satu platform data RTLH untuk seluruh wilayah Kabupaten Ngawi — 19 kecamatan, 217 desa dan kelurahan.</p>
+        <p>Data center pengelolaan Rumah Tidak Layak Huni berbasis NIK. Terintegrasi 19 kecamatan, 217 desa/kelurahan, dan BNBA Kementerian PKP.</p>
         <div class="nik-search-wrap">
           <input class="nik-search-input" id="nikSearchInput" type="text" placeholder="Cari NIK, No KK, atau Nama KK..." maxlength="80" onkeydown="if(event.key==='Enter')searchNIK()">
           <button class="nik-search-btn" onclick="searchNIK()"><i class="fas fa-search"></i> Cari</button>
@@ -380,25 +381,6 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
         <div class="mini-stat"><div class="ms-icon" style="background:linear-gradient(135deg,#16A34A,#22C55E)"><i class="fas fa-check-circle"></i></div><div class="ms-val" id="gs-sudah">-</div><div class="ms-label">Sudah Ditangani</div></div>
         <div class="mini-stat"><div class="ms-icon" style="background:linear-gradient(135deg,#F59E0B,#FBBF24)"><i class="fas fa-clock"></i></div><div class="ms-val" id="gs-proses">-</div><div class="ms-label">Dalam Proses</div></div>
         <div class="mini-stat"><div class="ms-icon" style="background:linear-gradient(135deg,var(--danger),#F87171)"><i class="fas fa-exclamation-triangle"></i></div><div class="ms-val" id="gs-belum">-</div><div class="ms-label">Belum Ditangani</div></div>
-      </div>
-    </div>
-
-    <!-- PETA KABUPATEN NGAWI -->
-    <div class="section">
-      <div class="section-head"><i class="fas fa-map"></i> Peta Sebaran RTLH — Kabupaten Ngawi
-        <span style="margin-left:auto;font-size:.62rem;font-weight:600;color:var(--gray-400)">Klik kecamatan untuk buka WebGIS</span>
-      </div>
-      <div class="card" style="overflow:hidden">
-        <div style="position:relative">
-          <div id="mapBeranda" style="height:420px;width:100%"></div>
-          <div class="map-legend" style="position:absolute;bottom:16px;right:10px">
-            <h4>Jumlah RTLH</h4>
-            <div class="leg-item"><div class="leg-dot" style="background:#BFDBFE"></div>&lt; 20</div>
-            <div class="leg-item"><div class="leg-dot" style="background:#F59E0B"></div>20 – 50</div>
-            <div class="leg-item"><div class="leg-dot" style="background:#F97316"></div>50 – 100</div>
-            <div class="leg-item"><div class="leg-dot" style="background:#DC2626"></div>&gt; 100</div>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -439,7 +421,28 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
       </div>
     </div>
 
-    <!-- TABEL RANGKUMAN PER KECAMATAN -->
+    <!-- PETA SEBARAN RTLH (dipindah ke bawah Desil) -->
+    <div class="section">
+      <div class="section-head"><i class="fas fa-map"></i> Peta Sebaran RTLH — Kabupaten Ngawi
+        <span style="margin-left:auto;display:flex;gap:6px;align-items:center">
+          <button onclick="toggleSatellite()" id="btnToggleTile" style="padding:4px 10px;border-radius:7px;background:var(--gray-100);border:1px solid var(--gray-200);font-size:.68rem;font-weight:700;cursor:pointer;font-family:inherit;color:var(--gray-700)"><i class="fas fa-satellite"></i> Satelit</button>
+          <button onclick="toggleKecLayer()" id="btnToggleKec" style="padding:4px 10px;border-radius:7px;background:var(--blue-bg);border:1px solid var(--blue);font-size:.68rem;font-weight:700;cursor:pointer;font-family:inherit;color:var(--blue)"><i class="fas fa-draw-polygon"></i> Batas Kec</button>
+          <span style="font-size:.62rem;color:var(--gray-400);font-weight:600">Klik kecamatan untuk buka WebGIS</span>
+        </span>
+      </div>
+      <div class="card" style="overflow:hidden">
+        <div style="position:relative">
+          <div id="mapBeranda" style="height:500px;width:100%"></div>
+          <div style="position:absolute;bottom:16px;right:10px;z-index:1000;background:rgba(12,35,64,.85);border-radius:10px;padding:10px 12px;min-width:130px;backdrop-filter:blur(4px)">
+            <div style="font-size:.62rem;font-weight:800;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:7px;letter-spacing:.05em">Jumlah RTLH</div>
+            <div class="leg-item"><div class="leg-dot" style="background:#3B82F6"></div><span style="color:#fff">&lt; 20</span></div>
+            <div class="leg-item"><div class="leg-dot" style="background:#F59E0B"></div><span style="color:#fff">20 – 50</span></div>
+            <div class="leg-item"><div class="leg-dot" style="background:#F97316"></div><span style="color:#fff">50 – 100</span></div>
+            <div class="leg-item"><div class="leg-dot" style="background:#DC2626"></div><span style="color:#fff">&gt; 100</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="section">
       <div class="section-head"><i class="fas fa-table"></i> Rekap RTLH per Kecamatan</div>
       <div class="card" style="overflow:auto">
@@ -1109,6 +1112,7 @@ async function loadGlobalStats(){
     renderChartStatus(data);
     renderChartDesil(desilCounts);
     initMapBeranda();
+    updateMapMarkers();
   }catch(e){console.error(e)}
 }
 
@@ -1206,28 +1210,116 @@ function renderKecTable(){
   </tr>`;
 }
 
-let mapBeranda=null;
+let mapBeranda=null,tileLayerBeranda=null,kecBoundaryLayer=null,isSatellite=false,showKecBoundary=true;
+
 function initMapBeranda(){
   if(!mapBeranda){
-    mapBeranda=L.map('mapBeranda',{zoomControl:true,scrollWheelZoom:false}).setView([-7.42,111.42],10);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(mapBeranda);
+    mapBeranda=L.map('mapBeranda',{zoomControl:true,scrollWheelZoom:true}).setView([-7.42,111.42],10);
+    tileLayerBeranda=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      attribution:'© OpenStreetMap',maxZoom:19
+    }).addTo(mapBeranda);
   }
-  // Clear existing markers
+  // Load batas kecamatan dari GeoJSON kalau belum ada
+  if(!kecBoundaryLayer&&window._batasNgawi){
+    addKecBoundary();
+  } else if(!window._batasNgawi){
+    fetch('data/batas-desa-ngawi.json').then(r=>r.json()).then(gj=>{
+      window._batasNgawi=gj;
+      addKecBoundary();
+    }).catch(()=>{});
+  }
+  updateMapMarkers();
+  setTimeout(()=>mapBeranda.invalidateSize(),100);
+}
+
+function addKecBoundary(){
+  if(!mapBeranda||!window._batasNgawi)return;
+  if(kecBoundaryLayer)kecBoundaryLayer.remove();
+  // Merge desa ke kecamatan — buat layer per kecamatan
+  kecBoundaryLayer=L.geoJSON(window._batasNgawi,{
+    style:f=>({
+      color:'#1B6CA8',weight:1,fillOpacity:0,dashArray:'4 2'
+    }),
+    onEachFeature:(f,layer)=>{
+      const kecName=f.properties.WADMKC||'';
+      const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===kecName.toUpperCase())||kecName;
+      const c=kecCounts[kecName.toUpperCase()]||{total:0,sudah:0,proses:0,belum:0};
+      layer.on('click',()=>{if(kecKey)selectKec(kecKey);});
+      layer.bindTooltip(`<b>${kecName}</b><br>Total RTLH: ${c.total}`,{sticky:true});
+      layer.on('mouseover',function(){this.setStyle({fillOpacity:.08,fillColor:'#1B6CA8'});});
+      layer.on('mouseout',function(){this.setStyle({fillOpacity:0});});
+    }
+  });
+  if(showKecBoundary)kecBoundaryLayer.addTo(mapBeranda);
+}
+
+function updateMapMarkers(){
+  if(!mapBeranda)return;
   mapBeranda.eachLayer(l=>{if(l instanceof L.CircleMarker)mapBeranda.removeLayer(l);});
   Object.keys(KEC_CONFIG).forEach(k=>{
     const cfg=KEC_CONFIG[k];
     const c=kecCounts[k.toUpperCase()]||{total:0,sudah:0,proses:0,belum:0};
     const cnt=c.total;
     const color=cnt>100?'#DC2626':cnt>50?'#F97316':cnt>20?'#F59E0B':'#3B82F6';
-    const radius=Math.max(8,Math.min(24,6+cnt/4));
+    const radius=Math.max(10,Math.min(28,8+cnt/3));
     const m=L.circleMarker([cfg.lat,cfg.lng],{
-      radius,fillColor:color,color:'#fff',weight:2,fillOpacity:.85
+      radius,fillColor:color,color:'#fff',weight:2,fillOpacity:.9
     }).addTo(mapBeranda);
-    m.bindTooltip(`<b>${k}</b><br>Total: ${cnt} | Sudah: ${c.sudah} | Proses: ${c.proses} | Belum: ${c.belum}`,{direction:'top',offset:[0,-8]});
+    // Label jumlah di dalam marker
+    m.bindTooltip(
+      `<div style="font-family:inherit;min-width:160px">
+        <div style="font-weight:800;font-size:.85rem;margin-bottom:4px">${k}</div>
+        <div style="display:flex;gap:8px;font-size:.75rem">
+          <span style="color:#16A34A">✓${c.sudah}</span>
+          <span style="color:#F59E0B">⏳${c.proses}</span>
+          <span style="color:#DC2626">✗${c.belum}</span>
+        </div>
+        <div style="font-size:.7rem;margin-top:4px;color:#666">Total: <b>${cnt}</b> RTLH</div>
+      </div>`,
+      {direction:'top',offset:[0,-radius],className:'leaflet-tooltip-clean'}
+    );
     m.on('click',()=>selectKec(k));
   });
-  setTimeout(()=>mapBeranda.invalidateSize(),100);
 }
+
+function toggleSatellite(){
+  isSatellite=!isSatellite;
+  if(tileLayerBeranda)tileLayerBeranda.remove();
+  if(isSatellite){
+    tileLayerBeranda=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
+      attribution:'© Esri',maxZoom:19
+    });
+  }else{
+    tileLayerBeranda=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      attribution:'© OpenStreetMap',maxZoom:19
+    });
+  }
+  tileLayerBeranda.addTo(mapBeranda);
+  if(kecBoundaryLayer&&showKecBoundary)kecBoundaryLayer.addTo(mapBeranda);
+  updateMapMarkers();
+  const btn=document.getElementById('btnToggleTile');
+  if(btn){
+    btn.style.background=isSatellite?'var(--navy)':'var(--gray-100)';
+    btn.style.color=isSatellite?'#fff':'var(--gray-700)';
+    btn.style.borderColor=isSatellite?'var(--navy)':'var(--gray-200)';
+    btn.innerHTML=`<i class="fas fa-${isSatellite?'map':'satellite'}"></i> ${isSatellite?'Peta':'Satelit'}`;
+  }
+}
+
+function toggleKecLayer(){
+  showKecBoundary=!showKecBoundary;
+  if(kecBoundaryLayer){
+    if(showKecBoundary)kecBoundaryLayer.addTo(mapBeranda);
+    else kecBoundaryLayer.remove();
+  }
+  const btn=document.getElementById('btnToggleKec');
+  if(btn){
+    btn.style.background=showKecBoundary?'var(--blue-bg)':'var(--gray-100)';
+    btn.style.color=showKecBoundary?'var(--blue)':'var(--gray-500)';
+    btn.style.borderColor=showKecBoundary?'var(--blue)':'var(--gray-200)';
+  }
+}
+
 
 function renderChartStatus(data){
   const ctx=document.getElementById('chartStatus');
