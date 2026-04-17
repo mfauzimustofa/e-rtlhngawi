@@ -82,10 +82,12 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 .grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px}
 .grid-kec{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
 .card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--gray-200);overflow:hidden;transition:var(--transition)}
-.mini-stat{background:#fff;border-radius:var(--radius-sm);box-shadow:var(--shadow);border:1px solid var(--gray-200);padding:16px;display:flex;flex-direction:column;gap:4px}
-.mini-stat .ms-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:.9rem;color:#fff;margin-bottom:6px}
-.mini-stat .ms-val{font-size:1.5rem;font-weight:800;color:var(--gray-900);line-height:1}
-.mini-stat .ms-label{font-size:.65rem;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em}
+.mini-stat{background:#fff;border-radius:var(--radius-sm);box-shadow:var(--shadow);border:1px solid var(--gray-200);padding:10px 12px;display:flex;flex-direction:row;align-items:center;gap:10px;cursor:pointer;transition:var(--transition)}
+.mini-stat:hover{border-color:var(--blue);box-shadow:0 4px 16px rgba(27,108,168,.13);transform:translateY(-1px)}
+.mini-stat .ms-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.78rem;color:#fff;flex-shrink:0}
+.mini-stat .ms-texts{display:flex;flex-direction:column;gap:1px}
+.mini-stat .ms-val{font-size:1.15rem;font-weight:800;color:var(--gray-900);line-height:1}
+.mini-stat .ms-label{font-size:.6rem;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.04em}
 
 /* PROGRESS BAR STATUS */
 .status-bar-wrap{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--gray-200);padding:20px}
@@ -380,10 +382,10 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
     <!-- STAT CARDS (pull up over hero) -->
     <div class="section pull-up">
       <div class="grid-4">
-        <div class="mini-stat"><div class="ms-icon" style="background:linear-gradient(135deg,var(--blue),var(--blue-light))"><i class="fas fa-house-damage"></i></div><div class="ms-val" id="gs-total">-</div><div class="ms-label">Total RTLH</div></div>
-        <div class="mini-stat"><div class="ms-icon" style="background:linear-gradient(135deg,#16A34A,#22C55E)"><i class="fas fa-check-circle"></i></div><div class="ms-val" id="gs-sudah">-</div><div class="ms-label">Sudah Ditangani</div></div>
-        <div class="mini-stat"><div class="ms-icon" style="background:linear-gradient(135deg,#F59E0B,#FBBF24)"><i class="fas fa-clock"></i></div><div class="ms-val" id="gs-proses">-</div><div class="ms-label">Dalam Proses</div></div>
-        <div class="mini-stat"><div class="ms-icon" style="background:linear-gradient(135deg,var(--danger),#F87171)"><i class="fas fa-exclamation-triangle"></i></div><div class="ms-val" id="gs-belum">-</div><div class="ms-label">Belum Ditangani</div></div>
+        <div class="mini-stat" onclick="showPage('pgData')" title="Lihat semua data RTLH"><div class="ms-icon" style="background:linear-gradient(135deg,var(--blue),var(--blue-light))"><i class="fas fa-house-damage"></i></div><div class="ms-texts"><div class="ms-val" id="gs-total">-</div><div class="ms-label">Total RTLH</div></div></div>
+        <div class="mini-stat" onclick="showPage('pgData')" title="Lihat data sudah ditangani"><div class="ms-icon" style="background:linear-gradient(135deg,#16A34A,#22C55E)"><i class="fas fa-check-circle"></i></div><div class="ms-texts"><div class="ms-val" id="gs-sudah">-</div><div class="ms-label">Sudah Ditangani</div></div></div>
+        <div class="mini-stat" onclick="showPage('pgData')" title="Lihat data dalam proses"><div class="ms-icon" style="background:linear-gradient(135deg,#F59E0B,#FBBF24)"><i class="fas fa-clock"></i></div><div class="ms-texts"><div class="ms-val" id="gs-proses">-</div><div class="ms-label">Dalam Proses</div></div></div>
+        <div class="mini-stat" onclick="showPage('pgData')" title="Lihat data belum ditangani"><div class="ms-icon" style="background:linear-gradient(135deg,var(--danger),#F87171)"><i class="fas fa-exclamation-triangle"></i></div><div class="ms-texts"><div class="ms-val" id="gs-belum">-</div><div class="ms-label">Belum Ditangani</div></div></div>
       </div>
     </div>
 
@@ -397,7 +399,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
       </div>
       <div class="card" style="overflow:hidden">
         <div style="position:relative">
-          <div id="mapBeranda" style="height:500px;width:100%"></div>
+          <div id="mapBeranda" style="height:360px;width:100%"></div>
           <div style="position:absolute;bottom:16px;right:10px;z-index:1000;background:rgba(12,35,64,.85);border-radius:10px;padding:10px 12px;min-width:130px;backdrop-filter:blur(4px)">
             <div style="font-size:.62rem;font-weight:800;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:7px;letter-spacing:.05em">Jumlah RTLH</div>
             <div class="leg-item"><div class="leg-dot" style="background:#3B82F6"></div><span style="color:#fff">&lt; 20</span></div>
@@ -1225,14 +1227,24 @@ function initMapBeranda(){
   // Load batas kecamatan dari GeoJSON kalau belum ada
   if(!kecBoundaryLayer&&window._batasNgawi){
     addKecBoundary();
+    _fitMapToNgawi();
   } else if(!window._batasNgawi){
     fetch('data/batas-desa-ngawi.json').then(r=>r.json()).then(gj=>{
       window._batasNgawi=gj;
       addKecBoundary();
+      _fitMapToNgawi();
     }).catch(()=>{});
   }
   updateMapMarkers();
   setTimeout(()=>mapBeranda.invalidateSize(),100);
+}
+
+function _fitMapToNgawi(){
+  if(!mapBeranda||!window._batasNgawi)return;
+  try{
+    const bounds=L.geoJSON(window._batasNgawi).getBounds();
+    mapBeranda.fitBounds(bounds,{padding:[16,16]});
+  }catch(e){}
 }
 
 function addKecBoundary(){
