@@ -636,7 +636,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
 <!-- FORM APPROVE ADMIN (inline modal) -->
 <div class="overlay" id="ovApproveAdmin">
-  <div class="modal" style="max-width:480px">
+  <div class="modal" style="max-width:520px">
     <div class="modal-head">
       <div><h3 id="approveTitle"><i class="fas fa-user-check"></i> Atur Akses Admin</h3><div class="sub" id="approveSub"></div></div>
       <button class="modal-x" onclick="closeModal('ovApproveAdmin')"><i class="fas fa-times"></i></button>
@@ -650,25 +650,30 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
       <div style="margin-bottom:14px">
         <label style="font-size:.72rem;font-weight:700;color:var(--gray-600);display:block;margin-bottom:8px">LEVEL AKSES</label>
         <div style="display:flex;flex-direction:column;gap:8px">
-          <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:2px solid var(--gray-200);cursor:pointer;transition:.2s" id="lblSuperAdmin">
-            <input type="radio" name="aksesLevel" value="super" onchange="toggleAksesLevel()" style="accent-color:var(--gold)">
+          <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:2px solid var(--gray-200);cursor:pointer;transition:.2s" id="lblL2Admin">
+            <input type="radio" name="aksesLevel" value="2" checked onchange="toggleAksesLevel()" style="accent-color:var(--blue)">
             <div>
-              <div style="font-size:.8rem;font-weight:700;color:var(--gray-900)">🌟 Super Admin</div>
-              <div style="font-size:.68rem;color:var(--gray-500)">Akses penuh semua kecamatan, data NIK/KK, dan kelola admin</div>
+              <div style="font-size:.8rem;font-weight:700;color:var(--gray-900)">🗺️ Admin Layer 2 — Kecamatan</div>
+              <div style="font-size:.68rem;color:var(--gray-500)">Akses terbatas per kecamatan · Bisa lihat NIK/KK · Tidak bisa kelola admin</div>
             </div>
           </label>
-          <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:2px solid var(--blue);cursor:pointer;background:var(--blue-bg)" id="lblKecAdmin">
-            <input type="radio" name="aksesLevel" value="kec" checked onchange="toggleAksesLevel()" style="accent-color:var(--blue)">
+          <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:2px solid var(--gray-200);cursor:pointer;transition:.2s" id="lblL3Admin">
+            <input type="radio" name="aksesLevel" value="3" onchange="toggleAksesLevel()" style="accent-color:#10B981">
             <div>
-              <div style="font-size:.8rem;font-weight:700;color:var(--gray-900)">🗺️ Admin Kecamatan</div>
-              <div style="font-size:.68rem;color:var(--gray-500)">Akses terbatas sesuai kecamatan yang dipilih di bawah</div>
+              <div style="font-size:.8rem;font-weight:700;color:var(--gray-900)">🏘️ Admin Layer 3 — Desa</div>
+              <div style="font-size:.68rem;color:var(--gray-500)">Akses terbatas per kecamatan + desa tertentu · Tidak bisa lihat NIK/KK penuh</div>
             </div>
           </label>
         </div>
       </div>
       <div id="kecamatanPicker" style="margin-bottom:14px">
         <label style="font-size:.72rem;font-weight:700;color:var(--gray-600);display:block;margin-bottom:8px">PILIH KECAMATAN</label>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;max-height:180px;overflow-y:auto;padding:2px" id="kecCheckboxes"></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;max-height:160px;overflow-y:auto;padding:2px" id="kecCheckboxes"></div>
+      </div>
+      <div id="desaPicker" style="margin-bottom:14px;display:none">
+        <label style="font-size:.72rem;font-weight:700;color:var(--gray-600);display:block;margin-bottom:8px">PILIH DESA (Layer 3) <span style="color:var(--gray-400);font-weight:400">— opsional, kosong = semua desa di kecamatan</span></label>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;max-height:160px;overflow-y:auto;padding:2px" id="desaCheckboxes"></div>
+        <div style="font-size:.65rem;color:var(--gray-400);margin-top:4px"><i class="fas fa-info-circle"></i> Pilih kecamatan dulu untuk melihat daftar desa</div>
       </div>
     </div>
     <div class="modal-footer">
@@ -844,6 +849,7 @@ const DESIL_COLORS=['','#BE123C','#DC2626','#EA580C','#D97706','#65A30D','#16A34
 
 // State
 let user=null,isAdmin=false,userKec=null,userDesa=null;
+let adminLevel=0; // 0=publik, 1=super admin, 2=admin kecamatan, 3=admin desa
 let currentKec=null; // uppercase e.g. 'BRINGIN'
 let brAll=[],brFeatures=[];
 let brCache={};
@@ -860,29 +866,58 @@ let loginTab='email';
 // HELPERS
 // ══════════════════════════════════════════════════
 const dn=v=>v||'-';
-const isSuperAdmin=()=>isAdmin&&!userKec;
+const isSuperAdmin=()=>isAdmin&&adminLevel===1;
+const isAdminL2=()=>isAdmin&&adminLevel===2;
+const isAdminL3=()=>isAdmin&&adminLevel===3;
+const canSeeNIK=()=>isAdmin&&adminLevel<=2; // Level 1 dan 2 bisa lihat NIK
 const canEdit=()=>{
   if(!isAdmin)return false;
   if(isSuperAdmin())return true;
   if(!currentKec)return false;
-  const kecs=(userKec||'').split(',').filter(Boolean).map(k=>k.toUpperCase());
-  return kecs.includes(currentKec);
+  const kecs=(userKec||'').split(',').filter(Boolean).map(k=>k.toUpperCase().trim());
+  if(!kecs.includes(currentKec))return false;
+  // Admin L3: cek juga desa
+  // (desa filter tidak blokir edit, hanya batasi akses data)
+  return true;
 };
 
+// ── MASKING FUNCTIONS ──
+// NIK: hanya huruf/angka pertama saja yang tampil, sisanya bintang
 function maskNIK(v){
-  if(!v)return'-';
-  const s=String(v);
-  if(s.length<=4)return'****';
-  return s.slice(0,2)+'*'.repeat(Math.max(0,s.length-4))+s.slice(-2);
+  if(!v||v==='-')return'-';
+  const s=String(v).replace(/\s/g,'');
+  if(!s)return'-';
+  // Tampilkan hanya digit pertama + bintang
+  return s[0]+'*'.repeat(Math.max(1,s.length-1));
 }
+// No KK: hanya karakter pertama saja
 function maskNoKK(v){
-  if(!v)return'-';
-  const s=String(v);
-  if(s.length<=4)return'****';
-  return s.slice(0,3)+'****'+s.slice(-3);
+  if(!v||v==='-')return'-';
+  const s=String(v).replace(/\s/g,'');
+  if(!s)return'-';
+  return s[0]+'*'.repeat(Math.max(1,s.length-1));
 }
-function showNIK(v){return isAdmin?String(v||'-'):maskNIK(v)}
-function showKK(v){return isAdmin?String(v||'-'):maskNoKK(v)}
+// Nama: hanya inisial huruf pertama saja, misal "Budi Santoso" → "B***"
+function maskNama(v){
+  if(!v||v==='-')return'-';
+  const s=String(v).trim();
+  if(!s)return'-';
+  return s[0]+'***';
+}
+// Alamat: tampilkan kata pertama saja + "..."
+function maskAlamat(v){
+  if(!v||v==='-')return'-';
+  const parts=String(v).trim().split(/\s+/);
+  if(parts.length<=1)return parts[0][0]+'...';
+  // Tampilkan hanya kata pertama (misal nama jalan), sisanya disensor
+  const first=parts[0];
+  return first+' ***';
+}
+// Fungsi tampil sesuai level admin
+function showNIK(v){return isSuperAdmin()||isAdminL2()?String(v||'-'):maskNIK(v)}
+function showKK(v){return isSuperAdmin()||isAdminL2()?String(v||'-'):maskNoKK(v)}
+function showNama(v){return isAdmin?String(v||'-'):maskNama(v)}
+function showAlamat(v){return isAdmin?String(v||'-'):maskAlamat(v)}
 
 function pct(a,b){return b?Math.round(a/b*100):0}
 function dn2(v){return v!=null&&v!==''?v:'-'}
@@ -979,24 +1014,40 @@ async function initAuth(){
 }
 async function setUser(u){
   user=u;
+  // BACKEND: Ambil data admin dari Supabase — validasi di server via RLS
   const{data}=await sb.from('admin_users').select('*').eq('email',u.email).single();
   if(data&&data.status==='approved'){
     isAdmin=true;
+    adminLevel=data.admin_level||2; // default level 2 jika tidak ada
     userKec=data.kecamatan||null;
     userDesa=data.desa||null;
-  }else{isAdmin=false;userKec=null;userDesa=null;}
+    // Force email super admin ke level 1
+    if(u.email==='muhammadfauzimustofa7@gmail.com'){
+      adminLevel=1;
+      userKec=null;
+      userDesa=null;
+    }
+  }else{
+    isAdmin=false;
+    adminLevel=0;
+    userKec=null;
+    userDesa=null;
+  }
   updAuth();
 }
 function updAuth(){
   const a=document.getElementById('authArea');
   if(user){
-    const superBadge=isSuperAdmin()?'<span style="font-size:.5rem;background:rgba(200,169,81,.25);color:var(--gold);padding:1px 6px;border-radius:99px;font-weight:700">SUPER ADMIN</span>':'';
+    const levelLabel=adminLevel===1?'SUPER ADMIN':adminLevel===2?'ADMIN L2':adminLevel===3?'ADMIN L3':'';
+    const levelColor=adminLevel===1?'var(--gold)':adminLevel===2?'var(--blue-light)':'#10B981';
+    const levelBg=adminLevel===1?'rgba(200,169,81,.25)':adminLevel===2?'rgba(45,143,213,.2)':'rgba(16,185,129,.2)';
+    const badge=levelLabel?`<span style="font-size:.5rem;background:${levelBg};color:${levelColor};padding:1px 6px;border-radius:99px;font-weight:700">${levelLabel}</span>`:'';
     a.innerHTML=`<div style="display:flex;align-items:center;gap:6px">
-      ${isSuperAdmin()?`<button class="btn-icon-sm" onclick="openAdminPanel()" title="Kelola Admin"><i class="fas fa-users-cog"></i></button>`:''} 
+      ${isSuperAdmin()?`<button class="btn-icon-sm" onclick="openAdminPanel()" title="Kelola Admin"><i class="fas fa-users-cog"></i></button>`:''}
       <div class="user-chip">
         ${user.user_metadata?.avatar_url?`<img src="${user.user_metadata.avatar_url}" alt="">`:
           `<div style="width:26px;height:26px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;color:var(--navy)">${(user.email||'?')[0].toUpperCase()}</div>`}
-        <div><div class="user-chip span">${user.user_metadata?.full_name||user.email?.split('@')[0]}</div>${superBadge}</div>
+        <div><div class="user-chip span">${user.user_metadata?.full_name||user.email?.split('@')[0]}</div>${badge}</div>
       </div>
       <button class="btn-logout" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i></button>
     </div>`;
@@ -1431,12 +1482,12 @@ async function searchNIK(){
     return;
   }
   res.innerHTML=data.map(r=>`<div class="nik-result">
-    <h4><i class="fas fa-id-card" style="color:var(--gold)"></i> ${dn(r.kep_kk)}</h4>
+    <h4><i class="fas fa-id-card" style="color:var(--gold)"></i> ${showNama(r.kep_kk)}</h4>
     <div class="nr-item"><span class="nr-label">NIK</span><span class="nr-val">${showNIK(r.nik)}</span></div>
     <div class="nr-item"><span class="nr-label">No. KK</span><span class="nr-val">${showKK(r.no_kk)}</span></div>
     <div class="nr-item"><span class="nr-label">Kecamatan</span><span class="nr-val">${dn(r.kec)}</span></div>
     <div class="nr-item"><span class="nr-label">Desa</span><span class="nr-val">${dn(r.desa)}</span></div>
-    <div class="nr-item"><span class="nr-label">Alamat</span><span class="nr-val">${dn(r.alamat)}</span></div>
+    <div class="nr-item"><span class="nr-label">Alamat</span><span class="nr-val">${showAlamat(r.alamat)}</span></div>
     <div class="nr-item"><span class="nr-label">Status RTLH</span><span class="nr-val">${dn(r.status_rtlh)}</span></div>
     <div class="nr-item"><span class="nr-label">Desil</span><span class="nr-val">${dn(r.desil)}</span></div>
     <button class="btn btn-primary" style="margin-top:8px;font-size:.72rem" onclick="selectKec('${Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||''}')"><i class="fas fa-map-marker-alt"></i> Buka di Peta</button>
@@ -1660,7 +1711,7 @@ function renderSidebarList(){
       <div style="display:flex;align-items:center;gap:8px">
         <div style="width:22px;height:22px;border-radius:6px;background:${color}18;color:${color};font-size:.6rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div>
         <div style="flex:1;min-width:0">
-          <div class="ri-name">${dn(r.kep_kk)}</div>
+          <div class="ri-name">${showNama(r.kep_kk)}</div>
           <div class="ri-sub">${dn(r.desa)}</div>
         </div>
         <div style="font-size:.62rem;color:var(--gray-400);flex-shrink:0"><i class="fas fa-chevron-down" id="ico_${r.id}"></i></div>
@@ -1674,15 +1725,16 @@ function renderSidebarList(){
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
           ${[
             ['NIK',showNIK(r.nik)],['No. KK',showKK(r.no_kk)],
-            ['Desa',dn(r.desa)],['Alamat',dn(r.alamat)],
-            ['Jenis Kelamin',dn(r.jen_kel)],['Umur',dn(r.umur)+' thn'],
-            ['Pekerjaan',dn(r.pekerjaan)],['Penghasilan',dn(r.pengh)],
-            ['Jml Penghuni',dn(r.jml_peng)],['Luas Rumah',dn(r.luas_rum)+' m²'],
-            ['Desil',dn(r.desil)],['Tahun Bantuan',dn(r.tahun_bantuan)],
-            ['Sumber Dana',dn(r.sumber_dana)],['DTSEN',dn(r.dtsen)],
-            ['Material Dinding',dn(r.material_d)],['Kondisi Dinding',dn(r.kondisi_di)],
-            ['Material Atap',dn(r.material_a)],['Kondisi Atap',dn(r.kondisi_at)],
-            ['Material Lantai',dn(r.material_l)],['Kondisi Lantai',dn(r.kondisi_la)],
+            ['Nama KK',showNama(r.kep_kk)],['Desa',dn(r.desa)],
+            ['Alamat',showAlamat(r.alamat)],['Jenis Kelamin',dn(r.jen_kel)],
+            ['Umur',dn(r.umur)+' thn'],['Pekerjaan',dn(r.pekerjaan)],
+            ['Penghasilan',dn(r.pengh)],['Jml Penghuni',dn(r.jml_peng)],
+            ['Luas Rumah',dn(r.luas_rum)+' m²'],['Desil',dn(r.desil)],
+            ['Tahun Bantuan',dn(r.tahun_bantuan)],['Sumber Dana',dn(r.sumber_dana)],
+            ['DTSEN',dn(r.dtsen)],['Material Dinding',dn(r.material_d)],
+            ['Kondisi Dinding',dn(r.kondisi_di)],['Material Atap',dn(r.material_a)],
+            ['Kondisi Atap',dn(r.kondisi_at)],['Material Lantai',dn(r.material_l)],
+            ['Kondisi Lantai',dn(r.kondisi_la)],
           ].map(([lbl,val])=>`<div style="padding:5px 0;border-bottom:1px solid var(--gray-100)"><div style="font-size:.58rem;font-weight:700;color:var(--gray-400);text-transform:uppercase">${lbl}</div><div style="font-size:.75rem;font-weight:600;color:var(--gray-800);margin-top:1px">${val}</div></div>`).join('')}
         </div>
         ${canEdit()?`<div style="display:flex;gap:6px;margin-top:10px">
@@ -1710,7 +1762,7 @@ function updateMap(){
     const desilColor=desilNum&&parseInt(desilNum)<=4?DESIL_COLORS[parseInt(desilNum)]:'#888';
     const mk=L.circleMarker([r.latitude,r.longitude],{radius:7,fillColor:color,color:'#fff',weight:1.5,fillOpacity:.85});
     mk.on('click',()=>selectItem(r.id));
-    mk.bindTooltip(`<b>${dn(r.kep_kk)}</b><br>${dn(r.desa)} | Skor: ${Math.round(r._score)}${desilNum?` | Desil ${desilNum}`:''}`,{direction:'top',offset:[0,-8]});
+    mk.bindTooltip(`<b>${showNama(r.kep_kk)}</b><br>${dn(r.desa)} | Skor: ${Math.round(r._score)}${desilNum?` | Desil ${desilNum}`:''}`,{direction:'top',offset:[0,-8]});
     mcg.addLayer(mk);
   });
 }
@@ -1737,7 +1789,7 @@ function selectItem(id){
 
 function showDetail(r){
   const p=document.getElementById('detailPanel');
-  document.getElementById('dpTitle').textContent=dn(r.kep_kk);
+  document.getElementById('dpTitle').textContent=showNama(r.kep_kk);
   const color=getCatColor(r._score);
   const desilNum=String(r.desil||'').match(/\d+/)?.[0];
   document.getElementById('dpBody').innerHTML=`
@@ -1745,7 +1797,7 @@ function showDetail(r){
       <div class="detail-item full"><div class="dl">NIK</div><div class="dv">${showNIK(r.nik)}</div></div>
       <div class="detail-item full"><div class="dl">No. KK</div><div class="dv">${showKK(r.no_kk)}</div></div>
       <div class="detail-item"><div class="dl">Desa</div><div class="dv">${dn(r.desa)}</div></div>
-      <div class="detail-item"><div class="dl">Alamat</div><div class="dv">${dn(r.alamat)}</div></div>
+      <div class="detail-item"><div class="dl">Alamat</div><div class="dv">${showAlamat(r.alamat)}</div></div>
       <div class="detail-item"><div class="dl">Jenis Kelamin</div><div class="dv">${dn(r.jen_kel)}</div></div>
       <div class="detail-item"><div class="dl">Umur</div><div class="dv">${dn(r.umur)} thn</div></div>
       <div class="detail-item"><div class="dl">Pekerjaan</div><div class="dv">${dn(r.pekerjaan)}</div></div>
@@ -1869,7 +1921,7 @@ function openForm(id){
   document.getElementById('fmTitle').innerHTML=`<i class="fas fa-edit"></i> ${editId?'Edit':'Tambah'} Data RTLH`;
   const r=editId?brAll.find(x=>x.id===editId):{};
   // Super admin = isAdmin AND userKec is null/empty (no kecamatan restriction)
-  const superAdmin=isAdmin&&(!userKec||userKec==='');
+  const superAdmin=isSuperAdmin(); // Level 1 only can see/edit NIK
   const g=document.getElementById('formGrid');
   g.innerHTML=FIELDS.map(f=>{
     const val=r?.[f.key]||'';
@@ -2056,49 +2108,63 @@ async function openAdminPanel(){
 async function renderAdminPanel(){
   const body=document.getElementById('adminPanelBody');
   body.innerHTML='<div class="empty-state" style="padding:40px"><i class="fas fa-circle-notch fa-spin"></i><p>Memuat...</p></div>';
+  // BACKEND: RLS memastikan hanya super admin yang bisa melihat semua user
   const{data:users}=await sb.from('admin_users').select('*').order('created_at',{ascending:false});
   if(!users||!users.length){
     body.innerHTML='<div class="empty-state" style="padding:40px"><i class="fas fa-users-slash"></i><p>Belum ada admin terdaftar</p></div>';
     return;
   }
   const me=user?.email;
-  // Group: self, approved, pending
+  // Tambah tombol "Tambah Admin Baru" di atas
+  const addBtnHtml=`<div style="padding:14px 20px;border-bottom:1px solid var(--gray-100);background:var(--gray-50)">
+    <button onclick="openApproveAdmin(null,'','','','',2)" 
+      style="padding:8px 16px;border-radius:8px;background:var(--blue);color:#fff;border:none;font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px">
+      <i class="fas fa-user-plus"></i> Tambah Admin Baru (via Email)
+    </button>
+    <div style="font-size:.65rem;color:var(--gray-500);margin-top:6px"><i class="fas fa-info-circle"></i> Admin baru harus register dulu via halaman login, lalu Super Admin bisa approve di sini.</div>
+  </div>`;
+  // Sort: self → super admin → approved → pending
   const sorted=[...users].sort((a,b)=>{
     if(a.email===me)return-1;if(b.email===me)return 1;
+    if((a.admin_level||2)<(b.admin_level||2))return-1;
+    if((a.admin_level||2)>(b.admin_level||2))return 1;
     if(a.status==='approved'&&b.status!=='approved')return-1;
     if(b.status==='approved'&&a.status!=='approved')return 1;
     return 0;
   });
-  body.innerHTML=sorted.map(u=>{
+  const levelLabels={1:'🌟 Super Admin',2:'🗺️ Admin L2',3:'🏘️ Admin L3'};
+  const levelColors={1:'var(--gold)',2:'var(--blue)',3:'#10B981'};
+  body.innerHTML=addBtnHtml+sorted.map(u=>{
     const uid=u.id;
     const isSelf=u.email===me;
     const approved=u.status==='approved';
-    const superA=!u.kecamatan;
+    const lvl=u.admin_level||2;
+    const isSuperA=lvl===1;
     const kecs=(u.kecamatan||'').split(',').filter(Boolean);
-    const aksesLabel=superA?'Super Admin':kecs.length?kecs.join(', '):'—';
+    const desaList=(u.desa||'').split(',').filter(Boolean);
+    let aksesLabel=isSuperA?'Semua Kecamatan':kecs.length?kecs.join(', '):'—';
+    if(desaList.length)aksesLabel+=` · Desa: ${desaList.join(', ')}`;
     const initials=(u.nama||u.email||'?')[0].toUpperCase();
-    const avatarColor=isSelf?'var(--gold)':approved?'var(--blue)':'var(--gray-400)';
+    const levelColor=levelColors[lvl]||'var(--gray-400)';
+    const avatarColor=isSelf?'var(--gold)':approved?levelColor:'var(--gray-400)';
     return`<div style="display:flex;align-items:flex-start;gap:14px;padding:16px 20px;border-bottom:1px solid var(--gray-100);${isSelf?'background:#FFFBEB':''}">
-      <!-- Avatar -->
       <div style="width:44px;height:44px;border-radius:12px;background:${avatarColor}22;color:${avatarColor};display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:800;flex-shrink:0">${initials}</div>
-      <!-- Info -->
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <span style="font-size:.88rem;font-weight:700;color:var(--gray-900)">${u.nama||u.email.split('@')[0]}</span>
           ${isSelf?'<span style="font-size:.6rem;background:var(--gold)22;color:var(--gold);padding:2px 8px;border-radius:99px;font-weight:700">AKUN ANDA</span>':''}
-          ${approved&&superA?'<span style="font-size:.6rem;background:#FEF9C322;color:#CA8A04;padding:2px 8px;border-radius:99px;font-weight:700;border:1px solid #FDE04788">🌟 SUPER ADMIN</span>':''}
+          <span style="font-size:.6rem;background:${levelColor}22;color:${levelColor};padding:2px 8px;border-radius:99px;font-weight:700;border:1px solid ${levelColor}44">${levelLabels[lvl]||'Admin'}</span>
           <span style="font-size:.62rem;padding:2px 8px;border-radius:99px;font-weight:700;background:${approved?'var(--success-bg)':'var(--warning-bg)'};color:${approved?'var(--success)':'var(--warning)'}">${approved?'✓ Aktif':'⏳ Pending'}</span>
         </div>
         <div style="font-size:.72rem;color:var(--gray-500);margin-top:3px">${u.email}${u.username?` · <b>@${u.username}</b>`:' · <span style="color:var(--gray-300)">belum ada username</span>'}</div>
         <div style="font-size:.7rem;color:var(--blue);margin-top:4px;font-weight:600"><i class="fas fa-map-marker-alt" style="font-size:.6rem"></i> ${aksesLabel}</div>
       </div>
-      <!-- Actions -->
       ${isSelf?'':`<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
-        <button onclick="openApproveAdmin('${uid}','${u.nama||u.email}','${u.email}','${u.username||''}','${u.kecamatan||''}')"
+        <button onclick="openApproveAdmin('${uid}','${(u.nama||u.email).replace(/'/g,"\\'")}','${u.email}','${u.username||''}','${u.kecamatan||''}',${lvl},'${u.desa||''}')"
           style="padding:6px 12px;border-radius:7px;background:var(--blue);color:#fff;border:none;font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">
           <i class="fas fa-${approved?'edit':'user-check'}"></i> ${approved?'Edit Akses':'Approve'}
         </button>
-        <button onclick="deleteAdmin('${uid}','${u.nama||u.email}')"
+        <button onclick="deleteAdmin('${uid}','${(u.nama||u.email).replace(/'/g,"\\'")}','${u.email}')"
           style="padding:6px 12px;border-radius:7px;background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger);font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">
           <i class="fas fa-trash"></i> Hapus
         </button>
@@ -2108,62 +2174,74 @@ async function renderAdminPanel(){
 }
 
 let _approveUid=null;
-function openApproveAdmin(uid,nama,email,username,kecamatan){
+function openApproveAdmin(uid,nama,email,username,kecamatan,level,desa){
+  level=parseInt(level)||2;desa=desa||'';
   _approveUid=uid;
-  document.getElementById('approveTitle').innerHTML=`<i class="fas fa-user-check"></i> Atur Akses Admin`;
-  document.getElementById('approveSub').textContent=nama+' · '+email;
+  document.getElementById('approveTitle').innerHTML='<i class="fas fa-user-check"></i> Atur Akses Admin';
+  document.getElementById('approveSub').textContent=(nama||'Admin Baru')+' · '+(email||'');
   document.getElementById('approveUsername').value=username||'';
-  // Build kec checkboxes
-  const wrap=document.getElementById('kecCheckboxes');
+  const kecWrap=document.getElementById('kecCheckboxes');
   const kecs=(kecamatan||'').split(',').filter(Boolean).map(k=>k.trim().toUpperCase());
-  wrap.innerHTML=Object.keys(KEC_CONFIG).sort().map(k=>`
-    <label style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:7px;border:1.5px solid var(--gray-200);cursor:pointer;font-size:.75rem;font-weight:600;transition:.15s;background:${kecs.includes(k.toUpperCase())?'var(--blue-bg)':'#fff'};border-color:${kecs.includes(k.toUpperCase())?'var(--blue)':'var(--gray-200)'}">
-      <input type="checkbox" value="${k.toUpperCase()}" ${kecs.includes(k.toUpperCase())?'checked':''} onchange="this.closest('label').style.background=this.checked?'var(--blue-bg)':'#fff';this.closest('label').style.borderColor=this.checked?'var(--blue)':'var(--gray-200)'" style="accent-color:var(--blue);margin:0">
-      ${k}
-    </label>`).join('');
-  // Set radio
-  const isSuperA=!kecamatan;
-  document.querySelector('input[name=aksesLevel][value='+(isSuperA?'super':'kec')+']').checked=true;
+  kecWrap.innerHTML=Object.keys(KEC_CONFIG).sort().map(k=>{
+    const ch=kecs.includes(k.toUpperCase());
+    return'<label style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:7px;border:1.5px solid '+(ch?'var(--blue)':'var(--gray-200)')+';cursor:pointer;font-size:.75rem;font-weight:600;background:'+(ch?'var(--blue-bg)':'#fff')+'">'
+      +'<input type="checkbox" value="'+k.toUpperCase()+'" '+(ch?'checked':'')+' onchange="this.closest(\'label\').style.background=this.checked?\'var(--blue-bg)\':\'#fff\';this.closest(\'label\').style.borderColor=this.checked?\'var(--blue)\':\'var(--gray-200)\';updateDesaPicker()" style="accent-color:var(--blue);margin:0"> '+k+'</label>';}).join('');
+  const desaList=(desa||'').split(',').filter(Boolean).map(d=>d.trim().toUpperCase());
+  updateDesaPicker(desaList);
+  const radio=document.querySelector('input[name=aksesLevel][value="'+level+'"]');
+  if(radio)radio.checked=true;
   toggleAksesLevel();
   document.getElementById('ovApproveAdmin').classList.add('open');
 }
 
+function updateDesaPicker(preselected){
+  preselected=preselected||[];
+  const kecChecked=[...document.querySelectorAll('#kecCheckboxes input:checked')].map(el=>el.value);
+  const desaWrap=document.getElementById('desaCheckboxes');
+  if(!kecChecked.length||!window._batasNgawi){desaWrap.innerHTML='<div style="font-size:.72rem;color:var(--gray-400);padding:8px">Pilih kecamatan terlebih dahulu</div>';return;}
+  const desas=[...new Set(window._batasNgawi.features.filter(f=>kecChecked.includes((f.properties.WADMKC||'').toUpperCase())).map(f=>(f.properties.NAMOBJ||'').toUpperCase()).filter(Boolean))].sort();
+  if(!desas.length){desaWrap.innerHTML='<div style="font-size:.72rem;color:var(--gray-400);padding:8px">Tidak ada data desa</div>';return;}
+  const sel=preselected.map(d=>d.toUpperCase());
+  desaWrap.innerHTML=desas.map(d=>{const ch=sel.includes(d);return'<label style="display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;border:1.5px solid '+(ch?'#10B981':'var(--gray-200)')+';cursor:pointer;font-size:.7rem;font-weight:600;background:'+(ch?'#F0FDF4':'#fff')+'">'+'<input type="checkbox" value="'+d+'" '+(ch?'checked':'')+' onchange="this.closest(\'label\').style.background=this.checked?\'#F0FDF4\':\'#fff\';this.closest(\'label\').style.borderColor=this.checked?\'#10B981\':\'var(--gray-200)\'" style="accent-color:#10B981;margin:0"> '+d+'</label>';}).join('');
+}
+
 function toggleAksesLevel(){
   const val=document.querySelector('input[name=aksesLevel]:checked')?.value;
-  document.getElementById('kecamatanPicker').style.display=val==='kec'?'block':'none';
-  document.getElementById('lblSuperAdmin').style.borderColor=val==='super'?'var(--gold)':'var(--gray-200)';
-  document.getElementById('lblSuperAdmin').style.background=val==='super'?'#FFFBEB':'#fff';
-  document.getElementById('lblKecAdmin').style.borderColor=val==='kec'?'var(--blue)':'var(--gray-200)';
-  document.getElementById('lblKecAdmin').style.background=val==='kec'?'var(--blue-bg)':'#fff';
+  const isL2=val==='2';const isL3=val==='3';
+  document.getElementById('kecamatanPicker').style.display=(isL2||isL3)?'block':'none';
+  document.getElementById('desaPicker').style.display=isL3?'block':'none';
+  document.getElementById('lblL2Admin').style.borderColor=isL2?'var(--blue)':'var(--gray-200)';
+  document.getElementById('lblL2Admin').style.background=isL2?'var(--blue-bg)':'#fff';
+  document.getElementById('lblL3Admin').style.borderColor=isL3?'#10B981':'var(--gray-200)';
+  document.getElementById('lblL3Admin').style.background=isL3?'#F0FDF4':'#fff';
 }
 
 async function submitApproveAdmin(){
-  if(!_approveUid)return;
-  const level=document.querySelector('input[name=aksesLevel]:checked')?.value;
+  if(!_approveUid)return toast('Tidak ada admin dipilih','error');
+  if(!isSuperAdmin())return toast('Hanya Super Admin yang bisa mengelola admin','error');
+  const lvl=parseInt(document.querySelector('input[name=aksesLevel]:checked')?.value)||2;
   const username=document.getElementById('approveUsername').value.trim().toLowerCase();
   const kecChecked=[...document.querySelectorAll('#kecCheckboxes input:checked')].map(el=>el.value);
-
+  const desaChecked=[...document.querySelectorAll('#desaCheckboxes input:checked')].map(el=>el.value);
   if(username&&!/^[a-z0-9_]+$/.test(username))return toast('Username hanya huruf kecil, angka, underscore','error');
-  if(level==='kec'&&!kecChecked.length)return toast('Pilih minimal 1 kecamatan','error');
-
-  // Check username unique
+  if((lvl===2||lvl===3)&&!kecChecked.length)return toast('Pilih minimal 1 kecamatan','error');
   if(username){
     const{data:ex}=await sb.from('admin_users').select('id').eq('username',username).neq('id',_approveUid).maybeSingle();
     if(ex)return toast('Username sudah dipakai admin lain','error');
   }
-
-  const obj={status:'approved',kecamatan:level==='super'?null:kecChecked.join(',')};
+  const obj={status:'approved',admin_level:lvl,kecamatan:kecChecked.length?kecChecked.join(','):null,desa:(lvl===3&&desaChecked.length)?desaChecked.join(','):null};
   if(username)obj.username=username;
-
   const{error}=await sb.from('admin_users').update(obj).eq('id',_approveUid);
-  if(error)return toast('Gagal: '+error.message,'error');
+  if(error)return toast('Gagal: '+error.message+' (cek RLS policy)','error');
   closeModal('ovApproveAdmin');
   toast('Akses admin berhasil disimpan','success');
   renderAdminPanel();
 }
 
-async function deleteAdmin(uid,nama){
-  if(!confirm(`Hapus admin "${nama}"?\n\nMereka tidak bisa login lagi ke sistem.`))return;
+async function deleteAdmin(uid,nama,email){
+  if(!isSuperAdmin())return toast('Hanya Super Admin yang bisa menghapus admin','error');
+  if(email==='muhammadfauzimustofa7@gmail.com')return toast('Super Admin utama tidak bisa dihapus','error');
+  if(!confirm('Hapus admin "'+nama+'"?\n\nMereka tidak bisa login lagi ke sistem.'))return;
   const{error}=await sb.from('admin_users').delete().eq('id',uid);
   if(error)return toast('Gagal hapus: '+error.message,'error');
   toast('Admin dihapus','success');
@@ -2182,8 +2260,9 @@ async function setAdminUsername(uid,email){
 }
 
 async function approveAdmin(uid){
-  openApproveAdmin(uid,'','','','');
+  openApproveAdmin(uid,'','','','',2,'');
 }
+
 
 // ══════════════════════════════════════════════════
 // MOB SIDEBAR
@@ -2296,7 +2375,7 @@ function teSort(key,noToggle=false){
 }
 
 function teRender(){
-  const superAdmin=isAdmin&&(!userKec||userKec==='');
+  const superAdmin=isSuperAdmin(); // Level 1 only can see/edit NIK
   const thead=document.getElementById('teThead');
   const tbody=document.getElementById('teTbody');
 
@@ -2499,7 +2578,7 @@ function teExport(){
     const obj={};
     TE_COLS.forEach(c=>{
       if(c.type==='id')return;
-      const superAdmin=isAdmin&&(!userKec||userKec==='');
+      const superAdmin=isSuperAdmin(); // Level 1 only can see/edit NIK
       if(c.sensitive&&!superAdmin)obj[c.label]='***';
       else obj[c.label]=r[c.key]||'';
     });
