@@ -345,6 +345,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
   </div>
   <nav class="nav-tabs" id="navTabs">
     <button class="nav-tab active" id="ntBeranda" onclick="nav('beranda')"><i class="fas fa-home"></i> Beranda</button>
+    <button class="nav-tab" id="ntWebgis" onclick="nav('keclist')"><i class="fas fa-map-marked-alt"></i> WebGIS</button>
   </nav>
   <div class="header-right">
     <button class="btn-icon-sm" onclick="hardRefresh()" title="Refresh Data (tanpa reload halaman)"><i class="fas fa-sync-alt" id="icoRefresh"></i></button>
@@ -356,6 +357,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 <!-- MOBILE BOTTOM NAV -->
 <nav class="mob-bottom-nav">
   <button class="mob-nav-btn active" id="mnBeranda" onclick="nav('beranda')"><i class="fas fa-home"></i>Beranda</button>
+  <button class="mob-nav-btn" id="mnWebgis" onclick="nav('keclist')"><i class="fas fa-map-marked-alt"></i>WebGIS</button>
 </nav>
 
 <!-- TOAST -->
@@ -520,6 +522,16 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 </div>
 
 <!-- ═══════════════════════════════ MODALS ═══════════════════════════════ -->
+
+<!-- DETAIL PANEL (floating card di atas peta) -->
+<div class="detail-panel" id="detailPanel">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px 0">
+    <div id="dpTitle" style="font-size:.9rem;font-weight:800;color:var(--navy)"></div>
+    <button onclick="closeDetail()" style="background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:1rem"><i class="fas fa-times"></i></button>
+  </div>
+  <div id="dpBody" style="padding:10px 14px"></div>
+  <div id="dpActions" style="display:flex;gap:8px;flex-wrap:wrap;padding:10px 14px 14px"></div>
+</div>
 
 <!-- LOGIN MODAL -->
 <div class="overlay" id="ovLogin">
