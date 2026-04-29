@@ -927,7 +927,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 // ══════════════════════════════════════════════════
 const SUPA_URL='https://oiygddbzugipepatswxi.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9peWdkZGJ6dWdpcGVwYXRzd3hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MTk3NTEsImV4cCI6MjA5MTM5NTc1MX0.MiGiTCuawuT0SCD7OzvEgBH4PqqdqCtl_njMqmX4Jzs';
-const sb=window.supabase.createClient(SUPA_URL,SUPA_KEY);
+let sb=null; // akan diinit di DOMContentLoaded
 
 const KEC_CONFIG={
   "Bringin":{lat:-7.4028,lng:111.5873},"Geneng":{lat:-7.4936,lng:111.4404},
@@ -1047,7 +1047,7 @@ function nav(pg){
     document.getElementById('pgBeranda').classList.add('active');
     document.getElementById('ntBeranda')?.classList.add('active');
     document.getElementById('mnBeranda')?.classList.add('active');
-    loadGlobalStats();
+    if(sb) loadGlobalStats();
   } else if(pg==='keclist'){
     document.getElementById('pgKecList').classList.add('active');
     document.getElementById('ntWebgis')?.classList.add('active');
@@ -1058,6 +1058,7 @@ function nav(pg){
     document.getElementById('ntWebgis')?.classList.add('active');
     document.getElementById('mnWebgis')?.classList.add('active');
     initMap();
+    setTimeout(()=>{ if(map) map.invalidateSize(); },150);
     loadKec();
   }
   saveSession();
@@ -1085,7 +1086,7 @@ async function hardRefresh(){
   brCache={};
   try{
     const activePage=document.querySelector('.page.active')?.id;
-    if(activePage==='pgBeranda')await loadGlobalStats();
+    if(activePage==='pgBeranda'&&sb)await loadGlobalStats();
     else if(activePage==='pgWebgis'&&currentKec){brAll=[];await loadKec();}
     else if(activePage==='pgKecList'){await ensureKecCounts(true);renderKecList();}
     toast('Data diperbarui','success');
@@ -3088,14 +3089,14 @@ async function importExcelKab(input){
 }
 
 window.addEventListener('DOMContentLoaded',async()=>{
+  // Init Supabase client dulu sebelum apapun
+  sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
   await initAuth();
   restoreSession();
-  // Load stats & peta beranda
-  await loadGlobalStats();
   // Load GeoJSON boundary lazily
   fetch('data/batas-desa-ngawi.json').then(r=>r.json()).then(gj=>{
     window._batasNgawi=gj;
-    _fitMapToNgawi();
+    if(typeof _fitMapToNgawi==='function') _fitMapToNgawi();
   }).catch(()=>{});
 });
 </script>
