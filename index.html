@@ -636,62 +636,17 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
 <!-- FORM APPROVE ADMIN (inline modal) -->
 <div class="overlay" id="ovApproveAdmin">
-  <div class="modal" style="max-width:540px">
+  <div class="modal" style="max-width:520px">
     <div class="modal-head">
       <div><h3 id="approveTitle"><i class="fas fa-user-check"></i> Atur Akses Admin</h3><div class="sub" id="approveSub"></div></div>
       <button class="modal-x" onclick="closeModal('ovApproveAdmin')"><i class="fas fa-times"></i></button>
     </div>
     <div class="modal-body">
-
-      <!-- SECTION: Info Akun (hanya muncul saat mode tambah baru) -->
-      <div id="sectionAkunBaru" style="display:none;margin-bottom:16px;background:var(--blue-bg);border:1px solid #BFDBFE;border-radius:10px;padding:14px">
-        <div style="font-size:.75rem;font-weight:800;color:var(--blue);margin-bottom:10px"><i class="fas fa-user-plus"></i> Buat Akun Admin Baru</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div class="form-group">
-            <label>Nama Lengkap <span style="color:var(--danger)">*</span></label>
-            <input type="text" id="approveNama" placeholder="contoh: Budi Santoso" style="padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.82rem;width:100%">
-          </div>
-          <div class="form-group">
-            <label>Email <span style="color:var(--danger)">*</span></label>
-            <input type="email" id="approveEmail" placeholder="admin@ngawi.go.id" style="padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.82rem;width:100%">
-          </div>
-          <div class="form-group">
-            <label>Password <span style="color:var(--danger)">*</span></label>
-            <div style="position:relative">
-              <input type="password" id="approvePass" placeholder="Min. 8 karakter" style="padding:8px 36px 8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.82rem;width:100%">
-              <button type="button" onclick="togglePassVis('approvePass','eyePass')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:.8rem"><i class="fas fa-eye" id="eyePass"></i></button>
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Konfirmasi Password <span style="color:var(--danger)">*</span></label>
-            <div style="position:relative">
-              <input type="password" id="approvePass2" placeholder="Ulangi password" style="padding:8px 36px 8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.82rem;width:100%">
-              <button type="button" onclick="togglePassVis('approvePass2','eyePass2')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:.8rem"><i class="fas fa-eye" id="eyePass2"></i></button>
-            </div>
-          </div>
-        </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:.72rem;font-weight:700;color:var(--gray-600);display:block;margin-bottom:8px">USERNAME (opsional)</label>
+        <input type="text" id="approveUsername" placeholder="contoh: admin_bringin" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.82rem">
+        <div style="font-size:.65rem;color:var(--gray-400);margin-top:4px">Hanya huruf kecil, angka, underscore. Biarkan kosong jika tidak ingin set username.</div>
       </div>
-
-      <!-- SECTION: Username & Password (mode edit akun yang sudah ada) -->
-      <div id="sectionEditAkun" style="margin-bottom:14px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div class="form-group">
-            <label>USERNAME <span style="color:var(--gray-400);font-weight:400;font-size:.62rem">(opsional)</span></label>
-            <input type="text" id="approveUsername" placeholder="contoh: admin_bringin" style="padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.82rem;width:100%">
-            <div style="font-size:.62rem;color:var(--gray-400);margin-top:3px">Huruf kecil, angka, underscore</div>
-          </div>
-          <div class="form-group" id="groupResetPass">
-            <label>RESET PASSWORD <span style="color:var(--gray-400);font-weight:400;font-size:.62rem">(kosong = tidak diubah)</span></label>
-            <div style="position:relative">
-              <input type="password" id="approveResetPass" placeholder="Password baru..." style="padding:8px 36px 8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.82rem;width:100%">
-              <button type="button" onclick="togglePassVis('approveResetPass','eyeReset')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:.8rem"><i class="fas fa-eye" id="eyeReset"></i></button>
-            </div>
-            <div style="font-size:.62rem;color:var(--gray-400);margin-top:3px">Min. 8 karakter</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- LEVEL AKSES -->
       <div style="margin-bottom:14px">
         <label style="font-size:.72rem;font-weight:700;color:var(--gray-600);display:block;margin-bottom:8px">LEVEL AKSES</label>
         <div style="display:flex;flex-direction:column;gap:8px">
@@ -706,64 +661,24 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
             <input type="radio" name="aksesLevel" value="3" onchange="toggleAksesLevel()" style="accent-color:#10B981">
             <div>
               <div style="font-size:.8rem;font-weight:700;color:var(--gray-900)">🏘️ Admin Layer 3 — Desa</div>
-              <div style="font-size:.68rem;color:var(--gray-500)">Akses terbatas per kecamatan + desa · Tidak bisa lihat NIK/KK penuh</div>
+              <div style="font-size:.68rem;color:var(--gray-500)">Akses terbatas per kecamatan + desa tertentu · Tidak bisa lihat NIK/KK penuh</div>
             </div>
           </label>
         </div>
       </div>
-
-      <!-- KECAMATAN -->
       <div id="kecamatanPicker" style="margin-bottom:14px">
         <label style="font-size:.72rem;font-weight:700;color:var(--gray-600);display:block;margin-bottom:8px">PILIH KECAMATAN</label>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;max-height:160px;overflow-y:auto;padding:2px" id="kecCheckboxes"></div>
       </div>
-
-      <!-- DESA (Layer 3) -->
       <div id="desaPicker" style="margin-bottom:14px;display:none">
-        <label style="font-size:.72rem;font-weight:700;color:var(--gray-600);display:block;margin-bottom:8px">PILIH DESA <span style="color:var(--gray-400);font-weight:400">— kosong = semua desa</span></label>
+        <label style="font-size:.72rem;font-weight:700;color:var(--gray-600);display:block;margin-bottom:8px">PILIH DESA (Layer 3) <span style="color:var(--gray-400);font-weight:400">— opsional, kosong = semua desa di kecamatan</span></label>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;max-height:160px;overflow-y:auto;padding:2px" id="desaCheckboxes"></div>
         <div style="font-size:.65rem;color:var(--gray-400);margin-top:4px"><i class="fas fa-info-circle"></i> Pilih kecamatan dulu untuk melihat daftar desa</div>
       </div>
-
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('ovApproveAdmin')">Batal</button>
-      <button class="btn btn-primary" id="btnSubmitAdmin" onclick="submitApproveAdmin()"><i class="fas fa-check"></i> Simpan & Approve</button>
-    </div>
-  </div>
-</div>
-
-<!-- RESET PASSWORD MODAL -->
-<div class="overlay" id="ovResetPass">
-  <div class="modal" style="max-width:380px">
-    <div class="modal-head">
-      <div><h3><i class="fas fa-key" style="color:var(--warning)"></i> Reset Password</h3>
-        <div class="sub" id="resetPassSub">Set password baru untuk admin</div>
-      </div>
-      <button class="modal-x" onclick="closeModal('ovResetPass')"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body">
-      <div style="background:var(--warning-bg);border:1px solid var(--warning);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:.72rem;color:#92400E">
-        <i class="fas fa-exclamation-triangle"></i> Password lama admin akan langsung diganti. Admin yang bersangkutan perlu login ulang.
-      </div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label>Password Baru <span style="color:var(--danger)">*</span></label>
-        <div style="position:relative">
-          <input type="password" id="rpNewPass" placeholder="Min. 8 karakter" style="padding:8px 36px 8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.88rem;width:100%;letter-spacing:1px">
-          <button type="button" onclick="togglePassVis('rpNewPass','eyeRP1')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-400)"><i class="fas fa-eye" id="eyeRP1"></i></button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Konfirmasi Password <span style="color:var(--danger)">*</span></label>
-        <div style="position:relative">
-          <input type="password" id="rpConfPass" placeholder="Ulangi password baru" style="padding:8px 36px 8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.88rem;width:100%;letter-spacing:1px" onkeydown="if(event.key==='Enter')doResetPassword()">
-          <button type="button" onclick="togglePassVis('rpConfPass','eyeRP2')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-400)"><i class="fas fa-eye" id="eyeRP2"></i></button>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('ovResetPass')">Batal</button>
-      <button class="btn" id="btnDoReset" onclick="doResetPassword()" style="background:var(--warning);color:#fff;font-weight:700"><i class="fas fa-key"></i> Reset Password</button>
+      <button class="btn btn-primary" onclick="submitApproveAdmin()"><i class="fas fa-check"></i> Simpan & Approve</button>
     </div>
   </div>
 </div>
@@ -2202,11 +2117,11 @@ async function renderAdminPanel(){
   const me=user?.email;
   // Tambah tombol "Tambah Admin Baru" di atas
   const addBtnHtml=`<div style="padding:14px 20px;border-bottom:1px solid var(--gray-100);background:var(--gray-50)">
-    <button onclick="openApproveAdmin(null,'','','','',2,'')" 
+    <button onclick="openApproveAdmin(null,'','','','',2)" 
       style="padding:8px 16px;border-radius:8px;background:var(--blue);color:#fff;border:none;font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px">
-      <i class="fas fa-user-plus"></i> Tambah Admin Baru
+      <i class="fas fa-user-plus"></i> Tambah Admin Baru (via Email)
     </button>
-    <div style="font-size:.65rem;color:var(--gray-500);margin-top:6px"><i class="fas fa-info-circle"></i> Buat akun baru langsung dengan email, username, dan password tanpa perlu register dulu.</div>
+    <div style="font-size:.65rem;color:var(--gray-500);margin-top:6px"><i class="fas fa-info-circle"></i> Admin baru harus register dulu via halaman login, lalu Super Admin bisa approve di sini.</div>
   </div>`;
   // Sort: self → super admin → approved → pending
   const sorted=[...users].sort((a,b)=>{
@@ -2249,10 +2164,6 @@ async function renderAdminPanel(){
           style="padding:6px 12px;border-radius:7px;background:var(--blue);color:#fff;border:none;font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">
           <i class="fas fa-${approved?'edit':'user-check'}"></i> ${approved?'Edit Akses':'Approve'}
         </button>
-        <button onclick="openResetPasswordModal('${uid}','${(u.nama||u.email).replace(/'/g,"\\'")}','${u.email}')"
-          style="padding:6px 12px;border-radius:7px;background:var(--warning-bg);color:#92400E;border:1px solid var(--warning);font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">
-          <i class="fas fa-key"></i> Reset Password
-        </button>
         <button onclick="deleteAdmin('${uid}','${(u.nama||u.email).replace(/'/g,"\\'")}','${u.email}')"
           style="padding:6px 12px;border-radius:7px;background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger);font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">
           <i class="fas fa-trash"></i> Hapus
@@ -2262,57 +2173,19 @@ async function renderAdminPanel(){
   }).join('');
 }
 
-// ── PASSWORD VISIBILITY TOGGLE ──
-function togglePassVis(inputId, iconId){
-  const el=document.getElementById(inputId);
-  const ic=document.getElementById(iconId);
-  if(!el)return;
-  const show=el.type==='password';
-  el.type=show?'text':'password';
-  if(ic)ic.className=show?'fas fa-eye-slash':'fas fa-eye';
-}
-
 let _approveUid=null;
-let _approveMode='edit'; // 'new' or 'edit'
-
 function openApproveAdmin(uid,nama,email,username,kecamatan,level,desa){
-  level=parseInt(level)||2; desa=desa||'';
+  level=parseInt(level)||2;desa=desa||'';
   _approveUid=uid;
-  _approveMode=uid?'edit':'new';
-
-  // Toggle UI sections
-  document.getElementById('sectionAkunBaru').style.display=_approveMode==='new'?'block':'none';
-  document.getElementById('sectionEditAkun').style.display='block';
-  document.getElementById('groupResetPass').style.display=_approveMode==='edit'?'block':'none';
-
-  // Title & subtitle
-  if(_approveMode==='new'){
-    document.getElementById('approveTitle').innerHTML='<i class="fas fa-user-plus"></i> Tambah Admin Baru';
-    document.getElementById('approveSub').textContent='Buat akun dan atur hak akses sekaligus';
-    document.getElementById('btnSubmitAdmin').innerHTML='<i class="fas fa-plus"></i> Buat & Aktifkan';
-    // Clear new-account fields
-    document.getElementById('approveNama').value='';
-    document.getElementById('approveEmail').value='';
-    document.getElementById('approvePass').value='';
-    document.getElementById('approvePass2').value='';
-  } else {
-    document.getElementById('approveTitle').innerHTML='<i class="fas fa-user-check"></i> Atur Akses Admin';
-    document.getElementById('approveSub').textContent=(nama||'Admin')+' · '+(email||'');
-    document.getElementById('btnSubmitAdmin').innerHTML='<i class="fas fa-check"></i> Simpan';
-  }
-
-  // Common fields
+  document.getElementById('approveTitle').innerHTML='<i class="fas fa-user-check"></i> Atur Akses Admin';
+  document.getElementById('approveSub').textContent=(nama||'Admin Baru')+' · '+(email||'');
   document.getElementById('approveUsername').value=username||'';
-  document.getElementById('approveResetPass') && (document.getElementById('approveResetPass').value='');
-
-  // Build kec checkboxes
   const kecWrap=document.getElementById('kecCheckboxes');
   const kecs=(kecamatan||'').split(',').filter(Boolean).map(k=>k.trim().toUpperCase());
   kecWrap.innerHTML=Object.keys(KEC_CONFIG).sort().map(k=>{
     const ch=kecs.includes(k.toUpperCase());
     return'<label style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:7px;border:1.5px solid '+(ch?'var(--blue)':'var(--gray-200)')+';cursor:pointer;font-size:.75rem;font-weight:600;background:'+(ch?'var(--blue-bg)':'#fff')+'">'
-      +'<input type="checkbox" value="'+k.toUpperCase()+'" '+(ch?'checked':'')+' onchange="this.closest(\\'label\\').style.background=this.checked?\\'var(--blue-bg)\\':\\'#fff\\';this.closest(\\'label\\').style.borderColor=this.checked?\\'var(--blue)\\':\\'var(--gray-200)\\';updateDesaPicker()" style="accent-color:var(--blue);margin:0"> '+k+'</label>';}).join('');
-
+      +'<input type="checkbox" value="'+k.toUpperCase()+'" '+(ch?'checked':'')+' onchange="this.closest(\'label\').style.background=this.checked?\'var(--blue-bg)\':\'#fff\';this.closest(\'label\').style.borderColor=this.checked?\'var(--blue)\':\'var(--gray-200)\';updateDesaPicker()" style="accent-color:var(--blue);margin:0"> '+k+'</label>';}).join('');
   const desaList=(desa||'').split(',').filter(Boolean).map(d=>d.trim().toUpperCase());
   updateDesaPicker(desaList);
   const radio=document.querySelector('input[name=aksesLevel][value="'+level+'"]');
@@ -2325,24 +2198,16 @@ function updateDesaPicker(preselected){
   preselected=preselected||[];
   const kecChecked=[...document.querySelectorAll('#kecCheckboxes input:checked')].map(el=>el.value);
   const desaWrap=document.getElementById('desaCheckboxes');
-  if(!kecChecked.length||!window._batasNgawi){
-    desaWrap.innerHTML='<div style="font-size:.72rem;color:var(--gray-400);padding:8px">Pilih kecamatan terlebih dahulu</div>';return;
-  }
-  const desas=[...new Set(window._batasNgawi.features
-    .filter(f=>kecChecked.includes((f.properties.WADMKC||'').toUpperCase()))
-    .map(f=>(f.properties.NAMOBJ||'').toUpperCase()).filter(Boolean))].sort();
+  if(!kecChecked.length||!window._batasNgawi){desaWrap.innerHTML='<div style="font-size:.72rem;color:var(--gray-400);padding:8px">Pilih kecamatan terlebih dahulu</div>';return;}
+  const desas=[...new Set(window._batasNgawi.features.filter(f=>kecChecked.includes((f.properties.WADMKC||'').toUpperCase())).map(f=>(f.properties.NAMOBJ||'').toUpperCase()).filter(Boolean))].sort();
   if(!desas.length){desaWrap.innerHTML='<div style="font-size:.72rem;color:var(--gray-400);padding:8px">Tidak ada data desa</div>';return;}
   const sel=preselected.map(d=>d.toUpperCase());
-  desaWrap.innerHTML=desas.map(d=>{
-    const ch=sel.includes(d);
-    return'<label style="display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;border:1.5px solid '+(ch?'#10B981':'var(--gray-200)')+';cursor:pointer;font-size:.7rem;font-weight:600;background:'+(ch?'#F0FDF4':'#fff')+'">'
-      +'<input type="checkbox" value="'+d+'" '+(ch?'checked':'')+' onchange="this.closest(\\'label\\').style.background=this.checked?\\'#F0FDF4\\':\\'#fff\\';this.closest(\\'label\\').style.borderColor=this.checked?\\'#10B981\\':\\'var(--gray-200)\\'" style="accent-color:#10B981;margin:0"> '+d+'</label>';
-  }).join('');
+  desaWrap.innerHTML=desas.map(d=>{const ch=sel.includes(d);return'<label style="display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;border:1.5px solid '+(ch?'#10B981':'var(--gray-200)')+';cursor:pointer;font-size:.7rem;font-weight:600;background:'+(ch?'#F0FDF4':'#fff')+'">'+'<input type="checkbox" value="'+d+'" '+(ch?'checked':'')+' onchange="this.closest(\'label\').style.background=this.checked?\'#F0FDF4\':\'#fff\';this.closest(\'label\').style.borderColor=this.checked?\'#10B981\':\'var(--gray-200)\'" style="accent-color:#10B981;margin:0"> '+d+'</label>';}).join('');
 }
 
 function toggleAksesLevel(){
   const val=document.querySelector('input[name=aksesLevel]:checked')?.value;
-  const isL2=val==='2'; const isL3=val==='3';
+  const isL2=val==='2';const isL3=val==='3';
   document.getElementById('kecamatanPicker').style.display=(isL2||isL3)?'block':'none';
   document.getElementById('desaPicker').style.display=isL3?'block':'none';
   document.getElementById('lblL2Admin').style.borderColor=isL2?'var(--blue)':'var(--gray-200)';
@@ -2352,128 +2217,25 @@ function toggleAksesLevel(){
 }
 
 async function submitApproveAdmin(){
+  if(!_approveUid)return toast('Tidak ada admin dipilih','error');
   if(!isSuperAdmin())return toast('Hanya Super Admin yang bisa mengelola admin','error');
-
   const lvl=parseInt(document.querySelector('input[name=aksesLevel]:checked')?.value)||2;
   const username=document.getElementById('approveUsername').value.trim().toLowerCase();
   const kecChecked=[...document.querySelectorAll('#kecCheckboxes input:checked')].map(el=>el.value);
   const desaChecked=[...document.querySelectorAll('#desaCheckboxes input:checked')].map(el=>el.value);
-
-  if(username&&!/^[a-z0-9_]+$/.test(username))return toast('Username: hanya huruf kecil, angka, underscore','error');
+  if(username&&!/^[a-z0-9_]+$/.test(username))return toast('Username hanya huruf kecil, angka, underscore','error');
   if((lvl===2||lvl===3)&&!kecChecked.length)return toast('Pilih minimal 1 kecamatan','error');
-
-  // ── MODE: BUAT AKUN BARU ──
-  if(_approveMode==='new'){
-    const nama=document.getElementById('approveNama').value.trim();
-    const email=document.getElementById('approveEmail').value.trim().toLowerCase();
-    const pass=document.getElementById('approvePass').value;
-    const pass2=document.getElementById('approvePass2').value;
-    if(!nama)return toast('Nama lengkap wajib diisi','error');
-    if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return toast('Format email tidak valid','error');
-    if(!pass||pass.length<8)return toast('Password minimal 8 karakter','error');
-    if(pass!==pass2)return toast('Konfirmasi password tidak cocok','error');
-    if(username){
-      const{data:ex}=await sb.from('admin_users').select('id').eq('username',username).maybeSingle();
-      if(ex)return toast('Username sudah dipakai','error');
-    }
-    const btn=document.getElementById('btnSubmitAdmin');
-    btn.disabled=true; btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Membuat akun...';
-    try{
-      await createAdminAccount({email,password:pass,nama,username,lvl,kecamatan:kecChecked.join(','),desa:(lvl===3&&desaChecked.length)?desaChecked.join(','):null});
-      closeModal('ovApproveAdmin');
-      toast('Akun admin berhasil dibuat!','success');
-      renderAdminPanel();
-    }catch(e){
-      toast('Gagal: '+e.message,'error');
-    }finally{
-      btn.disabled=false; btn.innerHTML='<i class="fas fa-plus"></i> Buat & Aktifkan';
-    }
-    return;
-  }
-
-  // ── MODE: EDIT AKUN YANG ADA ──
-  if(!_approveUid)return toast('Tidak ada admin dipilih','error');
-
-  // Cek username unik
   if(username){
     const{data:ex}=await sb.from('admin_users').select('id').eq('username',username).neq('id',_approveUid).maybeSingle();
     if(ex)return toast('Username sudah dipakai admin lain','error');
   }
-
-  const obj={
-    status:'approved', admin_level:lvl,
-    kecamatan:kecChecked.length?kecChecked.join(','):null,
-    desa:(lvl===3&&desaChecked.length)?desaChecked.join(','):null,
-  };
+  const obj={status:'approved',admin_level:lvl,kecamatan:kecChecked.length?kecChecked.join(','):null,desa:(lvl===3&&desaChecked.length)?desaChecked.join(','):null};
   if(username)obj.username=username;
-
   const{error}=await sb.from('admin_users').update(obj).eq('id',_approveUid);
-  if(error)return toast('Gagal update: '+error.message,'error');
-
-  // Reset password jika diisi
-  const resetPass=document.getElementById('approveResetPass')?.value||'';
-  if(resetPass){
-    if(resetPass.length<8)return toast('Password baru minimal 8 karakter','error');
-    // Ambil email admin yang di-edit
-    const{data:adminData}=await sb.from('admin_users').select('email').eq('id',_approveUid).single();
-    if(adminData?.email){
-      const ok=await resetAdminPassword(adminData.email,resetPass);
-      if(!ok)return; // toast sudah dihandle di dalam
-    }
-  }
-
+  if(error)return toast('Gagal: '+error.message+' (cek RLS policy)','error');
   closeModal('ovApproveAdmin');
   toast('Akses admin berhasil disimpan','success');
   renderAdminPanel();
-}
-
-// Buat akun baru via Supabase Admin API (dipanggil lewat Edge Function / service_role)
-// Catatan: karena kita pakai anon key di frontend, kita manfaatkan signUp + auto-approve
-async function createAdminAccount({email,password,nama,username,lvl,kecamatan,desa}){
-  // 1. Buat user di Supabase Auth (signUp)
-  const{data:authData,error:authErr}=await sb.auth.signUp({
-    email, password,
-    options:{data:{full_name:nama}}
-  });
-  if(authErr)throw new Error('Auth error: '+authErr.message);
-
-  const authUserId=authData?.user?.id;
-  if(!authUserId)throw new Error('Gagal mendapat user ID setelah signup');
-
-  // 2. Tunggu sebentar lalu upsert ke admin_users
-  await new Promise(r=>setTimeout(r,800));
-  const row={
-    email, nama, status:'approved',
-    admin_level:lvl, kecamatan:kecamatan||null, desa:desa||null,
-  };
-  if(username)row.username=username;
-
-  const{error:dbErr}=await sb.from('admin_users').upsert(row,{onConflict:'email'});
-  if(dbErr)throw new Error('DB error: '+dbErr.message);
-}
-
-// Reset password admin lain — kirim magic link / update via service_role
-// Karena frontend pakai anon key, kita simpan password_hash ke admin_users
-// dan gunakan Edge Function kalau tersedia. Fallback: kirim email reset.
-async function resetAdminPassword(email, newPass){
-  // Coba via Supabase Admin API (butuh service_role — biasanya lewat Edge Function)
-  // Fallback: simpan flag "password_reset_needed" dan kirim email reset
-  try{
-    // Jika ada Edge Function /reset-password:
-    const res=await fetch(`${SUPA_URL}/functions/v1/reset-admin-password`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
-      body:JSON.stringify({email,new_password:newPass})
-    });
-    if(res.ok){toast('Password berhasil direset','success');return true;}
-  }catch(e){}
-  // Fallback: kirim email reset password Supabase
-  const{error}=await sb.auth.resetPasswordForEmail(email,{
-    redirectTo:window.location.origin+window.location.pathname
-  });
-  if(error){toast('Gagal reset password: '+error.message,'error');return false;}
-  toast('Email reset password dikirim ke '+email,'info');
-  return true;
 }
 
 async function deleteAdmin(uid,nama,email){
@@ -2494,63 +2256,11 @@ async function setAdminUsername(uid,email){
   if(data)return toast('Username sudah dipakai','error');
   const{error}=await sb.from('admin_users').update({username:uname}).eq('id',uid);
   if(error)return toast('Gagal: '+error.message,'error');
-  toast('Username diset','success'); renderAdminPanel();
+  toast('Username diset','success');renderAdminPanel();
 }
 
 async function approveAdmin(uid){
   openApproveAdmin(uid,'','','','',2,'');
-}
-
-// ── RESET PASSWORD MODAL (standalone) ──
-let _rpEmail=null, _rpNama=null;
-function openResetPasswordModal(uid,nama,email){
-  if(!isSuperAdmin())return toast('Hanya Super Admin','error');
-  _rpEmail=email; _rpNama=nama;
-  document.getElementById('resetPassSub').textContent=nama+' · '+email;
-  document.getElementById('rpNewPass').value='';
-  document.getElementById('rpConfPass').value='';
-  closeModal('ovAdmin'); // tutup panel dulu biar tidak overlap
-  document.getElementById('ovResetPass').classList.add('open');
-  setTimeout(()=>document.getElementById('rpNewPass').focus(),100);
-}
-
-async function doResetPassword(){
-  const pass=document.getElementById('rpNewPass').value;
-  const conf=document.getElementById('rpConfPass').value;
-  if(!pass||pass.length<8)return toast('Password minimal 8 karakter','error');
-  if(pass!==conf)return toast('Konfirmasi password tidak cocok','error');
-
-  const btn=document.getElementById('btnDoReset');
-  btn.disabled=true; btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Mereset...';
-
-  try{
-    // Coba via Edge Function reset-admin-password (butuh service_role di server)
-    const res=await fetch(`${SUPA_URL}/functions/v1/reset-admin-password`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
-      body:JSON.stringify({email:_rpEmail, new_password:pass})
-    });
-    if(res.ok){
-      closeModal('ovResetPass');
-      toast('Password admin '+_rpNama+' berhasil direset!','success');
-      // Buka kembali panel admin
-      document.getElementById('ovAdmin').classList.add('open');
-      return;
-    }
-  }catch(e){}
-
-  // Fallback: kirim email reset link dari Supabase
-  const{error}=await sb.auth.resetPasswordForEmail(_rpEmail,{
-    redirectTo:window.location.origin+window.location.pathname
-  });
-  if(error){
-    toast('Gagal reset password: '+error.message,'error');
-  }else{
-    closeModal('ovResetPass');
-    toast('Email reset password dikirim ke '+_rpEmail,'info');
-    document.getElementById('ovAdmin').classList.add('open');
-  }
-  btn.disabled=false; btn.innerHTML='<i class="fas fa-key"></i> Reset Password';
 }
 
 
