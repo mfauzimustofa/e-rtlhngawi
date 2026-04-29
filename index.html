@@ -2324,7 +2324,7 @@ function openApproveAdmin(uid,nama,email,username,kecamatan,level,desa){
   kecWrap.innerHTML=Object.keys(KEC_CONFIG).sort().map(k=>{
     const ch=kecs.includes(k.toUpperCase());
     return'<label style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:7px;border:1.5px solid '+(ch?'var(--blue)':'var(--gray-200)')+';cursor:pointer;font-size:.75rem;font-weight:600;background:'+(ch?'var(--blue-bg)':'#fff')+'">'
-      +'<input type="checkbox" value="'+k.toUpperCase()+'" '+(ch?'checked':'')+' onchange="this.closest(\\'label\\').style.background=this.checked?\\'var(--blue-bg)\\':\\'#fff\\';this.closest(\\'label\\').style.borderColor=this.checked?\\'var(--blue)\\':\\'var(--gray-200)\\';updateDesaPicker()" style="accent-color:var(--blue);margin:0"> '+k+'</label>';}).join('');
+      +'<input type="checkbox" value="'+k.toUpperCase()+'" '+(ch?'checked':'')+' onchange="onKecCheck(this)" style="accent-color:var(--blue);margin:0"> '+k+'</label>';}).join('');
 
   const desaList=(desa||'').split(',').filter(Boolean).map(d=>d.trim().toUpperCase());
   updateDesaPicker(desaList);
@@ -2334,6 +2334,15 @@ function openApproveAdmin(uid,nama,email,username,kecamatan,level,desa){
   document.getElementById('ovApproveAdmin').classList.add('open');
 }
 
+function onKecCheck(el){
+  const lbl=el.closest('label');
+  if(lbl){lbl.style.background=el.checked?'var(--blue-bg)':'#fff';lbl.style.borderColor=el.checked?'var(--blue)':'var(--gray-200)';}
+  updateDesaPicker();
+}
+function onDesaCheck(el){
+  const lbl=el.closest('label');
+  if(lbl){lbl.style.background=el.checked?'#F0FDF4':'#fff';lbl.style.borderColor=el.checked?'#10B981':'var(--gray-200)';}
+}
 function updateDesaPicker(preselected){
   preselected=preselected||[];
   const kecChecked=[...document.querySelectorAll('#kecCheckboxes input:checked')].map(el=>el.value);
@@ -2349,7 +2358,7 @@ function updateDesaPicker(preselected){
   desaWrap.innerHTML=desas.map(d=>{
     const ch=sel.includes(d);
     return'<label style="display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;border:1.5px solid '+(ch?'#10B981':'var(--gray-200)')+';cursor:pointer;font-size:.7rem;font-weight:600;background:'+(ch?'#F0FDF4':'#fff')+'">'
-      +'<input type="checkbox" value="'+d+'" '+(ch?'checked':'')+' onchange="this.closest(\\'label\\').style.background=this.checked?\\'#F0FDF4\\':\\'#fff\\';this.closest(\\'label\\').style.borderColor=this.checked?\\'#10B981\\':\\'var(--gray-200)\\'" style="accent-color:#10B981;margin:0"> '+d+'</label>';
+      +'<input type="checkbox" value="'+d+'" '+(ch?'checked':'')+' onchange="onDesaCheck(this)" style="accent-color:#10B981;margin:0"> '+d+'</label>';
   }).join('');
 }
 
