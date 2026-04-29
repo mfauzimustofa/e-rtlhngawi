@@ -915,7 +915,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 // ══════════════════════════════════════════════════
 const SUPA_URL='https://oiygddbzugipepatswxi.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9peWdkZGJ6dWdpcGVwYXRzd3hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MTk3NTEsImV4cCI6MjA5MTM5NTc1MX0.MiGiTCuawuT0SCD7OzvEgBH4PqqdqCtl_njMqmX4Jzs';
-const sb=supabase.createClient(SUPA_URL,SUPA_KEY);
+const sb=window.supabase.createClient(SUPA_URL,SUPA_KEY);
 
 const KEC_CONFIG={
   "Bringin":{lat:-7.4028,lng:111.5873},"Geneng":{lat:-7.4936,lng:111.4404},
