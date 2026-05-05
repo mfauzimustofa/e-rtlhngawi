@@ -3298,7 +3298,7 @@ async function loadVerifHistori(rtlhId){
   const el=document.getElementById('verifHistori');
   if(!el)return;
   el.innerHTML='<div style="font-size:.7rem;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat riwayat...</div>';
-  const{data}=await sb.from('rtlh_verifikasi').select('*').eq('rtlh_id',rtlhId).order('tahun',{ascending:false}).order('created_at',{ascending:false});
+  const{data}=await sb.from('rtlh_verifikasi').select('*').eq('rtlh_id',parseInt(rtlhId)).order('tahun',{ascending:false}).order('created_at',{ascending:false});
   if(!data||!data.length){el.innerHTML='<div style="font-size:.7rem;color:var(--gray-400)">Belum ada riwayat verifikasi</div>';return;}
   el.innerHTML=`<div style="font-size:.72rem;font-weight:700;color:var(--gray-600);margin-bottom:8px">Riwayat Sebelumnya</div>`
     +data.map(v=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;border:1px solid var(--gray-200);margin-bottom:6px;background:#fff">
@@ -3314,7 +3314,7 @@ async function loadVerifHistori(rtlhId){
 async function loadVerifList(rtlhId){
   const el=document.getElementById('dpVerifList');
   if(!el)return;
-  const{data}=await sb.from('rtlh_verifikasi').select('*').eq('rtlh_id',rtlhId).order('tahun',{ascending:false});
+  const{data}=await sb.from('rtlh_verifikasi').select('*').eq('rtlh_id',parseInt(rtlhId)).order('tahun',{ascending:false});
   if(!data||!data.length){el.innerHTML='<span style="color:var(--gray-400)">Belum ada verifikasi lapangan</span>';return;}
   el.innerHTML=data.map(v=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;border:1px solid var(--gray-200);margin-bottom:6px;background:#fff">
     <span style="font-size:.68rem;font-weight:800;padding:2px 8px;border-radius:99px;background:${v.hasil==='Layak'?'#F0FDF4':'#FEF2F2'};color:${v.hasil==='Layak'?'#16A34A':'#DC2626'}">${v.hasil||'-'}</span>
@@ -3331,7 +3331,7 @@ async function saveVerif(){
   if(!hasil)return toast('Pilih hasil verifikasi','error');
   if(!tahun)return toast('Pilih tahun verifikasi','error');
   const{error}=await sb.from('rtlh_verifikasi').insert({
-    rtlh_id:_verifRtlhId, hasil, keterangan:ket||null, tahun:parseInt(tahun), petugas:petugas||null,
+    rtlh_id:parseInt(_verifRtlhId), hasil, keterangan:ket||null, tahun:parseInt(tahun), petugas:petugas||null,
     created_by:user?.email
   });
   if(error)return toast('Gagal simpan: '+error.message,'error');
@@ -3375,7 +3375,7 @@ function openDokModal(rtlhId){
 async function loadDokList(rtlhId){
   const el=document.getElementById('dpDokList');
   if(!el)return;
-  const{data}=await sb.from('rtlh_dokumen').select('*').eq('rtlh_id',rtlhId).order('created_at',{ascending:false});
+  const{data}=await sb.from('rtlh_dokumen').select('*').eq('rtlh_id',parseInt(rtlhId)).order('created_at',{ascending:false});
   if(!data||!data.length){el.innerHTML='<span style="color:var(--gray-400)">Belum ada dokumen tersimpan</span>';return;}
   el.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:6px">`+data.map(d=>{
     const url=sb.storage.from('rtlh-dokumen').getPublicUrl(d.path).data.publicUrl;
@@ -3391,7 +3391,7 @@ async function loadDokFileList(rtlhId){
   const el=document.getElementById('dokFileList');
   if(!el)return;
   el.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Memuat...';
-  const{data}=await sb.from('rtlh_dokumen').select('*').eq('rtlh_id',rtlhId).order('created_at',{ascending:false});
+  const{data}=await sb.from('rtlh_dokumen').select('*').eq('rtlh_id',parseInt(rtlhId)).order('created_at',{ascending:false});
   if(!data||!data.length){el.innerHTML='<span style="color:var(--gray-400)">Belum ada dokumen</span>';return;}
   el.innerHTML=data.map(d=>{
     const url=sb.storage.from('rtlh-dokumen').getPublicUrl(d.path).data.publicUrl;
@@ -3422,7 +3422,7 @@ async function uploadDokumen(){
   const{error:upErr}=await sb.storage.from('rtlh-dokumen').upload(path,file,{upsert:false});
   if(upErr){prog.innerHTML=`<span style="color:var(--danger)">Gagal upload: ${upErr.message}</span>`;return;}
   const{error:dbErr}=await sb.from('rtlh_dokumen').insert({
-    rtlh_id:_dokRtlhId, jenis, keterangan:ket||null, path,
+    rtlh_id:parseInt(_dokRtlhId), jenis, keterangan:ket||null, path,
     uploaded_by:user?.email
   });
   if(dbErr){prog.innerHTML=`<span style="color:var(--danger)">Gagal simpan metadata: ${dbErr.message}</span>`;return;}
