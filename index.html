@@ -2304,20 +2304,26 @@ function openDownloadModal(){
 }
 
 function downloadExcel(withNIK){
-  const rows=brAll.map(r=>{
-    const obj={
-      ID:r.id,Kecamatan:r.kec,Desa:r.desa,'Nama KK':r.kep_kk,
-      NIK:withNIK?(r.nik||''):'***DISENSOR***',
-      'No. KK':withNIK?(r.no_kk||''):'***DISENSOR***',
-      Alamat:r.alamat,JK:r.jen_kel,Umur:r.umur,Pendidikan:r.pend_ter,
-      Pekerjaan:r.pekerjaan,Penghasilan:r.pengh,'Luas Rumah':r.luas_rum,
-      'Jml Penghuni':r.jml_peng,Desil:r.desil,'Status RTLH':r.status_rtlh,
-      'Status MyPKP':r.dtsen,Backlog:r.backlog,'Skor Prioritas':Math.round(r._score),
-      'Kategori':getCat(r._score)
-    };
-    return obj;
-  });
+  const superAdmin=isSuperAdmin();
+  const rows=brAll.map(r=>({
+    ID:r.id,Kecamatan:r.kec,Desa:r.desa,'Nama KK':r.kep_kk,
+    NIK:withNIK&&superAdmin?(r.nik||''):'***',
+    'No. KK':withNIK&&superAdmin?(r.no_kk||''):'***',
+    Alamat:r.alamat,'Jenis Kelamin':r.jen_kel,Umur:r.umur,
+    Pendidikan:r.pend_ter,Pekerjaan:r.pekerjaan,Penghasilan:r.pengh,
+    'Luas Rumah (m²)':r.luas_rum,'Luas Tanah (m²)':r.luas_tan,
+    'Jml Penghuni':r.jml_peng,'Status Kepemilikan':r.status_kep,
+    'Material Dinding':r.material_d,'Kondisi Dinding':r.kondisi_di,
+    'Material Atap':r.material_a,'Kondisi Atap':r.kondisi_at,
+    'Material Lantai':r.material_l,'Kondisi Lantai':r.kondisi_la,
+    'Status RTLH':r.status_rtlh,'Alasan Batal':r.status_batal,
+    'Jenis Bantuan':r.jenis_bantuan,'Tahun Bantuan':r.tahun_bantuan,
+    'Status MyPKP':r.dtsen,Backlog:r.backlog,Desil:r.desil,
+    DTSEN:r.dtsen,'Skor Prioritas':Math.round(r._score),
+    Latitude:r.latitude,Longitude:r.longitude,
+  }));
   const ws=XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=Object.keys(rows[0]).map(k=>({wch:Math.max(k.length+2,14)}));
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'RTLH');
   XLSX.writeFile(wb,`RTLH_${currentKec}_${new Date().toISOString().slice(0,10)}.xlsx`);
@@ -3118,7 +3124,7 @@ async function downloadExcelKab(withNIK){
   const desil=document.getElementById('exDesil').value;
   const tahun=document.getElementById('exTahun').value;
   toast('Mengambil data...','info');
-  let q=sb.from('rtlh').select('*').order('kec').order('id');
+  let q=sb.from('rtlh').select('*').order('kec').order('desa').order('id');
   if(kec)q=q.eq('kec',kec);
   if(status)q=q.eq('status_rtlh',status);
   if(desil)q=q.eq('desil',desil);
@@ -3133,14 +3139,15 @@ async function downloadExcelKab(withNIK){
     'No. KK':withNIK&&superAdmin?(r.no_kk||''):'***',
     Alamat:r.alamat,'Jenis Kelamin':r.jen_kel,Umur:r.umur,
     Pendidikan:r.pend_ter,Pekerjaan:r.pekerjaan,Penghasilan:r.pengh,
-    'Luas Rumah':r.luas_rum,'Luas Tanah':r.luas_tan,'Jml Penghuni':r.jml_peng,
-    'Status Kepemilikan':r.status_kep,
+    'Luas Rumah (m²)':r.luas_rum,'Luas Tanah (m²)':r.luas_tan,
+    'Jml Penghuni':r.jml_peng,'Status Kepemilikan':r.status_kep,
     'Material Dinding':r.material_d,'Kondisi Dinding':r.kondisi_di,
     'Material Atap':r.material_a,'Kondisi Atap':r.kondisi_at,
     'Material Lantai':r.material_l,'Kondisi Lantai':r.kondisi_la,
-    'Status RTLH':r.status_rtlh,'Tahun Bantuan':r.tahun_bantuan,
-    'Sumber Dana':r.sumber_dana,'Status MyPKP':r.dtsen,Backlog:r.backlog,
-    Desil:r.desil,Latitude:r.latitude,Longitude:r.longitude,
+    'Status RTLH':r.status_rtlh,'Alasan Batal':r.status_batal,
+    'Jenis Bantuan':r.jenis_bantuan,'Tahun Bantuan':r.tahun_bantuan,
+    'Status MyPKP':r.dtsen,Backlog:r.backlog,Desil:r.desil,
+    Latitude:r.latitude,Longitude:r.longitude,
   }));
   const ws=XLSX.utils.json_to_sheet(rows);
   ws['!cols']=Object.keys(rows[0]).map(k=>({wch:Math.max(k.length+2,14)}));
