@@ -27,6 +27,7 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min-height:100dvh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+#appShell{display:none}
 ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:3px}
 
 /* HEADER */
@@ -380,6 +381,9 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
     </div>
   </div>
 </div>
+
+<!-- ═══ APP SHELL (tersembunyi sampai login) ═══ -->
+<div id="appShell">
 
 <!-- HEADER -->
 <header class="app-header">
@@ -1348,6 +1352,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open')}
 // GLOBAL STATS (BERANDA)
 // ══════════════════════════════════════════════════
 async function loadGlobalStats(){
+  if(!isAdmin)return; // Guard: hanya admin
   try{
     const{data,error}=await sb.from('rtlh').select('kec,status_rtlh,desil');
     if(error)throw error;
@@ -1802,6 +1807,7 @@ function initMap(){
 }
 
 async function loadKec(){
+  if(!isAdmin)return; // Guard: hanya admin
   if(!currentKec)return;
   const kecName=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===currentKec);
   document.getElementById('tbTitle').textContent=`RTLH — Kec. ${kecName}`;
@@ -3450,12 +3456,18 @@ async function deleteDok(id,path){
 const MAINTENANCE_MODE = true; // Ganti false untuk buka ke publik
 
 function showMaintenanceOverlay(){
-  const ov=document.getElementById('maintenanceOverlay');
-  if(ov)ov.style.display='flex';
+  document.getElementById('maintenanceOverlay').style.display='flex';
+  document.getElementById('appShell').style.display='none';
+  document.body.style.overflow='hidden';
 }
 function hideMaintenanceOverlay(){
-  const ov=document.getElementById('maintenanceOverlay');
-  if(ov)ov.style.display='none';
+  document.getElementById('maintenanceOverlay').style.display='none';
+  const app=document.getElementById('appShell');
+  app.style.display='block';
+  // Fade in
+  app.style.opacity='0';app.style.transition='opacity .4s ease';
+  setTimeout(()=>app.style.opacity='1',10);
+  document.body.style.overflow='';
 }
 
 async function doMaintenanceLogin(){
@@ -3515,5 +3527,8 @@ window.addEventListener('DOMContentLoaded',async()=>{\n  // Init Supabase client
   }).catch(()=>{});
 });
 </script>
+<!-- ═══ END APP SHELL ═══ -->
+</div>
+
 </body>
 </html>
