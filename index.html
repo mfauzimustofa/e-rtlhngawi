@@ -147,8 +147,25 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 .badge.belum{background:#FEF2F2;color:var(--danger)}
 .badge.proses{background:#FFFBEB;color:var(--warning)}
 .badge.sudah{background:#F0FDF4;color:var(--success)}
+.badge.batal{background:#F3F4F6;color:#6B7280;border:1px solid #D1D5DB}
 .badge.desil{background:var(--blue-bg);color:var(--blue)}
 .badge.skor{background:var(--gray-100);color:var(--gray-700)}
+/* ═══ MAINTENANCE OVERLAY ═══ */
+#maintenanceOverlay{position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 60%,#0f172a 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:24px}
+#maintenanceOverlay .mo-logo{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+#maintenanceOverlay .mo-logo img{width:52px;height:52px;border-radius:12px}
+#maintenanceOverlay .mo-title{font-size:1.4rem;font-weight:800;color:#fff;letter-spacing:-.3px}
+#maintenanceOverlay .mo-sub{font-size:.75rem;color:#94a3b8}
+#maintenanceOverlay .mo-card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:28px 32px;max-width:400px;width:100%;backdrop-filter:blur(10px)}
+#maintenanceOverlay .mo-msg{color:#e2e8f0;font-size:.88rem;line-height:1.6;margin-bottom:20px;text-align:center}
+#maintenanceOverlay .mo-msg i{color:#FBBF24;margin-right:6px}
+#maintenanceOverlay .mo-inp-wrap{position:relative;margin-bottom:10px}
+#maintenanceOverlay .mo-input{width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#fff;font-size:.85rem;font-family:inherit;box-sizing:border-box}
+#maintenanceOverlay .mo-input::placeholder{color:#64748b}
+#maintenanceOverlay .mo-input:focus{outline:none;border-color:#3b82f6;background:rgba(255,255,255,.12)}
+#maintenanceOverlay .mo-btn{width:100%;padding:11px;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;border:none;font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .2s;margin-top:4px}
+#maintenanceOverlay .mo-btn:hover{opacity:.9}
+#maintenanceOverlay .mo-err{color:#f87171;font-size:.75rem;text-align:center;min-height:18px;margin-top:8px}
 .kec-dashboard{padding:0;margin-bottom:14px}
 .kd-stat{display:flex;justify-content:space-between;gap:8px;margin-bottom:10px}
 .kd-stat-item{flex:1;background:var(--gray-50);border-radius:var(--radius-xs);padding:10px;text-align:center;border:1px solid var(--gray-100)}
@@ -333,6 +350,36 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 </style>
 </head>
 <body>
+
+<!-- ═══ MAINTENANCE / AKSES TERBATAS ═══ -->
+<div id="maintenanceOverlay" style="display:none">
+  <div class="mo-logo">
+    <img src="data/logo-dprkp.png" alt="DPRKP" onerror="this.style.display='none'">
+    <div>
+      <div class="mo-title">e-<em style="font-style:italic">RTLH</em> Ngawi</div>
+      <div class="mo-sub">DPRKP Kabupaten Ngawi</div>
+    </div>
+  </div>
+  <div class="mo-card">
+    <div class="mo-msg">
+      <i class="fas fa-hard-hat"></i>
+      Sistem sedang dalam tahap pengembangan.<br>
+      Akses saat ini hanya untuk <strong style="color:#FBBF24">staf DPRKP Kab. Ngawi</strong>.<br>
+      Silakan login untuk melanjutkan.
+    </div>
+    <div class="mo-inp-wrap">
+      <input class="mo-input" type="email" id="moEmail" placeholder="Email dinas (contoh: admin@ngawi.go.id)" onkeydown="if(event.key==='Enter')document.getElementById('moPass').focus()">
+    </div>
+    <div class="mo-inp-wrap">
+      <input class="mo-input" type="password" id="moPass" placeholder="Password" onkeydown="if(event.key==='Enter')doMaintenanceLogin()">
+    </div>
+    <button class="mo-btn" onclick="doMaintenanceLogin()"><i class="fas fa-sign-in-alt"></i> Masuk</button>
+    <div class="mo-err" id="moErr"></div>
+    <div style="margin-top:14px;text-align:center;font-size:.68rem;color:#475569">
+      <i class="fas fa-info-circle"></i> Belum punya akun? Hubungi Super Admin DPRKP.
+    </div>
+  </div>
+</div>
 
 <!-- HEADER -->
 <header class="app-header">
@@ -537,7 +584,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 <div class="overlay" id="ovLogin">
   <div class="modal" style="max-width:400px">
     <div class="modal-head">
-      <div><h3><i class="fas fa-lock"></i> Login Admin</h3><div class="sub">Masuk untuk mengelola data RTLH</div></div>
+      <div><h3><i class="fas fa-lock"></i> Login Admin</h3><div class="sub">Masuk sebagai staf DPRKP Kab. Ngawi</div></div>
       <button class="modal-x" onclick="closeLogin()"><i class="fas fa-times"></i></button>
     </div>
     <div class="modal-body">
@@ -555,8 +602,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
           <input type="password" id="liPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
         </div>
         <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> Masuk</button>
-        <div class="auth-divider"><span>atau daftar via</span></div>
-        <button class="btn" style="width:100%;justify-content:center;background:#fff;border:1.5px solid var(--gray-200);color:var(--gray-700)" onclick="doGoogleLogin()"><img src="https://developers.google.com/identity/images/g-logo.png" style="width:16px"> Google</button>
+        <div style="margin-top:12px;font-size:.68rem;color:var(--gray-400);text-align:center"><i class="fas fa-info-circle"></i> Akses hanya untuk staf DPRKP Kab. Ngawi. Hubungi Super Admin untuk pendaftaran akun.</div>
       </div>
       <div id="loginFormUsername" style="display:none">
         <div class="form-group" style="margin-bottom:10px">
@@ -583,14 +629,106 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
     <div class="modal-body">
       <div class="form-grid" id="formGrid"></div>
       <div id="photoUploadSection" style="margin-top:12px;display:none">
-        <label style="font-size:.68rem;font-weight:700;color:var(--gray-600);text-transform:uppercase;display:block;margin-bottom:6px">Foto Rumah</label>
+        <label style="font-size:.68rem;font-weight:700;color:var(--gray-600);text-transform:uppercase;display:block;margin-bottom:6px">Foto Rumah (opsional)</label>
         <input type="file" id="photoFile" accept="image/*" style="font-size:.8rem">
         <div id="photoPreview" style="margin-top:8px"></div>
+        <div style="font-size:.65rem;color:var(--gray-400);margin-top:4px"><i class="fas fa-info-circle"></i> Dokumen lain (BA, surat, dll) bisa diupload setelah data tersimpan via tombol "Dokumen & Foto".</div>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeForm()">Batal</button>
       <button class="btn btn-primary" onclick="saveForm()"><i class="fas fa-save"></i> Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VERIFIKASI LAPANGAN -->
+<div class="overlay" id="ovVerif">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-head">
+      <div><h3><i class="fas fa-clipboard-check" style="color:#10B981"></i> Verifikasi Lapangan</h3>
+        <div class="sub" id="verifSub">Tambah data verifikasi</div>
+      </div>
+      <button class="modal-x" onclick="closeModal('ovVerif')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="form-group" style="margin:0">
+          <label>Hasil Verifikasi <span style="color:var(--danger)">*</span></label>
+          <select id="verifHasil">
+            <option value="">-- Pilih --</option>
+            <option value="Layak">Layak (Tidak RTLH)</option>
+            <option value="Tidak Layak">Tidak Layak (RTLH)</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Keterangan</label>
+          <input type="text" id="verifKet" placeholder="Misal: Pernah dibantu DD">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Tahun Verifikasi <span style="color:var(--danger)">*</span></label>
+          <select id="verifTahun">
+            <option value="">-- Pilih --</option>
+            ${[2021,2022,2023,2024,2025,2026,2027].map(y=>`<option value="${y}">${y}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Nama Petugas Verifikasi</label>
+        <input type="text" id="verifPetugas" placeholder="Nama petugas yang melakukan verifikasi">
+      </div>
+      <div id="verifHistori" style="margin-top:14px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ovVerif')">Tutup</button>
+      <button class="btn btn-primary" onclick="saveVerif()" style="background:#10B981"><i class="fas fa-save"></i> Simpan Verifikasi</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DOKUMEN & FOTO -->
+<div class="overlay" id="ovDok">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head">
+      <div><h3><i class="fas fa-folder-open" style="color:var(--warning)"></i> Dokumen & Foto</h3>
+        <div class="sub" id="dokSub">Kelola dokumen pendukung</div>
+      </div>
+      <button class="modal-x" onclick="closeModal('ovDok')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--gray-50);border-radius:10px;padding:14px;border:1px solid var(--gray-200);margin-bottom:14px">
+        <div style="font-size:.72rem;font-weight:700;color:var(--gray-700);margin-bottom:10px">Upload Dokumen Baru</div>
+        <div class="form-group" style="margin-bottom:10px">
+          <label>Jenis Dokumen</label>
+          <select id="dokJenis">
+            <option value="foto_rumah">📷 Foto Rumah</option>
+            <option value="berita_acara">📄 Berita Acara (BA)</option>
+            <option value="surat_pernyataan">📝 Surat Pernyataan</option>
+            <option value="ktp">🪪 KTP</option>
+            <option value="kk_doc">👨‍👩‍👧 Kartu Keluarga</option>
+            <option value="foto_lokasi">🗺️ Foto Lokasi</option>
+            <option value="lainnya">📁 Lainnya</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:10px">
+          <label>Keterangan (opsional)</label>
+          <input type="text" id="dokKet" placeholder="Contoh: BA 2025, Foto tampak depan">
+        </div>
+        <div class="form-group" style="margin-bottom:12px">
+          <label>File <span style="color:var(--danger)">*</span></label>
+          <input type="file" id="dokFile" accept="image/*,application/pdf,.doc,.docx" style="font-size:.8rem">
+          <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Format: JPG, PNG, PDF, DOC. Maks 10 MB.</div>
+        </div>
+        <button class="btn btn-primary" onclick="uploadDokumen()" style="width:100%;justify-content:center"><i class="fas fa-upload"></i> Upload</button>
+        <div id="dokUploadProgress" style="margin-top:8px;font-size:.72rem"></div>
+      </div>
+      <div>
+        <div style="font-size:.72rem;font-weight:700;color:var(--gray-700);margin-bottom:8px">Dokumen Tersimpan</div>
+        <div id="dokFileList" style="font-size:.72rem;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ovDok')">Tutup</button>
     </div>
   </div>
 </div>
@@ -824,6 +962,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
       <option>Belum Ditangani</option>
       <option>Dalam Proses</option>
       <option>Sudah Ditangani</option>
+      <option>Dibatalkan</option>
     </select>
     <select id="teFilterDesil" onchange="teFilter()" style="border:1px solid var(--gray-200);border-radius:6px;padding:3px 8px;font-size:.7rem;font-family:inherit;background:#fff">
       <option value="">Semua Desil</option>
@@ -867,10 +1006,10 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
             <label>Status RTLH</label>
             <select id="exStatus" style="padding:7px 10px;border-radius:7px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.78rem">
               <option value="">Semua Status</option>
-              <option>Belum Ditangani</option>
-              <option>Dalam Proses</option>
-              <option>Sudah Ditangani</option>
-            </select>
+
+
+
+
           </div>
           <div class="form-group">
             <label>Desil</label>
@@ -1200,6 +1339,7 @@ async function doGoogleLogin(){
 async function doLogout(){
   await sb.auth.signOut();
   toast('Logout berhasil','info');
+  if(MAINTENANCE_MODE)setTimeout(()=>showMaintenanceOverlay(),600);
 }
 
 function closeModal(id){document.getElementById(id).classList.remove('open')}
@@ -1215,6 +1355,7 @@ async function loadGlobalStats(){
     const sudah=data.filter(r=>r.status_rtlh==='Sudah Ditangani').length;
     const proses=data.filter(r=>r.status_rtlh==='Dalam Proses').length;
     const belum=data.filter(r=>r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
+    const batal=data.filter(r=>r.status_rtlh==='Dibatalkan').length;
 
     document.getElementById('gs-total').textContent=total.toLocaleString('id');
     document.getElementById('gs-sudah').textContent=sudah.toLocaleString('id');
@@ -1237,7 +1378,7 @@ async function loadGlobalStats(){
       kecCounts[k].total++;
       if(r.status_rtlh==='Sudah Ditangani')kecCounts[k].sudah++;
       else if(r.status_rtlh==='Dalam Proses')kecCounts[k].proses++;
-      else kecCounts[k].belum++;
+      else if(r.status_rtlh!=='Dibatalkan')kecCounts[k].belum++;
     });
 
     // Desil counts
@@ -1615,7 +1756,7 @@ async function ensureKecCounts(force=false){
       kecCounts[k].total++;
       if(r.status_rtlh==='Sudah Ditangani')kecCounts[k].sudah++;
       else if(r.status_rtlh==='Dalam Proses')kecCounts[k].proses++;
-      else kecCounts[k].belum++;
+      else if(r.status_rtlh!=='Dibatalkan')kecCounts[k].belum++;
     });
   }catch(e){console.error(e);}
 }
@@ -1669,7 +1810,7 @@ async function loadKec(){
 
   if(brCache[currentKec]){brAll=brCache[currentKec];brFeatures=[...brAll];renderSidebar();renderKecDashboard();updateMap();return;}
 
-  const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,tahun_bantuan,sumber_dana,dtsen,backlog,desil,nik,no_kk';
+  const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,bantuan_rtlh,bantuan_bsps,bantuan_dd,bantuan_csr,bantuan_lain,tahun_bantuan,sumber_dana,dtsen,backlog,desil,nik,no_kk';
   let query=sb.from('rtlh').select(cols).order('id');
   if(currentKec)query=query.eq('kec',currentKec);
   const{data,error}=await query;
@@ -1737,6 +1878,7 @@ function renderSidebar(){
       <button class="filter-chip ${filterStatus==='Belum Ditangani'?'active':''}" onclick="setFilterStatus('Belum Ditangani')">Belum</button>
       <button class="filter-chip ${filterStatus==='Dalam Proses'?'active':''}" onclick="setFilterStatus('Dalam Proses')">Proses</button>
       <button class="filter-chip ${filterStatus==='Sudah Ditangani'?'active':''}" onclick="setFilterStatus('Sudah Ditangani')">Sudah</button>
+      <button class="filter-chip ${filterStatus==='Dibatalkan'?'active':''}" onclick="setFilterStatus('Dibatalkan')" style="${filterStatus==='Dibatalkan'?'':'border-color:#9CA3AF;color:#6B7280'}">Batal</button>
       <span style="font-size:.68rem;font-weight:700;color:var(--gray-500);margin-left:6px">Desil:</span>
       <button class="filter-chip ${filterDesil==='all'?'active':''}" onclick="setFilterDesil('all')">Semua</button>
       <button class="filter-chip ${filterDesil==='1'?'active':''}" onclick="setFilterDesil('1')" style="color:#BE123C">D1</button>
@@ -1802,7 +1944,7 @@ function renderSidebarList(){
   const sorted=[...brFeatures].sort((a,b)=>b._score-a._score);
   l.innerHTML=sorted.map((r,i)=>{
     const color=getCatColor(r._score);
-    const statusCls=r.status_rtlh==='Sudah Ditangani'?'sudah':r.status_rtlh==='Dalam Proses'?'proses':'belum';
+    const statusCls=r.status_rtlh==='Sudah Ditangani'?'sudah':r.status_rtlh==='Dalam Proses'?'proses':r.status_rtlh==='Dibatalkan'?'batal':'belum';
     const desilNum=String(r.desil||'').match(/\d+/)?.[0];
     const desilColor=desilNum?DESIL_COLORS[parseInt(desilNum)]:'#888';
     return`<div class="rtlh-item" id="ri_${r.id}" onclick="selectItem(${r.id})">
@@ -1903,11 +2045,30 @@ function showDetail(r){
       <div class="detail-item"><div class="dl">Jml Penghuni</div><div class="dv">${dn(r.jml_peng)}</div></div>
       <div class="detail-item"><div class="dl">Luas Rumah</div><div class="dv">${dn(r.luas_rum)} m²</div></div>
       <div class="detail-item"><div class="dl">Desil</div><div class="dv" style="color:${desilNum?DESIL_COLORS[parseInt(desilNum)]:'inherit'};font-weight:700">${dn(r.desil)} ${desilNum&&parseInt(desilNum)<=4?'★ Prioritas':''}</div></div>
-      <div class="detail-item"><div class="dl">Status RTLH</div><div class="dv">${r.status_rtlh?`<span class="badge ${r.status_rtlh==='Sudah Ditangani'?'sudah':r.status_rtlh==='Dalam Proses'?'proses':'belum'}">${r.status_rtlh}</span>`:'-'}</div></div>
+      <div class="detail-item"><div class="dl">Status RTLH</div><div class="dv">${r.status_rtlh?`<span class="badge ${r.status_rtlh==='Sudah Ditangani'?'sudah':r.status_rtlh==='Dalam Proses'?'proses':r.status_rtlh==='Dibatalkan'?'batal':'belum'}">${r.status_rtlh}</span>`:'-'}</div></div>
+      ${r.status_rtlh==='Dibatalkan'&&r.status_batal?`<div class="detail-item"><div class="dl">Alasan Batal</div><div class="dv" style="color:var(--danger);font-weight:600">${r.status_batal}</div></div>`:''}
       <div class="detail-item"><div class="dl">DTSEN</div><div class="dv">${dn(r.dtsen)}</div></div>
       <div class="detail-item"><div class="dl">Skor Prioritas</div><div class="dv" style="color:${color};font-weight:800">${Math.round(r._score)} — ${getCat(r._score)}</div></div>
-      <div class="detail-item"><div class="dl">Tahun Bantuan</div><div class="dv">${dn(r.tahun_bantuan)}</div></div>
-      <div class="detail-item"><div class="dl">Sumber Dana</div><div class="dv">${dn(r.sumber_dana)}</div></div>
+    </div>
+    <div style="margin-top:14px">
+      <div style="font-size:.72rem;font-weight:800;color:var(--gray-600);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px"><i class="fas fa-hand-holding-heart" style="color:var(--gold)"></i> Riwayat Program Bantuan</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px" id="dpBantuan">
+        ${[['RTLH',r.bantuan_rtlh],['BSPS',r.bantuan_bsps],['Dana Desa',r.bantuan_dd],['CSR',r.bantuan_csr],['Lainnya',r.bantuan_lain]].filter(x=>x[1]).map(x=>`<span style="background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue)33;border-radius:99px;font-size:.68rem;font-weight:700;padding:3px 10px"><i class="fas fa-check-circle"></i> ${x[0]} ${x[1]}</span>`).join('')||'<span style="font-size:.72rem;color:var(--gray-400)">Belum ada riwayat bantuan</span>'}
+      </div>
+    </div>
+    <div style="margin-top:14px" id="dpVerifSection">
+      <div style="font-size:.72rem;font-weight:800;color:var(--gray-600);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px;justify-content:space-between">
+        <span><i class="fas fa-clipboard-check" style="color:#10B981"></i> Riwayat Verifikasi Lapangan</span>
+        ${canEdit()?`<button onclick="openVerifModal('${r.id}')" style="font-size:.65rem;padding:3px 10px;border-radius:6px;background:#10B981;color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:700"><i class="fas fa-plus"></i> Tambah</button>`:''}
+      </div>
+      <div id="dpVerifList" style="font-size:.72rem;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
+    </div>
+    <div style="margin-top:14px" id="dpDokSection">
+      <div style="font-size:.72rem;font-weight:800;color:var(--gray-600);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px;justify-content:space-between">
+        <span><i class="fas fa-folder-open" style="color:var(--warning)"></i> Dokumen & Foto</span>
+        ${isAdmin?`<button onclick="openDokModal('${r.id}')" style="font-size:.65rem;padding:3px 10px;border-radius:6px;background:var(--warning);color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:700"><i class="fas fa-upload"></i> Upload</button>`:''}
+      </div>
+      <div id="dpDokList" style="font-size:.72rem;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
     </div>`;
   const acts=document.getElementById('dpActions');
   acts.innerHTML='';
@@ -1929,6 +2090,9 @@ function showDetail(r){
     acts.appendChild(nb);
   }
   p.classList.add('open');
+  // Load riwayat verifikasi & dokumen
+  loadVerifList(r.id);
+  loadDokList(r.id);
 }
 
 function closeDetail(){document.getElementById('detailPanel').classList.remove('open');}
@@ -1997,9 +2161,13 @@ const FIELDS=[
   {key:'kondisi_at',label:'Kondisi Atap',type:'text'},
   {key:'material_l',label:'Material Lantai',type:'text'},
   {key:'kondisi_la',label:'Kondisi Lantai',type:'text'},
-  {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['Belum Ditangani','Dalam Proses','Sudah Ditangani']},
-  {key:'tahun_bantuan',label:'Tahun Bantuan',type:'select',opts:['','2021','2022','2023','2024','2025','2026']},
-  {key:'sumber_dana',label:'Sumber Dana',type:'select',opts:['','APBD','APBN','DAK','CSR','Lainnya']},
+  {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['Belum Ditangani','Dalam Proses','Sudah Ditangani','Dibatalkan']},
+  {key:'status_batal',label:'Alasan Dibatalkan',type:'select',opts:['','Meninggal Dunia','Tidak Bersedia Dibantu','Pindah Tempat Tinggal','Sudah Mampu Mandiri','Tidak Memenuhi Syarat','Lainnya']},
+  {key:'bantuan_rtlh',label:'RTLH Tahun',type:'text',placeholder:'misal: 2024'},
+  {key:'bantuan_bsps',label:'BSPS Tahun',type:'text',placeholder:'misal: 2023'},
+  {key:'bantuan_dd',label:'Dana Desa Tahun',type:'text',placeholder:'misal: 2025'},
+  {key:'bantuan_csr',label:'CSR Tahun',type:'text',placeholder:'misal: 2024'},
+  {key:'bantuan_lain',label:'Bantuan Lain',type:'text',placeholder:'misal: APBD 2025'},
   {key:'dtsen',label:'DTSEN',type:'select',opts:['','Eligible','Non Eligible']},
   {key:'backlog',label:'Backlog',type:'select',opts:['','Backlog 1','Backlog 2']},
   {key:'desil',label:'Desil',type:'select',opts:['','Desil 1','Desil 2','Desil 3','Desil 4','Desil 5','Desil 6','Desil 7','Desil 8']},
@@ -2214,12 +2382,17 @@ async function renderAdminPanel(){
   }
   const me=user?.email;
   // Tambah tombol "Tambah Admin Baru" di atas
-  const addBtnHtml=`<div style="padding:14px 20px;border-bottom:1px solid var(--gray-100);background:var(--gray-50)">
-    <button onclick="openApproveAdmin(null,'','','','',2,'')" 
-      style="padding:8px 16px;border-radius:8px;background:var(--blue);color:#fff;border:none;font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px">
-      <i class="fas fa-user-plus"></i> Tambah Admin Baru
-    </button>
-    <div style="font-size:.65rem;color:var(--gray-500);margin-top:6px"><i class="fas fa-info-circle"></i> Buat akun baru langsung dengan email, username, dan password tanpa perlu register dulu.</div>
+  const addBtnHtml=`<div style="padding:14px 20px;border-bottom:1px solid var(--gray-100);background:linear-gradient(135deg,#EFF6FF,#F0FDF4)">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button onclick="openApproveAdmin(null,'','','','',2,'')" 
+        style="padding:9px 16px;border-radius:9px;background:var(--blue);color:#fff;border:none;font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px">
+        <i class="fas fa-user-plus"></i> Tambah Admin Baru
+      </button>
+    </div>
+    <div style="font-size:.65rem;color:var(--gray-500);margin-top:8px;background:#fff;border-radius:8px;padding:8px 10px;border:1px solid var(--gray-200)">
+      <i class="fas fa-lightbulb" style="color:var(--gold)"></i>
+      <strong>Cara cepat:</strong> Isi nama, email, password → pilih kecamatan → klik <strong>Buat & Aktifkan</strong>. Admin langsung bisa login.
+    </div>
   </div>`;
   // Sort: self → super admin → approved → pending
   const sorted=[...users].sort((a,b)=>{
@@ -2598,9 +2771,15 @@ const TE_COLS=[
   {key:'luas_rum',label:'L.Rumah',type:'number',width:75},
   {key:'jml_peng',label:'Penghuni',type:'number',width:75},
   {key:'desil',label:'Desil',type:'select',opts:['','Desil 1','Desil 2','Desil 3','Desil 4','Desil 5','Desil 6','Desil 7','Desil 8'],width:90},
-  {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['Belum Ditangani','Dalam Proses','Sudah Ditangani'],width:140},
-  {key:'tahun_bantuan',label:'Tahun',type:'select',opts:['','2021','2022','2023','2024','2025','2026'],width:75},
-  {key:'sumber_dana',label:'Sumber Dana',type:'select',opts:['','APBD','APBN','DAK','CSR','Lainnya'],width:110},
+  {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['Belum Ditangani','Dalam Proses','Sudah Ditangani','Dibatalkan'],width:140},
+  {key:'status_batal',label:'Alasan Batal',type:'select',opts:['','Meninggal Dunia','Tidak Bersedia Dibantu','Pindah Tempat Tinggal','Sudah Mampu Mandiri','Tidak Memenuhi Syarat','Lainnya'],width:150},
+  {key:'bantuan_rtlh',label:'RTLH Thn',type:'text',width:80},
+  {key:'bantuan_bsps',label:'BSPS Thn',type:'text',width:80},
+  {key:'bantuan_dd',label:'DD Thn',type:'text',width:80},
+  {key:'bantuan_csr',label:'CSR Thn',type:'text',width:80},
+  {key:'bantuan_lain',label:'Bantuan Lain',type:'text',width:110},
+  {key:'tahun_bantuan',label:'Thn (lama)',type:'text',width:80},
+  {key:'sumber_dana',label:'Sumber (lama)',type:'text',width:110},
   {key:'dtsen',label:'DTSEN',type:'select',opts:['','Eligible','Non Eligible'],width:110},
   {key:'material_d',label:'Mat.Dinding',type:'text',width:110},
   {key:'kondisi_di',label:'Kond.Dinding',type:'text',width:110},
@@ -3097,14 +3276,241 @@ async function importExcelKab(input){
   reader.readAsBinaryString(file);
 }
 
-window.addEventListener('DOMContentLoaded',async()=>{
-  // Init Supabase client dulu sebelum apapun
+// ══════════════════════════════════════════════════
+// VERIFIKASI LAPANGAN
+// ══════════════════════════════════════════════════
+let _verifRtlhId=null;
+
+function openVerifModal(rtlhId){
+  if(!canEdit())return toast('Tidak ada akses','error');
+  _verifRtlhId=rtlhId;
+  const r=brAll.find(x=>String(x.id)===String(rtlhId));
+  document.getElementById('verifSub').textContent=(r?.kep_kk||rtlhId)+' — Tambah Verifikasi';
+  document.getElementById('verifHasil').value='';
+  document.getElementById('verifKet').value='';
+  document.getElementById('verifTahun').value=new Date().getFullYear();
+  document.getElementById('verifPetugas').value=user?.user_metadata?.full_name||user?.email?.split('@')[0]||'';
+  loadVerifHistori(rtlhId);
+  document.getElementById('ovVerif').classList.add('open');
+}
+
+async function loadVerifHistori(rtlhId){
+  const el=document.getElementById('verifHistori');
+  if(!el)return;
+  el.innerHTML='<div style="font-size:.7rem;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat riwayat...</div>';
+  const{data}=await sb.from('rtlh_verifikasi').select('*').eq('rtlh_id',rtlhId).order('tahun',{ascending:false}).order('created_at',{ascending:false});
+  if(!data||!data.length){el.innerHTML='<div style="font-size:.7rem;color:var(--gray-400)">Belum ada riwayat verifikasi</div>';return;}
+  el.innerHTML=`<div style="font-size:.72rem;font-weight:700;color:var(--gray-600);margin-bottom:8px">Riwayat Sebelumnya</div>`
+    +data.map(v=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;border:1px solid var(--gray-200);margin-bottom:6px;background:#fff">
+      <span style="font-size:.7rem;font-weight:800;padding:2px 8px;border-radius:99px;background:${v.hasil==='Layak'?'#F0FDF4':'#FEF2F2'};color:${v.hasil==='Layak'?'#16A34A':'#DC2626'}">${v.hasil||'-'}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:.72rem">${v.keterangan||'-'}</div>
+        <div style="color:var(--gray-400);font-size:.65rem">${v.tahun||''} · ${v.petugas||'-'}</div>
+      </div>
+      ${isSuperAdmin()?`<button onclick="deleteVerif('${v.id}')" style="background:none;border:none;color:var(--gray-300);cursor:pointer;font-size:.7rem;padding:2px 4px" title="Hapus"><i class="fas fa-trash"></i></button>`:''}
+    </div>`).join('');
+}
+
+async function loadVerifList(rtlhId){
+  const el=document.getElementById('dpVerifList');
+  if(!el)return;
+  const{data}=await sb.from('rtlh_verifikasi').select('*').eq('rtlh_id',rtlhId).order('tahun',{ascending:false});
+  if(!data||!data.length){el.innerHTML='<span style="color:var(--gray-400)">Belum ada verifikasi lapangan</span>';return;}
+  el.innerHTML=data.map(v=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;border:1px solid var(--gray-200);margin-bottom:6px;background:#fff">
+    <span style="font-size:.68rem;font-weight:800;padding:2px 8px;border-radius:99px;background:${v.hasil==='Layak'?'#F0FDF4':'#FEF2F2'};color:${v.hasil==='Layak'?'#16A34A':'#DC2626'}">${v.hasil||'-'}</span>
+    <div style="flex:1"><div style="font-weight:600;font-size:.7rem">${v.keterangan||'–'}</div><div style="color:var(--gray-400);font-size:.63rem">${v.tahun||''} · Petugas: ${v.petugas||'-'}</div></div>
+  </div>`).join('');
+}
+
+async function saveVerif(){
+  if(!_verifRtlhId)return;
+  const hasil=document.getElementById('verifHasil').value;
+  const ket=document.getElementById('verifKet').value.trim();
+  const tahun=document.getElementById('verifTahun').value;
+  const petugas=document.getElementById('verifPetugas').value.trim();
+  if(!hasil)return toast('Pilih hasil verifikasi','error');
+  if(!tahun)return toast('Pilih tahun verifikasi','error');
+  const{error}=await sb.from('rtlh_verifikasi').insert({
+    rtlh_id:_verifRtlhId, hasil, keterangan:ket||null, tahun:parseInt(tahun), petugas:petugas||null,
+    created_by:user?.email
+  });
+  if(error)return toast('Gagal simpan: '+error.message,'error');
+  toast('Verifikasi berhasil disimpan','success');
+  loadVerifHistori(_verifRtlhId);
+  loadVerifList(_verifRtlhId);
+}
+
+async function deleteVerif(id){
+  if(!isSuperAdmin())return;
+  if(!confirm('Hapus data verifikasi ini?'))return;
+  await sb.from('rtlh_verifikasi').delete().eq('id',id);
+  toast('Verifikasi dihapus','success');
+  loadVerifHistori(_verifRtlhId);
+  loadVerifList(_verifRtlhId);
+}
+
+// ══════════════════════════════════════════════════
+// DOKUMEN & FOTO (multi-file per individu)
+// ══════════════════════════════════════════════════
+let _dokRtlhId=null;
+
+const DOK_LABELS={
+  foto_rumah:'📷 Foto Rumah',berita_acara:'📄 Berita Acara',
+  surat_pernyataan:'📝 Surat Pernyataan',ktp:'🪪 KTP',
+  kk_doc:'👨‍👩‍👧 Kartu Keluarga',foto_lokasi:'🗺️ Foto Lokasi',lainnya:'📁 Lainnya'
+};
+
+function openDokModal(rtlhId){
+  if(!isAdmin)return toast('Hanya admin','error');
+  _dokRtlhId=rtlhId;
+  const r=brAll.find(x=>String(x.id)===String(rtlhId));
+  document.getElementById('dokSub').textContent=r?.kep_kk||rtlhId;
+  document.getElementById('dokFile').value='';
+  document.getElementById('dokKet').value='';
+  document.getElementById('dokUploadProgress').innerHTML='';
+  loadDokFileList(rtlhId);
+  document.getElementById('ovDok').classList.add('open');
+}
+
+async function loadDokList(rtlhId){
+  const el=document.getElementById('dpDokList');
+  if(!el)return;
+  const{data}=await sb.from('rtlh_dokumen').select('*').eq('rtlh_id',rtlhId).order('created_at',{ascending:false});
+  if(!data||!data.length){el.innerHTML='<span style="color:var(--gray-400)">Belum ada dokumen tersimpan</span>';return;}
+  el.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:6px">`+data.map(d=>{
+    const url=sb.storage.from('rtlh-dokumen').getPublicUrl(d.path).data.publicUrl;
+    const isImg=d.path.match(/\.(jpg|jpeg|png|webp|gif)$/i);
+    return`<a href="${url}" target="_blank" style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;border:1px solid var(--gray-200);background:#fff;text-decoration:none;color:var(--gray-700);font-size:.68rem;font-weight:600">
+      ${isImg?`<img src="${url}" style="width:24px;height:24px;object-fit:cover;border-radius:4px">`:'<i class="fas fa-file-alt" style="color:var(--blue)"></i>'}
+      ${DOK_LABELS[d.jenis]||d.jenis}${d.keterangan?' · '+d.keterangan:''}
+    </a>`;
+  }).join('')+'</div>';
+}
+
+async function loadDokFileList(rtlhId){
+  const el=document.getElementById('dokFileList');
+  if(!el)return;
+  el.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Memuat...';
+  const{data}=await sb.from('rtlh_dokumen').select('*').eq('rtlh_id',rtlhId).order('created_at',{ascending:false});
+  if(!data||!data.length){el.innerHTML='<span style="color:var(--gray-400)">Belum ada dokumen</span>';return;}
+  el.innerHTML=data.map(d=>{
+    const url=sb.storage.from('rtlh-dokumen').getPublicUrl(d.path).data.publicUrl;
+    const isImg=d.path.match(/\.(jpg|jpeg|png|webp|gif)$/i);
+    return`<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid var(--gray-200);margin-bottom:6px;background:#fff">
+      ${isImg?`<img src="${url}" style="width:36px;height:36px;object-fit:cover;border-radius:6px;cursor:pointer" onclick="window.open('${url}','_blank')">`:'<div style="width:36px;height:36px;border-radius:6px;background:var(--blue-bg);display:flex;align-items:center;justify-content:center;color:var(--blue)"><i class="fas fa-file-alt"></i></div>'}
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:.72rem">${DOK_LABELS[d.jenis]||d.jenis}</div>
+        <div style="font-size:.65rem;color:var(--gray-400)">${d.keterangan||''} · ${new Date(d.created_at).toLocaleDateString('id-ID')}</div>
+      </div>
+      <a href="${url}" target="_blank" style="color:var(--blue);font-size:.7rem;padding:4px 8px;border-radius:6px;background:var(--blue-bg);text-decoration:none"><i class="fas fa-external-link-alt"></i></a>
+      ${isSuperAdmin()?`<button onclick="deleteDok('${d.id}','${d.path}')" style="background:none;border:none;color:var(--gray-300);cursor:pointer;font-size:.7rem;padding:4px" title="Hapus"><i class="fas fa-trash"></i></button>`:''}
+    </div>`;
+  }).join('');
+}
+
+async function uploadDokumen(){
+  if(!_dokRtlhId)return;
+  const file=document.getElementById('dokFile').files[0];
+  const jenis=document.getElementById('dokJenis').value;
+  const ket=document.getElementById('dokKet').value.trim();
+  if(!file)return toast('Pilih file terlebih dahulu','error');
+  if(file.size>10*1024*1024)return toast('File terlalu besar (maks 10 MB)','error');
+  const prog=document.getElementById('dokUploadProgress');
+  prog.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Mengupload...';
+  const ext=file.name.split('.').pop().toLowerCase();
+  const path=`${_dokRtlhId}/${jenis}_${Date.now()}.${ext}`;
+  const{error:upErr}=await sb.storage.from('rtlh-dokumen').upload(path,file,{upsert:false});
+  if(upErr){prog.innerHTML=`<span style="color:var(--danger)">Gagal upload: ${upErr.message}</span>`;return;}
+  const{error:dbErr}=await sb.from('rtlh_dokumen').insert({
+    rtlh_id:_dokRtlhId, jenis, keterangan:ket||null, path,
+    uploaded_by:user?.email
+  });
+  if(dbErr){prog.innerHTML=`<span style="color:var(--danger)">Gagal simpan metadata: ${dbErr.message}</span>`;return;}
+  prog.innerHTML='<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Upload berhasil!</span>';
+  document.getElementById('dokFile').value='';
+  document.getElementById('dokKet').value='';
+  toast('Dokumen berhasil diupload','success');
+  loadDokFileList(_dokRtlhId);
+  loadDokList(_dokRtlhId);
+}
+
+async function deleteDok(id,path){
+  if(!isSuperAdmin())return;
+  if(!confirm('Hapus dokumen ini?'))return;
+  await sb.storage.from('rtlh-dokumen').remove([path]);
+  await sb.from('rtlh_dokumen').delete().eq('id',id);
+  toast('Dokumen dihapus','success');
+  loadDokFileList(_dokRtlhId);
+  loadDokList(_dokRtlhId);
+}
+
+// ══════════════════════════════════════════════════
+// MAINTENANCE MODE — Akses terbatas hanya staf dinas
+// ══════════════════════════════════════════════════
+const MAINTENANCE_MODE = true; // Ganti false untuk buka ke publik
+
+function showMaintenanceOverlay(){
+  const ov=document.getElementById('maintenanceOverlay');
+  if(ov)ov.style.display='flex';
+}
+function hideMaintenanceOverlay(){
+  const ov=document.getElementById('maintenanceOverlay');
+  if(ov)ov.style.display='none';
+}
+
+async function doMaintenanceLogin(){
+  const email=document.getElementById('moEmail').value.trim().toLowerCase();
+  const pass=document.getElementById('moPass').value;
+  const errEl=document.getElementById('moErr');
+  const btn=document.querySelector('#maintenanceOverlay .mo-btn');
+  errEl.textContent='';
+  if(!email||!pass){errEl.textContent='Isi email dan password';return;}
+  btn.disabled=true;btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Memverifikasi...';
+  try{
+    const{error}=await sb.auth.signInWithPassword({email,password:pass});
+    if(error){errEl.textContent='Email atau password salah';return;}
+    // Cek apakah terdaftar sebagai admin
+    const{data}=await sb.from('admin_users').select('status,admin_level').eq('email',email).single();
+    if(!data||data.status!=='approved'){
+      await sb.auth.signOut();
+      errEl.textContent='Akun belum diaktifkan. Hubungi Super Admin.';
+      return;
+    }
+    hideMaintenanceOverlay();
+    // Auth state change handler di initAuth akan set user otomatis
+  }catch(e){
+    errEl.textContent='Error: '+e.message;
+  }finally{
+    btn.disabled=false;btn.innerHTML='<i class="fas fa-sign-in-alt"></i> Masuk';
+  }
+}
+
+window.addEventListener('DOMContentLoaded',async()=>{\n  // Init Supabase client dulu sebelum apapun
   sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+  // Cek session dulu
+  const{data:{session}}=await sb.auth.getSession();
+  if(MAINTENANCE_MODE){
+    if(session){
+      // Verifikasi user adalah admin aktif
+      const{data}=await sb.from('admin_users').select('status').eq('email',session.user.email).single();
+      if(data&&data.status==='approved'){
+        hideMaintenanceOverlay(); // user valid, lanjut
+      }else{
+        await sb.auth.signOut();
+        showMaintenanceOverlay();
+      }
+    }else{
+      showMaintenanceOverlay();
+    }
+    // Kalau maintenance off dan ada login dari overlay, ikuti auth state change
+    sb.auth.onAuthStateChange((ev,sess)=>{
+      if(ev==='SIGNED_OUT'&&MAINTENANCE_MODE)showMaintenanceOverlay();
+    });
+  }
   await initAuth();
   restoreSession();
   // Load GeoJSON boundary lazily
-  fetch('data/batas-desa-ngawi.json').then(r=>r.json()).then(gj=>{
-    window._batasNgawi=gj;
+  fetch('data/batas-desa-ngawi.json').then(r=>r.json()).then(gj=>{\n    window._batasNgawi=gj;
     if(typeof _fitMapToNgawi==='function') _fitMapToNgawi();
   }).catch(()=>{});
 });
