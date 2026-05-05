@@ -487,7 +487,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
         <!-- Distribusi Desil -->
         <div class="status-bar-wrap">
-          <div class="status-bar-title"><i class="fas fa-layer-group"></i> Distribusi Desil DTSEN</div>
+          <div class="status-bar-title"><i class="fas fa-layer-group"></i> Distribusi Desil DTSEN / MyPKP</div>
           <div style="background:linear-gradient(135deg,#FFF1F2,#FEF2F2);border:1px solid #FECACA;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:.72rem;color:#BE123C;font-weight:600">
             <i class="fas fa-exclamation-circle"></i> <strong>Desil 1–4</strong> adalah kelompok prioritas utama penerima bantuan RTLH
           </div>
@@ -1822,7 +1822,7 @@ async function loadKec(){
 
   if(brCache[currentKec]){brAll=brCache[currentKec];brFeatures=[...brAll];renderSidebar();renderKecDashboard();updateMap();return;}
 
-  const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,bantuan_rtlh,bantuan_bsps,bantuan_dd,bantuan_csr,bantuan_lain,tahun_bantuan,sumber_dana,dtsen,backlog,desil,nik,no_kk';
+  const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,dtsen,backlog,desil,nik,no_kk';
   let query=sb.from('rtlh').select(cols).order('id');
   if(currentKec)query=query.eq('kec',currentKec);
   const{data,error}=await query;
@@ -1971,7 +1971,7 @@ function renderSidebarList(){
       <div class="ri-badges">
         <span class="badge ${statusCls}">${r.status_rtlh||'Belum'}</span>
         ${desilNum?`<span class="badge desil" style="background:${desilColor}22;color:${desilColor}">Desil ${desilNum}</span>`:''}
-        ${r.dtsen?`<span class="badge" style="background:#EFF6FF;color:#1D4ED8">DTSEN:${r.dtsen}</span>`:''}
+        ${r.dtsen?`<span class="badge" style="background:#EFF6FF;color:#1D4ED8">MyPKP:${r.dtsen}</span>`:''}
       </div>
       <div class="ri-detail" id="det_${r.id}">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
@@ -1983,7 +1983,7 @@ function renderSidebarList(){
             ['Penghasilan',dn(r.pengh)],['Jml Penghuni',dn(r.jml_peng)],
             ['Luas Rumah',dn(r.luas_rum)+' m²'],['Desil',dn(r.desil)],
             ['Tahun Bantuan',dn(r.tahun_bantuan)],['Sumber Dana',dn(r.sumber_dana)],
-            ['DTSEN',dn(r.dtsen)],['Material Dinding',dn(r.material_d)],
+            ['Status MyPKP',dn(r.dtsen)],['Material Dinding',dn(r.material_d)],
             ['Kondisi Dinding',dn(r.kondisi_di)],['Material Atap',dn(r.material_a)],
             ['Kondisi Atap',dn(r.kondisi_at)],['Material Lantai',dn(r.material_l)],
             ['Kondisi Lantai',dn(r.kondisi_la)],
@@ -2059,13 +2059,15 @@ function showDetail(r){
       <div class="detail-item"><div class="dl">Desil</div><div class="dv" style="color:${desilNum?DESIL_COLORS[parseInt(desilNum)]:'inherit'};font-weight:700">${dn(r.desil)} ${desilNum&&parseInt(desilNum)<=4?'★ Prioritas':''}</div></div>
       <div class="detail-item"><div class="dl">Status RTLH</div><div class="dv">${r.status_rtlh?`<span class="badge ${r.status_rtlh==='Sudah Ditangani'?'sudah':r.status_rtlh==='Dalam Proses'?'proses':r.status_rtlh==='Dibatalkan'?'batal':'belum'}">${r.status_rtlh}</span>`:'-'}</div></div>
       ${r.status_rtlh==='Dibatalkan'&&r.status_batal?`<div class="detail-item"><div class="dl">Alasan Batal</div><div class="dv" style="color:var(--danger);font-weight:600">${r.status_batal}</div></div>`:''}
-      <div class="detail-item"><div class="dl">DTSEN</div><div class="dv">${dn(r.dtsen)}</div></div>
+      <div class="detail-item"><div class="dl">Status MyPKP</div><div class="dv">${dn(r.dtsen)}</div></div>
       <div class="detail-item"><div class="dl">Skor Prioritas</div><div class="dv" style="color:${color};font-weight:800">${Math.round(r._score)} — ${getCat(r._score)}</div></div>
     </div>
     <div style="margin-top:14px">
       <div style="font-size:.72rem;font-weight:800;color:var(--gray-600);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px"><i class="fas fa-hand-holding-heart" style="color:var(--gold)"></i> Riwayat Program Bantuan</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px" id="dpBantuan">
-        ${[['RTLH',r.bantuan_rtlh],['BSPS',r.bantuan_bsps],['Dana Desa',r.bantuan_dd],['CSR',r.bantuan_csr],['Lainnya',r.bantuan_lain]].filter(x=>x[1]).map(x=>`<span style="background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue)33;border-radius:99px;font-size:.68rem;font-weight:700;padding:3px 10px"><i class="fas fa-check-circle"></i> ${x[0]} ${x[1]}</span>`).join('')||'<span style="font-size:.72rem;color:var(--gray-400)">Belum ada riwayat bantuan</span>'}
+        ${(r.jenis_bantuan||r.bantuan_rtlh||r.bantuan_bsps||r.bantuan_dd||r.bantuan_csr||r.bantuan_lain)?
+        `<span style="background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue)33;border-radius:99px;font-size:.68rem;font-weight:700;padding:3px 10px"><i class="fas fa-check-circle"></i> ${r.jenis_bantuan||'Bantuan'} ${r.tahun_bantuan||''}</span>`
+        :'<span style="font-size:.72rem;color:var(--gray-400)">Belum ada riwayat bantuan</span>'}
       </div>
     </div>
     <div style="margin-top:14px" id="dpVerifSection">
@@ -2175,12 +2177,9 @@ const FIELDS=[
   {key:'kondisi_la',label:'Kondisi Lantai',type:'text'},
   {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['Belum Ditangani','Dalam Proses','Sudah Ditangani','Dibatalkan']},
   {key:'status_batal',label:'Alasan Dibatalkan',type:'select',opts:['','Meninggal Dunia','Tidak Bersedia Dibantu','Pindah Tempat Tinggal','Sudah Mampu Mandiri','Tidak Memenuhi Syarat','Lainnya']},
-  {key:'bantuan_rtlh',label:'RTLH Tahun',type:'text',placeholder:'misal: 2024'},
-  {key:'bantuan_bsps',label:'BSPS Tahun',type:'text',placeholder:'misal: 2023'},
-  {key:'bantuan_dd',label:'Dana Desa Tahun',type:'text',placeholder:'misal: 2025'},
-  {key:'bantuan_csr',label:'CSR Tahun',type:'text',placeholder:'misal: 2024'},
-  {key:'bantuan_lain',label:'Bantuan Lain',type:'text',placeholder:'misal: APBD 2025'},
-  {key:'dtsen',label:'DTSEN',type:'select',opts:['','Eligible','Non Eligible']},
+  {key:'jenis_bantuan',label:'Jenis Bantuan',type:'select',opts:['','RTLH','BSPS','Dana Desa','CSR','Lainnya']},
+  {key:'tahun_bantuan',label:'Tahun Bantuan',type:'text',placeholder:'misal: 2025'},
+  {key:'dtsen',label:'Status (Cek Bantuan MyPKP)',type:'select',opts:['','Eligible','Not Eligible','Not Eligible1']},
   {key:'backlog',label:'Backlog',type:'select',opts:['','Backlog 1','Backlog 2']},
   {key:'desil',label:'Desil',type:'select',opts:['','Desil 1','Desil 2','Desil 3','Desil 4','Desil 5','Desil 6','Desil 7','Desil 8']},
   {key:'latitude',label:'Latitude',type:'number'},
@@ -2312,7 +2311,7 @@ function downloadExcel(withNIK){
       Alamat:r.alamat,JK:r.jen_kel,Umur:r.umur,Pendidikan:r.pend_ter,
       Pekerjaan:r.pekerjaan,Penghasilan:r.pengh,'Luas Rumah':r.luas_rum,
       'Jml Penghuni':r.jml_peng,Desil:r.desil,'Status RTLH':r.status_rtlh,
-      DTSEN:r.dtsen,Backlog:r.backlog,'Skor Prioritas':Math.round(r._score),
+      'Status MyPKP':r.dtsen,Backlog:r.backlog,'Skor Prioritas':Math.round(r._score),
       'Kategori':getCat(r._score)
     };
     return obj;
@@ -2785,13 +2784,8 @@ const TE_COLS=[
   {key:'desil',label:'Desil',type:'select',opts:['','Desil 1','Desil 2','Desil 3','Desil 4','Desil 5','Desil 6','Desil 7','Desil 8'],width:90},
   {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['Belum Ditangani','Dalam Proses','Sudah Ditangani','Dibatalkan'],width:140},
   {key:'status_batal',label:'Alasan Batal',type:'select',opts:['','Meninggal Dunia','Tidak Bersedia Dibantu','Pindah Tempat Tinggal','Sudah Mampu Mandiri','Tidak Memenuhi Syarat','Lainnya'],width:150},
-  {key:'bantuan_rtlh',label:'RTLH Thn',type:'text',width:80},
-  {key:'bantuan_bsps',label:'BSPS Thn',type:'text',width:80},
-  {key:'bantuan_dd',label:'DD Thn',type:'text',width:80},
-  {key:'bantuan_csr',label:'CSR Thn',type:'text',width:80},
-  {key:'bantuan_lain',label:'Bantuan Lain',type:'text',width:110},
-  {key:'tahun_bantuan',label:'Thn (lama)',type:'text',width:80},
-  {key:'sumber_dana',label:'Sumber (lama)',type:'text',width:110},
+  {key:'jenis_bantuan',label:'Jenis Bantuan',type:'select',opts:['','RTLH','BSPS','Dana Desa','CSR','Lainnya'],width:110},
+  {key:'tahun_bantuan',label:'Tahun Bantuan',type:'text',width:90},
   {key:'dtsen',label:'DTSEN',type:'select',opts:['','Eligible','Non Eligible'],width:110},
   {key:'material_d',label:'Mat.Dinding',type:'text',width:110},
   {key:'kondisi_di',label:'Kond.Dinding',type:'text',width:110},
@@ -3144,7 +3138,7 @@ async function downloadExcelKab(withNIK){
     'Material Atap':r.material_a,'Kondisi Atap':r.kondisi_at,
     'Material Lantai':r.material_l,'Kondisi Lantai':r.kondisi_la,
     'Status RTLH':r.status_rtlh,'Tahun Bantuan':r.tahun_bantuan,
-    'Sumber Dana':r.sumber_dana,DTSEN:r.dtsen,Backlog:r.backlog,
+    'Sumber Dana':r.sumber_dana,'Status MyPKP':r.dtsen,Backlog:r.backlog,
     Desil:r.desil,Latitude:r.latitude,Longitude:r.longitude,
   }));
   const ws=XLSX.utils.json_to_sheet(rows);
