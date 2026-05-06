@@ -369,7 +369,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
       Silakan login untuk melanjutkan.
     </div>
     <div class="mo-inp-wrap">
-      <input class="mo-input" type="email" id="moEmail" placeholder="Email dinas (contoh: admin@ngawi.go.id)" onkeydown="if(event.key==='Enter')document.getElementById('moPass').focus()">
+      <input class="mo-input" type="text" id="moEmail" placeholder="Username" autocomplete="username" autocorrect="off" autocapitalize="off" spellcheck="false" onkeydown="if(event.key==='Enter')document.getElementById('moPass').focus()">
     </div>
     <div class="mo-inp-wrap">
       <input class="mo-input" type="password" id="moPass" placeholder="Password" onkeydown="if(event.key==='Enter')doMaintenanceLogin()">
@@ -377,7 +377,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
     <button class="mo-btn" onclick="doMaintenanceLogin()"><i class="fas fa-sign-in-alt"></i> Masuk</button>
     <div class="mo-err" id="moErr"></div>
     <div style="margin-top:14px;text-align:center;font-size:.68rem;color:#475569">
-      <i class="fas fa-info-circle"></i> Belum punya akun? Hubungi Super Admin DPRKP.
+      <i class="fas fa-shield-alt"></i> Sistem sedang dikembangkan. Akses khusus staf DPRKP.
     </div>
   </div>
 </div>
@@ -399,7 +399,6 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
     <button class="nav-tab" id="ntWebgis" onclick="nav('keclist')"><i class="fas fa-map-marked-alt"></i> WebGIS</button>
   </nav>
   <div class="header-right">
-    <button class="btn-icon-sm" onclick="hardRefresh()" title="Refresh Data (tanpa reload halaman)"><i class="fas fa-sync-alt" id="icoRefresh"></i></button>
     <button class="btn-icon-sm" id="btnExcelKab" onclick="openExcelKab()" title="Unduh / Unggah Excel Kabupaten" style="display:none"><i class="fas fa-file-excel"></i></button>
     <div id="authArea"></div>
   </div>
@@ -586,39 +585,22 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
 <!-- LOGIN MODAL -->
 <div class="overlay" id="ovLogin">
-  <div class="modal" style="max-width:400px">
+  <div class="modal" style="max-width:380px">
     <div class="modal-head">
-      <div><h3><i class="fas fa-lock"></i> Login Admin</h3><div class="sub">Masuk sebagai staf DPRKP Kab. Ngawi</div></div>
+      <div><h3><i class="fas fa-lock"></i> Login</h3><div class="sub">e-RTLH Ngawi · DPRKP Kab. Ngawi</div></div>
       <button class="modal-x" onclick="closeLogin()"><i class="fas fa-times"></i></button>
     </div>
     <div class="modal-body">
-      <div class="login-tabs">
-        <button class="login-tab active" id="ltEmail" onclick="switchLoginTab('email')"><i class="fas fa-envelope"></i> Email</button>
-        <button class="login-tab" id="ltUsername" onclick="switchLoginTab('username')"><i class="fas fa-user"></i> Username</button>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Username</label>
+        <input type="text" id="liUsername" placeholder="username" autocomplete="username" autocapitalize="off" spellcheck="false">
       </div>
-      <div id="loginFormEmail">
-        <div class="form-group" style="margin-bottom:10px">
-          <label>Email</label>
-          <input type="email" id="liEmail" placeholder="admin@ngawi.go.id">
-        </div>
-        <div class="form-group" style="margin-bottom:14px">
-          <label>Password</label>
-          <input type="password" id="liPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
-        </div>
-        <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> Masuk</button>
-        <div style="margin-top:12px;font-size:.68rem;color:var(--gray-400);text-align:center"><i class="fas fa-info-circle"></i> Akses hanya untuk staf DPRKP Kab. Ngawi. Hubungi Super Admin untuk pendaftaran akun.</div>
+      <div class="form-group" style="margin-bottom:16px">
+        <label>Password</label>
+        <input type="password" id="liPass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
       </div>
-      <div id="loginFormUsername" style="display:none">
-        <div class="form-group" style="margin-bottom:10px">
-          <label>Username</label>
-          <input type="text" id="liUsername" placeholder="contoh: admin_bringin">
-        </div>
-        <div class="form-group" style="margin-bottom:14px">
-          <label>Password</label>
-          <input type="password" id="liPassU" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLoginUsername()">
-        </div>
-        <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLoginUsername()"><i class="fas fa-sign-in-alt"></i> Masuk</button>
-      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> Masuk</button>
+      <div style="margin-top:12px;font-size:.65rem;color:var(--gray-400);text-align:center"><i class="fas fa-shield-alt"></i> Akses khusus staf DPRKP Kab. Ngawi</div>
     </div>
   </div>
 </div>
@@ -778,294 +760,310 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
   </div>
 </div>
 
-<!-- ADMIN PANEL MODAL -->
-<div class="overlay" id="ovAdmin">
-  <div class="modal" style="max-width:680px">
-    <div class="modal-head">
-      <div>
-        <h3><i class="fas fa-users-cog"></i> Kelola Admin</h3>
-        <div class="sub">Atur hak akses dan kelola akun admin</div>
-      </div>
-      <button class="modal-x" onclick="closeModal('ovAdmin')"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body" id="adminPanelBody" style="padding:0">
-      <div class="empty-state" style="padding:40px"><i class="fas fa-circle-notch fa-spin"></i><p>Memuat...</p></div>
-    </div>
-  </div>
-</div>
 
-<!-- FORM APPROVE ADMIN (inline modal) -->
-<div class="overlay" id="ovApproveAdmin">
-  <div class="modal" style="max-width:540px">
+<!-- MODAL VERIFIKASI LAPANGAN -->
+<div class="overlay" id="ovVerif">
+  <div class="modal" style="max-width:500px">
     <div class="modal-head">
-      <div><h3 id="approveTitle"><i class="fas fa-user-check"></i> Atur Akses Admin</h3><div class="sub" id="approveSub"></div></div>
-      <button class="modal-x" onclick="closeModal('ovApproveAdmin')"><i class="fas fa-times"></i></button>
+      <div><h3><i class="fas fa-clipboard-check" style="color:#10B981"></i> Verifikasi Lapangan</h3>
+        <div class="sub" id="verifSub">Tambah data verifikasi</div>
+      </div>
+      <button class="modal-x" onclick="closeModal('ovVerif')"><i class="fas fa-times"></i></button>
     </div>
     <div class="modal-body">
-
-      <!-- SECTION: Info Akun (hanya muncul saat mode tambah baru) -->
-      <div id="sectionAkunBaru" style="display:none;margin-bottom:16px;background:var(--blue-bg);border:1px solid #BFDBFE;border-radius:10px;padding:14px">
-        <div style="font-size:.75rem;font-weight:800;color:var(--blue);margin-bottom:10px"><i class="fas fa-user-plus"></i> Buat Akun Admin Baru</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div class="form-group">
-            <label>Nama Lengkap <span style="color:var(--danger)">*</span></label>
-            <input type="text" id="approveNama" placeholder="contoh: Budi Santoso" style="padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.82rem;width:100%">
-          </div>
-          <div class="form-group">
-            <label>Email <span style="color:var(--danger)">*</span></label>
-            <input type="email" id="approveEmail" placeholder="admin@ngawi.go.id" style="padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.82rem;width:100%">
-          </div>
-          <div class="form-group">
-            <label>Password <span style="color:var(--danger)">*</span></label>
-            <div style="position:relative">
-              <input type="password" id="approvePass" placeholder="Min. 8 karakter" style="padding:8px 36px 8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.82rem;width:100%">
-              <button type="button" onclick="togglePassVis('approvePass','eyePass')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:.8rem"><i class="fas fa-eye" id="eyePass"></i></button>
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Konfirmasi Password <span style="color:var(--danger)">*</span></label>
-            <div style="position:relative">
-              <input type="password" id="approvePass2" placeholder="Ulangi password" style="padding:8px 36px 8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.82rem;width:100%">
-              <button type="button" onclick="togglePassVis('approvePass2','eyePass2')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:.8rem"><i class="fas fa-eye" id="eyePass2"></i></button>
-            </div>
-          </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="form-group" style="margin:0">
+          <label>Hasil Verifikasi <span style="color:var(--danger)">*</span></label>
+          <select id="verifHasil">
+            <option value="">-- Pilih --</option>
+            <option value="Layak">Layak (Tidak RTLH)</option>
+            <option value="Tidak Layak">Tidak Layak (RTLH)</option>
+          </select>
         </div>
-      </div>
-
-      <!-- SECTION: Username & Password (mode edit akun yang sudah ada) -->
-      <div id="sectionEditAkun" style="margin-bottom:14px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div class="form-group">
-            <label>USERNAME <span style="color:var(--gray-400);font-weight:400;font-size:.62rem">(opsional)</span></label>
-            <input type="text" id="approveUsername" placeholder="contoh: admin_bringin" style="padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.82rem;width:100%">
-            <div style="font-size:.62rem;color:var(--gray-400);margin-top:3px">Huruf kecil, angka, underscore</div>
-          </div>
-          <div class="form-group" id="groupResetPass">
-            <label>RESET PASSWORD <span style="color:var(--gray-400);font-weight:400;font-size:.62rem">(kosong = tidak diubah)</span></label>
-            <div style="position:relative">
-              <input type="password" id="approveResetPass" placeholder="Password baru..." style="padding:8px 36px 8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.82rem;width:100%">
-              <button type="button" onclick="togglePassVis('approveResetPass','eyeReset')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:.8rem"><i class="fas fa-eye" id="eyeReset"></i></button>
-            </div>
-            <div style="font-size:.62rem;color:var(--gray-400);margin-top:3px">Min. 8 karakter</div>
-          </div>
+        <div class="form-group" style="margin:0">
+          <label>Keterangan</label>
+          <input type="text" id="verifKet" placeholder="Misal: Pernah dibantu DD">
         </div>
-      </div>
-
-      <!-- LEVEL AKSES -->
-      <div style="margin-bottom:14px">
-        <label style="font-size:.72rem;font-weight:700;color:var(--gray-600);display:block;margin-bottom:8px">LEVEL AKSES</label>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:2px solid var(--gray-200);cursor:pointer;transition:.2s" id="lblL2Admin">
-            <input type="radio" name="aksesLevel" value="2" checked onchange="toggleAksesLevel()" style="accent-color:var(--blue)">
-            <div>
-              <div style="font-size:.8rem;font-weight:700;color:var(--gray-900)">🗺️ Admin Layer 2 — Kecamatan</div>
-              <div style="font-size:.68rem;color:var(--gray-500)">Akses terbatas per kecamatan · Bisa lihat NIK/KK · Tidak bisa kelola admin</div>
-            </div>
-          </label>
-          <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:2px solid var(--gray-200);cursor:pointer;transition:.2s" id="lblL3Admin">
-            <input type="radio" name="aksesLevel" value="3" onchange="toggleAksesLevel()" style="accent-color:#10B981">
-            <div>
-              <div style="font-size:.8rem;font-weight:700;color:var(--gray-900)">🏘️ Admin Layer 3 — Desa</div>
-              <div style="font-size:.68rem;color:var(--gray-500)">Akses terbatas per kecamatan + desa · Tidak bisa lihat NIK/KK penuh</div>
-            </div>
-          </label>
-        </div>
-      </div>
-
-      <!-- KECAMATAN -->
-      <div id="kecamatanPicker" style="margin-bottom:14px">
-        <label style="font-size:.72rem;font-weight:700;color:var(--gray-600);display:block;margin-bottom:8px">PILIH KECAMATAN</label>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;max-height:160px;overflow-y:auto;padding:2px" id="kecCheckboxes"></div>
-      </div>
-
-      <!-- DESA (Layer 3) -->
-      <div id="desaPicker" style="margin-bottom:14px;display:none">
-        <label style="font-size:.72rem;font-weight:700;color:var(--gray-600);display:block;margin-bottom:8px">PILIH DESA <span style="color:var(--gray-400);font-weight:400">— kosong = semua desa</span></label>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;max-height:160px;overflow-y:auto;padding:2px" id="desaCheckboxes"></div>
-        <div style="font-size:.65rem;color:var(--gray-400);margin-top:4px"><i class="fas fa-info-circle"></i> Pilih kecamatan dulu untuk melihat daftar desa</div>
-      </div>
-
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('ovApproveAdmin')">Batal</button>
-      <button class="btn btn-primary" id="btnSubmitAdmin" onclick="submitApproveAdmin()"><i class="fas fa-check"></i> Simpan & Approve</button>
-    </div>
-  </div>
-</div>
-
-<!-- RESET PASSWORD MODAL -->
-<div class="overlay" id="ovResetPass">
-  <div class="modal" style="max-width:380px">
-    <div class="modal-head">
-      <div><h3><i class="fas fa-key" style="color:var(--warning)"></i> Reset Password</h3>
-        <div class="sub" id="resetPassSub">Set password baru untuk admin</div>
-      </div>
-      <button class="modal-x" onclick="closeModal('ovResetPass')"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body">
-      <div style="background:var(--warning-bg);border:1px solid var(--warning);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:.72rem;color:#92400E">
-        <i class="fas fa-exclamation-triangle"></i> Password lama admin akan langsung diganti. Admin yang bersangkutan perlu login ulang.
-      </div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label>Password Baru <span style="color:var(--danger)">*</span></label>
-        <div style="position:relative">
-          <input type="password" id="rpNewPass" placeholder="Min. 8 karakter" style="padding:8px 36px 8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.88rem;width:100%;letter-spacing:1px">
-          <button type="button" onclick="togglePassVis('rpNewPass','eyeRP1')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-400)"><i class="fas fa-eye" id="eyeRP1"></i></button>
+        <div class="form-group" style="margin:0">
+          <label>Tahun Verifikasi <span style="color:var(--danger)">*</span></label>
+          <select id="verifTahun">
+            <option value="">-- Pilih --</option>
+            <option value="2021">2021</option>
+            <option value="2022">2022</option>
+            <option value="2023">2023</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+          </select>
         </div>
       </div>
       <div class="form-group">
-        <label>Konfirmasi Password <span style="color:var(--danger)">*</span></label>
-        <div style="position:relative">
-          <input type="password" id="rpConfPass" placeholder="Ulangi password baru" style="padding:8px 36px 8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.88rem;width:100%;letter-spacing:1px" onkeydown="if(event.key==='Enter')doResetPassword()">
-          <button type="button" onclick="togglePassVis('rpConfPass','eyeRP2')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-400)"><i class="fas fa-eye" id="eyeRP2"></i></button>
+        <label>Nama Petugas Verifikasi</label>
+        <input type="text" id="verifPetugas" placeholder="Nama petugas yang melakukan verifikasi">
+      </div>
+      <div id="verifHistori" style="margin-top:14px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ovVerif')">Tutup</button>
+      <button class="btn btn-primary" onclick="saveVerif()" style="background:#10B981"><i class="fas fa-save"></i> Simpan Verifikasi</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DOKUMEN & FOTO -->
+<div class="overlay" id="ovDok">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head">
+      <div><h3><i class="fas fa-folder-open" style="color:var(--warning)"></i> Dokumen & Foto</h3>
+        <div class="sub" id="dokSub">Kelola dokumen pendukung</div>
+      </div>
+      <button class="modal-x" onclick="closeModal('ovDok')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--gray-50);border-radius:10px;padding:14px;border:1px solid var(--gray-200);margin-bottom:14px">
+        <div style="font-size:.72rem;font-weight:700;color:var(--gray-700);margin-bottom:10px">Upload Dokumen Baru</div>
+        <div class="form-group" style="margin-bottom:10px">
+          <label>Jenis Dokumen</label>
+          <select id="dokJenis">
+            <option value="foto_rumah">📷 Foto Rumah</option>
+            <option value="berita_acara">📄 Berita Acara (BA)</option>
+            <option value="surat_pernyataan">📝 Surat Pernyataan</option>
+            <option value="ktp">🪪 KTP</option>
+            <option value="kk_doc">👨‍👩‍👧 Kartu Keluarga</option>
+            <option value="foto_lokasi">🗺️ Foto Lokasi</option>
+            <option value="lainnya">📁 Lainnya</option>
+          </select>
         </div>
+        <div class="form-group" style="margin-bottom:10px">
+          <label>Keterangan (opsional)</label>
+          <input type="text" id="dokKet" placeholder="Contoh: BA 2025, Foto tampak depan">
+        </div>
+        <div class="form-group" style="margin-bottom:12px">
+          <label>File <span style="color:var(--danger)">*</span></label>
+          <input type="file" id="dokFile" accept="image/*,application/pdf,.doc,.docx" style="font-size:.8rem">
+          <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Format: JPG, PNG, PDF, DOC. Maks 10 MB.</div>
+        </div>
+        <button class="btn btn-primary" onclick="uploadDokumen()" style="width:100%;justify-content:center"><i class="fas fa-upload"></i> Upload</button>
+        <div id="dokUploadProgress" style="margin-top:8px;font-size:.72rem"></div>
+      </div>
+      <div>
+        <div style="font-size:.72rem;font-weight:700;color:var(--gray-700);margin-bottom:8px">Dokumen Tersimpan</div>
+        <div id="dokFileList" style="font-size:.72rem;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('ovResetPass')">Batal</button>
-      <button class="btn" id="btnDoReset" onclick="doResetPassword()" style="background:var(--warning);color:#fff;font-weight:700"><i class="fas fa-key"></i> Reset Password</button>
+      <button class="btn btn-ghost" onclick="closeModal('ovDok')">Tutup</button>
     </div>
   </div>
 </div>
 
-<!-- DOWNLOAD MODAL -->
-<div class="overlay" id="ovDownload">
-  <div class="modal" style="max-width:420px">
+<!-- NIK/KK MODAL (Super Admin only - dedicated, never re-renders) -->
+<div class="overlay" id="ovNIK">
+  <div class="modal" style="max-width:400px">
     <div class="modal-head">
-      <div><h3><i class="fas fa-file-excel"></i> Unduh / Unggah Data</h3></div>
-      <button class="modal-x" onclick="closeModal('ovDownload')"><i class="fas fa-times"></i></button>
+      <div><h3><i class="fas fa-id-card" style="color:var(--gold)"></i> Input NIK & No. KK</h3>
+        <div class="sub" id="nikModalSub">Super Admin — data sensitif</div>
+      </div>
+      <button class="modal-x" onclick="closeModal('ovNIK')"><i class="fas fa-times"></i></button>
     </div>
     <div class="modal-body">
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <button class="btn btn-success" style="justify-content:center" onclick="downloadExcel(false)"><i class="fas fa-download"></i> Unduh Excel (data disensor)</button>
-        <button class="btn btn-success" id="btnDlFull" style="justify-content:center;display:none" onclick="downloadExcel(true)"><i class="fas fa-download"></i> Unduh Excel + NIK/KK (Admin Inti)</button>
-        <div class="tb-sep" style="width:100%;height:1px;margin:4px 0"></div>
-        <div class="upload-zone" onclick="document.getElementById('xlsxFile').click()">
-          <i class="fas fa-file-upload"></i>
-          <p>Klik atau seret file Excel (.xlsx) untuk diimport</p>
-          <input type="file" id="xlsxFile" accept=".xlsx" style="display:none" onchange="importExcel(this)">
-        </div>
+      <div style="background:var(--warning-bg);border:1px solid var(--warning);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:.72rem;color:#92400E">
+        <i class="fas fa-shield-alt"></i> Data ini hanya bisa dilihat dan diedit oleh Super Admin.
       </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label>NIK (16 digit)</label>
+        <input type="text" id="nikInput" inputmode="numeric" maxlength="16" placeholder="Masukkan 16 digit NIK"
+          style="font-size:1rem;letter-spacing:2px;font-weight:700;border-color:var(--blue)"
+          oninput="this.value=this.value.replace(/\D/g,'');document.getElementById('nikCount').textContent=this.value.length+'/16'">
+        <span id="nikCount" style="font-size:.65rem;color:var(--gray-400);margin-top:3px">0/16</span>
+      </div>
+      <div class="form-group" style="margin-bottom:16px">
+        <label>No. Kartu Keluarga (KK)</label>
+        <input type="text" id="noKkInput" inputmode="numeric" maxlength="16" placeholder="Masukkan No. KK"
+          style="font-size:1rem;letter-spacing:2px;font-weight:700;border-color:var(--blue)"
+          oninput="this.value=this.value.replace(/\D/g,'');document.getElementById('kkCount').textContent=this.value.length+'/16'">
+        <span id="kkCount" style="font-size:.65rem;color:var(--gray-400);margin-top:3px">0/16</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ovNIK')">Batal</button>
+      <button class="btn btn-primary" onclick="saveNIK()"><i class="fas fa-save"></i> Simpan NIK & KK</button>
     </div>
   </div>
 </div>
 
 
 
-<!-- TABLE EDITOR MODAL (fullscreen spreadsheet) -->
-<div id="ovTableEditor" style="display:none;position:fixed;inset:0;z-index:20000;background:#fff;flex-direction:column;font-family:var(--font)">
-  <!-- Toolbar -->
-  <div style="height:50px;background:var(--navy);display:flex;align-items:center;padding:0 14px;gap:8px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.3)">
-    <button onclick="closeTableEditor()" style="background:rgba(255,255,255,.12);border:none;color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center"><i class="fas fa-times"></i></button>
-    <div style="font-size:.88rem;font-weight:800;color:#fff;flex:1"><i class="fas fa-table" style="color:var(--gold);margin-right:7px"></i>Table Editor — <span id="teTitle" style="color:var(--gold-light)"></span></div>
-    <div id="teSaveStatus" style="font-size:.7rem;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:5px"></div>
-    <button onclick="teAddRow()" id="btnTeAdd" style="display:none;background:var(--success);border:none;color:#fff;padding:6px 12px;border-radius:7px;cursor:pointer;font-size:.72rem;font-weight:700;font-family:inherit;gap:5px;align-items:center"><i class="fas fa-plus"></i> Tambah Baris</button>
-    <button onclick="teExport()" style="background:rgba(255,255,255,.1);border:none;color:#fff;padding:6px 12px;border-radius:7px;cursor:pointer;font-size:.72rem;font-weight:700;font-family:inherit;display:flex;align-items:center;gap:5px"><i class="fas fa-file-excel"></i> Export</button>
-  </div>
-  <!-- Filter bar -->
-  <div style="height:40px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);display:flex;align-items:center;padding:0 12px;gap:8px;flex-shrink:0">
-    <i class="fas fa-search" style="color:var(--gray-400);font-size:.75rem"></i>
-    <input id="teSearch" type="text" placeholder="Cari nama, desa, NIK..." oninput="teFilter()" style="border:none;background:transparent;font-family:inherit;font-size:.78rem;outline:none;flex:1;color:var(--gray-800)">
-    <span id="teCount" style="font-size:.68rem;color:var(--gray-400);white-space:nowrap"></span>
-    <select id="teFilterStatus" onchange="teFilter()" style="border:1px solid var(--gray-200);border-radius:6px;padding:3px 8px;font-size:.7rem;font-family:inherit;background:#fff">
-      <option value="">Semua Status</option>
-      <option>Belum Ditangani</option>
-      <option>Dalam Proses</option>
-      <option>Sudah Ditangani</option>
-      <option>Dibatalkan</option>
-    </select>
-    <select id="teFilterDesil" onchange="teFilter()" style="border:1px solid var(--gray-200);border-radius:6px;padding:3px 8px;font-size:.7rem;font-family:inherit;background:#fff">
-      <option value="">Semua Desil</option>
-      <option>Desil 1</option><option>Desil 2</option><option>Desil 3</option><option>Desil 4</option>
-      <option>Desil 5</option><option>Desil 6</option><option>Desil 7</option><option>Desil 8</option>
-    </select>
-  </div>
-  <!-- Table container -->
-  <div style="flex:1;overflow:auto;position:relative" id="teTableWrap">
-    <div style="text-align:center;padding:40px;color:var(--gray-400)" id="teLoading"><i class="fas fa-circle-notch fa-spin" style="font-size:1.5rem"></i><div style="margin-top:10px;font-size:.85rem">Memuat data...</div></div>
-    <table id="teTable" style="display:none;border-collapse:collapse;width:max-content;min-width:100%">
-      <thead id="teThead" style="position:sticky;top:0;z-index:100"></thead>
-      <tbody id="teTbody"></tbody>
-    </table>
+<!-- NIK/KK MODAL (Super Admin only - dedicated, never re-renders) -->
+<div class="overlay" id="ovNIK">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-head">
+      <div><h3><i class="fas fa-id-card" style="color:var(--gold)"></i> Input NIK & No. KK</h3>
+        <div class="sub" id="nikModalSub">Super Admin — data sensitif</div>
+      </div>
+      <button class="modal-x" onclick="closeModal('ovNIK')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--warning-bg);border:1px solid var(--warning);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:.72rem;color:#92400E">
+        <i class="fas fa-shield-alt"></i> Data ini hanya bisa dilihat dan diedit oleh Super Admin.
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label>NIK (16 digit)</label>
+        <input type="text" id="nikInput" inputmode="numeric" maxlength="16" placeholder="Masukkan 16 digit NIK"
+          style="font-size:1rem;letter-spacing:2px;font-weight:700;border-color:var(--blue)"
+          oninput="this.value=this.value.replace(/\D/g,'');document.getElementById('nikCount').textContent=this.value.length+'/16'">
+        <span id="nikCount" style="font-size:.65rem;color:var(--gray-400);margin-top:3px">0/16</span>
+      </div>
+      <div class="form-group" style="margin-bottom:16px">
+        <label>No. Kartu Keluarga (KK)</label>
+        <input type="text" id="noKkInput" inputmode="numeric" maxlength="16" placeholder="Masukkan No. KK"
+          style="font-size:1rem;letter-spacing:2px;font-weight:700;border-color:var(--blue)"
+          oninput="this.value=this.value.replace(/\D/g,'');document.getElementById('kkCount').textContent=this.value.length+'/16'">
+        <span id="kkCount" style="font-size:.65rem;color:var(--gray-400);margin-top:3px">0/16</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ovNIK')">Batal</button>
+      <button class="btn btn-primary" onclick="saveNIK()"><i class="fas fa-save"></i> Simpan NIK & KK</button>
+    </div>
   </div>
 </div>
 
-<!-- EXCEL KABUPATEN MODAL -->
-<div class="overlay" id="ovExcelKab">
-  <div class="modal" style="max-width:560px">
+
+<!-- MODAL VERIFIKASI LAPANGAN -->
+<div class="overlay" id="ovVerif">
+  <div class="modal" style="max-width:500px">
     <div class="modal-head">
+      <div><h3><i class="fas fa-clipboard-check" style="color:#10B981"></i> Verifikasi Lapangan</h3>
+        <div class="sub" id="verifSub">Tambah data verifikasi</div>
+      </div>
+      <button class="modal-x" onclick="closeModal('ovVerif')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="form-group" style="margin:0">
+          <label>Hasil Verifikasi <span style="color:var(--danger)">*</span></label>
+          <select id="verifHasil">
+            <option value="">-- Pilih --</option>
+            <option value="Layak">Layak (Tidak RTLH)</option>
+            <option value="Tidak Layak">Tidak Layak (RTLH)</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Keterangan</label>
+          <input type="text" id="verifKet" placeholder="Misal: Pernah dibantu DD">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Tahun Verifikasi <span style="color:var(--danger)">*</span></label>
+          <select id="verifTahun">
+            <option value="">-- Pilih --</option>
+            <option value="2021">2021</option>
+            <option value="2022">2022</option>
+            <option value="2023">2023</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Nama Petugas Verifikasi</label>
+        <input type="text" id="verifPetugas" placeholder="Nama petugas yang melakukan verifikasi">
+      </div>
+      <div id="verifHistori" style="margin-top:14px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ovVerif')">Tutup</button>
+      <button class="btn btn-primary" onclick="saveVerif()" style="background:#10B981"><i class="fas fa-save"></i> Simpan Verifikasi</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DOKUMEN & FOTO -->
+<div class="overlay" id="ovDok">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head">
+      <div><h3><i class="fas fa-folder-open" style="color:var(--warning)"></i> Dokumen & Foto</h3>
+        <div class="sub" id="dokSub">Kelola dokumen pendukung</div>
+      </div>
+      <button class="modal-x" onclick="closeModal('ovDok')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--gray-50);border-radius:10px;padding:14px;border:1px solid var(--gray-200);margin-bottom:14px">
+        <div style="font-size:.72rem;font-weight:700;color:var(--gray-700);margin-bottom:10px">Upload Dokumen Baru</div>
+        <div class="form-group" style="margin-bottom:10px">
+          <label>Jenis Dokumen</label>
+          <select id="dokJenis">
+            <option value="foto_rumah">📷 Foto Rumah</option>
+            <option value="berita_acara">📄 Berita Acara (BA)</option>
+            <option value="surat_pernyataan">📝 Surat Pernyataan</option>
+            <option value="ktp">🪪 KTP</option>
+            <option value="kk_doc">👨‍👩‍👧 Kartu Keluarga</option>
+            <option value="foto_lokasi">🗺️ Foto Lokasi</option>
+            <option value="lainnya">📁 Lainnya</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:10px">
+          <label>Keterangan (opsional)</label>
+          <input type="text" id="dokKet" placeholder="Contoh: BA 2025, Foto tampak depan">
+        </div>
+        <div class="form-group" style="margin-bottom:12px">
+          <label>File <span style="color:var(--danger)">*</span></label>
+          <input type="file" id="dokFile" accept="image/*,application/pdf,.doc,.docx" style="font-size:.8rem">
+          <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Format: JPG, PNG, PDF, DOC. Maks 10 MB.</div>
+        </div>
+        <button class="btn btn-primary" onclick="uploadDokumen()" style="width:100%;justify-content:center"><i class="fas fa-upload"></i> Upload</button>
+        <div id="dokUploadProgress" style="margin-top:8px;font-size:.72rem"></div>
+      </div>
       <div>
-        <h3><i class="fas fa-file-excel" style="color:#16A34A"></i> Excel Kabupaten Ngawi</h3>
-        <div class="sub">Unduh atau unggah data RTLH seluruh kabupaten</div>
+        <div style="font-size:.72rem;font-weight:700;color:var(--gray-700);margin-bottom:8px">Dokumen Tersimpan</div>
+        <div id="dokFileList" style="font-size:.72rem;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
       </div>
-      <button class="modal-x" onclick="closeModal('ovExcelKab')"><i class="fas fa-times"></i></button>
     </div>
-    <div class="modal-body">
-
-      <!-- FILTER DOWNLOAD -->
-      <div style="background:var(--gray-50);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px">
-        <div style="font-size:.75rem;font-weight:700;color:var(--gray-700);margin-bottom:10px"><i class="fas fa-filter" style="color:var(--gold)"></i> Filter Unduhan</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div class="form-group">
-            <label>Kecamatan</label>
-            <select id="exKec" style="padding:7px 10px;border-radius:7px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.78rem">
-              <option value="">Semua Kecamatan</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Status RTLH</label>
-            <select id="exStatus" style="padding:7px 10px;border-radius:7px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.78rem">
-              <option value="">Semua Status</option>
-              <option>Belum Ditangani</option>
-              <option>Dalam Proses</option>
-              <option>Sudah Ditangani</option>
-              <option>Dibatalkan</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Desil</label>
-            <select id="exDesil" style="padding:7px 10px;border-radius:7px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.78rem">
-              <option value="">Semua Desil</option>
-              <option>Desil 1</option><option>Desil 2</option><option>Desil 3</option><option>Desil 4</option>
-              <option>Desil 5</option><option>Desil 6</option><option>Desil 7</option><option>Desil 8</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Tahun Bantuan</label>
-            <select id="exTahun" style="padding:7px 10px;border-radius:7px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.78rem">
-              <option value="">Semua Tahun</option>
-              <option>2021</option><option>2022</option><option>2023</option><option>2024</option><option>2025</option><option>2026</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- DOWNLOAD BUTTONS -->
-      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
-        <button class="btn btn-success" style="justify-content:center" onclick="downloadExcelKab(false)">
-          <i class="fas fa-download"></i> Unduh Excel (NIK/KK disensor)
-        </button>
-        <button class="btn" id="btnDlKabFull" style="justify-content:center;background:#059669;color:#fff;display:none" onclick="downloadExcelKab(true)">
-          <i class="fas fa-download"></i> Unduh Excel Lengkap + NIK/KK (Super Admin)
-        </button>
-      </div>
-
-      <div style="border-top:1px solid var(--gray-200);padding-top:14px">
-        <div style="font-size:.75rem;font-weight:700;color:var(--gray-700);margin-bottom:8px"><i class="fas fa-upload" style="color:var(--blue)"></i> Unggah / Import Excel</div>
-        <div style="background:var(--blue-bg);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:.7rem;color:var(--blue)">
-          <i class="fas fa-info-circle"></i> Format: kolom harus sesuai template. Gunakan tombol Unduh dulu sebagai template.
-          Kolom <b>ID</b> wajib ada untuk update data yang sudah ada. Tanpa ID = tambah data baru.
-        </div>
-        <div class="upload-zone" onclick="document.getElementById('xlsxKabFile').click()" id="exUploadZone">
-          <i class="fas fa-file-upload" style="display:block;font-size:1.5rem;color:var(--gray-400);margin-bottom:8px"></i>
-          <p style="font-size:.78rem;color:var(--gray-500)">Klik atau seret file Excel (.xlsx) di sini</p>
-          <input type="file" id="xlsxKabFile" accept=".xlsx" style="display:none" onchange="importExcelKab(this)">
-        </div>
-        <div id="exImportLog" style="margin-top:10px;font-size:.72rem;display:none"></div>
-      </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ovDok')">Tutup</button>
     </div>
   </div>
 </div>
+
+<!-- NIK/KK MODAL (Super Admin only - dedicated, never re-renders) -->
+<div class="overlay" id="ovNIK">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-head">
+      <div><h3><i class="fas fa-id-card" style="color:var(--gold)"></i> Input NIK & No. KK</h3>
+        <div class="sub" id="nikModalSub">Super Admin — data sensitif</div>
+      </div>
+      <button class="modal-x" onclick="closeModal('ovNIK')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--warning-bg);border:1px solid var(--warning);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:.72rem;color:#92400E">
+        <i class="fas fa-shield-alt"></i> Data ini hanya bisa dilihat dan diedit oleh Super Admin.
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label>NIK (16 digit)</label>
+        <input type="text" id="nikInput" inputmode="numeric" maxlength="16" placeholder="Masukkan 16 digit NIK"
+          style="font-size:1rem;letter-spacing:2px;font-weight:700;border-color:var(--blue)"
+          oninput="this.value=this.value.replace(/\D/g,'');document.getElementById('nikCount').textContent=this.value.length+'/16'">
+        <span id="nikCount" style="font-size:.65rem;color:var(--gray-400);margin-top:3px">0/16</span>
+      </div>
+      <div class="form-group" style="margin-bottom:16px">
+        <label>No. Kartu Keluarga (KK)</label>
+        <input type="text" id="noKkInput" inputmode="numeric" maxlength="16" placeholder="Masukkan No. KK"
+          style="font-size:1rem;letter-spacing:2px;font-weight:700;border-color:var(--blue)"
+          oninput="this.value=this.value.replace(/\D/g,'');document.getElementById('kkCount').textContent=this.value.length+'/16'">
+        <span id="kkCount" style="font-size:.65rem;color:var(--gray-400);margin-top:3px">0/16</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ovNIK')">Batal</button>
+      <button class="btn btn-primary" onclick="saveNIK()"><i class="fas fa-save"></i> Simpan NIK & KK</button>
+    </div>
+  </div>
+</div>
+
+
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
@@ -1107,7 +1105,8 @@ let filterStatus='all',filterDesil='all';
 let chartStatus=null,chartDesil=null;
 let kecCounts={};
 let mobSidebarOpen=false;
-let loginTab='email';
+let loginTab='username';
+let _adminUsername=null;
 
 // ══════════════════════════════════════════════════
 // HELPERS
@@ -1266,6 +1265,7 @@ async function setUser(u){
   const{data}=await sb.from('admin_users').select('*').eq('email',u.email).single();
   if(data&&data.status==='approved'){
     isAdmin=true;
+    _adminUsername=data.username||null;
     adminLevel=data.admin_level||2; // default level 2 jika tidak ada
     userKec=data.kecamatan||null;
     userDesa=data.desa||null;
@@ -1282,6 +1282,7 @@ async function setUser(u){
     userDesa=null;
   }
   updAuth();
+  if(isAdmin)startAutoRefresh();
 }
 function updAuth(){
   const a=document.getElementById('authArea');
@@ -1291,11 +1292,11 @@ function updAuth(){
     const levelBg=adminLevel===1?'rgba(200,169,81,.25)':adminLevel===2?'rgba(45,143,213,.2)':'rgba(16,185,129,.2)';
     const badge=levelLabel?`<span style="font-size:.5rem;background:${levelBg};color:${levelColor};padding:1px 6px;border-radius:99px;font-weight:700">${levelLabel}</span>`:'';
     a.innerHTML=`<div style="display:flex;align-items:center;gap:6px">
-      ${isSuperAdmin()?`<button class="btn-icon-sm" onclick="openAdminPanel()" title="Kelola Admin"><i class="fas fa-users-cog"></i></button>`:''}
+
       <div class="user-chip">
         ${user.user_metadata?.avatar_url?`<img src="${user.user_metadata.avatar_url}" alt="">`:
           `<div style="width:26px;height:26px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;color:var(--navy)">${(user.email||'?')[0].toUpperCase()}</div>`}
-        <div><div class="user-chip span">${user.user_metadata?.full_name||user.email?.split('@')[0]}</div>${badge}</div>
+        <div><div class="user-chip span">${_adminUsername||user.email?.split('@')[0]}</div>${badge}</div>
       </div>
       <button class="btn-logout" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i></button>
     </div>`;
@@ -1316,32 +1317,23 @@ function updAuth(){
 
 function openLogin(){document.getElementById('ovLogin').classList.add('open')}
 function closeLogin(){document.getElementById('ovLogin').classList.remove('open')}
-function switchLoginTab(t){
-  loginTab=t;
-  document.getElementById('ltEmail').classList.toggle('active',t==='email');
-  document.getElementById('ltUsername').classList.toggle('active',t==='username');
-  document.getElementById('loginFormEmail').style.display=t==='email'?'block':'none';
-  document.getElementById('loginFormUsername').style.display=t==='username'?'block':'none';
-}
 
 async function doLogin(){
-  const email=document.getElementById('liEmail').value.trim();
+  const input=document.getElementById('liUsername').value.trim().toLowerCase();
   const pass=document.getElementById('liPass').value;
-  if(!email||!pass)return toast('Isi email dan password','error');
-  const{error}=await sb.auth.signInWithPassword({email,password:pass});
-  if(error)return toast('Login gagal: '+error.message,'error');
-  closeLogin();toast('Login berhasil','success');
-}
-async function doLoginUsername(){
-  const uname=document.getElementById('liUsername').value.trim().toLowerCase();
-  const pass=document.getElementById('liPassU').value;
-  if(!uname||!pass)return toast('Isi username dan password','error');
-  // Lookup email from username
-  const{data,error}=await sb.from('admin_users').select('email').eq('username',uname).single();
-  if(error||!data)return toast('Username tidak ditemukan','error');
-  const{error:e2}=await sb.auth.signInWithPassword({email:data.email,password:pass});
-  if(e2)return toast('Password salah','error');
-  closeLogin();toast('Login berhasil','success');
+  if(!input||!pass)return toast('Isi username dan password','error');
+  const btn=document.querySelector('#ovLogin .btn-primary');
+  btn.disabled=true;btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Memverifikasi...';
+  try{
+    // Lookup email via username (RLS: anon bisa baca username saja)
+    const{data:adm}=await sb.from('admin_users').select('email,status').eq('username',input).single();
+    if(!adm)return toast('Username tidak ditemukan','error');
+    if(adm.status!=='approved')return toast('Akun belum aktif. Hubungi Super Admin.','error');
+    const{error}=await sb.auth.signInWithPassword({email:adm.email,password:pass});
+    if(error)return toast('Password salah','error');
+    closeLogin();
+  }catch(e){toast('Login gagal: '+e.message,'error');}
+  finally{btn.disabled=false;btn.innerHTML='<i class="fas fa-sign-in-alt"></i> Masuk';}
 }
 async function doGoogleLogin(){
   const{error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+window.location.pathname}});
@@ -1349,8 +1341,27 @@ async function doGoogleLogin(){
 }
 async function doLogout(){
   await sb.auth.signOut();
+  if(_realtimeChannel)sb.removeChannel(_realtimeChannel);
   toast('Logout berhasil','info');
   if(MAINTENANCE_MODE)setTimeout(()=>showMaintenanceOverlay(),600);
+}
+
+// Auto-refresh digantikan Supabase Realtime
+let _realtimeChannel=null;
+function startAutoRefresh(){
+  Object.keys(_kecCacheTime).forEach(k=>delete _kecCacheTime[k]);
+  if(_realtimeChannel)sb.removeChannel(_realtimeChannel);
+  _realtimeChannel=sb.channel('rtlh-changes')
+    .on('postgres_changes',{event:'*',schema:'public',table:'rtlh'},async()=>{
+      if(document.hidden)return;
+      const activePage=document.querySelector('.page.active')?.id;
+      try{
+        if(activePage==='pgBeranda')await loadGlobalStats();
+        else if(activePage==='pgWebgis'&&currentKec){brAll=[];await loadKec();}
+        else if(activePage==='pgKecList'){await ensureKecCounts(true);renderKecList();}
+      }catch(e){}
+    })
+    .subscribe();
 }
 
 function closeModal(id){document.getElementById(id).classList.remove('open')}
@@ -1813,8 +1824,16 @@ function initMap(){
   mcg=L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:40}).addTo(map);
 }
 
+// Cache timestamp per kecamatan
+const _kecCacheTime={};
 async function loadKec(){
   if(!isAdmin)return; // Guard: hanya admin
+  const now=Date.now();
+  const cacheKey=currentKec+'_'+currentDesa;
+  if(brAll.length&&_kecCacheTime[cacheKey]&&(now-_kecCacheTime[cacheKey])<120000){
+    renderSidebar();renderMap();return; // pakai cache, skip fetch
+  }
+  if(brCache[currentKec]&&brAll.length){renderSidebar();renderMap();return;} // cache hit
   if(!currentKec)return;
   const kecName=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===currentKec);
   document.getElementById('tbTitle').textContent=`RTLH — Kec. ${kecName}`;
@@ -2383,912 +2402,10 @@ async function importExcel(input){
 // ══════════════════════════════════════════════════
 // ADMIN PANEL
 // ══════════════════════════════════════════════════
-async function openAdminPanel(){
-  if(!isSuperAdmin())return toast('Hanya admin inti','error');
-  document.getElementById('ovAdmin').classList.add('open');
-  renderAdminPanel();
-}
-
-async function renderAdminPanel(){
-  const body=document.getElementById('adminPanelBody');
-  body.innerHTML='<div class="empty-state" style="padding:40px"><i class="fas fa-circle-notch fa-spin"></i><p>Memuat...</p></div>';
-  // BACKEND: RLS memastikan hanya super admin yang bisa melihat semua user
-  const{data:users}=await sb.from('admin_users').select('*').order('created_at',{ascending:false});
-  if(!users||!users.length){
-    body.innerHTML='<div class="empty-state" style="padding:40px"><i class="fas fa-users-slash"></i><p>Belum ada admin terdaftar</p></div>';
-    return;
-  }
-  const me=user?.email;
-  // Tambah tombol "Tambah Admin Baru" di atas
-  const addBtnHtml=`<div style="padding:14px 20px;border-bottom:1px solid var(--gray-100);background:linear-gradient(135deg,#EFF6FF,#F0FDF4)">
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button onclick="openApproveAdmin(null,'','','','',2,'')" 
-        style="padding:9px 16px;border-radius:9px;background:var(--blue);color:#fff;border:none;font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px">
-        <i class="fas fa-user-plus"></i> Tambah Admin Baru
-      </button>
-    </div>
-    <div style="font-size:.65rem;color:var(--gray-500);margin-top:8px;background:#fff;border-radius:8px;padding:8px 10px;border:1px solid var(--gray-200)">
-      <i class="fas fa-lightbulb" style="color:var(--gold)"></i>
-      <strong>Cara cepat:</strong> Isi nama, email, password → pilih kecamatan → klik <strong>Buat & Aktifkan</strong>. Admin langsung bisa login.
-    </div>
-  </div>`;
-  // Sort: self → super admin → approved → pending
-  const sorted=[...users].sort((a,b)=>{
-    if(a.email===me)return-1;if(b.email===me)return 1;
-    if((a.admin_level||2)<(b.admin_level||2))return-1;
-    if((a.admin_level||2)>(b.admin_level||2))return 1;
-    if(a.status==='approved'&&b.status!=='approved')return-1;
-    if(b.status==='approved'&&a.status!=='approved')return 1;
-    return 0;
-  });
-  const levelLabels={1:'🌟 Super Admin',2:'🗺️ Admin L2',3:'🏘️ Admin L3'};
-  const levelColors={1:'var(--gold)',2:'var(--blue)',3:'#10B981'};
-  body.innerHTML=addBtnHtml+sorted.map(u=>{
-    const uid=u.id;
-    const isSelf=u.email===me;
-    const approved=u.status==='approved';
-    const lvl=u.admin_level||2;
-    const isSuperA=lvl===1;
-    const kecs=(u.kecamatan||'').split(',').filter(Boolean);
-    const desaList=(u.desa||'').split(',').filter(Boolean);
-    let aksesLabel=isSuperA?'Semua Kecamatan':kecs.length?kecs.join(', '):'—';
-    if(desaList.length)aksesLabel+=` · Desa: ${desaList.join(', ')}`;
-    const initials=(u.nama||u.email||'?')[0].toUpperCase();
-    const levelColor=levelColors[lvl]||'var(--gray-400)';
-    const avatarColor=isSelf?'var(--gold)':approved?levelColor:'var(--gray-400)';
-    return`<div style="display:flex;align-items:flex-start;gap:14px;padding:16px 20px;border-bottom:1px solid var(--gray-100);${isSelf?'background:#FFFBEB':''}">
-      <div style="width:44px;height:44px;border-radius:12px;background:${avatarColor}22;color:${avatarColor};display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:800;flex-shrink:0">${initials}</div>
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <span style="font-size:.88rem;font-weight:700;color:var(--gray-900)">${u.nama||u.email.split('@')[0]}</span>
-          ${isSelf?'<span style="font-size:.6rem;background:var(--gold)22;color:var(--gold);padding:2px 8px;border-radius:99px;font-weight:700">AKUN ANDA</span>':''}
-          <span style="font-size:.6rem;background:${levelColor}22;color:${levelColor};padding:2px 8px;border-radius:99px;font-weight:700;border:1px solid ${levelColor}44">${levelLabels[lvl]||'Admin'}</span>
-          <span style="font-size:.62rem;padding:2px 8px;border-radius:99px;font-weight:700;background:${approved?'var(--success-bg)':'var(--warning-bg)'};color:${approved?'var(--success)':'var(--warning)'}">${approved?'✓ Aktif':'⏳ Pending'}</span>
-        </div>
-        <div style="font-size:.72rem;color:var(--gray-500);margin-top:3px">${u.email}${u.username?` · <b>@${u.username}</b>`:' · <span style="color:var(--gray-300)">belum ada username</span>'}</div>
-        <div style="font-size:.7rem;color:var(--blue);margin-top:4px;font-weight:600"><i class="fas fa-map-marker-alt" style="font-size:.6rem"></i> ${aksesLabel}</div>
-      </div>
-      ${isSelf?'':`<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
-        <button onclick="openApproveAdmin('${uid}','${(u.nama||u.email).replace(/'/g,"\\'")}','${u.email}','${u.username||''}','${u.kecamatan||''}',${lvl},'${u.desa||''}')"
-          style="padding:6px 12px;border-radius:7px;background:var(--blue);color:#fff;border:none;font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">
-          <i class="fas fa-${approved?'edit':'user-check'}"></i> ${approved?'Edit Akses':'Approve'}
-        </button>
-        <button onclick="openResetPasswordModal('${uid}','${(u.nama||u.email).replace(/'/g,"\\'")}','${u.email}')"
-          style="padding:6px 12px;border-radius:7px;background:var(--warning-bg);color:#92400E;border:1px solid var(--warning);font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">
-          <i class="fas fa-key"></i> Reset Password
-        </button>
-        <button onclick="deleteAdmin('${uid}','${(u.nama||u.email).replace(/'/g,"\\'")}','${u.email}')"
-          style="padding:6px 12px;border-radius:7px;background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger);font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">
-          <i class="fas fa-trash"></i> Hapus
-        </button>
-      </div>`}
-    </div>`;
-  }).join('');
-}
-
-// ── PASSWORD VISIBILITY TOGGLE ──
-function togglePassVis(inputId, iconId){
-  const el=document.getElementById(inputId);
-  const ic=document.getElementById(iconId);
-  if(!el)return;
-  const show=el.type==='password';
-  el.type=show?'text':'password';
-  if(ic)ic.className=show?'fas fa-eye-slash':'fas fa-eye';
-}
-
-let _approveUid=null;
-let _approveMode='edit'; // 'new' or 'edit'
-
-function openApproveAdmin(uid,nama,email,username,kecamatan,level,desa){
-  level=parseInt(level)||2; desa=desa||'';
-  _approveUid=uid;
-  _approveMode=uid?'edit':'new';
-
-  // Toggle UI sections
-  document.getElementById('sectionAkunBaru').style.display=_approveMode==='new'?'block':'none';
-  document.getElementById('sectionEditAkun').style.display='block';
-  document.getElementById('groupResetPass').style.display=_approveMode==='edit'?'block':'none';
-
-  // Title & subtitle
-  if(_approveMode==='new'){
-    document.getElementById('approveTitle').innerHTML='<i class="fas fa-user-plus"></i> Tambah Admin Baru';
-    document.getElementById('approveSub').textContent='Buat akun dan atur hak akses sekaligus';
-    document.getElementById('btnSubmitAdmin').innerHTML='<i class="fas fa-plus"></i> Buat & Aktifkan';
-    // Clear new-account fields
-    document.getElementById('approveNama').value='';
-    document.getElementById('approveEmail').value='';
-    document.getElementById('approvePass').value='';
-    document.getElementById('approvePass2').value='';
-  } else {
-    document.getElementById('approveTitle').innerHTML='<i class="fas fa-user-check"></i> Atur Akses Admin';
-    document.getElementById('approveSub').textContent=(nama||'Admin')+' · '+(email||'');
-    document.getElementById('btnSubmitAdmin').innerHTML='<i class="fas fa-check"></i> Simpan';
-  }
-
-  // Common fields
-  document.getElementById('approveUsername').value=username||'';
-  document.getElementById('approveResetPass') && (document.getElementById('approveResetPass').value='');
-
-  // Build kec checkboxes
-  const kecWrap=document.getElementById('kecCheckboxes');
-  const kecs=(kecamatan||'').split(',').filter(Boolean).map(k=>k.trim().toUpperCase());
-  kecWrap.innerHTML=Object.keys(KEC_CONFIG).sort().map(k=>{
-    const ch=kecs.includes(k.toUpperCase());
-    return'<label style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:7px;border:1.5px solid '+(ch?'var(--blue)':'var(--gray-200)')+';cursor:pointer;font-size:.75rem;font-weight:600;background:'+(ch?'var(--blue-bg)':'#fff')+'">'
-      +'<input type="checkbox" value="'+k.toUpperCase()+'" '+(ch?'checked':'')+' onchange="onKecCheck(this)" style="accent-color:var(--blue);margin:0"> '+k+'</label>';}).join('');
-
-  const desaList=(desa||'').split(',').filter(Boolean).map(d=>d.trim().toUpperCase());
-  updateDesaPicker(desaList);
-  const radio=document.querySelector('input[name=aksesLevel][value="'+level+'"]');
-  if(radio)radio.checked=true;
-  toggleAksesLevel();
-  document.getElementById('ovApproveAdmin').classList.add('open');
-}
-
-function onKecCheck(el){
-  const lbl=el.closest('label');
-  if(lbl){lbl.style.background=el.checked?'var(--blue-bg)':'#fff';lbl.style.borderColor=el.checked?'var(--blue)':'var(--gray-200)';}
-  updateDesaPicker();
-}
-function onDesaCheck(el){
-  const lbl=el.closest('label');
-  if(lbl){lbl.style.background=el.checked?'#F0FDF4':'#fff';lbl.style.borderColor=el.checked?'#10B981':'var(--gray-200)';}
-}
-function updateDesaPicker(preselected){
-  preselected=preselected||[];
-  const kecChecked=[...document.querySelectorAll('#kecCheckboxes input:checked')].map(el=>el.value);
-  const desaWrap=document.getElementById('desaCheckboxes');
-  if(!kecChecked.length||!window._batasNgawi){
-    desaWrap.innerHTML='<div style="font-size:.72rem;color:var(--gray-400);padding:8px">Pilih kecamatan terlebih dahulu</div>';return;
-  }
-  const desas=[...new Set(window._batasNgawi.features
-    .filter(f=>kecChecked.includes((f.properties.WADMKC||'').toUpperCase()))
-    .map(f=>(f.properties.NAMOBJ||'').toUpperCase()).filter(Boolean))].sort();
-  if(!desas.length){desaWrap.innerHTML='<div style="font-size:.72rem;color:var(--gray-400);padding:8px">Tidak ada data desa</div>';return;}
-  const sel=preselected.map(d=>d.toUpperCase());
-  desaWrap.innerHTML=desas.map(d=>{
-    const ch=sel.includes(d);
-    return'<label style="display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;border:1.5px solid '+(ch?'#10B981':'var(--gray-200)')+';cursor:pointer;font-size:.7rem;font-weight:600;background:'+(ch?'#F0FDF4':'#fff')+'">'
-      +'<input type="checkbox" value="'+d+'" '+(ch?'checked':'')+' onchange="onDesaCheck(this)" style="accent-color:#10B981;margin:0"> '+d+'</label>';
-  }).join('');
-}
-
-function toggleAksesLevel(){
-  const val=document.querySelector('input[name=aksesLevel]:checked')?.value;
-  const isL2=val==='2'; const isL3=val==='3';
-  document.getElementById('kecamatanPicker').style.display=(isL2||isL3)?'block':'none';
-  document.getElementById('desaPicker').style.display=isL3?'block':'none';
-  document.getElementById('lblL2Admin').style.borderColor=isL2?'var(--blue)':'var(--gray-200)';
-  document.getElementById('lblL2Admin').style.background=isL2?'var(--blue-bg)':'#fff';
-  document.getElementById('lblL3Admin').style.borderColor=isL3?'#10B981':'var(--gray-200)';
-  document.getElementById('lblL3Admin').style.background=isL3?'#F0FDF4':'#fff';
-}
-
-async function submitApproveAdmin(){
-  if(!isSuperAdmin())return toast('Hanya Super Admin yang bisa mengelola admin','error');
-
-  const lvl=parseInt(document.querySelector('input[name=aksesLevel]:checked')?.value)||2;
-  const username=document.getElementById('approveUsername').value.trim().toLowerCase();
-  const kecChecked=[...document.querySelectorAll('#kecCheckboxes input:checked')].map(el=>el.value);
-  const desaChecked=[...document.querySelectorAll('#desaCheckboxes input:checked')].map(el=>el.value);
-
-  if(username&&!/^[a-z0-9_]+$/.test(username))return toast('Username: hanya huruf kecil, angka, underscore','error');
-  if((lvl===2||lvl===3)&&!kecChecked.length)return toast('Pilih minimal 1 kecamatan','error');
-
-  // ── MODE: BUAT AKUN BARU ──
-  if(_approveMode==='new'){
-    const nama=document.getElementById('approveNama').value.trim();
-    const email=document.getElementById('approveEmail').value.trim().toLowerCase();
-    const pass=document.getElementById('approvePass').value;
-    const pass2=document.getElementById('approvePass2').value;
-    if(!nama)return toast('Nama lengkap wajib diisi','error');
-    if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return toast('Format email tidak valid','error');
-    if(!pass||pass.length<8)return toast('Password minimal 8 karakter','error');
-    if(pass!==pass2)return toast('Konfirmasi password tidak cocok','error');
-    if(username){
-      const{data:ex}=await sb.from('admin_users').select('id').eq('username',username).maybeSingle();
-      if(ex)return toast('Username sudah dipakai','error');
-    }
-    const btn=document.getElementById('btnSubmitAdmin');
-    btn.disabled=true; btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Membuat akun...';
-    try{
-      await createAdminAccount({email,password:pass,nama,username,lvl,kecamatan:kecChecked.join(','),desa:(lvl===3&&desaChecked.length)?desaChecked.join(','):null});
-      closeModal('ovApproveAdmin');
-      toast('Akun admin berhasil dibuat!','success');
-      renderAdminPanel();
-    }catch(e){
-      toast('Gagal: '+e.message,'error');
-    }finally{
-      btn.disabled=false; btn.innerHTML='<i class="fas fa-plus"></i> Buat & Aktifkan';
-    }
-    return;
-  }
-
-  // ── MODE: EDIT AKUN YANG ADA ──
-  if(!_approveUid)return toast('Tidak ada admin dipilih','error');
-
-  // Cek username unik
-  if(username){
-    const{data:ex}=await sb.from('admin_users').select('id').eq('username',username).neq('id',_approveUid).maybeSingle();
-    if(ex)return toast('Username sudah dipakai admin lain','error');
-  }
-
-  const obj={
-    status:'approved', admin_level:lvl,
-    kecamatan:kecChecked.length?kecChecked.join(','):null,
-    desa:(lvl===3&&desaChecked.length)?desaChecked.join(','):null,
-  };
-  if(username)obj.username=username;
-
-  const{error}=await sb.from('admin_users').update(obj).eq('id',_approveUid);
-  if(error)return toast('Gagal update: '+error.message,'error');
-
-  // Reset password jika diisi
-  const resetPass=document.getElementById('approveResetPass')?.value||'';
-  if(resetPass){
-    if(resetPass.length<8)return toast('Password baru minimal 8 karakter','error');
-    // Ambil email admin yang di-edit
-    const{data:adminData}=await sb.from('admin_users').select('email').eq('id',_approveUid).single();
-    if(adminData?.email){
-      const ok=await resetAdminPassword(adminData.email,resetPass);
-      if(!ok)return; // toast sudah dihandle di dalam
-    }
-  }
-
-  closeModal('ovApproveAdmin');
-  toast('Akses admin berhasil disimpan','success');
-  renderAdminPanel();
-}
-
-// Buat akun baru via Supabase Admin API (dipanggil lewat Edge Function / service_role)
-// Catatan: karena kita pakai anon key di frontend, kita manfaatkan signUp + auto-approve
-async function createAdminAccount({email,password,nama,username,lvl,kecamatan,desa}){
-  // 1. Buat user di Supabase Auth (signUp)
-  const{data:authData,error:authErr}=await sb.auth.signUp({
-    email, password,
-    options:{data:{full_name:nama}}
-  });
-  if(authErr)throw new Error('Auth error: '+authErr.message);
-
-  const authUserId=authData?.user?.id;
-  if(!authUserId)throw new Error('Gagal mendapat user ID setelah signup');
-
-  // 2. Tunggu sebentar lalu upsert ke admin_users
-  await new Promise(r=>setTimeout(r,800));
-  const row={
-    email, nama, status:'approved',
-    admin_level:lvl, kecamatan:kecamatan||null, desa:desa||null,
-  };
-  if(username)row.username=username;
-
-  const{error:dbErr}=await sb.from('admin_users').upsert(row,{onConflict:'email'});
-  if(dbErr)throw new Error('DB error: '+dbErr.message);
-}
-
-// Reset password admin lain — kirim magic link / update via service_role
-// Karena frontend pakai anon key, kita simpan password_hash ke admin_users
-// dan gunakan Edge Function kalau tersedia. Fallback: kirim email reset.
-async function resetAdminPassword(email, newPass){
-  // Coba via Supabase Admin API (butuh service_role — biasanya lewat Edge Function)
-  // Fallback: simpan flag "password_reset_needed" dan kirim email reset
-  try{
-    // Jika ada Edge Function /reset-password:
-    const res=await fetch(`${SUPA_URL}/functions/v1/reset-admin-password`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
-      body:JSON.stringify({email,new_password:newPass})
-    });
-    if(res.ok){toast('Password berhasil direset','success');return true;}
-  }catch(e){}
-  // Fallback: kirim email reset password Supabase
-  const{error}=await sb.auth.resetPasswordForEmail(email,{
-    redirectTo:window.location.origin+window.location.pathname
-  });
-  if(error){toast('Gagal reset password: '+error.message,'error');return false;}
-  toast('Email reset password dikirim ke '+email,'info');
-  return true;
-}
-
-async function deleteAdmin(uid,nama,email){
-  if(!isSuperAdmin())return toast('Hanya Super Admin yang bisa menghapus admin','error');
-  if(email==='muhammadfauzimustofa7@gmail.com')return toast('Super Admin utama tidak bisa dihapus','error');
-  if(!confirm('Hapus admin "'+nama+'"?\n\nMereka tidak bisa login lagi ke sistem.'))return;
-  const{error}=await sb.from('admin_users').delete().eq('id',uid);
-  if(error)return toast('Gagal hapus: '+error.message,'error');
-  toast('Admin dihapus','success');
-  renderAdminPanel();
-}
-
-async function setAdminUsername(uid,email){
-  const uname=prompt('Set username untuk '+email+'\n(hanya huruf kecil, angka, underscore)','');
-  if(!uname)return;
-  if(!/^[a-z0-9_]+$/.test(uname))return toast('Username tidak valid','error');
-  const{data}=await sb.from('admin_users').select('id').eq('username',uname).maybeSingle();
-  if(data)return toast('Username sudah dipakai','error');
-  const{error}=await sb.from('admin_users').update({username:uname}).eq('id',uid);
-  if(error)return toast('Gagal: '+error.message,'error');
-  toast('Username diset','success'); renderAdminPanel();
-}
-
-async function approveAdmin(uid){
-  openApproveAdmin(uid,'','','','',2,'');
-}
-
-// ── RESET PASSWORD MODAL (standalone) ──
-let _rpEmail=null, _rpNama=null;
-function openResetPasswordModal(uid,nama,email){
-  if(!isSuperAdmin())return toast('Hanya Super Admin','error');
-  _rpEmail=email; _rpNama=nama;
-  document.getElementById('resetPassSub').textContent=nama+' · '+email;
-  document.getElementById('rpNewPass').value='';
-  document.getElementById('rpConfPass').value='';
-  closeModal('ovAdmin'); // tutup panel dulu biar tidak overlap
-  document.getElementById('ovResetPass').classList.add('open');
-  setTimeout(()=>document.getElementById('rpNewPass').focus(),100);
-}
-
-async function doResetPassword(){
-  const pass=document.getElementById('rpNewPass').value;
-  const conf=document.getElementById('rpConfPass').value;
-  if(!pass||pass.length<8)return toast('Password minimal 8 karakter','error');
-  if(pass!==conf)return toast('Konfirmasi password tidak cocok','error');
-
-  const btn=document.getElementById('btnDoReset');
-  btn.disabled=true; btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Mereset...';
-
-  try{
-    // Coba via Edge Function reset-admin-password (butuh service_role di server)
-    const res=await fetch(`${SUPA_URL}/functions/v1/reset-admin-password`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPA_KEY},
-      body:JSON.stringify({email:_rpEmail, new_password:pass})
-    });
-    if(res.ok){
-      closeModal('ovResetPass');
-      toast('Password admin '+_rpNama+' berhasil direset!','success');
-      // Buka kembali panel admin
-      document.getElementById('ovAdmin').classList.add('open');
-      return;
-    }
-  }catch(e){}
-
-  // Fallback: kirim email reset link dari Supabase
-  const{error}=await sb.auth.resetPasswordForEmail(_rpEmail,{
-    redirectTo:window.location.origin+window.location.pathname
-  });
-  if(error){
-    toast('Gagal reset password: '+error.message,'error');
-  }else{
-    closeModal('ovResetPass');
-    toast('Email reset password dikirim ke '+_rpEmail,'info');
-    document.getElementById('ovAdmin').classList.add('open');
-  }
-  btn.disabled=false; btn.innerHTML='<i class="fas fa-key"></i> Reset Password';
-}
-
-
-// ══════════════════════════════════════════════════
-// MOB SIDEBAR
-// ══════════════════════════════════════════════════
-function toggleMobSidebar(){}
-
-// ══════════════════════════════════════════════════
-// TABLE EDITOR
-// ══════════════════════════════════════════════════
-const TE_COLS=[
-  {key:'id',label:'ID',type:'id',width:55,readonly:true},
-  {key:'kep_kk',label:'Nama KK',type:'text',width:180},
-  {key:'nik',label:'NIK',type:'nik',width:165,sensitive:true},
-  {key:'no_kk',label:'No. KK',type:'nik',width:165,sensitive:true},
-  {key:'desa',label:'Desa',type:'text',width:140},
-  {key:'alamat',label:'Alamat',type:'text',width:200},
-  {key:'jen_kel',label:'JK',type:'select',opts:['LAKI-LAKI','PEREMPUAN'],width:100},
-  {key:'umur',label:'Umur',type:'number',width:65},
-  {key:'pekerjaan',label:'Pekerjaan',type:'text',width:120},
-  {key:'pengh',label:'Penghasilan',type:'text',width:130},
-  {key:'luas_rum',label:'L.Rumah',type:'number',width:75},
-  {key:'jml_peng',label:'Penghuni',type:'number',width:75},
-  {key:'desil',label:'Desil',type:'select',opts:['','Desil 1','Desil 2','Desil 3','Desil 4','Desil 5','Desil 6','Desil 7','Desil 8'],width:90},
-  {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['Belum Ditangani','Dalam Proses','Sudah Ditangani','Dibatalkan'],width:140},
-  {key:'status_batal',label:'Alasan Batal',type:'select',opts:['','Meninggal Dunia','Tidak Bersedia Dibantu','Tidak Ada Biaya','Pindah Tempat Tinggal','Sudah Mampu Mandiri','Tidak Memenuhi Syarat','Lainnya'],width:150},
-  {key:'jenis_bantuan',label:'Jenis Bantuan',type:'select',opts:['','RTLH','BSPS','Dana Desa','CSR','Lainnya'],width:110},
-  {key:'tahun_bantuan',label:'Tahun Bantuan',type:'text',width:90},
-  {key:'dtsen',label:'DTSEN',type:'select',opts:['','Eligible','Non Eligible'],width:110},
-  {key:'material_d',label:'Mat.Dinding',type:'text',width:110},
-  {key:'kondisi_di',label:'Kond.Dinding',type:'text',width:110},
-  {key:'material_a',label:'Mat.Atap',type:'text',width:100},
-  {key:'kondisi_at',label:'Kond.Atap',type:'text',width:100},
-  {key:'material_l',label:'Mat.Lantai',type:'text',width:100},
-  {key:'kondisi_la',label:'Kond.Lantai',type:'text',width:100},
-  {key:'latitude',label:'Lat',type:'number',width:100},
-  {key:'longitude',label:'Lng',type:'number',width:100},
-];
-
-let teData=[],teFiltered=[],teDirty={},teSortCol=null,teSortDir=1;
-
-function openTableEditor(){
-  if(!isAdmin)return toast('Login dulu','error');
-  document.getElementById('ovTableEditor').style.display='flex';
-  document.getElementById('teTitle').textContent='Kec. '+(Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===currentKec)||currentKec||'Semua');
-  document.getElementById('btnTeAdd').style.display=canEdit()?'flex':'none';
-  teLoadData();
-}
-
-function closeTableEditor(){
-  // Warn if there are unsaved changes
-  if(Object.keys(teDirty).length>0){
-    if(!confirm('Ada '+Object.keys(teDirty).length+' baris belum disimpan. Tutup tetap?'))return;
-  }
-  document.getElementById('ovTableEditor').style.display='none';
-  teDirty={};
-  // Force reload from Supabase to ensure fresh data
-  if(currentKec){
-    delete brCache[currentKec];
-    loadKec();
-  }
-}
-
-async function teLoadData(){
-  document.getElementById('teLoading').style.display='block';
-  document.getElementById('teTable').style.display='none';
-  teDirty={};
-  const cols=TE_COLS.map(c=>c.key).join(',');
-  let q=sb.from('rtlh').select(cols).order('id');
-  if(currentKec)q=q.eq('kec',currentKec);
-  const{data,error}=await q;
-  if(error){toast('Gagal load: '+error.message,'error');return;}
-  teData=data||[];
-  teFiltered=[...teData];
-  teRender();
-  document.getElementById('teLoading').style.display='none';
-  document.getElementById('teTable').style.display='table';
-  document.getElementById('teCount').textContent=teFiltered.length+' baris';
-}
-
-function teFilter(){
-  const q=(document.getElementById('teSearch').value||'').toLowerCase();
-  const st=document.getElementById('teFilterStatus').value;
-  const ds=document.getElementById('teFilterDesil').value;
-  teFiltered=teData.filter(r=>{
-    if(st&&r.status_rtlh!==st)return false;
-    if(ds&&r.desil!==ds)return false;
-    if(q){
-      const hay=(r.kep_kk||'')+(r.desa||'')+(r.nik||'')+(r.alamat||'');
-      if(!hay.toLowerCase().includes(q))return false;
-    }
-    return true;
-  });
-  if(teSortCol)teSort(teSortCol,true);
-  else teRender();
-  document.getElementById('teCount').textContent=teFiltered.length+' baris';
-}
-
-function teSort(key,noToggle=false){
-  if(!noToggle){teSortDir=teSortCol===key?-teSortDir:1;}
-  teSortCol=key;
-  teFiltered.sort((a,b)=>{
-    const av=a[key]||'',bv=b[key]||'';
-    return typeof av==='number'?(av-bv)*teSortDir:String(av).localeCompare(String(bv))*teSortDir;
-  });
-  teRender();
-  // Update header sort indicator
-  document.querySelectorAll('.te-th').forEach(th=>{
-    th.classList.remove('sorted-asc','sorted-desc');
-    if(th.dataset.key===key)th.classList.add(teSortDir===1?'sorted-asc':'sorted-desc');
-  });
-}
-
-function teRender(){
-  const superAdmin=isSuperAdmin(); // Level 1 only can see/edit NIK
-  const thead=document.getElementById('teThead');
-  const tbody=document.getElementById('teTbody');
-
-  // Header
-  thead.innerHTML=`<tr>${TE_COLS.map(c=>`
-    <th class="te-th" data-key="${c.key}" style="min-width:${c.width}px" onclick="teSort('${c.key}')">
-      ${c.label}${c.sensitive?'<i class="fas fa-lock" style="font-size:.5rem;opacity:.5;margin-left:3px"></i>':''}
-    </th>`).join('')}
-    <th class="te-th" style="min-width:80px;position:sticky;right:0">Aksi</th>
-  </tr>`;
-
-  // Rows
-  tbody.innerHTML=teFiltered.map(r=>{
-    const dirty=teDirty[r.id];
-    return`<tr class="te-row${dirty?' dirty':''}" id="ter_${r.id}" data-id="${r.id}">
-      ${TE_COLS.map(c=>{
-        const val=r[c.key]!=null?r[c.key]:'';
-        // ID column
-        if(c.type==='id')return`<td class="te-cell cell-id">${val}</td>`;
-        // Sensitive — only super admin can edit
-        const canEditCell=canEdit()&&(!c.sensitive||superAdmin)&&!c.readonly;
-        // NIK column — monospace display
-        if(c.type==='nik'){
-          const display=c.sensitive&&!superAdmin?maskNIK(val):val;
-          return`<td class="te-cell cell-nik">
-            <div class="te-cell-inner" contenteditable="${canEditCell}" data-id="${r.id}" data-key="${c.key}" data-orig="${val}"
-              onblur="teCellChange(this)" onkeydown="teCellKey(event,this)" style="font-family:monospace;letter-spacing:1px">${display}</div>
-          </td>`;
-        }
-        // Select column
-        if(c.type==='select'){
-          if(!canEditCell)return`<td class="te-cell"><div class="te-cell-inner">${val}</div></td>`;
-          return`<td class="te-cell" style="min-width:${c.width}px">
-            <select class="te-select" data-id="${r.id}" data-key="${c.key}" onchange="teSelectChange(this)">
-              ${c.opts.map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('')}
-            </select>
-          </td>`;
-        }
-        // Text/number column
-        return`<td class="te-cell" style="min-width:${c.width}px">
-          <div class="te-cell-inner" contenteditable="${canEditCell}" data-id="${r.id}" data-key="${c.key}" data-orig="${val}"
-            onblur="teCellChange(this)" onkeydown="teCellKey(event,this)">${val}</div>
-        </td>`;
-      }).join('')}
-      <td class="te-save-indicator" onclick="teSaveRow(${r.id})" title="Klik untuk simpan baris ini">
-        <i class="fas fa-save"></i> Simpan
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-function teCellKey(e,el){
-  if(e.key==='Enter'){e.preventDefault();el.blur();}
-  if(e.key==='Escape'){el.textContent=el.dataset.orig;el.blur();}
-  if(e.key==='Tab'){e.preventDefault();
-    const cells=document.querySelectorAll('.te-cell-inner[contenteditable=true]');
-    const idx=[...cells].indexOf(el);
-    if(cells[idx+1])cells[idx+1].focus();
-  }
-}
-
-function teCellChange(el){
-  const id=parseInt(el.dataset.id);
-  const key=el.dataset.key;
-  const orig=el.dataset.orig;
-  let val=el.textContent.trim();
-  if(key==='nik'||key==='no_kk'){
-    val=val.replace(/\D/g,'');
-    el.textContent=val;
-    if(val&&val.length!==16){el.style.color='var(--danger)';toast('NIK/KK harus 16 digit','error');return;}
-    else el.style.color='';
-  }
-  if(val===orig)return;
-  // Update local
-  if(!teDirty[id])teDirty[id]={};
-  teDirty[id][key]=val||null;
-  const r=teData.find(x=>x.id===id);
-  if(r)r[key]=val||null;
-  const row=document.getElementById('ter_'+id);
-  if(row)row.classList.add('dirty');
-  teShowStatus('Menyimpan...','info');
-  // Simpan langsung ke Supabase — 1 kolom, pakai .then() bukan async/await
-  const obj={};obj[key]=val||null;
-  sb.from('rtlh').update(obj).eq('id',id).then(({error})=>{
-    if(error){
-      toast('Gagal simpan '+key+': '+error.message,'error');
-      teShowStatus('Gagal!','error');
-      return;
-    }
-    delete teDirty[id];
-    if(row)row.classList.remove('dirty','error-row');
-    const ri=brAll.findIndex(x=>x.id===id);
-    if(ri>=0)brAll[ri][key]=val||null;
-    if(currentKec)brCache[currentKec]=brAll;
-    teShowStatus('Tersimpan ✓','success');
-    setTimeout(()=>teShowStatus('',''),1500);
-  });
-}
-
-function teSelectChange(el){
-  const id=parseInt(el.dataset.id);
-  const key=el.dataset.key;
-  const val=el.value;
-  if(!teDirty[id])teDirty[id]={};
-  teDirty[id][key]=val||null;
-  const r=teData.find(x=>x.id===id);
-  if(r)r[key]=val||null;
-  const row=document.getElementById('ter_'+id);
-  if(row)row.classList.add('dirty');
-  teShowStatus('Menyimpan...','info');
-  const obj={};obj[key]=val||null;
-  sb.from('rtlh').update(obj).eq('id',id).then(({error})=>{
-    if(error){toast('Gagal: '+error.message,'error');return;}
-    delete teDirty[id];
-    if(row)row.classList.remove('dirty','error-row');
-    const ri=brAll.findIndex(x=>x.id===id);
-    if(ri>=0)brAll[ri][key]=val||null;
-    if(currentKec)brCache[currentKec]=brAll;
-    teShowStatus('Tersimpan ✓','success');
-    setTimeout(()=>teShowStatus('',''),1500);
-  });
-}
-
-let teSaveTimer={};
-async function teSaveRow(id){
-  id=parseInt(id);
-  // Debounce 500ms — tunggu user selesai ketik semua field di baris ini
-  if(teSaveTimer[id])clearTimeout(teSaveTimer[id]);
-  teSaveTimer[id]=setTimeout(async()=>{
-    const changes=teDirty[id]||teDirty[String(id)];
-    if(!changes||!Object.keys(changes).length)return;
-    const row=document.getElementById('ter_'+id);
-    if(row)row.classList.add('saving');
-    teShowStatus('Menyimpan...','info');
-    const{error}=await sb.from('rtlh').update(changes).eq('id',id);
-    if(error){
-      if(row){row.classList.remove('saving');row.classList.add('error-row');}
-      toast('Gagal simpan: '+error.message,'error');
-      return;
-    }
-    delete teDirty[id];
-    delete teDirty[String(id)];
-    delete teSaveTimer[id];
-    const ri=brAll.findIndex(x=>x.id===id);
-    if(ri>=0){
-      Object.assign(brAll[ri],changes);
-      brAll[ri]._score=calcScore(brAll[ri]);
-      brAll[ri]._cat=getCat(brAll[ri]._score);
-    }
-    if(currentKec)brCache[currentKec]=brAll;
-    brFeatures=[...brAll];
-    if(row){row.classList.remove('saving','dirty','error-row');}
-    const remaining=Object.keys(teDirty).length;
-    teShowStatus(remaining?`${remaining} baris belum disimpan`:'Semua tersimpan ✓',remaining?'warning':'success');
-    if(!remaining)setTimeout(()=>teShowStatus('',''),2000);
-  },500);
-}
-async function teSaveAll(){
-  const ids=Object.keys(teDirty);
-  if(!ids.length)return;
-  teShowStatus(`Menyimpan ${ids.length} baris...`,'info');
-  let ok=0,fail=0;
-  for(const id of ids){
-    const changes=teDirty[id];
-    const{error}=await sb.from('rtlh').update(changes).eq('id',parseInt(id));
-    if(error)fail++;
-    else{
-      ok++;delete teDirty[id];
-      const row=document.getElementById('ter_'+id);
-      if(row)row.classList.remove('dirty','saving');
-      const ri=brAll.findIndex(x=>x.id===parseInt(id));
-      if(ri>=0){
-        Object.assign(brAll[ri],changes);
-        brAll[ri]._score=calcScore(brAll[ri]);
-        brAll[ri]._cat=getCat(brAll[ri]._score);
-      }
-    }
-  }
-  teShowStatus(fail?`${ok} tersimpan, ${fail} gagal`:'Semua tersimpan ✓',fail?'error':'success');
-  if(!fail)setTimeout(()=>teShowStatus('',''),2000);
-}
-
-function teShowStatus(msg,type){
-  const el=document.getElementById('teSaveStatus');
-  if(!msg){el.innerHTML='';return;}
-  const colors={warning:'#FCD34D',success:'#86EFAC',error:'#FCA5A5',info:'rgba(255,255,255,.5)'};
-  el.innerHTML=`<span style="color:${colors[type]||colors.info}">${msg}</span>
-    ${type==='warning'?`<button onclick="teSaveAll()" style="background:var(--gold);border:none;color:var(--navy);padding:3px 10px;border-radius:5px;font-size:.65rem;font-weight:700;cursor:pointer;font-family:inherit;margin-left:4px">Simpan Semua</button>`:''}`;
-}
-
-function teAddRow(){
-  if(!canEdit())return;
-  const kecName=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===currentKec)||currentKec;
-  openForm(null);
-  closeTableEditor();
-}
-
-function teExport(){
-  const rows=teFiltered.map(r=>{
-    const obj={};
-    TE_COLS.forEach(c=>{
-      if(c.type==='id')return;
-      const superAdmin=isSuperAdmin(); // Level 1 only can see/edit NIK
-      if(c.sensitive&&!superAdmin)obj[c.label]='***';
-      else obj[c.label]=r[c.key]||'';
-    });
-    return obj;
-  });
-  const ws=XLSX.utils.json_to_sheet(rows);
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'RTLH');
-  XLSX.writeFile(wb,`TableEditor_${currentKec||'Semua'}_${new Date().toISOString().slice(0,10)}.xlsx`);
-}
-
-// Keyboard shortcut: Ctrl+S to save all
-document.addEventListener('keydown',e=>{
-  if((e.ctrlKey||e.metaKey)&&e.key==='s'&&document.getElementById('ovTableEditor').style.display!=='none'){
-    e.preventDefault();teSaveAll();
-  }
-});
-
-// ══════════════════════════════════════════════════
-// EXCEL KABUPATEN
-// ══════════════════════════════════════════════════
-function openExcelKab(){
-  if(!isAdmin)return toast('Login dulu','error');
-  const sel=document.getElementById('exKec');
-  if(sel.options.length===1){
-    Object.keys(KEC_CONFIG).sort().forEach(k=>{
-      const o=document.createElement('option');o.value=k.toUpperCase();o.textContent=k;sel.appendChild(o);
-    });
-  }
-  document.getElementById('btnDlKabFull').style.display=isSuperAdmin()?'flex':'none';
-  document.getElementById('exImportLog').style.display='none';
-  document.getElementById('xlsxKabFile').value='';
-  document.getElementById('ovExcelKab').classList.add('open');
-}
-
-async function downloadExcelKab(withNIK){
-  const kec=document.getElementById('exKec').value;
-  const status=document.getElementById('exStatus').value;
-  const desil=document.getElementById('exDesil').value;
-  const tahun=document.getElementById('exTahun').value;
-  toast('Mengambil data...','info');
-  let q=sb.from('rtlh').select('*').order('kec').order('desa').order('id');
-  if(kec)q=q.eq('kec',kec);
-  if(status)q=q.eq('status_rtlh',status);
-  if(desil)q=q.eq('desil',desil);
-  if(tahun)q=q.eq('tahun_bantuan',tahun);
-  const{data,error}=await q;
-  if(error)return toast('Gagal: '+error.message,'error');
-  if(!data||!data.length)return toast('Tidak ada data sesuai filter','error');
-  const superAdmin=isSuperAdmin();
-  const rows=data.map(r=>({
-    ID:r.id,Kecamatan:r.kec,Desa:r.desa,'Nama KK':r.kep_kk,
-    NIK:withNIK&&superAdmin?(r.nik||''):'***',
-    'No. KK':withNIK&&superAdmin?(r.no_kk||''):'***',
-    Alamat:r.alamat,'Jenis Kelamin':r.jen_kel,Umur:r.umur,
-    Pendidikan:r.pend_ter,Pekerjaan:r.pekerjaan,Penghasilan:r.pengh,
-    'Luas Rumah (m²)':r.luas_rum,'Luas Tanah (m²)':r.luas_tan,
-    'Jml Penghuni':r.jml_peng,'Status Kepemilikan':r.status_kep,
-    'Material Dinding':r.material_d,'Kondisi Dinding':r.kondisi_di,
-    'Material Atap':r.material_a,'Kondisi Atap':r.kondisi_at,
-    'Material Lantai':r.material_l,'Kondisi Lantai':r.kondisi_la,
-    'Status RTLH':r.status_rtlh,'Alasan Batal':r.status_batal,
-    'Jenis Bantuan':r.jenis_bantuan,'Tahun Bantuan':r.tahun_bantuan,
-    'Status MyPKP':r.dtsen,Backlog:r.backlog,Desil:r.desil,
-    Latitude:r.latitude,Longitude:r.longitude,
-  }));
-  const ws=XLSX.utils.json_to_sheet(rows);
-  ws['!cols']=Object.keys(rows[0]).map(k=>({wch:Math.max(k.length+2,14)}));
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'RTLH');
-  const fn=`RTLH_${kec||'Kab-Ngawi'}${status?'_'+status:''}${desil?'_'+desil:''}${tahun?'_'+tahun:''}_${new Date().toISOString().slice(0,10)}.xlsx`;
-  XLSX.writeFile(wb,fn);
-  toast(`${data.length} data diunduh`,'success');
-}
-
-async function importExcelKab(input){
-  const file=input.files[0];if(!file)return;
-  if(!isAdmin)return toast('Tidak ada akses','error');
-  const log=document.getElementById('exImportLog');
-  log.style.display='block';
-  log.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Membaca file...';
-  const reader=new FileReader();
-  reader.onload=async(e)=>{
-    const wb=XLSX.read(e.target.result,{type:'binary',cellText:false,cellDates:true});
-    const ws=wb.Sheets[wb.SheetNames[0]];
-    const rows=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});
-    if(!rows.length){log.innerHTML='<span style="color:var(--danger)">File kosong</span>';return;}
-    log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memproses ${rows.length} baris...`;
-    const superAdmin=isSuperAdmin();
-    let ins=0,upd=0,fail=0,skip=0;
-    const errors=[]; // kumpulkan detail error
-
-    for(let i=0;i<rows.length;i++){
-      const row=rows[i];
-      const id=row['ID']||row['id']||null;
-      const nama=row['Nama KK']||row['kep_kk']||'(tanpa nama)';
-
-      // Build object — strip nilai kosong setelah build
-      const obj={};
-      const kec=(row['Kecamatan']||row['kec']||'').toString().toUpperCase().trim();
-      if(kec)obj.kec=kec;
-      const fields={
-        desa:row['Desa']||row['desa'],
-        kep_kk:row['Nama KK']||row['kep_kk'],
-        alamat:row['Alamat']||row['alamat'],
-        jen_kel:row['Jenis Kelamin']||row['jen_kel'],
-        pend_ter:row['Pendidikan']||row['pend_ter'],
-        pekerjaan:row['Pekerjaan']||row['pekerjaan'],
-        pengh:row['Penghasilan']||row['pengh'],
-        status_kep:row['Status Kepemilikan']||row['status_kep'],
-        material_d:row['Material Dinding']||row['material_d'],
-        kondisi_di:row['Kondisi Dinding']||row['kondisi_di'],
-        material_a:row['Material Atap']||row['material_a'],
-        kondisi_at:row['Kondisi Atap']||row['kondisi_at'],
-        material_l:row['Material Lantai']||row['material_l'],
-        kondisi_la:row['Kondisi Lantai']||row['kondisi_la'],
-        status_rtlh:row['Status RTLH']||row['status_rtlh'],
-        sumber_dana:row['Sumber Dana']||row['sumber_dana'],
-        dtsen:row['DTSEN']||row['dtsen'],
-        backlog:row['Backlog']||row['backlog'],
-        desil:row['Desil']||row['desil'],
-      };
-      Object.entries(fields).forEach(([k,v])=>{const s=String(v||'').trim();if(s&&s!=='undefined')obj[k]=s;});
-
-      // Numerik
-      const umur=parseInt(row['Umur']||row['umur']);if(!isNaN(umur)&&umur>0)obj.umur=umur;
-      const luasRum=parseFloat(row['Luas Rumah']||row['luas_rum']);if(!isNaN(luasRum)&&luasRum>0)obj.luas_rum=luasRum;
-      const luasTan=parseFloat(row['Luas Tanah']||row['luas_tan']);if(!isNaN(luasTan)&&luasTan>0)obj.luas_tan=luasTan;
-      const jmlPeng=parseInt(row['Jml Penghuni']||row['jml_peng']);if(!isNaN(jmlPeng)&&jmlPeng>0)obj.jml_peng=jmlPeng;
-      const lat=parseFloat(row['Latitude']||row['latitude']);if(!isNaN(lat)&&lat!==0)obj.latitude=lat;
-      const lng=parseFloat(row['Longitude']||row['longitude']);if(!isNaN(lng)&&lng!==0)obj.longitude=lng;
-
-      // Tahun bantuan — hindari format angka desimal dari Excel
-      const thn=String(row['Tahun Bantuan']||row['tahun_bantuan']||'').replace(/\.0+$/,'').trim();
-      if(thn&&thn!=='0')obj.tahun_bantuan=thn;
-
-      // NIK / No KK — super admin only, hanya kalau bukan *** dan 16 digit
-      if(superAdmin){
-        const nik=String(row['NIK']||row['nik']||'').replace(/\D/g,'');
-        const nokk=String(row['No. KK']||row['no_kk']||'').replace(/\D/g,'');
-        if(nik&&nik.length===16)obj.nik=nik;
-        if(nokk&&nokk.length===16)obj.no_kk=nokk;
-      }
-
-      // Jalankan update atau insert
-      if(id&&String(id).match(/^\d+$/)){
-        const{error}=await sb.from('rtlh').update(obj).eq('id',parseInt(id));
-        if(error){
-          fail++;
-          errors.push({baris:i+2,id,nama,pesan:error.message,kode:error.code});
-        }else upd++;
-      }else if(obj.kec&&obj.kep_kk){
-        const{error}=await sb.from('rtlh').insert(obj);
-        if(error){
-          fail++;
-          errors.push({baris:i+2,id:'(baru)',nama,pesan:error.message,kode:error.code});
-        }else ins++;
-      }else{
-        skip++;
-        if(!obj.kep_kk||!obj.kec)errors.push({baris:i+2,id,nama,pesan:'Skip — Kecamatan atau Nama KK kosong',kode:'SKIP'});
-      }
-
-      if(i%20===0)log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memproses... ${i+1}/${rows.length}`;
-    }
-
-    brCache={};
-
-    // Tampilkan hasil
-    const statusColor=fail>0?'var(--warning-bg)':'var(--success-bg)';
-    const statusTextColor=fail>0?'#92400E':'var(--success)';
-    let html=`<div style="background:${statusColor};border-radius:8px;padding:10px 12px;color:${statusTextColor};font-size:.75rem;margin-bottom:${errors.length?'10px':'0'}">
-      <i class="fas fa-${fail>0?'exclamation-triangle':'check-circle'}"></i> <b>Selesai!</b><br>
-      ✓ Update: <b>${upd}</b> &nbsp;|&nbsp; + Tambah: <b>${ins}</b> &nbsp;|&nbsp; ✗ Gagal: <b>${fail}</b> &nbsp;|&nbsp; ⊘ Skip: <b>${skip}</b>
-    </div>`;
-
-    // Detail error
-    if(errors.length){
-      html+=`<div style="margin-top:8px">
-        <div style="font-size:.72rem;font-weight:700;color:var(--danger);margin-bottom:6px"><i class="fas fa-exclamation-circle"></i> Detail Gagal/Skip (${errors.length} baris):</div>
-        <div style="max-height:200px;overflow-y:auto;border:1px solid var(--danger);border-radius:8px;background:#fff">
-          <table style="width:100%;border-collapse:collapse;font-size:.68rem">
-            <thead><tr style="background:var(--danger-bg)">
-              <th style="padding:6px 8px;text-align:left;font-weight:700;color:var(--danger)">Baris</th>
-              <th style="padding:6px 8px;text-align:left;font-weight:700;color:var(--danger)">ID</th>
-              <th style="padding:6px 8px;text-align:left;font-weight:700;color:var(--danger)">Nama KK</th>
-              <th style="padding:6px 8px;text-align:left;font-weight:700;color:var(--danger)">Keterangan</th>
-            </tr></thead>
-            <tbody>
-              ${errors.map((e,i)=>`<tr style="border-top:1px solid var(--gray-100);background:${i%2?'#fff':'var(--gray-50)'}">
-                <td style="padding:5px 8px;color:var(--gray-600)">${e.baris}</td>
-                <td style="padding:5px 8px;color:var(--gray-600)">${e.id||'—'}</td>
-                <td style="padding:5px 8px;font-weight:600;color:var(--gray-900)">${e.nama}</td>
-                <td style="padding:5px 8px;color:var(--danger)">${e.pesan}${e.kode&&e.kode!=='SKIP'?` <span style="opacity:.6">[${e.kode}]</span>`:''}</td>
-              </tr>`).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>`;
-    }
-
-    log.innerHTML=html;
-    toast(`Import selesai: ${upd} update, ${ins} tambah, ${fail} gagal`,'success');
-    loadGlobalStats();
-  };
-  reader.readAsBinaryString(file);
-}
+function openAdminPanel(){toast('Kelola admin via Supabase Dashboard','info');}
+function renderAdminPanel(){}
+function openApproveAdmin(){}
+async function createAdminAccount(){}
 
 // ══════════════════════════════════════════════════
 // VERIFIKASI LAPANGAN
@@ -3479,25 +2596,21 @@ function hideMaintenanceOverlay(){
 }
 
 async function doMaintenanceLogin(){
-  const email=document.getElementById('moEmail').value.trim().toLowerCase();
+  const input=document.getElementById('moEmail').value.trim().toLowerCase();
   const pass=document.getElementById('moPass').value;
   const errEl=document.getElementById('moErr');
   const btn=document.querySelector('#maintenanceOverlay .mo-btn');
   errEl.textContent='';
-  if(!email||!pass){errEl.textContent='Isi email dan password';return;}
+  if(!input||!pass){errEl.textContent='Isi username dan password';return;}
   btn.disabled=true;btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Memverifikasi...';
   try{
-    const{error}=await sb.auth.signInWithPassword({email,password:pass});
-    if(error){errEl.textContent='Email atau password salah';return;}
-    // Cek apakah terdaftar sebagai admin
-    const{data}=await sb.from('admin_users').select('status,admin_level').eq('email',email).single();
-    if(!data||data.status!=='approved'){
-      await sb.auth.signOut();
-      errEl.textContent='Akun belum diaktifkan. Hubungi Super Admin.';
-      return;
-    }
+    // Lookup email via username
+    const{data:adm}=await sb.from('admin_users').select('email,status').eq('username',input).single();
+    if(!adm){errEl.textContent='Username tidak ditemukan';return;}
+    if(adm.status!=='approved'){errEl.textContent='Akun belum aktif. Hubungi Super Admin.';return;}
+    const{error}=await sb.auth.signInWithPassword({email:adm.email,password:pass});
+    if(error){errEl.textContent='Password salah';return;}
     hideMaintenanceOverlay();
-    // Auth state change handler di initAuth akan set user otomatis
   }catch(e){
     errEl.textContent='Error: '+e.message;
   }finally{
