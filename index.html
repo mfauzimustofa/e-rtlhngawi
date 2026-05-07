@@ -450,10 +450,10 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
     <!-- STAT CARDS (pull up over hero) -->
     <div class="section pull-up">
       <div class="grid-4">
-        <div class="mini-stat" onclick="nav('keclist')" title="Lihat data per kecamatan"><div class="ms-icon" style="background:linear-gradient(135deg,var(--blue),var(--blue-light))"><i class="fas fa-house-damage"></i></div><div class="ms-texts"><div class="ms-val" id="gs-total">-</div><div class="ms-label">Total RTLH</div></div></div>
-        <div class="mini-stat" onclick="nav('keclist')" title="Lihat data sudah ditangani"><div class="ms-icon" style="background:linear-gradient(135deg,#16A34A,#22C55E)"><i class="fas fa-check-circle"></i></div><div class="ms-texts"><div class="ms-val" id="gs-sudah">-</div><div class="ms-label">Sudah Ditangani</div></div></div>
+        <div class="mini-stat" onclick="nav('keclist')" title="Lihat data per kecamatan"><div class="ms-icon" style="background:linear-gradient(135deg,var(--blue),var(--blue-light))"><i class="fas fa-house-damage"></i></div><div class="ms-texts"><div class="ms-val" id="gs-total">-</div><div class="ms-label">Total Data</div></div></div>
+        <div class="mini-stat" onclick="nav('keclist')" title="Sudah Ditangani + Dalam Proses = Layak Huni"><div class="ms-icon" style="background:linear-gradient(135deg,#16A34A,#22C55E)"><i class="fas fa-home"></i></div><div class="ms-texts"><div class="ms-val" id="gs-layak">-</div><div class="ms-label">Layak Huni</div></div></div>
         <div class="mini-stat" onclick="nav('keclist')" title="Lihat data dalam proses"><div class="ms-icon" style="background:linear-gradient(135deg,#F59E0B,#FBBF24)"><i class="fas fa-clock"></i></div><div class="ms-texts"><div class="ms-val" id="gs-proses">-</div><div class="ms-label">Dalam Proses</div></div></div>
-        <div class="mini-stat" onclick="nav('keclist')" title="Lihat data belum ditangani"><div class="ms-icon" style="background:linear-gradient(135deg,var(--danger),#F87171)"><i class="fas fa-exclamation-triangle"></i></div><div class="ms-texts"><div class="ms-val" id="gs-belum">-</div><div class="ms-label">Belum Ditangani</div></div></div>
+        <div class="mini-stat" onclick="nav('keclist')" title="Lihat data belum ditangani"><div class="ms-icon" style="background:linear-gradient(135deg,var(--danger),#F87171)"><i class="fas fa-exclamation-triangle"></i></div><div class="ms-texts"><div class="ms-val" id="gs-belum">-</div><div class="ms-label">RTLH (Belum)</div></div></div>
       </div>
     </div>
 
@@ -485,16 +485,16 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
         <!-- Progress Penanganan -->
         <div class="status-bar-wrap">
-          <div class="status-bar-title"><i class="fas fa-chart-bar"></i> Progress Penanganan RTLH Kabupaten</div>
+          <div class="status-bar-title"><i class="fas fa-chart-pie"></i> Status Layak Huni vs RTLH</div>
           <div class="prog-bar-track" id="statusBar">
             <div class="prog-bar-seg" id="pbSudah" style="background:var(--success)"></div>
             <div class="prog-bar-seg" id="pbProses" style="background:var(--warning)"></div>
             <div class="prog-bar-seg" id="pbBelum" style="background:var(--danger)"></div>
           </div>
           <div class="status-legend" style="margin-bottom:14px">
-            <div class="sl-item"><div class="sl-dot" style="background:var(--success)"></div><span id="lgSudah">Sudah: 0%</span></div>
+            <div class="sl-item"><div class="sl-dot" style="background:var(--success)"></div><span id="lgSudah">Layak Huni: 0%</span></div>
             <div class="sl-item"><div class="sl-dot" style="background:var(--warning)"></div><span id="lgProses">Proses: 0%</span></div>
-            <div class="sl-item"><div class="sl-dot" style="background:var(--danger)"></div><span id="lgBelum">Belum: 0%</span></div>
+            <div class="sl-item"><div class="sl-dot" style="background:var(--danger)"></div><span id="lgBelum">RTLH (Belum): 0%</span></div>
           </div>
           <div style="font-size:.72rem;font-weight:700;color:var(--gray-600);margin-bottom:8px">Stacked per Kecamatan</div>
           <div style="position:relative;height:180px"><canvas id="chartStatus"></canvas></div>
@@ -830,35 +830,37 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
 <!-- NIK/KK MODAL (Super Admin only - dedicated, never re-renders) -->
 <div class="overlay" id="ovNIK">
-  <div class="modal" style="max-width:400px">
+  <div class="modal" style="max-width:420px">
     <div class="modal-head">
-      <div><h3><i class="fas fa-id-card" style="color:var(--gold)"></i> Input NIK & No. KK</h3>
-        <div class="sub" id="nikModalSub">Super Admin — data sensitif</div>
+      <div><h3><i class="fas fa-id-card" style="color:var(--gold)"></i> Edit NIK & No. KK</h3>
+        <div class="sub" id="nikModalSub">Data identitas penduduk</div>
       </div>
       <button class="modal-x" onclick="closeModal('ovNIK')"><i class="fas fa-times"></i></button>
     </div>
     <div class="modal-body">
       <div style="background:var(--warning-bg);border:1px solid var(--warning);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:.72rem;color:#92400E">
-        <i class="fas fa-shield-alt"></i> Data ini hanya bisa dilihat dan diedit oleh Super Admin.
+        <i class="fas fa-shield-alt"></i> NIK digunakan sebagai identitas unik. Pastikan data benar sebelum menyimpan.
       </div>
-      <div class="form-group" style="margin-bottom:12px">
-        <label>NIK (16 digit)</label>
-        <input type="text" id="nikInput" inputmode="numeric" maxlength="16" placeholder="Masukkan 16 digit NIK"
-          style="font-size:1rem;letter-spacing:2px;font-weight:700;border-color:var(--blue)"
-          oninput="this.value=this.value.replace(/\D/g,'');document.getElementById('nikCount').textContent=this.value.length+'/16'">
-        <span id="nikCount" style="font-size:.65rem;color:var(--gray-400);margin-top:3px">0/16</span>
-      </div>
-      <div class="form-group" style="margin-bottom:16px">
-        <label>No. Kartu Keluarga (KK)</label>
-        <input type="text" id="noKkInput" inputmode="numeric" maxlength="16" placeholder="Masukkan No. KK"
-          style="font-size:1rem;letter-spacing:2px;font-weight:700;border-color:var(--blue)"
-          oninput="this.value=this.value.replace(/\D/g,'');document.getElementById('kkCount').textContent=this.value.length+'/16'">
-        <span id="kkCount" style="font-size:.65rem;color:var(--gray-400);margin-top:3px">0/16</span>
+      <div style="display:grid;gap:14px">
+        <div class="form-group" style="margin:0">
+          <label>NIK <span style="color:var(--danger)">*</span> <span style="font-weight:400;color:var(--gray-400)">(16 digit)</span></label>
+          <input type="text" id="nikInput" inputmode="numeric" maxlength="16" placeholder="Masukkan 16 digit NIK"
+            style="font-size:.95rem;letter-spacing:2px;font-weight:700;border-color:var(--blue)"
+            oninput="this.value=this.value.replace(/\D/g,'');document.getElementById('nikCount').textContent=this.value.length+'/16'">
+          <span id="nikCount" style="font-size:.65rem;color:var(--gray-400);margin-top:3px">0/16</span>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>No. Kartu Keluarga <span style="font-weight:400;color:var(--gray-400)">(16 digit)</span></label>
+          <input type="text" id="noKkInput" inputmode="numeric" maxlength="16" placeholder="Masukkan No. KK"
+            style="font-size:.95rem;letter-spacing:2px;font-weight:700;border-color:var(--blue)"
+            oninput="this.value=this.value.replace(/\D/g,'');document.getElementById('kkCount').textContent=this.value.length+'/16'">
+          <span id="kkCount" style="font-size:.65rem;color:var(--gray-400);margin-top:3px">0/16</span>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('ovNIK')">Batal</button>
-      <button class="btn btn-primary" onclick="saveNIK()"><i class="fas fa-save"></i> Simpan NIK & KK</button>
+      <button class="btn btn-primary" onclick="saveNIK()"><i class="fas fa-save"></i> Simpan</button>
     </div>
   </div>
 </div>
@@ -1228,19 +1230,21 @@ async function loadGlobalStats(){
     const proses=data.filter(r=>r.status_rtlh==='Dalam Proses').length;
     const belum=data.filter(r=>r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
     const batal=data.filter(r=>r.status_rtlh==='Dibatalkan').length;
+    const layak=sudah+proses; // Layak Huni = Sudah + Proses
 
     document.getElementById('gs-total').textContent=total.toLocaleString('id');
-    document.getElementById('gs-sudah').textContent=sudah.toLocaleString('id');
-    document.getElementById('gs-proses').textContent=proses.toLocaleString('id');
+    document.getElementById('gs-layak').textContent=layak.toLocaleString('id');
+    const gsProses=document.getElementById('gs-proses');
+    if(gsProses)gsProses.textContent=proses.toLocaleString('id');
     document.getElementById('gs-belum').textContent=belum.toLocaleString('id');
 
-    const ps=pct(sudah,total),pp=pct(proses,total),pb=pct(belum,total);
-    document.getElementById('pbSudah').style.width=ps+'%';
-    document.getElementById('pbProses').style.width=pp+'%';
+    const playak=pct(layak,total),pp=pct(proses,total),pb=pct(belum,total);
+    document.getElementById('pbSudah').style.width=playak+'%';
+    document.getElementById('pbProses').style.width='0%'; // gabung ke layak
     document.getElementById('pbBelum').style.width=pb+'%';
-    document.getElementById('lgSudah').textContent=`Sudah: ${ps}% (${sudah})`;
-    document.getElementById('lgProses').textContent=`Proses: ${pp}% (${proses})`;
-    document.getElementById('lgBelum').textContent=`Belum: ${pb}% (${belum})`;
+    document.getElementById('lgSudah').textContent=`Layak Huni: ${playak}% (${layak})`;
+    document.getElementById('lgProses').textContent=`RTLH: ${pb}% (${belum})`;
+    document.getElementById('lgBelum').textContent=`Dibatalkan: ${batal}`;
 
     // Per kec counts
     kecCounts={};
