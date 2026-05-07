@@ -1757,8 +1757,32 @@ async function searchNIK(){
     <div class="nr-item"><span class="nr-label">Alamat</span><span class="nr-val">${showAlamat(r.alamat)}</span></div>
     <div class="nr-item"><span class="nr-label">Status RTLH</span><span class="nr-val">${dn(r.status_rtlh)}</span></div>
     <div class="nr-item"><span class="nr-label">Desil</span><span class="nr-val">${dn(r.desil)}</span></div>
-    <button class="btn btn-primary" style="margin-top:8px;font-size:.72rem" onclick="selectKec('${Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||''}')"><i class="fas fa-map-marker-alt"></i> Buka di Peta</button>
+    <button class="btn btn-primary" style="margin-top:8px;font-size:.72rem" onclick="bukaDetailDariSearch('${r.id}','${Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||''}')"><i class="fas fa-user"></i> Lihat Detail</button>
   </div>`).join('');
+}
+
+async function bukaDetailDariSearch(id, kecKey){
+  // Pindah ke halaman WebGIS kecamatan yang benar
+  if(!kecKey)return toast('Kecamatan tidak ditemukan','error');
+  currentKec=kecKey.toUpperCase();
+  nav('webgis');
+  // Tunggu data kecamatan selesai dimuat, lalu buka detail
+  const maxWait=8000;
+  const start=Date.now();
+  const tryOpen=async()=>{
+    const r=brAll.find(x=>String(x.id)===String(id));
+    if(r){
+      openDetail(r);
+      return;
+    }
+    if(Date.now()-start<maxWait){
+      setTimeout(tryOpen,300);
+    }else{
+      toast('Data tidak ditemukan','error');
+    }
+  };
+  // Beri waktu loadKec() jalan dulu
+  setTimeout(tryOpen,600);
 }
 
 // ══════════════════════════════════════════════════
