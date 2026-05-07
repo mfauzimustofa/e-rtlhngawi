@@ -1191,11 +1191,35 @@ function saveSession(){
   sessionStorage.setItem('ertlh_page',document.querySelector('.page.active')?.id||'pgBeranda');
   sessionStorage.setItem('ertlh_kec',currentKec||'');
 }
+function saveDetailSession(r){
+  if(!r)return;
+  try{sessionStorage.setItem('ertlh_detail',JSON.stringify(r));}catch(e){}
+}
+function clearDetailSession(){
+  sessionStorage.removeItem('ertlh_detail');
+}
 function restoreSession(){
   const pg=sessionStorage.getItem('ertlh_page');
   const kec=sessionStorage.getItem('ertlh_kec');
+  const detailStr=sessionStorage.getItem('ertlh_detail');
   if(kec)currentKec=kec;
-  if(pg==='pgWebgis'&&kec){nav('webgis');}
+  if(pg==='pgWebgis'&&kec){
+    nav('webgis');
+    // Restore detail panel setelah data dimuat
+    if(detailStr){
+      try{
+        const dr=JSON.parse(detailStr);
+        const tryRestore=()=>{
+          const found=brAll.find(x=>String(x.id)===String(dr.id));
+          if(found){showDetail(found);}
+          else if(brAll.length===0){setTimeout(tryRestore,400);}
+          // kalau brAll ada tapi tidak ketemu, pakai data dari session
+          else{dr._score=calcScore(dr);showDetail(dr);}
+        };
+        setTimeout(tryRestore,600);
+      }catch(e){clearDetailSession();}
+    }
+  }
   else if(pg==='pgKecList'){nav('keclist');}
   else nav('beranda');
 }
@@ -1214,6 +1238,7 @@ function nav(pg){
     document.getElementById('mnBeranda')?.classList.add('active');
     // Tutup detail panel saat kembali ke beranda
     document.getElementById('detailPanel')?.classList.remove('open');
+    clearDetailSession();
     if(sb) loadGlobalStats();
   } else if(pg==='keclist'){
     document.getElementById('pgKecList').classList.add('active');
@@ -1794,7 +1819,8 @@ async function bukaDetailDariSearch(id, kecKey){
   currentKec=kecKey.toUpperCase();
   nav('webgis');
   // Masukkan ke brAll supaya edit/hapus bisa jalan
-  if(!brAll.find(x=>String(x.id)===String(id)))brAll.push(data);
+  const existing=brAll.findIndex(x=>String(x.id)===String(id));
+  if(existing>=0)brAll[existing]=data; else brAll.push(data);
   // Buka detail setelah halaman render
   setTimeout(()=>showDetail(data),400);
 }
@@ -2174,12 +2200,14 @@ function showDetail(r){
     acts.appendChild(nb);
   }
   p.classList.add('open');
+  // Simpan ke session supaya tidak hilang saat refresh
+  saveDetailSession(r);
   // Load riwayat verifikasi & dokumen
   loadVerifList(r.id);
   loadDokList(r.id);
 }
 
-function closeDetail(){document.getElementById('detailPanel').classList.remove('open');}
+function closeDetail(){document.getElementById('detailPanel').classList.remove('open');clearDetailSession();}
 
 // ── NIK / KK MODAL (Super Admin only) ──
 let nikEditId=null;
