@@ -600,6 +600,96 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 </div>
 
 <!-- LOGIN MODAL -->
+<!-- MODAL DOWNLOAD EXCEL (per kecamatan) -->
+<div class="overlay" id="ovDownload">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head">
+      <div><h3><i class="fas fa-download" style="color:var(--success)"></i> Unduh Excel</h3>
+        <div class="sub" id="dlSub">Data RTLH kecamatan ini</div>
+      </div>
+      <button class="modal-x" onclick="closeModal('ovDownload')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.8rem;color:var(--gray-600);margin-bottom:16px">Unduh data RTLH kecamatan yang sedang aktif dalam format Excel (.xlsx).</p>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-success" style="justify-content:center" onclick="downloadExcel(false)"><i class="fas fa-download"></i> Unduh Excel (NIK disensor)</button>
+        <button class="btn btn-success" id="btnDlFull" style="justify-content:center;display:none;background:#059669" onclick="downloadExcel(true)"><i class="fas fa-download"></i> Unduh Excel + NIK/KK (Super Admin)</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ovDownload')">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EXCEL KABUPATEN -->
+<div class="overlay" id="ovExcelKab">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-head">
+      <div><h3><i class="fas fa-file-excel" style="color:var(--success)"></i> Excel Kabupaten</h3>
+        <div class="sub">Unduh / Unggah data seluruh kabupaten</div>
+      </div>
+      <button class="modal-x" onclick="closeModal('ovExcelKab')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div class="form-group" style="margin:0">
+          <label>Kecamatan</label>
+          <select id="exKec" style="font-size:.78rem">
+            <option value="">Semua Kecamatan</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Status RTLH</label>
+          <select id="exStatus" style="font-size:.78rem">
+            <option value="">Semua Status</option>
+            <option>Belum Ditangani</option>
+            <option>Dalam Proses</option>
+            <option>Sudah Ditangani</option>
+            <option>Dibatalkan</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Desil</label>
+          <select id="exDesil" style="font-size:.78rem">
+            <option value="">Semua Desil</option>
+            <option>Desil 1</option>
+            <option>Desil 2</option>
+            <option>Desil 3</option>
+            <option>Desil 4</option>
+            <option>Desil 5</option>
+            <option>Desil 6</option>
+            <option>Desil 7</option>
+            <option>Desil 8</option>
+            <option>Desil 9</option>
+            <option>Desil 10</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Tahun Bantuan</label>
+          <input type="text" id="exTahun" placeholder="misal: 2025" style="font-size:.78rem">
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+        <button class="btn btn-success" style="justify-content:center" onclick="downloadExcelKab(false)"><i class="fas fa-download"></i> Unduh Excel (NIK disensor)</button>
+        <button class="btn btn-success" id="btnDlKabFull" style="justify-content:center;display:none;background:#059669" onclick="downloadExcelKab(true)"><i class="fas fa-download"></i> Unduh Excel + NIK/KK (Super Admin)</button>
+      </div>
+      <div style="border-top:1px solid var(--gray-200);padding-top:14px">
+        <div style="font-size:.72rem;font-weight:700;color:var(--gray-700);margin-bottom:8px"><i class="fas fa-upload"></i> Import Excel</div>
+        <div class="upload-zone" onclick="document.getElementById('xlsxKabFile').click()" id="exUploadZone" style="padding:16px;border-radius:10px;border:2px dashed var(--gray-300);text-align:center;cursor:pointer">
+          <i class="fas fa-file-excel" style="font-size:1.5rem;color:var(--success);margin-bottom:6px;display:block"></i>
+          <p style="font-size:.78rem;color:var(--gray-500)">Klik atau seret file Excel (.xlsx) di sini</p>
+          <input type="file" id="xlsxKabFile" accept=".xlsx" style="display:none" onchange="importExcelKab(this)">
+        </div>
+        <div id="exImportLog" style="display:none;margin-top:10px;font-size:.72rem;max-height:150px;overflow-y:auto"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ovExcelKab')">Tutup</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="ovLogin">
   <div class="modal" style="max-width:380px">
     <div class="modal-head">
@@ -778,308 +868,18 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
 
 <!-- MODAL VERIFIKASI LAPANGAN -->
-<div class="overlay" id="ovVerif">
-  <div class="modal" style="max-width:500px">
-    <div class="modal-head">
-      <div><h3><i class="fas fa-clipboard-check" style="color:#10B981"></i> Verifikasi Lapangan</h3>
-        <div class="sub" id="verifSub">Tambah data verifikasi</div>
-      </div>
-      <button class="modal-x" onclick="closeModal('ovVerif')"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
-        <div class="form-group" style="margin:0">
-          <label>Hasil Verifikasi <span style="color:var(--danger)">*</span></label>
-          <select id="verifHasil">
-            <option value="">-- Pilih --</option>
-            <option value="Layak">Layak (Tidak RTLH)</option>
-            <option value="Tidak Layak">Tidak Layak (RTLH)</option>
-          </select>
-        </div>
-        <div class="form-group" style="margin:0">
-          <label>Keterangan</label>
-          <input type="text" id="verifKet" placeholder="Misal: Pernah dibantu DD">
-        </div>
-        <div class="form-group" style="margin:0">
-          <label>Tahun Verifikasi <span style="color:var(--danger)">*</span></label>
-          <select id="verifTahun">
-            <option value="">-- Pilih --</option>
-            <option value="2021">2021</option>
-            <option value="2022">2022</option>
-            <option value="2023">2023</option>
-            <option value="2024">2024</option>
-            <option value="2025">2025</option>
-            <option value="2026">2026</option>
-            <option value="2027">2027</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Nama Petugas Verifikasi</label>
-        <input type="text" id="verifPetugas" placeholder="Nama petugas yang melakukan verifikasi">
-      </div>
-      <div id="verifHistori" style="margin-top:14px"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('ovVerif')">Tutup</button>
-      <button class="btn btn-primary" onclick="saveVerif()" style="background:#10B981"><i class="fas fa-save"></i> Simpan Verifikasi</button>
-    </div>
-  </div>
-</div>
 
 <!-- MODAL DOKUMEN & FOTO -->
-<div class="overlay" id="ovDok">
-  <div class="modal" style="max-width:520px">
-    <div class="modal-head">
-      <div><h3><i class="fas fa-folder-open" style="color:var(--warning)"></i> Dokumen & Foto</h3>
-        <div class="sub" id="dokSub">Kelola dokumen pendukung</div>
-      </div>
-      <button class="modal-x" onclick="closeModal('ovDok')"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body">
-      <div style="background:var(--gray-50);border-radius:10px;padding:14px;border:1px solid var(--gray-200);margin-bottom:14px">
-        <div style="font-size:.72rem;font-weight:700;color:var(--gray-700);margin-bottom:10px">Upload Dokumen Baru</div>
-        <div class="form-group" style="margin-bottom:10px">
-          <label>Jenis Dokumen</label>
-          <select id="dokJenis">
-            <option value="foto_rumah">📷 Foto Rumah</option>
-            <option value="berita_acara">📄 Berita Acara (BA)</option>
-            <option value="surat_pernyataan">📝 Surat Pernyataan</option>
-            <option value="ktp">🪪 KTP</option>
-            <option value="kk_doc">👨‍👩‍👧 Kartu Keluarga</option>
-            <option value="foto_lokasi">🗺️ Foto Lokasi</option>
-            <option value="lainnya">📁 Lainnya</option>
-          </select>
-        </div>
-        <div class="form-group" style="margin-bottom:10px">
-          <label>Keterangan (opsional)</label>
-          <input type="text" id="dokKet" placeholder="Contoh: BA 2025, Foto tampak depan">
-        </div>
-        <div class="form-group" style="margin-bottom:12px">
-          <label>File <span style="color:var(--danger)">*</span></label>
-          <input type="file" id="dokFile" accept="image/*,application/pdf,.doc,.docx" style="font-size:.8rem">
-          <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Format: JPG, PNG, PDF, DOC. Maks 10 MB.</div>
-        </div>
-        <button class="btn btn-primary" onclick="uploadDokumen()" style="width:100%;justify-content:center"><i class="fas fa-upload"></i> Upload</button>
-        <div id="dokUploadProgress" style="margin-top:8px;font-size:.72rem"></div>
-      </div>
-      <div>
-        <div style="font-size:.72rem;font-weight:700;color:var(--gray-700);margin-bottom:8px">Dokumen Tersimpan</div>
-        <div id="dokFileList" style="font-size:.72rem;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('ovDok')">Tutup</button>
-    </div>
-  </div>
-</div>
 
 <!-- NIK/KK MODAL (Super Admin only - dedicated, never re-renders) -->
-<div class="overlay" id="ovNIK">
-  <div class="modal" style="max-width:400px">
-    <div class="modal-head">
-      <div><h3><i class="fas fa-id-card" style="color:var(--gold)"></i> Input NIK & No. KK</h3>
-        <div class="sub" id="nikModalSub">Super Admin — data sensitif</div>
-      </div>
-      <button class="modal-x" onclick="closeModal('ovNIK')"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body">
-      <div style="background:var(--warning-bg);border:1px solid var(--warning);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:.72rem;color:#92400E">
-        <i class="fas fa-shield-alt"></i> Data ini hanya bisa dilihat dan diedit oleh Super Admin.
-      </div>
-      <div class="form-group" style="margin-bottom:12px">
-        <label>NIK (16 digit)</label>
-        <input type="text" id="nikInput" inputmode="numeric" maxlength="16" placeholder="Masukkan 16 digit NIK"
-          style="font-size:1rem;letter-spacing:2px;font-weight:700;border-color:var(--blue)"
-          oninput="this.value=this.value.replace(/\D/g,'');document.getElementById('nikCount').textContent=this.value.length+'/16'">
-        <span id="nikCount" style="font-size:.65rem;color:var(--gray-400);margin-top:3px">0/16</span>
-      </div>
-      <div class="form-group" style="margin-bottom:16px">
-        <label>No. Kartu Keluarga (KK)</label>
-        <input type="text" id="noKkInput" inputmode="numeric" maxlength="16" placeholder="Masukkan No. KK"
-          style="font-size:1rem;letter-spacing:2px;font-weight:700;border-color:var(--blue)"
-          oninput="this.value=this.value.replace(/\D/g,'');document.getElementById('kkCount').textContent=this.value.length+'/16'">
-        <span id="kkCount" style="font-size:.65rem;color:var(--gray-400);margin-top:3px">0/16</span>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('ovNIK')">Batal</button>
-      <button class="btn btn-primary" onclick="saveNIK()"><i class="fas fa-save"></i> Simpan NIK & KK</button>
-    </div>
-  </div>
-</div>
-
-
 
 <!-- NIK/KK MODAL (Super Admin only - dedicated, never re-renders) -->
-<div class="overlay" id="ovNIK">
-  <div class="modal" style="max-width:400px">
-    <div class="modal-head">
-      <div><h3><i class="fas fa-id-card" style="color:var(--gold)"></i> Input NIK & No. KK</h3>
-        <div class="sub" id="nikModalSub">Super Admin — data sensitif</div>
-      </div>
-      <button class="modal-x" onclick="closeModal('ovNIK')"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body">
-      <div style="background:var(--warning-bg);border:1px solid var(--warning);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:.72rem;color:#92400E">
-        <i class="fas fa-shield-alt"></i> Data ini hanya bisa dilihat dan diedit oleh Super Admin.
-      </div>
-      <div class="form-group" style="margin-bottom:12px">
-        <label>NIK (16 digit)</label>
-        <input type="text" id="nikInput" inputmode="numeric" maxlength="16" placeholder="Masukkan 16 digit NIK"
-          style="font-size:1rem;letter-spacing:2px;font-weight:700;border-color:var(--blue)"
-          oninput="this.value=this.value.replace(/\D/g,'');document.getElementById('nikCount').textContent=this.value.length+'/16'">
-        <span id="nikCount" style="font-size:.65rem;color:var(--gray-400);margin-top:3px">0/16</span>
-      </div>
-      <div class="form-group" style="margin-bottom:16px">
-        <label>No. Kartu Keluarga (KK)</label>
-        <input type="text" id="noKkInput" inputmode="numeric" maxlength="16" placeholder="Masukkan No. KK"
-          style="font-size:1rem;letter-spacing:2px;font-weight:700;border-color:var(--blue)"
-          oninput="this.value=this.value.replace(/\D/g,'');document.getElementById('kkCount').textContent=this.value.length+'/16'">
-        <span id="kkCount" style="font-size:.65rem;color:var(--gray-400);margin-top:3px">0/16</span>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('ovNIK')">Batal</button>
-      <button class="btn btn-primary" onclick="saveNIK()"><i class="fas fa-save"></i> Simpan NIK & KK</button>
-    </div>
-  </div>
-</div>
-
 
 <!-- MODAL VERIFIKASI LAPANGAN -->
-<div class="overlay" id="ovVerif">
-  <div class="modal" style="max-width:500px">
-    <div class="modal-head">
-      <div><h3><i class="fas fa-clipboard-check" style="color:#10B981"></i> Verifikasi Lapangan</h3>
-        <div class="sub" id="verifSub">Tambah data verifikasi</div>
-      </div>
-      <button class="modal-x" onclick="closeModal('ovVerif')"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
-        <div class="form-group" style="margin:0">
-          <label>Hasil Verifikasi <span style="color:var(--danger)">*</span></label>
-          <select id="verifHasil">
-            <option value="">-- Pilih --</option>
-            <option value="Layak">Layak (Tidak RTLH)</option>
-            <option value="Tidak Layak">Tidak Layak (RTLH)</option>
-          </select>
-        </div>
-        <div class="form-group" style="margin:0">
-          <label>Keterangan</label>
-          <input type="text" id="verifKet" placeholder="Misal: Pernah dibantu DD">
-        </div>
-        <div class="form-group" style="margin:0">
-          <label>Tahun Verifikasi <span style="color:var(--danger)">*</span></label>
-          <select id="verifTahun">
-            <option value="">-- Pilih --</option>
-            <option value="2021">2021</option>
-            <option value="2022">2022</option>
-            <option value="2023">2023</option>
-            <option value="2024">2024</option>
-            <option value="2025">2025</option>
-            <option value="2026">2026</option>
-            <option value="2027">2027</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Nama Petugas Verifikasi</label>
-        <input type="text" id="verifPetugas" placeholder="Nama petugas yang melakukan verifikasi">
-      </div>
-      <div id="verifHistori" style="margin-top:14px"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('ovVerif')">Tutup</button>
-      <button class="btn btn-primary" onclick="saveVerif()" style="background:#10B981"><i class="fas fa-save"></i> Simpan Verifikasi</button>
-    </div>
-  </div>
-</div>
 
 <!-- MODAL DOKUMEN & FOTO -->
-<div class="overlay" id="ovDok">
-  <div class="modal" style="max-width:520px">
-    <div class="modal-head">
-      <div><h3><i class="fas fa-folder-open" style="color:var(--warning)"></i> Dokumen & Foto</h3>
-        <div class="sub" id="dokSub">Kelola dokumen pendukung</div>
-      </div>
-      <button class="modal-x" onclick="closeModal('ovDok')"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body">
-      <div style="background:var(--gray-50);border-radius:10px;padding:14px;border:1px solid var(--gray-200);margin-bottom:14px">
-        <div style="font-size:.72rem;font-weight:700;color:var(--gray-700);margin-bottom:10px">Upload Dokumen Baru</div>
-        <div class="form-group" style="margin-bottom:10px">
-          <label>Jenis Dokumen</label>
-          <select id="dokJenis">
-            <option value="foto_rumah">📷 Foto Rumah</option>
-            <option value="berita_acara">📄 Berita Acara (BA)</option>
-            <option value="surat_pernyataan">📝 Surat Pernyataan</option>
-            <option value="ktp">🪪 KTP</option>
-            <option value="kk_doc">👨‍👩‍👧 Kartu Keluarga</option>
-            <option value="foto_lokasi">🗺️ Foto Lokasi</option>
-            <option value="lainnya">📁 Lainnya</option>
-          </select>
-        </div>
-        <div class="form-group" style="margin-bottom:10px">
-          <label>Keterangan (opsional)</label>
-          <input type="text" id="dokKet" placeholder="Contoh: BA 2025, Foto tampak depan">
-        </div>
-        <div class="form-group" style="margin-bottom:12px">
-          <label>File <span style="color:var(--danger)">*</span></label>
-          <input type="file" id="dokFile" accept="image/*,application/pdf,.doc,.docx" style="font-size:.8rem">
-          <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Format: JPG, PNG, PDF, DOC. Maks 10 MB.</div>
-        </div>
-        <button class="btn btn-primary" onclick="uploadDokumen()" style="width:100%;justify-content:center"><i class="fas fa-upload"></i> Upload</button>
-        <div id="dokUploadProgress" style="margin-top:8px;font-size:.72rem"></div>
-      </div>
-      <div>
-        <div style="font-size:.72rem;font-weight:700;color:var(--gray-700);margin-bottom:8px">Dokumen Tersimpan</div>
-        <div id="dokFileList" style="font-size:.72rem;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('ovDok')">Tutup</button>
-    </div>
-  </div>
-</div>
 
 <!-- NIK/KK MODAL (Super Admin only - dedicated, never re-renders) -->
-<div class="overlay" id="ovNIK">
-  <div class="modal" style="max-width:400px">
-    <div class="modal-head">
-      <div><h3><i class="fas fa-id-card" style="color:var(--gold)"></i> Input NIK & No. KK</h3>
-        <div class="sub" id="nikModalSub">Super Admin — data sensitif</div>
-      </div>
-      <button class="modal-x" onclick="closeModal('ovNIK')"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body">
-      <div style="background:var(--warning-bg);border:1px solid var(--warning);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:.72rem;color:#92400E">
-        <i class="fas fa-shield-alt"></i> Data ini hanya bisa dilihat dan diedit oleh Super Admin.
-      </div>
-      <div class="form-group" style="margin-bottom:12px">
-        <label>NIK (16 digit)</label>
-        <input type="text" id="nikInput" inputmode="numeric" maxlength="16" placeholder="Masukkan 16 digit NIK"
-          style="font-size:1rem;letter-spacing:2px;font-weight:700;border-color:var(--blue)"
-          oninput="this.value=this.value.replace(/\D/g,'');document.getElementById('nikCount').textContent=this.value.length+'/16'">
-        <span id="nikCount" style="font-size:.65rem;color:var(--gray-400);margin-top:3px">0/16</span>
-      </div>
-      <div class="form-group" style="margin-bottom:16px">
-        <label>No. Kartu Keluarga (KK)</label>
-        <input type="text" id="noKkInput" inputmode="numeric" maxlength="16" placeholder="Masukkan No. KK"
-          style="font-size:1rem;letter-spacing:2px;font-weight:700;border-color:var(--blue)"
-          oninput="this.value=this.value.replace(/\D/g,'');document.getElementById('kkCount').textContent=this.value.length+'/16'">
-        <span id="kkCount" style="font-size:.65rem;color:var(--gray-400);margin-top:3px">0/16</span>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('ovNIK')">Batal</button>
-      <button class="btn btn-primary" onclick="saveNIK()"><i class="fas fa-save"></i> Simpan NIK & KK</button>
-    </div>
-  </div>
-</div>
-
-
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" defer></script>
@@ -2480,6 +2280,135 @@ async function importExcel(input){
 }
 
 // ══════════════════════════════════════════════════
+// EXCEL KABUPATEN
+// ══════════════════════════════════════════════════
+function openExcelKab(){
+  // Isi dropdown kecamatan
+  const exKec=document.getElementById('exKec');
+  if(exKec&&exKec.options.length<=1){
+    Object.keys(KEC_CONFIG).forEach(k=>{
+      const o=document.createElement('option');
+      o.value=k;o.textContent=k;
+      exKec.appendChild(o);
+    });
+  }
+  document.getElementById('btnDlKabFull').style.display=isSuperAdmin()?'flex':'none';
+  document.getElementById('exImportLog').style.display='none';
+  document.getElementById('ovExcelKab').classList.add('open');
+}
+
+async function downloadExcelKab(withNIK){
+  const superAdmin=isSuperAdmin();
+  const kec=document.getElementById('exKec')?.value||'';
+  const status=document.getElementById('exStatus')?.value||'';
+  const desil=document.getElementById('exDesil')?.value||'';
+  const tahun=document.getElementById('exTahun')?.value||'';
+  const btn=document.querySelector('#ovExcelKab .btn-success');
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Mengambil data...';}
+  try{
+    let q=sb.from('rtlh').select('*').order('kec').order('desa').order('id');
+    if(kec)q=q.eq('kec',kec);
+    if(status)q=q.eq('status_rtlh',status);
+    if(desil)q=q.eq('desil',desil.replace('Desil ',''));
+    if(tahun)q=q.eq('tahun_bantuan',tahun);
+    const{data,error}=await q;
+    if(error)return toast('Gagal ambil data: '+error.message,'error');
+    if(!data||!data.length)return toast('Tidak ada data','error');
+    const rows=data.map(r=>({
+      ID:r.id,Kecamatan:r.kec,Desa:r.desa,'Nama KK':r.kep_kk,
+      NIK:withNIK&&superAdmin?(r.nik||''):'***',
+      'No. KK':withNIK&&superAdmin?(r.no_kk||''):'***',
+      Alamat:r.alamat,'Jenis Kelamin':r.jen_kel,Umur:r.umur,
+      Pendidikan:r.pend_ter,Pekerjaan:r.pekerjaan,Penghasilan:r.pengh,
+      'Luas Rumah (m²)':r.luas_rum,'Luas Tanah (m²)':r.luas_tan,
+      'Jml Penghuni':r.jml_peng,'Status Kepemilikan':r.status_kep,
+      'Material Dinding':r.material_d,'Kondisi Dinding':r.kondisi_di,
+      'Material Atap':r.material_a,'Kondisi Atap':r.kondisi_at,
+      'Material Lantai':r.material_l,'Kondisi Lantai':r.kondisi_la,
+      'Status RTLH':r.status_rtlh,'Alasan Batal':r.status_batal,
+      'Jenis Bantuan':r.jenis_bantuan,'Tahun Bantuan':r.tahun_bantuan,
+      'Status MyPKP':r.dtsen,Backlog:r.backlog,Desil:r.desil,
+      Latitude:r.latitude,Longitude:r.longitude,
+    }));
+    const ws=XLSX.utils.json_to_sheet(rows);
+    ws['!cols']=Object.keys(rows[0]).map(k=>({wch:Math.max(k.length+2,14)}));
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'RTLH');
+    const fname=`RTLH_Kabupaten${kec?'_'+kec:''}_${new Date().toISOString().slice(0,10)}.xlsx`;
+    XLSX.writeFile(wb,fname);
+    toast(`${data.length} data berhasil diunduh`,'success');
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML='<i class="fas fa-download"></i> Unduh Excel'+(withNIK?' + NIK/KK':'');}
+  }
+}
+
+async function importExcelKab(input){
+  const file=input.files[0];
+  if(!file)return;
+  if(!canEdit())return toast('Tidak ada akses','error');
+  const log=document.getElementById('exImportLog');
+  log.style.display='block';
+  log.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Membaca file...';
+  const reader=new FileReader();
+  reader.onload=async(e)=>{
+    const wb=XLSX.read(e.target.result,{type:'binary'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const rows=XLSX.utils.sheet_to_json(ws);
+    if(!rows.length){log.innerHTML='<span style="color:var(--danger)">File kosong</span>';return;}
+    log.innerHTML=`Memproses ${rows.length} baris...`;
+    let ok=0,fail=0,skip=0;
+    for(const row of rows){
+      const obj={
+        kec:row['Kecamatan']||row['kec']||null,
+        desa:row['Desa']||row['desa']||null,
+        kep_kk:row['Nama KK']||row['kep_kk']||null,
+        alamat:row['Alamat']||row['alamat']||null,
+        jen_kel:row['Jenis Kelamin']||row['jen_kel']||null,
+        umur:parseInt(row['Umur']||row['umur'])||null,
+        pend_ter:row['Pendidikan']||row['pend_ter']||null,
+        pekerjaan:row['Pekerjaan']||row['pekerjaan']||null,
+        pengh:row['Penghasilan']||row['pengh']||null,
+        luas_rum:parseFloat(row['Luas Rumah (m²)']||row['Luas Rumah']||row['luas_rum'])||null,
+        luas_tan:parseFloat(row['Luas Tanah (m²)']||row['Luas Tanah']||row['luas_tan'])||null,
+        jml_peng:parseInt(row['Jml Penghuni']||row['jml_peng'])||null,
+        status_kep:row['Status Kepemilikan']||row['status_kep']||null,
+        material_d:row['Material Dinding']||row['material_d']||null,kondisi_di:row['Kondisi Dinding']||row['kondisi_di']||null,
+        material_a:row['Material Atap']||row['material_a']||null,kondisi_at:row['Kondisi Atap']||row['kondisi_at']||null,
+        material_l:row['Material Lantai']||row['material_l']||null,kondisi_la:row['Kondisi Lantai']||row['kondisi_la']||null,
+        status_rtlh:row['Status RTLH']||row['status_rtlh']||null,
+        status_batal:row['Alasan Batal']||row['status_batal']||null,
+        jenis_bantuan:row['Jenis Bantuan']||row['jenis_bantuan']||null,
+        tahun_bantuan:String(row['Tahun Bantuan']||row['tahun_bantuan']||'').replace(/[^0-9]/g,'')||null,
+        dtsen:row['Status MyPKP']||row['DTSEN']||row['dtsen']||null,
+        desil:row['Desil']||row['desil']||null,
+        backlog:row['Backlog']||row['backlog']||null,
+        latitude:parseFloat(row['Latitude']||row['latitude'])||null,
+        longitude:parseFloat(row['Longitude']||row['longitude'])||null,
+        nik:isSuperAdmin()?String(row['NIK']||row['nik']||'').replace(/[^0-9]/g,'')||null:undefined,
+        no_kk:isSuperAdmin()?String(row['No. KK']||row['no_kk']||'').replace(/[^0-9]/g,'')||null:undefined,
+      };
+      if(!isSuperAdmin()){delete obj.nik;delete obj.no_kk;}
+      const id=row['ID']||row['id'];
+      if(id){
+        const{data:existing}=await sb.from('rtlh').select('id').eq('id',parseInt(id)).single();
+        if(existing){
+          const{error}=await sb.from('rtlh').update(obj).eq('id',parseInt(id));
+          error?fail++:ok++;continue;
+        }
+      }
+      const{error}=await sb.from('rtlh').insert(obj);
+      error?fail++:ok++;
+    }
+    // Invalidate cache
+    Object.keys(_kecCacheTime).forEach(k=>delete _kecCacheTime[k]);
+    log.innerHTML=`<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Selesai: <strong>${ok}</strong> berhasil${fail?`, <span style="color:var(--danger)">${fail} gagal</span>`:''}${skip?`, ${skip} dilewati`:''}</span>`;
+    input.value='';
+    if(currentKec){brAll=[];await loadKec();}
+    toast(`Import: ${ok} berhasil, ${fail} gagal`,'success');
+  };
+  reader.readAsBinaryString(file);
+}
+
 // ══════════════════════════════════════════════════
 // ADMIN PANEL
 // ══════════════════════════════════════════════════
