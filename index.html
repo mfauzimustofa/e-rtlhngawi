@@ -433,8 +433,9 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
           <input class="nik-search-input" id="nikSearchInput" type="text" placeholder="Cari NIK / KK / Nama / Desa / Kecamatan" maxlength="80" onkeydown="if(event.key==='Enter')searchNIK()">
           <button class="nik-search-btn" onclick="searchNIK()"><i class="fas fa-search"></i> Cari</button>
         </div>
-        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap" id="searchFilters">
-          <select id="searchStatus" style="padding:7px 12px;border-radius:8px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-size:.75rem;font-family:inherit;cursor:pointer">
+        <div style="display:none;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center" id="searchFilters">
+          <span style="font-size:.72rem;color:rgba(255,255,255,.6)">Filter:</span>
+          <select id="searchStatus" onchange="searchNIK()" style="padding:7px 12px;border-radius:8px;border:1.5px solid rgba(255,255,255,.3);background:rgba(15,23,42,.85);color:#fff;font-size:.75rem;font-family:inherit;cursor:pointer;min-width:160px">
             <option value="">Semua Status</option>
             <option value="Belum Ditangani">Belum Ditangani</option>
             <option value="Dalam Proses">Dalam Proses</option>
@@ -1792,6 +1793,8 @@ async function searchNIK(){
     res.innerHTML='<div style="color:rgba(255,255,255,.5);font-size:.78rem;margin-top:12px"><i class="fas fa-times-circle"></i> Data tidak ditemukan.</div>';
     return;
   }
+  // Tampilkan filter
+  document.getElementById('searchFilters').style.display='flex';
   res.innerHTML=data.map(r=>`<div class="nik-result">
     <h4><i class="fas fa-id-card" style="color:var(--gold)"></i> ${showNama(r.kep_kk)}</h4>
     <div class="nr-item"><span class="nr-label">NIK</span><span class="nr-val">${showNIK(r.nik)}</span></div>
