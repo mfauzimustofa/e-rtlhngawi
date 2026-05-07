@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <title>e-RTLH - Kabupaten Ngawi</title>
 <meta name="theme-color" content="#0C2340">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<link rel="preconnect" href="https://oiygddbzugipepatswxi.supabase.co">
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+<link rel="dns-prefetch" href="https://unpkg.com">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
@@ -1065,9 +1071,9 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
 
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
 
 <script>
 // ══════════════════════════════════════════════════
@@ -1858,7 +1864,12 @@ async function loadKec(){
 
 function loadBoundary(kecName){
   if(window._batasNgawi){applyBoundary(kecName);return;}
-  fetch('data/batas-desa-ngawi.json').then(r=>r.json()).then(gj=>{window._batasNgawi=gj;applyBoundary(kecName);}).catch(()=>{});
+  if(window._batasNgawi){applyBoundary(kecName);}else{
+    const _ck='e-rtlh-batas-ngawi-v1';
+    const _cc=sessionStorage.getItem(_ck);
+    if(_cc){window._batasNgawi=JSON.parse(_cc);applyBoundary(kecName);}
+    else fetch('data/batas-desa-ngawi.json').then(r=>r.json()).then(gj=>{window._batasNgawi=gj;try{sessionStorage.setItem(_ck,JSON.stringify(gj));}catch(e){}applyBoundary(kecName);}).catch(()=>{});
+  }
 }
 function applyBoundary(kecName){
   if(!window._batasNgawi||!map)return;
@@ -2617,7 +2628,7 @@ async function doMaintenanceLogin(){
 
 window.addEventListener('DOMContentLoaded',async()=>{
   // Init Supabase client dulu sebelum apapun
-  sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+  sb = window.supabase.createClient(SUPA_URL, SUPA_KEY, {auth:{persistSession:true,storageKey:'ertlh-auth',autoRefreshToken:true}});
   // Cek session dulu
   const{data:{session}}=await sb.auth.getSession();
   if(MAINTENANCE_MODE){
@@ -2644,11 +2655,18 @@ window.addEventListener('DOMContentLoaded',async()=>{
   }
   await initAuth();
   restoreSession();
-  // Load GeoJSON boundary lazily
-  fetch('data/batas-desa-ngawi.json').then(r=>r.json()).then(gj=>{
-    window._batasNgawi=gj;
-    if(typeof _fitMapToNgawi==='function') _fitMapToNgawi();
-  }).catch(()=>{});
+  // Load GeoJSON boundary — cache di sessionStorage biar tidak fetch ulang
+  const _geoKey='e-rtlh-batas-ngawi-v1';
+  const _geoCached=sessionStorage.getItem(_geoKey);
+  if(_geoCached){
+    try{window._batasNgawi=JSON.parse(_geoCached);if(typeof _fitMapToNgawi==='function')_fitMapToNgawi();}catch(e){sessionStorage.removeItem(_geoKey);}
+  }else{
+    fetch('data/batas-desa-ngawi.json').then(r=>r.json()).then(gj=>{
+      window._batasNgawi=gj;
+      try{sessionStorage.setItem(_geoKey,JSON.stringify(gj));}catch(e){}
+      if(typeof _fitMapToNgawi==='function')_fitMapToNgawi();
+    }).catch(()=>{});
+  }
 });
 </script>
 <!-- ═══ END APP SHELL ═══ -->
