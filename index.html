@@ -430,8 +430,17 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
         <h1>e-<span>RTLH</span> Kabupaten Ngawi</h1>
         <p>Pusat Data Rumah Tidak Layak Huni (RTLH) untuk 19 Kecamatan dan 217 Desa/Kelurahan se-Kabupaten Ngawi.</p>
         <div class="nik-search-wrap">
-          <input class="nik-search-input" id="nikSearchInput" type="text" placeholder="Cari NIK, No KK, atau Nama KK..." maxlength="80" onkeydown="if(event.key==='Enter')searchNIK()">
+          <input class="nik-search-input" id="nikSearchInput" type="text" placeholder="Cari NIK / KK / Nama / Desa / Kecamatan" maxlength="80" onkeydown="if(event.key==='Enter')searchNIK()">
           <button class="nik-search-btn" onclick="searchNIK()"><i class="fas fa-search"></i> Cari</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap" id="searchFilters">
+          <select id="searchStatus" style="padding:7px 12px;border-radius:8px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-size:.75rem;font-family:inherit;cursor:pointer">
+            <option value="">Semua Status</option>
+            <option value="Belum Ditangani">Belum Ditangani</option>
+            <option value="Dalam Proses">Dalam Proses</option>
+            <option value="Sudah Ditangani">Sudah Ditangani</option>
+            <option value="Dibatalkan">Dibatalkan</option>
+          </select>
         </div>
         <div id="nikResult"></div>
       </div>
@@ -1203,6 +1212,8 @@ function nav(pg){
     document.getElementById('pgBeranda').classList.add('active');
     document.getElementById('ntBeranda')?.classList.add('active');
     document.getElementById('mnBeranda')?.classList.add('active');
+    // Tutup detail panel saat kembali ke beranda
+    document.getElementById('detailPanel')?.classList.remove('open');
     if(sb) loadGlobalStats();
   } else if(pg==='keclist'){
     document.getElementById('pgKecList').classList.add('active');
@@ -1743,12 +1754,14 @@ async function searchNIK(){
   // Search by NIK, no_kk, or name
   // Cek apakah query adalah NIK/KK (angka) atau nama/desa/kecamatan (teks)
   const isNumeric = /^\d+$/.test(q);
+  const statusFilter = document.getElementById('searchStatus')?.value || '';
   let query = sb.from('rtlh').select('id,kec,desa,kep_kk,alamat,nik,no_kk,status_rtlh,desil');
   if(isNumeric){
     query = query.or(`nik.eq.${q},no_kk.eq.${q}`);
   } else {
     query = query.or(`kep_kk.ilike.%${q}%,desa.ilike.%${q}%,kec.ilike.%${q}%,alamat.ilike.%${q}%`);
   }
+  if(statusFilter) query = query.eq('status_rtlh', statusFilter);
   const{data,error}=await query.limit(10);
   if(error||!data||!data.length){
     res.innerHTML='<div style="color:rgba(255,255,255,.5);font-size:.78rem;margin-top:12px"><i class="fas fa-times-circle"></i> Data tidak ditemukan.</div>';
@@ -1763,7 +1776,9 @@ async function searchNIK(){
     <div class="nr-item"><span class="nr-label">Alamat</span><span class="nr-val">${showAlamat(r.alamat)}</span></div>
     <div class="nr-item"><span class="nr-label">Status RTLH</span><span class="nr-val">${dn(r.status_rtlh)}</span></div>
     <div class="nr-item"><span class="nr-label">Desil</span><span class="nr-val">${dn(r.desil)}</span></div>
-    <button class="btn btn-primary" style="margin-top:8px;font-size:.72rem" onclick="bukaDetailDariSearch('${r.id}','${Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||''}')"><i class="fas fa-user"></i> Lihat Detail</button>
+    <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+      <button class="btn btn-primary" style="font-size:.72rem" onclick="bukaDetailDariSearch('${r.id}','${Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||''}')"><i class="fas fa-user"></i> Lihat Detail</button>
+    </div>
   </div>`).join('');
 }
 
@@ -1887,12 +1902,14 @@ async function loadKec(){
 
 function loadBoundary(kecName){
   if(window._batasNgawi){applyBoundary(kecName);return;}
-  if(window._batasNgawi){applyBoundary(kecName);}else{
-    const _ck='e-rtlh-batas-ngawi-v1';
-    const _cc=sessionStorage.getItem(_ck);
-    if(_cc){window._batasNgawi=JSON.parse(_cc);applyBoundary(kecName);}
-    else fetch('data/batas-desa-ngawi.json').then(r=>r.json()).then(gj=>{window._batasNgawi=gj;try{sessionStorage.setItem(_ck,JSON.stringify(gj));}catch(e){}applyBoundary(kecName);}).catch(()=>{});
-  }
+  const _ck='e-rtlh-batas-ngawi-v1';
+  const _cc=sessionStorage.getItem(_ck);
+  if(_cc){try{window._batasNgawi=JSON.parse(_cc);applyBoundary(kecName);return;}catch(e){sessionStorage.removeItem(_ck);}}
+  fetch('data/batas-desa-ngawi.json').then(r=>r.json()).then(gj=>{
+    window._batasNgawi=gj;
+    try{sessionStorage.setItem(_ck,JSON.stringify(gj));}catch(e){}
+    applyBoundary(kecName);
+  }).catch(()=>{});
 }
 function applyBoundary(kecName){
   if(!window._batasNgawi||!map)return;
@@ -2142,7 +2159,7 @@ function showDetail(r){
   if(canEdit()){
     const eb=document.createElement('button');
     eb.className='btn btn-primary';eb.innerHTML='<i class="fas fa-edit"></i> Edit';
-    eb.onclick=()=>openForm(r.id);
+    eb.onclick=()=>openForm(String(r.id));
     acts.appendChild(eb);
     const db=document.createElement('button');
     db.className='btn btn-danger';db.innerHTML='<i class="fas fa-trash"></i> Hapus';
@@ -2249,7 +2266,7 @@ function openForm(id){
   if(!canEdit())return toast('Tidak ada akses edit','error');
   editId=id||null;
   document.getElementById('fmTitle').innerHTML=`<i class="fas fa-edit"></i> ${editId?'Edit':'Tambah'} Data RTLH`;
-  const r=editId?brAll.find(x=>x.id===editId):{};
+  const r=editId?brAll.find(x=>String(x.id)===String(editId)):{};
   // Super admin = isAdmin AND userKec is null/empty (no kecamatan restriction)
   const superAdmin=isSuperAdmin(); // Level 1 only can see/edit NIK
   const g=document.getElementById('formGrid');
