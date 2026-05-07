@@ -612,9 +612,9 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
     <div class="modal-body">
       <p style="font-size:.8rem;color:var(--gray-600);margin-bottom:16px">Unduh data RTLH kecamatan yang sedang aktif dalam format Excel (.xlsx).</p>
       <div style="display:flex;flex-direction:column;gap:10px">
-        <button class="btn btn-success" style="justify-content:center" onclick="downloadExcel(false)"><i class="fas fa-download"></i> Unduh Excel (NIK disensor)</button>
-        <button class="btn btn-success" id="btnDlFull" style="justify-content:center;display:none;background:#059669" onclick="downloadExcel(true)"><i class="fas fa-download"></i> Unduh Excel + NIK/KK (Super Admin)</button>
+        <button class="btn btn-success" style="justify-content:center" onclick="downloadExcel(true)"><i class="fas fa-download"></i> Unduh Excel Lengkap (dengan NIK/KK)</button>
       </div>
+      <div id="btnDlFull" style="display:none"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('ovDownload')">Tutup</button>
@@ -671,8 +671,8 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
-        <button class="btn btn-success" style="justify-content:center" onclick="downloadExcelKab(false)"><i class="fas fa-download"></i> Unduh Excel (NIK disensor)</button>
-        <button class="btn btn-success" id="btnDlKabFull" style="justify-content:center;display:none;background:#059669" onclick="downloadExcelKab(true)"><i class="fas fa-download"></i> Unduh Excel + NIK/KK (Super Admin)</button>
+        <button class="btn btn-success" style="justify-content:center" onclick="downloadExcelKab(true)"><i class="fas fa-download"></i> Unduh Excel Lengkap (dengan NIK/KK)</button>
+        <div id="btnDlKabFull" style="display:none"></div>
       </div>
       <div style="border-top:1px solid var(--gray-200);padding-top:14px">
         <div style="font-size:.72rem;font-weight:700;color:var(--gray-700);margin-bottom:8px"><i class="fas fa-upload"></i> Import Excel</div>
@@ -1183,19 +1183,25 @@ async function doGoogleLogin(){
 }
 async function doLogout(){
   await sb.auth.signOut();
-  if(_realtimeChannel)sb.removeChannel(_realtimeChannel);
+  if(_realtimeChannel)try{sb.removeChannel(_realtimeChannel);}catch(e){}
+  if(_pollTimer)clearInterval(_pollTimer);
   toast('Logout berhasil','info');
   if(MAINTENANCE_MODE)setTimeout(()=>showMaintenanceOverlay(),600);
 }
 
 // Auto-refresh digantikan Supabase Realtime
 let _realtimeChannel=null;
+let _pollTimer=null;
 function startAutoRefresh(){
   Object.keys(_kecCacheTime).forEach(k=>delete _kecCacheTime[k]);
-  if(_realtimeChannel)sb.removeChannel(_realtimeChannel);
-  _realtimeChannel=sb.channel('rtlh-changes')
-    .on('postgres_changes',{event:'*',schema:'public',table:'rtlh'},async()=>{
-      if(document.hidden)return;
+  if(_realtimeChannel)try{sb.removeChannel(_realtimeChannel);}catch(e){}
+  if(_pollTimer)clearInterval(_pollTimer);
+  // Supabase Realtime
+  _realtimeChannel=sb.channel('rtlh-live')
+    .on('postgres_changes',{event:'*',schema:'public',table:'rtlh'},async(payload)=>{
+      if(document.hidden||!isAdmin)return;
+      if(payload.new?.kec)delete brCache[payload.new.kec];
+      Object.keys(_kecCacheTime).forEach(k=>delete _kecCacheTime[k]);
       const activePage=document.querySelector('.page.active')?.id;
       try{
         if(activePage==='pgBeranda')await loadGlobalStats();
@@ -1204,6 +1210,18 @@ function startAutoRefresh(){
       }catch(e){}
     })
     .subscribe();
+  // Fallback polling 3 menit
+  _pollTimer=setInterval(async()=>{
+    if(document.hidden||!isAdmin)return;
+    const activePage=document.querySelector('.page.active')?.id;
+    try{
+      if(activePage==='pgBeranda')await loadGlobalStats();
+      else if(activePage==='pgWebgis'&&currentKec){
+        Object.keys(_kecCacheTime).forEach(k=>delete _kecCacheTime[k]);
+        brAll=[];await loadKec();
+      }
+    }catch(e){}
+  },3*60*1000);
 }
 
 function closeModal(id){document.getElementById(id).classList.remove('open')}
@@ -1703,9 +1721,9 @@ async function loadKec(){
   const now=Date.now();
   const cacheKey=currentKec+'_'+currentDesa;
   if(brAll.length&&_kecCacheTime[cacheKey]&&(now-_kecCacheTime[cacheKey])<120000){
-    renderSidebar();renderMap();return; // pakai cache, skip fetch
+    renderSidebar();updateMap();return; // pakai cache, skip fetch
   }
-  if(brCache[currentKec]&&brAll.length){renderSidebar();renderMap();return;} // cache hit
+  
   if(!currentKec)return;
   const kecName=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===currentKec);
   document.getElementById('tbTitle').textContent=`RTLH — Kec. ${kecName}`;
