@@ -1075,6 +1075,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 // ══════════════════════════════════════════════════
 const SUPA_URL='https://oiygddbzugipepatswxi.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9peWdkZGJ6dWdpcGVwYXRzd3hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MTk3NTEsImV4cCI6MjA5MTM5NTc1MX0.MiGiTCuawuT0SCD7OzvEgBH4PqqdqCtl_njMqmX4Jzs';
+const LOGIN_FN_URL=SUPA_URL+'/functions/v1/login-username';
 let sb=null; // akan diinit di DOMContentLoaded
 
 const KEC_CONFIG={
@@ -1318,6 +1319,24 @@ function updAuth(){
 function openLogin(){document.getElementById('ovLogin').classList.add('open')}
 function closeLogin(){document.getElementById('ovLogin').classList.remove('open')}
 
+// ── Login via Edge Function (username → server lookup → session) ──
+async function loginWithUsername(username, password){
+  const res = await fetch(LOGIN_FN_URL, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json', 'apikey': SUPA_KEY},
+    body: JSON.stringify({username, password}),
+    signal: AbortSignal.timeout(10000) // 10 detik timeout
+  });
+  const json = await res.json();
+  if(!res.ok) throw new Error(json.error || 'Login gagal');
+  // Set session langsung ke Supabase client
+  await sb.auth.setSession({
+    access_token: json.access_token,
+    refresh_token: json.refresh_token,
+  });
+  return json;
+}
+
 async function doLogin(){
   const input=document.getElementById('liUsername').value.trim().toLowerCase();
   const pass=document.getElementById('liPass').value;
@@ -1325,14 +1344,9 @@ async function doLogin(){
   const btn=document.querySelector('#ovLogin .btn-primary');
   btn.disabled=true;btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Memverifikasi...';
   try{
-    // Lookup email via username (RLS: anon bisa baca username saja)
-    const{data:adm}=await sb.from('admin_users').select('email,status').eq('username',input).single();
-    if(!adm)return toast('Username tidak ditemukan','error');
-    if(adm.status!=='approved')return toast('Akun belum aktif. Hubungi Super Admin.','error');
-    const{error}=await sb.auth.signInWithPassword({email:adm.email,password:pass});
-    if(error)return toast('Password salah','error');
+    await loginWithUsername(input, pass);
     closeLogin();
-  }catch(e){toast('Login gagal: '+e.message,'error');}
+  }catch(e){toast(e.message,'error');}
   finally{btn.disabled=false;btn.innerHTML='<i class="fas fa-sign-in-alt"></i> Masuk';}
 }
 async function doGoogleLogin(){
@@ -2604,15 +2618,10 @@ async function doMaintenanceLogin(){
   if(!input||!pass){errEl.textContent='Isi username dan password';return;}
   btn.disabled=true;btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Memverifikasi...';
   try{
-    // Lookup email via username
-    const{data:adm}=await sb.from('admin_users').select('email,status').eq('username',input).single();
-    if(!adm){errEl.textContent='Username tidak ditemukan';return;}
-    if(adm.status!=='approved'){errEl.textContent='Akun belum aktif. Hubungi Super Admin.';return;}
-    const{error}=await sb.auth.signInWithPassword({email:adm.email,password:pass});
-    if(error){errEl.textContent='Password salah';return;}
+    await loginWithUsername(input, pass);
     hideMaintenanceOverlay();
   }catch(e){
-    errEl.textContent='Error: '+e.message;
+    errEl.textContent=e.message;
   }finally{
     btn.disabled=false;btn.innerHTML='<i class="fas fa-sign-in-alt"></i> Masuk';
   }
@@ -2626,8 +2635,12 @@ window.addEventListener('DOMContentLoaded',async()=>{
   if(MAINTENANCE_MODE){
     if(session){
       // Verifikasi user adalah admin aktif
-      const{data}=await sb.from('admin_users').select('status').eq('email',session.user.email).single();
+      const{data}=await sb.from('admin_users').select('status,admin_level,username,nama,kecamatan,desa').eq('email',session.user.email).single();
       if(data&&data.status==='approved'){
+        // Cache info admin dari session
+        _adminUsername=data.username||session.user.email?.split('@')[0]||'Admin';
+        adminLevel=data.admin_level||2;
+        adminKecamatan=data.kecamatan||'';
         hideMaintenanceOverlay(); // user valid, lanjut
       }else{
         await sb.auth.signOut();
