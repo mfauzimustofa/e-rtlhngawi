@@ -1876,8 +1876,6 @@ function renderSidebarList(){
     const desilNum=String(r.desil||'').match(/\d+/)?.[0]||'';
     const color=desilNum?getDesilColor(desilNum):'#94A3B8';
     const statusCls=r.status_rtlh==='Sudah Ditangani'?'sudah':r.status_rtlh==='Dalam Proses'?'proses':r.status_rtlh==='Dibatalkan'?'batal':'belum';
-    const desilNum=String(r.desil||'').match(/\d+/)?.[0];
-    const desilColor=desilNum?DESIL_COLORS[parseInt(desilNum)]:'#888';
     return`<div class="rtlh-item" id="ri_${r.id}" onclick="selectItem(${r.id})">
       <div style="display:flex;align-items:center;gap:8px">
         <div style="width:22px;height:22px;border-radius:6px;background:${color}18;color:${color};font-size:.6rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div>
@@ -1889,7 +1887,7 @@ function renderSidebarList(){
       </div>
       <div class="ri-badges">
         <span class="badge ${statusCls}">${r.status_rtlh||'Belum'}</span>
-        ${desilNum?`<span class="badge desil" style="background:${desilColor}22;color:${desilColor}">Desil ${desilNum}</span>`:''}
+        ${desilNum?`<span class="badge desil" style="background:${getDesilColor(desilNum)}22;color:${getDesilColor(desilNum)}">Desil ${desilNum}</span>`:''}
         ${r.dtsen?`<span class="badge" style="background:#EFF6FF;color:#1D4ED8">MyPKP:${r.dtsen}</span>`:''}
       </div>
       <div class="ri-detail" id="det_${r.id}">
