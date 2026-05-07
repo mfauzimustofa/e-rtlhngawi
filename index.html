@@ -1741,9 +1741,15 @@ async function searchNIK(){
   const res=document.getElementById('nikResult');
   res.innerHTML='<div style="color:rgba(255,255,255,.5);font-size:.78rem;margin-top:12px"><i class="fas fa-circle-notch fa-spin"></i> Mencari...</div>';
   // Search by NIK, no_kk, or name
-  const{data,error}=await sb.from('rtlh').select('id,kec,desa,kep_kk,alamat,nik,no_kk,status_rtlh,desil').or(
-    `nik.eq.${q},no_kk.eq.${q},kep_kk.ilike.%${q}%`
-  ).limit(5);
+  // Cek apakah query adalah NIK/KK (angka) atau nama/desa/kecamatan (teks)
+  const isNumeric = /^\d+$/.test(q);
+  let query = sb.from('rtlh').select('id,kec,desa,kep_kk,alamat,nik,no_kk,status_rtlh,desil');
+  if(isNumeric){
+    query = query.or(`nik.eq.${q},no_kk.eq.${q}`);
+  } else {
+    query = query.or(`kep_kk.ilike.%${q}%,desa.ilike.%${q}%,kec.ilike.%${q}%,alamat.ilike.%${q}%`);
+  }
+  const{data,error}=await query.limit(10);
   if(error||!data||!data.length){
     res.innerHTML='<div style="color:rgba(255,255,255,.5);font-size:.78rem;margin-top:12px"><i class="fas fa-times-circle"></i> Data tidak ditemukan.</div>';
     return;
@@ -1762,27 +1768,20 @@ async function searchNIK(){
 }
 
 async function bukaDetailDariSearch(id, kecKey){
-  // Pindah ke halaman WebGIS kecamatan yang benar
   if(!kecKey)return toast('Kecamatan tidak ditemukan','error');
+  // Fetch data lengkap langsung dari Supabase — tidak perlu tunggu loadKec
+  const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,dtsen,backlog,desil,nik,no_kk';
+  const{data,error}=await sb.from('rtlh').select(cols).eq('id',parseInt(id)).single();
+  if(error||!data)return toast('Data tidak ditemukan','error');
+  // Hitung skor
+  data._score=calcScore(data);
+  // Pindah ke WebGIS kecamatan & langsung buka detail
   currentKec=kecKey.toUpperCase();
   nav('webgis');
-  // Tunggu data kecamatan selesai dimuat, lalu buka detail
-  const maxWait=8000;
-  const start=Date.now();
-  const tryOpen=async()=>{
-    const r=brAll.find(x=>String(x.id)===String(id));
-    if(r){
-      openDetail(r);
-      return;
-    }
-    if(Date.now()-start<maxWait){
-      setTimeout(tryOpen,300);
-    }else{
-      toast('Data tidak ditemukan','error');
-    }
-  };
-  // Beri waktu loadKec() jalan dulu
-  setTimeout(tryOpen,600);
+  // Masukkan ke brAll supaya edit/hapus bisa jalan
+  if(!brAll.find(x=>String(x.id)===String(id)))brAll.push(data);
+  // Buka detail setelah halaman render
+  setTimeout(()=>showDetail(data),400);
 }
 
 // ══════════════════════════════════════════════════
