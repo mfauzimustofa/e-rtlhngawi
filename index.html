@@ -1585,11 +1585,15 @@ async function searchNIK(){
   const res=document.getElementById('nikResult');
   res.innerHTML='<div style="color:rgba(255,255,255,.5);font-size:.78rem;margin-top:12px"><i class="fas fa-circle-notch fa-spin"></i> Mencari...</div>';
   // Search by NIK, no_kk, or name
-  // Cek apakah query adalah NIK/KK (angka) atau nama/desa/kecamatan (teks)
   const isNumeric = /^\d+$/.test(q);
   const statusFilter = document.getElementById('searchStatus')?.value || '';
   let query = sb.from('rtlh').select('id,kec,desa,kep_kk,alamat,nik,no_kk,status_rtlh,desil');
-  if(isNumeric){
+  if(isNumeric && q.length>=10){
+    // NIK exact match — langsung buka detail
+    await cariByNIK(q);
+    res.innerHTML='';
+    return;
+  } else if(isNumeric){
     query = query.or(`nik.eq.${q},no_kk.eq.${q}`);
   } else {
     query = query.or(`kep_kk.ilike.%${q}%,desa.ilike.%${q}%,kec.ilike.%${q}%,alamat.ilike.%${q}%`);
@@ -1988,6 +1992,12 @@ function showDetail(r){
         ${isAdmin?`<button onclick="openDokModal('${r.id}')" style="font-size:.65rem;padding:3px 10px;border-radius:6px;background:var(--warning);color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:700"><i class="fas fa-upload"></i> Upload</button>`:''}
       </div>
       <div id="dpDokList" style="font-size:.72rem;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
+    </div>
+    <div style="margin-top:14px">
+      <div style="font-size:.72rem;font-weight:800;color:var(--gray-600);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+        <i class="fas fa-history" style="color:#7C3AED"></i> Riwayat Perubahan
+      </div>
+      <div id="dpRiwayatList" style="font-size:.72rem;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
     </div>`;
   const acts=document.getElementById('dpActions');
   acts.innerHTML='';
@@ -2014,6 +2024,7 @@ function showDetail(r){
   // Load riwayat verifikasi & dokumen
   loadVerifList(r.id);
   loadDokList(r.id);
+  loadRiwayat(r.nik||r.id);
 }
 
 function closeDetail(){document.getElementById('detailPanel').classList.remove('open');clearDetailSession();}
@@ -2149,14 +2160,33 @@ async function saveForm(){
 
   let saved;
   if(editId){
-    const{data,error}=await sb.from('rtlh').update(obj).eq('id',editId).select('*').single();
+    // Ambil data lama untuk riwayat
+    const oldData=brAll.find(x=>String(x.id)===String(editId))||{};
+    const{data,error}=await sb.from('rtlh').update(obj).eq('id',parseInt(editId)).select('*').single();
     if(error){
       console.error('[saveForm] UPDATE error:', error);
       return toast('Gagal update: '+error.message,'error');
     }
-    console.log('[saveForm] UPDATE success:', data);
     saved=data;
-    const i=brAll.findIndex(x=>x.id===editId);
+    // Catat perubahan ke rtlh_riwayat
+    const changes=[];
+    const FIELD_LABELS={kep_kk:'Nama KK',desa:'Desa',alamat:'Alamat',status_rtlh:'Status RTLH',
+      status_batal:'Alasan Batal',jenis_bantuan:'Jenis Bantuan',tahun_bantuan:'Tahun Bantuan',
+      dtsen:'Status MyPKP',desil:'Desil',luas_rum:'Luas Rumah',jml_peng:'Jml Penghuni',
+      pekerjaan:'Pekerjaan',jen_kel:'Jenis Kelamin',umur:'Umur',material_d:'Material Dinding',
+      kondisi_di:'Kondisi Dinding',material_a:'Material Atap',kondisi_at:'Kondisi Atap',
+      material_l:'Material Lantai',kondisi_la:'Kondisi Lantai'};
+    for(const[key,label] of Object.entries(FIELD_LABELS)){
+      const lama=String(oldData[key]||'');
+      const baru=String(obj[key]||'');
+      if(lama!==baru)changes.push({
+        nik:saved.nik,rtlh_id:saved.id,
+        field_name:label,nilai_lama:lama||null,nilai_baru:baru||null,
+        diubah_oleh:user?.email
+      });
+    }
+    if(changes.length)await sb.from('rtlh_riwayat').insert(changes);
+    const i=brAll.findIndex(x=>String(x.id)===String(editId));
     if(i>=0){saved._score=calcScore(saved);saved._cat=getCat(saved._score);brAll[i]=saved;}
   }else{
     const{data,error}=await sb.from('rtlh').insert(obj).select('*').single();
@@ -2413,6 +2443,55 @@ async function importExcelKab(input){
     toast(`Import: ${ok} berhasil, ${fail} gagal`,'success');
   };
   reader.readAsBinaryString(file);
+}
+
+// ══════════════════════════════════════════════════
+// RIWAYAT PERUBAHAN
+// ══════════════════════════════════════════════════
+async function loadRiwayat(nik){
+  const el=document.getElementById('dpRiwayatList');
+  if(!el||!nik)return;
+  const{data}=await sb.from('rtlh_riwayat').select('*').eq('nik',String(nik)).order('diubah_at',{ascending:false}).limit(20);
+  if(!data||!data.length){
+    el.innerHTML='<span style="color:var(--gray-400)">Belum ada riwayat perubahan</span>';
+    return;
+  }
+  el.innerHTML=data.map(r=>{
+    const tgl=new Date(r.diubah_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    const petugas=r.diubah_oleh?.split('@')[0]||'-';
+    return`<div style="padding:7px 10px;border-radius:8px;border:1px solid var(--gray-200);margin-bottom:6px;background:#fff">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-weight:700;font-size:.72rem;color:var(--gray-800)">${r.field_name}</span>
+        <span style="font-size:.62rem;color:var(--gray-400)">${tgl} · ${petugas}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:.7rem">
+        <span style="color:var(--danger);text-decoration:line-through">${r.nilai_lama||'(kosong)'}</span>
+        <i class="fas fa-arrow-right" style="color:var(--gray-400);font-size:.6rem"></i>
+        <span style="color:var(--success);font-weight:600">${r.nilai_baru||'(kosong)'}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════
+// CARI BY NIK (quick lookup)
+// ══════════════════════════════════════════════════
+async function cariByNIK(nik){
+  if(!nik||nik.length<5)return toast('Masukkan NIK minimal 5 digit','error');
+  const{data,error}=await sb.from('rtlh').select('*').eq('nik',nik.trim()).single();
+  if(error||!data)return toast('NIK tidak ditemukan','error');
+  data._score=calcScore(data);
+  // Masuk ke kecamatan data tsb
+  const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(data.kec||'').toUpperCase());
+  if(kecKey){
+    currentKec=kecKey.toUpperCase();
+    nav('webgis');
+    const existing=brAll.findIndex(x=>String(x.id)===String(data.id));
+    if(existing>=0)brAll[existing]=data; else brAll.push(data);
+    setTimeout(()=>showDetail(data),400);
+  }else{
+    showDetail(data);
+  }
 }
 
 // ══════════════════════════════════════════════════
