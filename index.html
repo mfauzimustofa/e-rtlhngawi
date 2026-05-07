@@ -908,14 +908,13 @@ const DESIL_COLORS=['','#BE123C','#DC2626','#EA580C','#D97706','#65A30D','#16A34
 
 // State
 let user=null,isAdmin=false,userKec=null,userDesa=null;
+let currentKec='',currentDesa='',filterStatus='all',filterDesil='all';
 let adminLevel=0; // 0=publik, 1=super admin, 2=admin kecamatan, 3=admin desa
-let currentKec=null; // uppercase e.g. 'BRINGIN'
 let brAll=[],brFeatures=[];
 let brCache={};
 let map=null,mcg=null;
 let editId=null;
 let scoringOpen=false;
-let filterStatus='all',filterDesil='all';
 let chartStatus=null,chartDesil=null;
 let kecCounts={};
 let mobSidebarOpen=false;
