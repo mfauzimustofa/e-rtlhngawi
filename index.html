@@ -503,9 +503,6 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
         <!-- Distribusi Desil -->
         <div class="status-bar-wrap">
           <div class="status-bar-title"><i class="fas fa-layer-group"></i> Distribusi Desil DTSEN / MyPKP</div>
-          <div style="background:linear-gradient(135deg,#FFF1F2,#FEF2F2);border:1px solid #FECACA;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:.72rem;color:#BE123C;font-weight:600">
-            <i class="fas fa-layer-group"></i> <strong>Desil 1–4</strong> adalah kelompok utama penerima bantuan RTLH
-          </div>
           <div class="desil-grid" id="desilGrid">
             <div class="empty-state" style="grid-column:1/-1"><i class="fas fa-circle-notch fa-spin"></i><p>Memuat...</p></div>
           </div>
@@ -935,13 +932,11 @@ const isAdminL3=()=>isAdmin&&adminLevel===3;
 const canSeeNIK=()=>isAdmin&&adminLevel<=2; // Level 1 dan 2 bisa lihat NIK
 const canEdit=()=>{
   if(!isAdmin)return false;
-  if(isSuperAdmin())return true;
+  if(adminLevel===1)return true; // super admin
   if(!currentKec)return false;
-  const kecs=(userKec||'').split(',').filter(Boolean).map(k=>k.toUpperCase().trim());
-  if(!kecs.includes(currentKec))return false;
-  // Admin L3: cek juga desa
-  // (desa filter tidak blokir edit, hanya batasi akses data)
-  return true;
+  if(!userKec)return true; // tidak ada batasan kecamatan
+  const kecs=userKec.split(',').filter(Boolean).map(k=>k.toUpperCase().trim());
+  return kecs.length===0||kecs.includes(currentKec);
 };
 
 // ── MASKING FUNCTIONS ──
@@ -1113,12 +1108,7 @@ async function setUser(u){
     adminLevel=data.admin_level||2; // default level 2 jika tidak ada
     userKec=data.kecamatan||null;
     userDesa=data.desa||null;
-    // Force email super admin ke level 1
-    if(u.email==='muhammadfauzimustofa7@gmail.com'){
-      adminLevel=1;
-      userKec=null;
-      userDesa=null;
-    }
+    // adminLevel langsung dari DB (sudah di-set via SQL)
   }else{
     isAdmin=false;
     adminLevel=0;
@@ -1230,7 +1220,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open')}
 // GLOBAL STATS (BERANDA)
 // ══════════════════════════════════════════════════
 async function loadGlobalStats(){
-  if(!isAdmin)return; // Guard: hanya admin
+  if(!user)return; // Guard: harus login
   try{
     const{data,error}=await sb.from('rtlh').select('kec,status_rtlh,desil');
     if(error)throw error;
@@ -1288,7 +1278,7 @@ function renderDesilGrid(counts){
   const bgs=['#FFF1F2','#FEF2F2','#FFF7ED','#FFFBEB','#F7FEE7','#F0FDF4','#ECFEFF','#F5F3FF'];
   const g=document.getElementById('desilGrid');
   g.innerHTML=labels.map((l,i)=>{
-    const priority=i<4?'<span style="font-size:.48rem;background:rgba(190,18,60,.15);color:#BE123C;padding:1px 4px;border-radius:4px;font-weight:700">PRIORITAS</span>':'';
+    const priority='';
     return`<div class="desil-chip" style="background:${bgs[i]};border-color:${colors[i]}30" onclick="document.getElementById('kecGrid').scrollIntoView({behavior:'smooth'})">
       <div class="dc-num" style="color:${colors[i]}">${i+1}</div>
       <div class="dc-label" style="color:${colors[i]}">${l}</div>
@@ -1717,7 +1707,7 @@ function initMap(){
 // Cache timestamp per kecamatan
 const _kecCacheTime={};
 async function loadKec(){
-  if(!isAdmin)return; // Guard: hanya admin
+  if(!user)return; // Guard: harus login
   const now=Date.now();
   const cacheKey=currentKec+'_'+currentDesa;
   if(brAll.length&&_kecCacheTime[cacheKey]&&(now-_kecCacheTime[cacheKey])<120000){
