@@ -1319,24 +1319,6 @@ function updAuth(){
 function openLogin(){document.getElementById('ovLogin').classList.add('open')}
 function closeLogin(){document.getElementById('ovLogin').classList.remove('open')}
 
-// ── Login via Edge Function (username → server lookup → session) ──
-async function loginWithUsername(username, password){
-  const res = await fetch(LOGIN_FN_URL, {
-    method: 'POST',
-    headers: {'Content-Type':'application/json', 'apikey': SUPA_KEY},
-    body: JSON.stringify({username, password}),
-    signal: AbortSignal.timeout(10000) // 10 detik timeout
-  });
-  const json = await res.json();
-  if(!res.ok) throw new Error(json.error || 'Login gagal');
-  // Set session langsung ke Supabase client
-  await sb.auth.setSession({
-    access_token: json.access_token,
-    refresh_token: json.refresh_token,
-  });
-  return json;
-}
-
 async function doLogin(){
   const input=document.getElementById('liUsername').value.trim().toLowerCase();
   const pass=document.getElementById('liPass').value;
@@ -1344,9 +1326,12 @@ async function doLogin(){
   const btn=document.querySelector('#ovLogin .btn-primary');
   btn.disabled=true;btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Memverifikasi...';
   try{
-    await loginWithUsername(input, pass);
+    const{data:adm}=await sb.from('admin_users').select('email,status').eq('username',input).single();
+    if(!adm||adm.status!=='approved')return toast('Username atau password salah','error');
+    const{error}=await sb.auth.signInWithPassword({email:adm.email,password:pass});
+    if(error)return toast('Username atau password salah','error');
     closeLogin();
-  }catch(e){toast(e.message,'error');}
+  }catch(e){toast('Login gagal','error');}
   finally{btn.disabled=false;btn.innerHTML='<i class="fas fa-sign-in-alt"></i> Masuk';}
 }
 async function doGoogleLogin(){
@@ -2618,10 +2603,13 @@ async function doMaintenanceLogin(){
   if(!input||!pass){errEl.textContent='Isi username dan password';return;}
   btn.disabled=true;btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Memverifikasi...';
   try{
-    await loginWithUsername(input, pass);
+    const{data:adm}=await sb.from('admin_users').select('email,status').eq('username',input).single();
+    if(!adm||adm.status!=='approved'){errEl.textContent='Username atau password salah';return;}
+    const{error}=await sb.auth.signInWithPassword({email:adm.email,password:pass});
+    if(error){errEl.textContent='Username atau password salah';return;}
     hideMaintenanceOverlay();
   }catch(e){
-    errEl.textContent=e.message;
+    errEl.textContent='Login gagal';
   }finally{
     btn.disabled=false;btn.innerHTML='<i class="fas fa-sign-in-alt"></i> Masuk';
   }
