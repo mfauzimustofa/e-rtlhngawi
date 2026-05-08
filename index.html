@@ -1219,45 +1219,32 @@ function closeModal(id){document.getElementById(id).classList.remove('open')}
 async function loadGlobalStats(){
   if(!user)return;
   try{
-    // Gunakan aggregate SQL via RPC — tidak ada limit, super cepat
-    const[
-      {data:dTotal,error:eTotal},
-      {data:dStatus,error:eStatus},
-      {data:dDesil,error:eDesil},
-      {data:dKec,error:eKec}
-    ]=await Promise.all([
-      sb.from('rtlh').select('*',{count:'exact',head:true}),
-      sb.from('rtlh').select('status_rtlh').csv(),
-      sb.from('rtlh').select('desil').csv(),
-      sb.from('rtlh').select('kec,status_rtlh').csv(),
-    ]);
-
-    // Parse CSV hasil query (Supabase CSV tidak kena limit 1000)
-    const parseCSV=(csv)=>{
-      if(!csv)return[];
-      const lines=csv.trim().split('\n');
-      const headers=lines[0].split(',');
-      return lines.slice(1).map(l=>Object.fromEntries(l.split(',').map((v,i)=>[headers[i],v])));
-    };
-
-    const statusData=parseCSV(dStatus);
-    const desilData=parseCSV(dDesil);
-    const kecData=parseCSV(dKec);
-    const total=dTotal||statusData.length;
-
-    // Hitung dari data
-    const layak=statusData.filter(r=>r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses').length;
-    const belum=statusData.filter(r=>r.status_rtlh==='RTLH'||r.status_rtlh==='Belum Ditangani'||!r.status_rtlh||r.status_rtlh==='').length;
-    const batal=statusData.filter(r=>r.status_rtlh==='Dibatalkan').length;
+    // Fetch semua data dengan parallel pagination
+    const pageSize=1000;
+    // Ambil total dulu
+    const{count:totalCount}=await sb.from('rtlh').select('*',{count:'exact',head:true});
+    const pages=Math.ceil((totalCount||0)/pageSize);
+    // Fetch semua halaman parallel
+    const promises=[];
+    for(let p=0;p<pages;p++){
+      promises.push(
+        sb.from('rtlh').select('kec,status_rtlh,desil').range(p*pageSize,(p+1)*pageSize-1)
+      );
+    }
+    const results=await Promise.all(promises);
+    const data=results.flatMap(r=>r.data||[]);
+    const total=data.length;
+    const layak=data.filter(r=>r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses').length;
+    const belum=data.filter(r=>r.status_rtlh==='RTLH'||r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
+    const batal=data.filter(r=>r.status_rtlh==='Dibatalkan').length;
     const sudah=layak; const proses=0;
-    const data=statusData; // compat
     const total=data.length;
     const layak=data.filter(r=>r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses').length;
     const belum=data.filter(r=>r.status_rtlh==='RTLH'||r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
     const batal=data.filter(r=>r.status_rtlh==='Dibatalkan').length;
     const sudah=layak; const proses=0;
 
-    document.getElementById('gs-total').textContent=(typeof total==='number'?total:statusData.length).toLocaleString('id');
+    document.getElementById('gs-total').textContent=total.toLocaleString('id');
     document.getElementById('gs-layak').textContent=layak.toLocaleString('id');
     document.getElementById('gs-belum').textContent=belum.toLocaleString('id');
 
@@ -1267,9 +1254,9 @@ async function loadGlobalStats(){
     document.getElementById('lgSudah').textContent=`Layak Huni: ${playak}% (${layak})`;
     document.getElementById('lgBelum').textContent=`RTLH: ${pb}% (${belum})`;
 
-    // Per kec counts dari kecData
+    // Per kec counts
     kecCounts={};
-    kecData.forEach(r=>{
+    data.forEach(r=>{
       const k=(r.kec||'').toUpperCase();
       if(!kecCounts[k])kecCounts[k]={total:0,sudah:0,proses:0,belum:0};
       kecCounts[k].total++;
@@ -1277,18 +1264,18 @@ async function loadGlobalStats(){
       else if(r.status_rtlh!=='Dibatalkan')kecCounts[k].belum++;
     });
 
-    // Desil counts dari desilData
+    // Desil counts
     const desilCounts={};
     for(let i=1;i<=8;i++)desilCounts[i]=0;
-    desilData.forEach(r=>{
-      const m=(r.desil||'').match(/\d+/);
+    data.forEach(r=>{
+      const m=r.desil?.match(/\d+/);
       if(m){const d=parseInt(m[0]);if(d>=1&&d<=8)desilCounts[d]++;}
     });
 
     renderDesilGrid(desilCounts);
     renderKecGrid();
     renderKecTable();
-    renderChartStatus(statusData);
+    renderChartStatus(data);
     renderChartDesil(desilCounts);
     initMapBeranda();
     updateMapMarkers();
@@ -1716,13 +1703,14 @@ function selectKec(k){
 async function ensureKecCounts(force=false){
   if(!force && Object.keys(kecCounts).length>0)return;
   try{
-    const{data:csv}=await sb.from('rtlh').select('kec,status_rtlh').csv();
-    if(!csv)return;
-    const lines=csv.trim().split('\n');
-    const hdrs=lines[0].split(',');
-    const rows=lines.slice(1).map(l=>Object.fromEntries(l.split(',').map((v,i)=>[hdrs[i],v])));
+    const{count}=await sb.from('rtlh').select('*',{count:'exact',head:true});
+    const pages=Math.ceil((count||0)/1000);
+    const ps=await Promise.all(Array.from({length:pages},(_,p)=>
+      sb.from('rtlh').select('kec,status_rtlh').range(p*1000,(p+1)*1000-1)
+    ));
+    const all=ps.flatMap(r=>r.data||[]);
     kecCounts={};
-    rows.forEach(r=>{
+    all.forEach(r=>{
       const k=(r.kec||'').toUpperCase();
       if(!kecCounts[k])kecCounts[k]={total:0,sudah:0,proses:0,belum:0};
       kecCounts[k].total++;
