@@ -352,6 +352,13 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 }
 
 /* ══ UX IMPROVEMENTS ══ */
+/* Search glow pulse saat idle */
+@keyframes searchPulse{
+  0%,100%{box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+  50%{box-shadow:0 0 0 5px rgba(59,130,246,.22),0 0 18px rgba(59,130,246,.12)}
+}
+#nikSearchInput{animation:searchPulse 2.5s ease-in-out infinite}
+#nikSearchInput:focus{animation:none}
 /* Tombol salin NIK */
 .copy-nik-btn{background:none;border:1px solid var(--gray-300);border-radius:6px;padding:2px 8px;font-size:.65rem;cursor:pointer;color:var(--gray-500);transition:var(--transition)}
 .copy-nik-btn:hover{background:var(--gray-100);color:var(--gray-700)}
@@ -516,8 +523,9 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
           <input id="nikSearchInput" type="text"
             placeholder="Cari nama, NIK, desa, atau kecamatan..."
             maxlength="80" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="search"
-            style="width:100%;padding:11px 14px 11px 38px;border-radius:10px;border:1.5px solid var(--gray-200);font-size:15px;font-family:inherit;background:#fff;color:var(--gray-900);outline:none;box-sizing:border-box;transition:border .2s"
-            onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--gray-200)'"
+            style="width:100%;padding:11px 14px 11px 38px;border-radius:10px;border:2px solid #E2E8F0;font-size:15px;font-family:inherit;background:#fff;color:var(--gray-900);outline:none;box-sizing:border-box;transition:all .25s;box-shadow:0 0 0 3px rgba(59,130,246,.12)"
+            onfocus="this.style.borderColor='#3B82F6';this.style.boxShadow='0 0 0 4px rgba(59,130,246,.25),0 0 16px rgba(59,130,246,.15)'"
+            onblur="this.style.borderColor='#E2E8F0';this.style.boxShadow='0 0 0 3px rgba(59,130,246,.12)'"
             onkeydown="if(event.key==='Enter')searchNIK()"
             oninput="clearTimeout(this._t);if(this.value.trim().length>=3){this._t=setTimeout(()=>searchNIK(),500)}else if(!this.value.trim()){clearSearch()}">
         </div>
@@ -2470,9 +2478,10 @@ async function saveForm(){
       kondisi_di:'Kondisi Dinding',material_a:'Material Atap',kondisi_at:'Kondisi Atap',
       material_l:'Material Lantai',kondisi_la:'Kondisi Lantai'};
     for(const[key,label] of Object.entries(FIELD_LABELS)){
-      const lama=String(oldData[key]||'');
-      const baru=String(obj[key]||'');
-      if(lama!==baru)changes.push({
+      const lama=String(oldData[key]||'').trim();
+      const baru=String(obj[key]||'').trim();
+      // Case-insensitive — NGRAMBE == Ngrambe tidak dianggap berubah
+      if(lama.toLowerCase()!==baru.toLowerCase())changes.push({
         nik:saved.nik,rtlh_id:saved.id,
         field_name:label,nilai_lama:lama||null,nilai_baru:baru||null,
         diubah_oleh:user?.email
@@ -3053,9 +3062,9 @@ async function uploadExcelIndividu(input, rtlhId){
         const changes=[];
         for(const[key,label] of Object.entries(FIELD_LABELS)){
           if(!(key in obj))continue;
-          const lama=String(oldData[key]||'');
-          const baru=String(obj[key]||'');
-          if(lama!==baru)changes.push({
+          const lama=String(oldData[key]||'').trim();
+          const baru=String(obj[key]||'').trim();
+          if(lama.toLowerCase()!==baru.toLowerCase()&&lama!==baru)changes.push({
             nik:oldData.nik,rtlh_id:parseInt(rtlhId),
             field_name:label,nilai_lama:lama||null,nilai_baru:baru||null,
             diubah_oleh:user?.email
