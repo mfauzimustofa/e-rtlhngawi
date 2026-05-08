@@ -2243,6 +2243,39 @@ function openDownloadModal(){
   document.getElementById('ovDownload').classList.add('open');
 }
 
+// Tambah dropdown validation ke worksheet XLSX
+function addExcelDropdowns(ws, rows){
+  if(!rows.length)return;
+  const COL={
+    'Status RTLH':'W',
+    'Alasan Batal':'X',
+    'Jenis Bantuan':'Y',
+    'Status MyPKP':'AE'
+  };
+  const OPTS={
+    'Status RTLH':'"Belum Ditangani,Dalam Proses,Sudah Ditangani,Dibatalkan"',
+    'Alasan Batal':'"Meninggal Dunia,Tidak Bersedia Dibantu,Tidak Ada Biaya,Pindah Tempat Tinggal,Sudah Mampu Mandiri,Tidak Memenuhi Syarat,Lainnya"',
+    'Jenis Bantuan':'"RTLH,BSPS,Dana Desa,CSR,Lainnya"',
+    'Status MyPKP':'"Eligible,Not Eligible,Not Eligible1"'
+  };
+  // Cari indeks kolom dari header
+  const headers=Object.keys(rows[0]);
+  headers.forEach((h,ci)=>{
+    if(!OPTS[h])return;
+    const colLetter=XLSX.utils.encode_col(ci);
+    for(let r=2;r<=rows.length+1;r++){
+      const cell=colLetter+r;
+      if(!ws[cell])ws[cell]={t:'s',v:''};
+      if(!ws['!dataValidation'])ws['!dataValidation']=[];
+      ws['!dataValidation'].push({
+        type:'list',sqref:cell,formula1:OPTS[h],showDropDown:false,
+        showErrorMessage:true,errorTitle:'Pilihan tidak valid',
+        error:'Silakan pilih dari daftar yang tersedia'
+      });
+    }
+  });
+}
+
 function downloadExcel(withNIK){
   const superAdmin=isSuperAdmin();
   const rows=brAll.map(r=>({
@@ -2264,6 +2297,7 @@ function downloadExcel(withNIK){
   }));
   const ws=XLSX.utils.json_to_sheet(rows);
   ws['!cols']=Object.keys(rows[0]).map(k=>({wch:Math.max(k.length+2,14)}));
+  addExcelDropdowns(ws,rows);
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'RTLH');
   XLSX.writeFile(wb,`RTLH_${currentKec}_${new Date().toISOString().slice(0,10)}.xlsx`);
@@ -2372,6 +2406,7 @@ async function downloadExcelKab(withNIK){
     }));
     const ws=XLSX.utils.json_to_sheet(rows);
     ws['!cols']=Object.keys(rows[0]).map(k=>({wch:Math.max(k.length+2,14)}));
+    addExcelDropdowns(ws,rows);
     const wb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb,ws,'RTLH');
     const fname=`RTLH_Kabupaten${kec?'_'+kec:''}_${new Date().toISOString().slice(0,10)}.xlsx`;
@@ -2382,6 +2417,11 @@ async function downloadExcelKab(withNIK){
   }
 }
 
+// Helper: ambil nilai string atau null (bukan string kosong)
+function xlVal(v){const s=String(v==null?'':v).trim();return s||null;}
+function xlNum(v){const n=parseFloat(String(v||'').replace(',','.'));return isNaN(n)?null:n;}
+function xlInt(v){const n=parseInt(String(v||''));return isNaN(n)?null:n;}
+
 async function importExcelKab(input){
   const file=input.files[0];
   if(!file)return;
@@ -2391,60 +2431,91 @@ async function importExcelKab(input){
   log.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Membaca file...';
   const reader=new FileReader();
   reader.onload=async(e)=>{
-    const wb=XLSX.read(e.target.result,{type:'binary'});
-    const ws=wb.Sheets[wb.SheetNames[0]];
-    const rows=XLSX.utils.sheet_to_json(ws);
-    if(!rows.length){log.innerHTML='<span style="color:var(--danger)">File kosong</span>';return;}
-    log.innerHTML=`Memproses ${rows.length} baris...`;
-    let ok=0,fail=0,skip=0;
-    for(const row of rows){
-      const obj={
-        kec:row['Kecamatan']||row['kec']||null,
-        desa:row['Desa']||row['desa']||null,
-        kep_kk:row['Nama KK']||row['kep_kk']||null,
-        alamat:row['Alamat']||row['alamat']||null,
-        jen_kel:row['Jenis Kelamin']||row['jen_kel']||null,
-        umur:parseInt(row['Umur']||row['umur'])||null,
-        pend_ter:row['Pendidikan']||row['pend_ter']||null,
-        pekerjaan:row['Pekerjaan']||row['pekerjaan']||null,
-        pengh:row['Penghasilan']||row['pengh']||null,
-        luas_rum:parseFloat(row['Luas Rumah (m²)']||row['Luas Rumah']||row['luas_rum'])||null,
-        luas_tan:parseFloat(row['Luas Tanah (m²)']||row['Luas Tanah']||row['luas_tan'])||null,
-        jml_peng:parseInt(row['Jml Penghuni']||row['jml_peng'])||null,
-        status_kep:row['Status Kepemilikan']||row['status_kep']||null,
-        material_d:row['Material Dinding']||row['material_d']||null,kondisi_di:row['Kondisi Dinding']||row['kondisi_di']||null,
-        material_a:row['Material Atap']||row['material_a']||null,kondisi_at:row['Kondisi Atap']||row['kondisi_at']||null,
-        material_l:row['Material Lantai']||row['material_l']||null,kondisi_la:row['Kondisi Lantai']||row['kondisi_la']||null,
-        status_rtlh:row['Status RTLH']||row['status_rtlh']||null,
-        status_batal:row['Alasan Batal']||row['status_batal']||null,
-        jenis_bantuan:row['Jenis Bantuan']||row['jenis_bantuan']||null,
-        tahun_bantuan:String(row['Tahun Bantuan']||row['tahun_bantuan']||'').replace(/[^0-9]/g,'')||null,
-        dtsen:row['Status MyPKP']||row['DTSEN']||row['dtsen']||null,
-        desil:row['Desil']||row['desil']||null,
-        backlog:row['Backlog']||row['backlog']||null,
-        latitude:parseFloat(row['Latitude']||row['latitude'])||null,
-        longitude:parseFloat(row['Longitude']||row['longitude'])||null,
-        nik:isSuperAdmin()?String(row['NIK']||row['nik']||'').replace(/[^0-9]/g,'')||null:undefined,
-        no_kk:isSuperAdmin()?String(row['No. KK']||row['no_kk']||'').replace(/[^0-9]/g,'')||null:undefined,
-      };
-      if(!isSuperAdmin()){delete obj.nik;delete obj.no_kk;}
-      const id=row['ID']||row['id'];
-      if(id){
-        const{data:existing}=await sb.from('rtlh').select('id').eq('id',parseInt(id)).single();
-        if(existing){
-          const{error}=await sb.from('rtlh').update(obj).eq('id',parseInt(id));
-          error?fail++:ok++;continue;
+    try{
+      const wb=XLSX.read(e.target.result,{type:'binary',cellText:true,cellDates:true});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      if(!rows.length){log.innerHTML='<span style="color:var(--danger)">File kosong atau format salah</span>';return;}
+      log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memproses ${rows.length} baris...`;
+      let ok=0,fail=0,errors=[];
+      // Proses per batch 10 untuk tidak overload
+      for(let i=0;i<rows.length;i++){
+        const row=rows[i];
+        const rowNum=i+2; // baris excel (header=1)
+        const obj={
+          kec:xlVal(row['Kecamatan']||row['kec']),
+          desa:xlVal(row['Desa']||row['desa']),
+          kep_kk:xlVal(row['Nama KK']||row['kep_kk']),
+          alamat:xlVal(row['Alamat']||row['alamat']),
+          jen_kel:xlVal(row['Jenis Kelamin']||row['jen_kel']),
+          umur:xlInt(row['Umur']||row['umur']),
+          pend_ter:xlVal(row['Pendidikan']||row['pend_ter']),
+          pekerjaan:xlVal(row['Pekerjaan']||row['pekerjaan']),
+          pengh:xlVal(row['Penghasilan']||row['pengh']),
+          luas_rum:xlNum(row['Luas Rumah (m²)']||row['Luas Rumah']||row['luas_rum']),
+          luas_tan:xlNum(row['Luas Tanah (m²)']||row['Luas Tanah']||row['luas_tan']),
+          jml_peng:xlInt(row['Jml Penghuni']||row['jml_peng']),
+          status_kep:xlVal(row['Status Kepemilikan']||row['status_kep']),
+          material_d:xlVal(row['Material Dinding']||row['material_d']),
+          kondisi_di:xlVal(row['Kondisi Dinding']||row['kondisi_di']),
+          material_a:xlVal(row['Material Atap']||row['material_a']),
+          kondisi_at:xlVal(row['Kondisi Atap']||row['kondisi_at']),
+          material_l:xlVal(row['Material Lantai']||row['material_l']),
+          kondisi_la:xlVal(row['Kondisi Lantai']||row['kondisi_la']),
+          status_rtlh:xlVal(row['Status RTLH']||row['status_rtlh']),
+          status_batal:xlVal(row['Alasan Batal']||row['status_batal']),
+          jenis_bantuan:xlVal(row['Jenis Bantuan']||row['jenis_bantuan']),
+          tahun_bantuan:xlVal(String(row['Tahun Bantuan']||row['tahun_bantuan']||'').replace(/[^0-9]/g,'')),
+          dtsen:xlVal(row['Status MyPKP']||row['DTSEN']||row['dtsen']),
+          desil:xlVal(row['Desil']||row['desil']),
+          backlog:xlVal(row['Backlog']||row['backlog']),
+          latitude:xlNum(row['Latitude']||row['latitude']),
+          longitude:xlNum(row['Longitude']||row['longitude']),
+        };
+        // Hapus key yang null supaya tidak overwrite data existing dengan null
+        Object.keys(obj).forEach(k=>{if(obj[k]===null)delete obj[k];});
+        const nik=String(row['NIK']||row['nik']||'').replace(/[^0-9]/g,'');
+        const noKk=String(row['No. KK']||row['no_kk']||'').replace(/[^0-9]/g,'');
+        if(nik)obj.nik=nik;
+        if(noKk)obj.no_kk=noKk;
+        const id=row['ID']||row['id'];
+        let error=null;
+        if(id&&parseInt(id)){
+          // Update by ID
+          const res=await sb.from('rtlh').update(obj).eq('id',parseInt(id));
+          error=res.error;
+        } else if(nik){
+          // Upsert by NIK
+          const{data:existing}=await sb.from('rtlh').select('id').eq('nik',nik).single();
+          if(existing){
+            const res=await sb.from('rtlh').update(obj).eq('nik',nik);
+            error=res.error;
+          } else {
+            const res=await sb.from('rtlh').insert(obj);
+            error=res.error;
+          }
+        } else {
+          const res=await sb.from('rtlh').insert(obj);
+          error=res.error;
         }
+        if(error){fail++;errors.push(`Baris ${rowNum}: ${error.message}`);}
+        else ok++;
+        // Update progress tiap 10 baris
+        if(i%10===0)log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memproses... ${i+1}/${rows.length}`;
       }
-      const{error}=await sb.from('rtlh').insert(obj);
-      error?fail++:ok++;
+      Object.keys(_kecCacheTime).forEach(k=>delete _kecCacheTime[k]);
+      Object.keys(brCache).forEach(k=>delete brCache[k]);
+      let logHtml=`<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Selesai: <strong>${ok}</strong> berhasil`;
+      if(fail)logHtml+=` · <span style="color:var(--danger)">${fail} gagal</span>`;
+      logHtml+='</span>';
+      if(errors.length)logHtml+=`<div style="margin-top:6px;max-height:80px;overflow-y:auto;font-size:.65rem;color:var(--danger)">${errors.slice(0,5).join('<br>')}</div>`;
+      log.innerHTML=logHtml;
+      input.value='';
+      toast(`Import selesai: ${ok} berhasil${fail?', '+fail+' gagal':''}`,fail?'error':'success');
+      if(currentKec){brAll=[];await loadKec();}
+    }catch(err){
+      log.innerHTML=`<span style="color:var(--danger)"><i class="fas fa-times-circle"></i> Error: ${err.message}</span>`;
     }
-    // Invalidate cache
-    Object.keys(_kecCacheTime).forEach(k=>delete _kecCacheTime[k]);
-    log.innerHTML=`<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Selesai: <strong>${ok}</strong> berhasil${fail?`, <span style="color:var(--danger)">${fail} gagal</span>`:''}${skip?`, ${skip} dilewati`:''}</span>`;
-    input.value='';
-    if(currentKec){brAll=[];await loadKec();}
-    toast(`Import: ${ok} berhasil, ${fail} gagal`,'success');
   };
   reader.readAsBinaryString(file);
 }
