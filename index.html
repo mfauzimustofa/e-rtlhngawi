@@ -2237,7 +2237,15 @@ function openForm(id){
     const locked=f.sensitive&&!superAdmin;
     if(f.type==='desa_select'){
       const dl=getDesaList();
-      if(dl.length)return`<div class="${cls}"><label>${f.label}</label><select id="ff_${f.key}"><option value="">-- Pilih Desa --</option>${dl.map(d=>`<option ${val.toUpperCase()===d.toUpperCase()?'selected':''}>${d.toUpperCase()}</option>`).join('')}</select></div>`;
+      // Cek apakah val ada di daftar (case-insensitive)
+      const valUpper=val.toUpperCase();
+      const inList=dl.some(d=>d.toUpperCase()===valUpper);
+      if(dl.length){
+        // Kalau val tidak ada di list, tambahkan sebagai option
+        const extraOption=val&&!inList?`<option value="${val}" selected>${val}</option>`:'';
+        return`<div class="${cls}"><label>${f.label}</label><select id="ff_${f.key}"><option value="">-- Pilih Desa --</option>${extraOption}${dl.map(d=>`<option value="${d}" ${valUpper===d.toUpperCase()?'selected':''}>${d}</option>`).join('')}</select></div>`;
+      }
+      // Fallback: input text dengan nilai lama terjaga
       return`<div class="${cls}"><label>${f.label}</label><input type="text" id="ff_${f.key}" value="${val}" placeholder="Nama desa"></div>`;
     }
     if(f.type==='select'){
@@ -2262,7 +2270,9 @@ function openForm(id){
 function closeForm(){document.getElementById('ovForm').classList.remove('open');editId=null;}
 
 async function saveForm(){
-  const obj={kec:currentKec};
+  // Ambil data lama biar nilai yang tidak diubah tidak hilang
+  const oldRec=editId?brAll.find(x=>String(x.id)===String(editId)):null;
+  const obj={kec:currentKec||(oldRec?.kec)||''};
   for(const f of FIELDS){
     const el=document.getElementById('ff_'+f.key);
     if(!el)continue;
@@ -2272,7 +2282,11 @@ async function saveForm(){
     else if(el.tagName==='TEXTAREA'){v=el.value.trim();}
     else{v=el.value.trim();}
     if(f.type==='number')obj[f.key]=v?parseFloat(v):null;
-    else obj[f.key]=v||null;
+    else{
+      // Jangan overwrite dengan kosong kalau field sudah ada isinya di data lama
+      if(!v&&oldRec&&oldRec[f.key])obj[f.key]=oldRec[f.key];
+      else obj[f.key]=v||null;
+    }
   }
   // Tambah timestamp update
   obj.updated_at=new Date().toISOString();
