@@ -569,6 +569,14 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
   </div>
   <div class="map-wrap">
     <div id="map"></div>
+    <div class="map-legend">
+      <h4>Status</h4>
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <div style="display:flex;align-items:center;gap:6px;font-size:.72rem"><div style="width:12px;height:12px;border-radius:50%;background:#16A34A;flex-shrink:0"></div>Layak Huni</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:.72rem"><div style="width:12px;height:12px;border-radius:50%;background:#DC2626;flex-shrink:0"></div>RTLH</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:.72rem"><div style="width:12px;height:12px;border-radius:50%;background:#94A3B8;flex-shrink:0"></div>Dibatalkan</div>
+      </div>
+    </div>
   </div>
   <div class="wg-body" id="wgBody"></div>
 </div>
@@ -1465,28 +1473,61 @@ function addKecBoundary(){
 
 function updateMapMarkers(){
   if(!mapBeranda)return;
-  mapBeranda.eachLayer(l=>{if(l instanceof L.CircleMarker)mapBeranda.removeLayer(l);});
+  // Hapus semua marker lama (CircleMarker dan DivIcon)
+  mapBeranda.eachLayer(l=>{
+    if(l instanceof L.CircleMarker||l instanceof L.Marker)mapBeranda.removeLayer(l);
+  });
   Object.keys(KEC_CONFIG).forEach(k=>{
     const cfg=KEC_CONFIG[k];
-    const c=kecCounts[k.toUpperCase()]||{total:0,sudah:0,proses:0,belum:0};
-    const cnt=c.total;
-    const color=cnt>100?'#DC2626':cnt>50?'#F97316':cnt>20?'#F59E0B':'#3B82F6';
-    const radius=Math.max(10,Math.min(28,8+cnt/3));
-    const m=L.circleMarker([cfg.lat,cfg.lng],{
-      radius,fillColor:color,color:'#fff',weight:2,fillOpacity:.9
-    }).addTo(mapBeranda);
-    // Label jumlah di dalam marker
+    const c=kecCounts[k.toUpperCase()]||{total:0,sudah:0,belum:0};
+    const layak=c.sudah||0;
+    const rtlh=c.belum||0;
+    const total=layak+rtlh||1;
+    const size=Math.max(40,Math.min(80,30+total/15));
+    const r=size/2;
+    // Buat SVG pie chart
+    const pLayak=layak/total;
+    const pRtlh=rtlh/total;
+    const angle=pLayak*2*Math.PI;
+    const x1=r+r*Math.sin(0);
+    const y1=r-r*Math.cos(0);
+    const x2=r+r*Math.sin(angle);
+    const y2=r-r*Math.cos(angle);
+    const large=pLayak>0.5?1:0;
+    let svgContent;
+    if(pLayak>=1){
+      svgContent=`<circle cx="${r}" cy="${r}" r="${r-1}" fill="#16A34A"/>`;
+    } else if(pRtlh>=1){
+      svgContent=`<circle cx="${r}" cy="${r}" r="${r-1}" fill="#DC2626"/>`;
+    } else {
+      svgContent=`
+        <circle cx="${r}" cy="${r}" r="${r-1}" fill="#DC2626"/>
+        <path d="M${r},${r} L${x1},${y1} A${r-1},${r-1} 0 ${large},1 ${x2},${y2} Z" fill="#16A34A"/>
+      `;
+    }
+    const svg=`<svg width="${size}" height="${size}" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,.3));display:block">
+      <circle cx="${r}" cy="${r}" r="${r-1}" fill="white"/>
+      ${svgContent}
+      <circle cx="${r}" cy="${r}" r="${r-1}" fill="none" stroke="white" stroke-width="1.5"/>
+      <text x="${r}" y="${r+4}" text-anchor="middle" font-size="${size>50?'9':'7'}" font-weight="800" fill="white" font-family="inherit">${total}</text>
+    </svg>`;
+    const icon=L.divIcon({
+      html:svg,
+      iconSize:[size,size],
+      iconAnchor:[r,r],
+      className:''
+    });
+    const m=L.marker([cfg.lat,cfg.lng],{icon}).addTo(mapBeranda);
     m.bindTooltip(
       `<div style="font-family:inherit;min-width:160px">
-        <div style="font-weight:800;font-size:.85rem;margin-bottom:4px">${k}</div>
-        <div style="display:flex;gap:8px;font-size:.75rem">
-          <span style="color:#16A34A">✓${c.sudah}</span>
-          <span style="color:#F59E0B">⏳${c.proses}</span>
-          <span style="color:#DC2626">✗${c.belum}</span>
+        <div style="font-weight:800;font-size:.85rem;margin-bottom:6px">${k}</div>
+        <div style="display:flex;gap:10px;font-size:.78rem">
+          <span style="color:#16A34A;font-weight:700">🏠 Layak: ${layak}</span>
+          <span style="color:#DC2626;font-weight:700">🏚 RTLH: ${rtlh}</span>
         </div>
-        <div style="font-size:.7rem;margin-top:4px;color:#666">Total: <b>${cnt}</b> RTLH</div>
+        <div style="font-size:.7rem;margin-top:4px;color:#666">Total: <b>${total}</b> data</div>
       </div>`,
-      {direction:'top',offset:[0,-radius],className:'leaflet-tooltip-clean'}
+      {direction:'top',offset:[0,-r],className:'leaflet-tooltip-clean'}
     );
     m.on('click',()=>selectKec(k));
   });
@@ -1928,11 +1969,12 @@ function updateMap(){
   mcg.clearLayers();
   brFeatures.forEach(r=>{
     if(!r.latitude||!r.longitude)return;
-    const desilNum=String(r.desil||'').match(/\d+/)?.[0];
-    const desilColor=desilNum&&parseInt(desilNum)<=4?DESIL_COLORS[parseInt(desilNum)]:'#888';
-    const mk=L.circleMarker([r.latitude,r.longitude],{radius:7,fillColor:desilNum?getDesilColor(desilNum):'#888',color:'#fff',weight:1.5,fillOpacity:.85});
+    const isLayak=r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses';
+    const isBatal=r.status_rtlh==='Dibatalkan';
+    const markerColor=isLayak?'#16A34A':isBatal?'#94A3B8':'#DC2626';
+    const mk=L.circleMarker([r.latitude,r.longitude],{radius:7,fillColor:markerColor,color:'#fff',weight:1.5,fillOpacity:.85});
     mk.on('click',()=>selectItem(r.id));
-    mk.bindTooltip(`<b>${showNama(r.kep_kk)}</b><br>${dn(r.desa)}${desilNum?` | Desil ${desilNum}`:''}`,{direction:'top',offset:[0,-8]});
+    mk.bindTooltip(`<b>${showNama(r.kep_kk)}</b><br>${dn(r.desa)} · ${r.status_rtlh||'RTLH'}`,{direction:'top',offset:[0,-8]});
     mcg.addLayer(mk);
   });
 }
