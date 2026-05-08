@@ -103,11 +103,11 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 .grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px}
 .grid-kec{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
 .card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--gray-200);overflow:hidden;transition:var(--transition)}
-.mini-stat{background:#fff;border-radius:var(--radius-sm);box-shadow:var(--shadow);border:1px solid var(--gray-200);padding:10px 12px;display:flex;flex-direction:row;align-items:center;gap:10px;cursor:pointer;transition:var(--transition)}
+.mini-stat{background:#fff;border-radius:10px;box-shadow:var(--shadow);border:1px solid var(--gray-200);padding:10px 10px;display:flex;flex-direction:row;align-items:center;gap:8px;cursor:pointer;transition:var(--transition)}
 .mini-stat:hover{border-color:var(--blue);box-shadow:0 4px 16px rgba(27,108,168,.13);transform:translateY(-1px)}
-.mini-stat .ms-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.78rem;color:#fff;flex-shrink:0}
+.mini-stat .ms-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.72rem;color:#fff;flex-shrink:0}
 .mini-stat .ms-texts{display:flex;flex-direction:column;gap:1px}
-.mini-stat .ms-val{font-size:1.15rem;font-weight:800;color:var(--gray-900);line-height:1}
+.mini-stat .ms-val{font-size:1rem;font-weight:800;color:var(--gray-900);line-height:1}
 .mini-stat .ms-label{font-size:.6rem;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.04em}
 
 /* PROGRESS BAR STATUS */
@@ -359,13 +359,18 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
   /* Search box lebih besar */
   .nik-search-input{font-size:16px!important;padding:14px 16px}
   .nik-search-btn{padding:0 20px;font-size:.9rem}
-  /* Hero lebih compact di mobile */
-  .hero{padding:20px 16px 12px!important}
-  .hero h1{font-size:1.4rem!important;margin-bottom:4px}
-  .hero p.hero-desc{font-size:.75rem!important;margin-bottom:0;opacity:.8}
-  .hero-chip{font-size:.62rem!important;padding:3px 10px!important}
-  /* Search sticky */
-  .section[style*='sticky']{padding:8px 12px!important}
+  /* Hero compact */
+  .hero{padding:14px 14px 6px!important}
+  .hero h1{font-size:1.3rem!important;margin-bottom:2px}
+  .hero-chip{font-size:.6rem!important;padding:3px 8px!important;margin-bottom:6px}
+  /* Stat cards 1 baris */
+  .section.pull-up{margin-top:-16px!important}
+  /* Search sticky compact */
+  .section[style*='sticky']{padding:6px 12px!important}
+  /* Section spacing */
+  .section{padding:10px 12px!important;margin-bottom:8px!important}
+  /* Kurangi padding page */
+  .page-scroll{padding:0!important}
 }
 /* Loading skeleton */
 .skeleton{background:linear-gradient(90deg,var(--gray-100) 25%,var(--gray-200) 50%,var(--gray-100) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
@@ -480,17 +485,17 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
   <div class="page-scroll">
 
         <!-- HERO compact -->
-    <div class="hero" style="padding-bottom:16px">
+    <div class="hero" style="padding:16px 16px 8px">
       <div class="hero-inner">
         <div class="hero-chip"><i class="fas fa-shield-alt"></i> Sistem Informasi RTLH Terpadu</div>
         <h1>e-<span>RTLH</span> Kabupaten Ngawi</h1>
-        <p class="hero-desc">Data RTLH 19 Kecamatan, 217 Desa/Kelurahan se-Kabupaten Ngawi.</p>
+        
       </div>
     </div>
 
     <!-- STAT CARDS -->
-    <div class="section pull-up" style="margin-bottom:0;padding-bottom:8px">
-      <div class="grid-4">
+    <div class="section pull-up" style="margin-bottom:0;padding-bottom:6px;padding-top:0">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
         <div class="mini-stat" onclick="nav('keclist')"><div class="ms-icon" style="background:linear-gradient(135deg,var(--blue),var(--blue-light))"><i class="fas fa-database"></i></div><div class="ms-texts"><div class="ms-val" id="gs-total">-</div><div class="ms-label">Total Data</div></div></div>
         <div class="mini-stat" onclick="nav('keclist')"><div class="ms-icon" style="background:linear-gradient(135deg,#16A34A,#22C55E)"><i class="fas fa-home"></i></div><div class="ms-texts"><div class="ms-val" id="gs-layak">-</div><div class="ms-label">Layak Huni</div></div></div>
         <div class="mini-stat" onclick="nav('keclist')"><div class="ms-icon" style="background:linear-gradient(135deg,var(--danger),#F87171)"><i class="fas fa-house-damage"></i></div><div class="ms-texts"><div class="ms-val" id="gs-belum">-</div><div class="ms-label">RTLH</div></div></div>
@@ -498,7 +503,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
     </div>
 
     <!-- SEARCH BAR sticky -->
-    <div class="section" style="padding:10px 16px;position:sticky;top:0;z-index:100;background:var(--gray-50);box-shadow:0 2px 8px rgba(0,0,0,.06)">
+    <div class="section" style="padding:8px 12px;position:sticky;top:0;z-index:100;background:var(--gray-50);box-shadow:0 2px 8px rgba(0,0,0,.06)">
       <div style="display:flex;gap:8px">
         <input id="nikSearchInput" type="text"
           placeholder="🔍 Cari nama, NIK, desa, kecamatan..."
@@ -530,13 +535,11 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
       </div>
       <div class="card" style="overflow:hidden">
         <div style="position:relative">
-          <div id="mapBeranda" style="height:360px;width:100%"></div>
-          <div style="position:absolute;bottom:16px;right:10px;z-index:1000;background:rgba(12,35,64,.85);border-radius:10px;padding:10px 12px;min-width:130px;backdrop-filter:blur(4px)">
-            <div style="font-size:.62rem;font-weight:800;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:7px;letter-spacing:.05em">Jumlah RTLH</div>
-            <div class="leg-item"><div class="leg-dot" style="background:#3B82F6"></div><span style="color:#fff">&lt; 20</span></div>
-            <div class="leg-item"><div class="leg-dot" style="background:#F59E0B"></div><span style="color:#fff">20 – 50</span></div>
-            <div class="leg-item"><div class="leg-dot" style="background:#F97316"></div><span style="color:#fff">50 – 100</span></div>
-            <div class="leg-item"><div class="leg-dot" style="background:#DC2626"></div><span style="color:#fff">&gt; 100</span></div>
+          <div id="mapBeranda" style="height:300px;width:100%"></div>
+          <div style="position:absolute;bottom:10px;right:10px;z-index:1000;background:rgba(12,35,64,.8);border-radius:8px;padding:6px 10px;backdrop-filter:blur(4px)">
+            <div style="font-size:.6rem;font-weight:700;color:rgba(255,255,255,.7);margin-bottom:4px">STATUS</div>
+            <div style="display:flex;align-items:center;gap:5px;font-size:.65rem;color:#fff;margin-bottom:2px"><div style="width:10px;height:10px;border-radius:50%;background:#16A34A;flex-shrink:0"></div>Layak Huni</div>
+            <div style="display:flex;align-items:center;gap:5px;font-size:.65rem;color:#fff"><div style="width:10px;height:10px;border-radius:50%;background:#DC2626;flex-shrink:0"></div>RTLH</div>
           </div>
         </div>
       </div>
