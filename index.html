@@ -551,7 +551,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
         <div style="flex:1;position:relative">
           <i class="fas fa-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--gray-400);font-size:.85rem;pointer-events:none"></i>
           <input id="nikSearchInput" type="text"
-            placeholder="Cari nama, NIK, desa, atau kecamatan..."
+            placeholder="Cari nama, NIK, desa, BSPS, RTLH 2025..."
             maxlength="80" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="search"
             style="width:100%;padding:11px 14px 11px 38px;border-radius:10px;border:2px solid #E2E8F0;font-size:15px;font-family:inherit;background:#fff;color:var(--gray-900);outline:none;box-sizing:border-box;transition:all .25s;box-shadow:0 0 0 3px rgba(59,130,246,.12)"
             onfocus="this.style.borderColor='#3B82F6';this.style.boxShadow='0 0 0 4px rgba(59,130,246,.25),0 0 16px rgba(59,130,246,.15)'"
@@ -1757,8 +1757,28 @@ async function searchNIK(){
   // Search by NIK, no_kk, or name
   const isNumeric = /^\d+$/.test(q);
   const statusFilter = document.getElementById('searchStatus')?.value || '';
-  let query = sb.from('rtlh').select('id,kec,desa,kep_kk,alamat,nik,no_kk,status_rtlh,desil');
-  if(isNumeric && q.length>=10){
+
+  // Deteksi pola pencarian khusus
+  // "BSPS 2024", "RTLH 2025", "Dana Desa 2023", "DD 2024", "CSR"
+  const bantuanMap={'rtlh':'RTLH','bsps':'BSPS','dd':'Dana Desa','dana desa':'Dana Desa','csr':'CSR','lainnya':'Lainnya'};
+  const qLower=q.toLowerCase();
+  let jenisBantuan=null, tahunBantuan=null;
+  for(const[key,val] of Object.entries(bantuanMap)){
+    if(qLower.startsWith(key)){
+      jenisBantuan=val;
+      const rest=q.slice(key.length).trim();
+      if(/^\d{4}$/.test(rest))tahunBantuan=rest;
+      break;
+    }
+  }
+
+  let query = sb.from('rtlh').select('id,kec,desa,kep_kk,alamat,nik,no_kk,status_rtlh,desil,jenis_bantuan,tahun_bantuan');
+
+  if(jenisBantuan){
+    // Cari by jenis bantuan (dan opsional tahun)
+    query = query.ilike('jenis_bantuan', `%${jenisBantuan}%`);
+    if(tahunBantuan) query = query.eq('tahun_bantuan', tahunBantuan);
+  } else if(isNumeric && q.length>=10){
     // NIK exact match — langsung buka detail
     await cariByNIK(q);
     res.innerHTML='';
@@ -1815,7 +1835,7 @@ async function searchNIK(){
           </div>
           <div style="flex:1;min-width:0">
             <div style="font-weight:800;font-size:.82rem;color:var(--gray-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${showNama(r.kep_kk)}</div>
-            <div style="font-size:.68rem;color:var(--gray-500);margin-top:1px">${showNIK(r.nik)} ${r.desil?'· '+r.desil:''}</div>
+            <div style="font-size:.68rem;color:var(--gray-500);margin-top:1px">${showNIK(r.nik)} ${r.desil?'· '+r.desil:''} ${r.jenis_bantuan?'· '+r.jenis_bantuan+(r.tahun_bantuan?' '+r.tahun_bantuan:''):''}</div>
           </div>
           <div style="flex-shrink:0;text-align:right">
             <span style="font-size:.65rem;font-weight:700;color:${statusColor};background:${statusColor}15;padding:2px 8px;border-radius:99px">${r.status_rtlh||'RTLH'}</span>
