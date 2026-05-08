@@ -1614,7 +1614,7 @@ async function searchNIK(){
 async function bukaDetailDariSearch(id, kecKey){
   if(!kecKey)return toast('Kecamatan tidak ditemukan','error');
   // Fetch data lengkap langsung dari Supabase — tidak perlu tunggu loadKec
-  const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,dtsen,backlog,desil,nik,no_kk';
+  const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,dtsen,backlog,desil,nik,no_kk,updated_at';
   const{data,error}=await sb.from('rtlh').select(cols).eq('id',parseInt(id)).single();
   if(error||!data)return toast('Data tidak ditemukan','error');
   // Hitung skor
@@ -1714,7 +1714,7 @@ async function loadKec(){
 
   if(brCache[currentKec]){brAll=brCache[currentKec];brFeatures=[...brAll];renderSidebar();renderKecDashboard();updateMap();return;}
 
-  const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,dtsen,backlog,desil,nik,no_kk';
+  const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,dtsen,backlog,desil,nik,no_kk,updated_at';
   let query=sb.from('rtlh').select(cols).order('id');
   if(currentKec)query=query.eq('kec',currentKec);
   const{data,error}=await query;
@@ -2126,7 +2126,7 @@ function openForm(id){
       return`<div class="${cls}"><label>${f.label}</label><input type="text" id="ff_${f.key}" value="${val}" placeholder="Nama desa"></div>`;
     }
     if(f.type==='select'){
-      return`<div class="${cls}"><label>${f.label}</label><select id="ff_${f.key}" ${locked?'disabled':''}>${f.opts.map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('')}</select></div>`;
+      return`<div class="${cls}"><label>${f.label}</label><select id="ff_${f.key}" ${locked?'disabled':''}>${f.opts.map(o=>`<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('')}</select></div>`;
     }
     if(f.sensitive){
       // Always render NIK/KK — locked or editable depending on role
@@ -2151,10 +2151,17 @@ async function saveForm(){
   for(const f of FIELDS){
     const el=document.getElementById('ff_'+f.key);
     if(!el)continue;
-    if(el.readOnly)continue;
-    const v=el.value.trim();
-    obj[f.key]=f.type==='number'&&v?parseFloat(v):(v||null);
+    if(el.readOnly||el.disabled)continue;
+    let v='';
+    if(el.tagName==='SELECT'){v=el.value||'';}
+    else if(el.tagName==='TEXTAREA'){v=el.value.trim();}
+    else{v=el.value.trim();}
+    if(f.type==='number')obj[f.key]=v?parseFloat(v):null;
+    else obj[f.key]=v||null;
   }
+  // Tambah timestamp update
+  obj.updated_at=new Date().toISOString();
+  console.log('[saveForm] obj:', JSON.stringify(obj));
 
   let saved;
   if(editId){
@@ -2397,6 +2404,7 @@ async function downloadExcelKab(withNIK){
       'Jenis Bantuan':r.jenis_bantuan,'Tahun Bantuan':r.tahun_bantuan,
       'Status MyPKP':r.dtsen,Backlog:r.backlog,Desil:r.desil,
       Latitude:r.latitude,Longitude:r.longitude,
+      'Terakhir Update':r.updated_at?new Date(r.updated_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'-',
     }));
     const ws=XLSX.utils.json_to_sheet(rows);
     ws['!cols']=Object.keys(rows[0]).map(k=>({wch:Math.max(k.length+2,14)}));
