@@ -147,7 +147,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 .tb-btn.gold{background:var(--gold);border-color:var(--gold);color:var(--navy);font-weight:700}
 .tb-btn.gold:hover{background:var(--gold-light)}
 .tb-sep{width:1px;height:24px;background:var(--gray-200);margin:0 2px;flex-shrink:0}
-.tb-title{font-size:.82rem;font-weight:800;color:var(--gray-900);flex:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-title{font-size:.9rem;font-weight:800;color:var(--gray-900);flex:1;text-align:center;line-height:1.2;overflow:hidden}
 .map-wrap{display:block;height:340px;flex-shrink:0}
 #map{width:100%;height:100%;min-height:60dvh}
 .sidebar{display:none}
@@ -308,6 +308,10 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
   .user-chip span{display:none}
   .user-chip .uname{display:none}
   .keclist-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+  /* Toolbar title lebih besar */
+  .tb-title{font-size:1rem!important;max-width:180px}
+  .webgis-toolbar{height:52px;padding:0 8px}
+  .tb-btn{padding:6px 10px}
   .grid-4{grid-template-columns:repeat(2,1fr)}
   .form-grid{grid-template-columns:1fr}
   .detail-panel{max-width:calc(100% - 20px);max-height:85dvh}
@@ -571,7 +575,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 <!-- ═══════════════════════════════ PAGE: WEBGIS ═══════════════════════════════ -->
 <div class="page" id="pgWebgis">
   <div class="webgis-toolbar">
-    <button class="tb-btn" onclick="nav('beranda')" title="Kembali ke Beranda"><i class="fas fa-home"></i> Beranda</button>
+    <button class="tb-btn" onclick="nav('beranda')" title="Kembali ke Beranda"><i class="fas fa-home"></i> <span class="tb-label">Beranda</span></button>
     <div class="tb-sep"></div>
     <span class="tb-title" id="tbTitle">WebGIS RTLH</span>
     <div class="tb-sep"></div>
@@ -1795,7 +1799,7 @@ async function loadKec(){
   
   if(!currentKec)return;
   const kecName=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===currentKec);
-  document.getElementById('tbTitle').textContent=`RTLH — Kec. ${kecName}`;
+  document.getElementById('tbTitle').innerHTML=`<span style='font-size:.65rem;color:var(--gray-500);font-weight:600;display:block;line-height:1'>RTLH Kecamatan</span><span style='font-size:.9rem'>${kecName}</span>`;
   document.getElementById('btnAddRtlh').style.display=canEdit()?'flex':'none';
   document.getElementById('btnDelAll').style.display=isSuperAdmin()?'flex':'none';
 
@@ -1914,7 +1918,6 @@ function renderKecDashboard(){
       <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--danger)">${rtlh}</div><div class="kdsi-lbl">RTLH</div></div>
       <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--gray-500)">${batal}</div><div class="kdsi-lbl">Dibatalkan</div></div>
     </div>
-    <div style="background:var(--blue-bg);border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:.68rem;color:var(--blue);font-weight:600"><i class="fas fa-layer-group"></i> Desil 1–4: <strong>${desil14}</strong> data</div>
     <div class="canvas-wrap"><canvas id="chartKecStatus"></canvas></div>`;
   setTimeout(()=>{
     const ctx=document.getElementById('chartKecStatus');
