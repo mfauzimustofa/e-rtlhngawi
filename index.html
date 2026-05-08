@@ -229,7 +229,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 .modal-x{width:32px;height:32px;border-radius:8px;background:var(--gray-100);border:none;cursor:pointer;font-size:.9rem;color:var(--gray-600);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .modal-x:hover{background:var(--danger-bg);color:var(--danger)}
 .modal-body{padding:20px;overflow-y:auto;flex:1}
-.modal-footer{padding:14px 20px;border-top:1px solid var(--gray-200);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0}
+.modal-footer{padding:14px 20px;padding-bottom:max(14px,calc(env(safe-area-inset-bottom) + 8px));border-top:1px solid var(--gray-200);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0;background:#fff;position:sticky;bottom:0}
 
 /* FORM */
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -388,6 +388,36 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 /* Loading skeleton */
 .skeleton{background:linear-gradient(90deg,var(--gray-100) 25%,var(--gray-200) 50%,var(--gray-100) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ══ CHATBOT AI ══ */
+#chatBtn{position:fixed;bottom:70px;right:16px;z-index:9000;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#7C3AED,#4F46E5);color:#fff;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(124,58,237,.4);display:flex;align-items:center;justify-content:center;font-size:1.2rem;transition:transform .2s,box-shadow .2s}
+#chatBtn:hover{transform:scale(1.1);box-shadow:0 6px 20px rgba(124,58,237,.5)}
+#chatBtn .chat-badge{position:absolute;top:-3px;right:-3px;background:#EF4444;color:#fff;border-radius:99px;font-size:.55rem;font-weight:800;padding:1px 5px;display:none}
+#chatBox{position:fixed;bottom:134px;right:16px;z-index:9000;width:340px;max-width:calc(100vw - 32px);background:#fff;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.18);display:none;flex-direction:column;overflow:hidden;max-height:70vh}
+#chatBox.open{display:flex}
+.chat-head{background:linear-gradient(135deg,#7C3AED,#4F46E5);padding:14px 16px;display:flex;align-items:center;gap:10px}
+.chat-head .ch-avatar{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.chat-head .ch-info .ch-name{font-size:.85rem;font-weight:800;color:#fff}
+.chat-head .ch-info .ch-status{font-size:.65rem;color:rgba(255,255,255,.75)}
+.chat-head .ch-close{margin-left:auto;background:none;border:none;color:rgba(255,255,255,.8);cursor:pointer;font-size:.9rem;padding:4px}
+.chat-messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:200px}
+.chat-msg{max-width:85%;font-size:.8rem;line-height:1.5;padding:10px 12px;border-radius:12px}
+.chat-msg.bot{background:var(--gray-100);color:var(--gray-800);align-self:flex-start;border-bottom-left-radius:4px}
+.chat-msg.user{background:linear-gradient(135deg,#7C3AED,#4F46E5);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.chat-msg.typing{background:var(--gray-100);align-self:flex-start;padding:12px 16px}
+.typing-dots span{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gray-400);animation:typingDot 1.2s infinite}
+.typing-dots span:nth-child(2){animation-delay:.2s}
+.typing-dots span:nth-child(3){animation-delay:.4s}
+@keyframes typingDot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+.chat-input-wrap{padding:10px 12px;border-top:1px solid var(--gray-200);display:flex;gap:8px}
+.chat-input{flex:1;padding:9px 12px;border-radius:10px;border:1.5px solid var(--gray-200);font-size:.82rem;font-family:inherit;outline:none;resize:none;max-height:80px;transition:border .2s}
+.chat-input:focus{border-color:#7C3AED}
+.chat-send{padding:9px 14px;border-radius:10px;background:linear-gradient(135deg,#7C3AED,#4F46E5);color:#fff;border:none;cursor:pointer;font-size:.82rem;font-family:inherit;font-weight:700;flex-shrink:0;transition:opacity .2s}
+.chat-send:disabled{opacity:.5;cursor:default}
+@media(max-width:768px){
+  #chatBox{width:calc(100vw - 24px);right:12px;bottom:72px;max-height:75vh}
+  #chatBtn{bottom:64px;right:12px}
+}
 
 /* TABLE EDITOR */
 .te-th{background:var(--navy);color:#fff;padding:8px 10px;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;position:sticky;top:0;border-right:1px solid rgba(255,255,255,.1);user-select:none;cursor:pointer}
@@ -2416,7 +2446,9 @@ function openForm(id){
       return`<div class="${cls}"><label>${f.label}</label><input type="text" id="ff_${f.key}" value="${val}" placeholder="Nama desa"></div>`;
     }
     if(f.type==='select'){
-      return`<div class="${cls}"><label>${f.label}</label><select id="ff_${f.key}" ${locked?'disabled':''}>${f.opts.map(o=>`<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('')}</select></div>`;
+      return`<div class="${cls}"><label>${f.label}</label><select id="ff_${f.key}" ${locked?'disabled':''}
+        ${f.key==='jenis_bantuan'?`onchange="if(this.value){const s=document.getElementById('ff_status_rtlh');if(s&&s.value!=='Dibatalkan')s.value='Layak Huni';}"`:''}
+        >${f.opts.map(o=>`<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('')}</select></div>`;
     }
     if(f.sensitive){
       // Always render NIK/KK — locked or editable depending on role
@@ -3179,6 +3211,119 @@ async function deleteDok(id,path){
 }
 
 // ══════════════════════════════════════════════════
+// CHATBOT AI — Asisten e-RTLH Ngawi
+// ══════════════════════════════════════════════════
+let chatHistory=[];
+let chatOpened=false;
+
+const CHAT_SYSTEM=`Kamu adalah Asisten AI untuk sistem e-RTLH Kabupaten Ngawi, sebuah sistem informasi Rumah Tidak Layak Huni (RTLH) milik DPRKP Kabupaten Ngawi, Jawa Timur.
+
+Kamu membantu staf dinas DPRKP dengan:
+- Cara menggunakan fitur web e-RTLH (search, edit data, upload/download Excel, verifikasi lapangan, upload dokumen)
+- Penjelasan tentang program bantuan RTLH (BSPS, Dana Desa, CSR)
+- Kebijakan dan regulasi perumahan rakyat
+- Interpretasi data RTLH dan desil
+- Pertanyaan umum seputar RTLH Ngawi
+
+Data saat ini: 19 Kecamatan, 217 Desa/Kelurahan, data dikelola berbasis NIK sebagai identitas unik.
+
+Gaya bicara: Ramah, santun, menggunakan bahasa Indonesia yang baik. Jawaban singkat dan langsung ke inti. Gunakan emoji secukupnya agar terasa hangat. Jika ditanya hal di luar konteks, tetap bantu dengan sopan.`;
+
+function toggleChat(){
+  const box=document.getElementById('chatBox');
+  const isOpen=box.classList.contains('open');
+  box.classList.toggle('open');
+  if(!isOpen&&!chatOpened){
+    chatOpened=true;
+    document.getElementById('chatBadge').style.display='none';
+    addBotMessage('Halo! 👋 Saya Asisten e-RTLH Ngawi. Ada yang bisa saya bantu?\n\nContoh pertanyaan:\n• Cara upload data Excel?\n• Apa itu Desil 1?\n• Bagaimana edit status RTLH?');
+  }
+  if(!isOpen)setTimeout(()=>document.getElementById('chatInput')?.focus(),300);
+}
+
+function addBotMessage(text,isTyping=false){
+  const msgs=document.getElementById('chatMessages');
+  if(!msgs)return;
+  const div=document.createElement('div');
+  div.className='chat-msg bot'+(isTyping?' typing':'');
+  div.id=isTyping?'typingIndicator':'';
+  if(isTyping){
+    div.innerHTML='<div class="typing-dots"><span></span><span></span><span></span></div>';
+  }else{
+    div.innerHTML=text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/•/g,'&bull;');
+  }
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+  return div;
+}
+
+function addUserMessage(text){
+  const msgs=document.getElementById('chatMessages');
+  if(!msgs)return;
+  const div=document.createElement('div');
+  div.className='chat-msg user';
+  div.textContent=text;
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+async function sendChat(){
+  const input=document.getElementById('chatInput');
+  const btn=document.getElementById('chatSendBtn');
+  const text=(input?.value||'').trim();
+  if(!text||btn?.disabled)return;
+
+  addUserMessage(text);
+  input.value='';
+  input.style.height='auto';
+  btn.disabled=true;
+
+  chatHistory.push({role:'user',content:text});
+
+  // Tampilkan typing indicator
+  const typing=addBotMessage('',true);
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:600,
+        system:CHAT_SYSTEM,
+        messages:chatHistory.slice(-10) // simpan 10 pesan terakhir
+      })
+    });
+    const data=await res.json();
+    const reply=data.content?.[0]?.text||'Maaf, tidak bisa menjawab saat ini.';
+
+    // Hapus typing, tampilkan jawaban
+    typing?.remove();
+    addBotMessage(reply);
+    chatHistory.push({role:'assistant',content:reply});
+
+    // Batasi history
+    if(chatHistory.length>20)chatHistory=chatHistory.slice(-20);
+
+  }catch(e){
+    typing?.remove();
+    addBotMessage('Maaf, koneksi bermasalah. Coba lagi ya. 🙏');
+    chatHistory.pop(); // hapus pesan user yang gagal
+  }finally{
+    btn.disabled=false;
+    input.focus();
+  }
+}
+
+// Tampilkan badge setelah 5 detik jika chat belum dibuka
+setTimeout(()=>{
+  if(!chatOpened){
+    const badge=document.getElementById('chatBadge');
+    if(badge)badge.style.display='block';
+  }
+},5000);
+
+// ══════════════════════════════════════════════════
 // MAINTENANCE MODE — Akses terbatas hanya staf dinas
 // ══════════════════════════════════════════════════
 const MAINTENANCE_MODE = true; // Ganti false untuk buka ke publik
@@ -3262,6 +3407,30 @@ window.addEventListener('DOMContentLoaded',async()=>{
   }
 });
 </script>
+<!-- ═══ CHATBOT AI ═══ -->
+<button id="chatBtn" onclick="toggleChat()" title="Tanya AI Asisten">
+  <i class="fas fa-robot"></i>
+  <span class="chat-badge" id="chatBadge">!</span>
+</button>
+
+<div id="chatBox">
+  <div class="chat-head">
+    <div class="ch-avatar"><i class="fas fa-robot"></i></div>
+    <div class="ch-info">
+      <div class="ch-name">Asisten e-RTLH</div>
+      <div class="ch-status">● Online · Powered by AI</div>
+    </div>
+    <button class="ch-close" onclick="toggleChat()"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="chat-messages" id="chatMessages"></div>
+  <div class="chat-input-wrap">
+    <textarea class="chat-input" id="chatInput" placeholder="Ketik pertanyaan..." rows="1"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"
+      oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,80)+'px'"></textarea>
+    <button class="chat-send" id="chatSendBtn" onclick="sendChat()"><i class="fas fa-paper-plane"></i></button>
+  </div>
+</div>
+
 <!-- ═══ END APP SHELL ═══ -->
 </div>
 
