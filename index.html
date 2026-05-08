@@ -519,7 +519,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
             style="width:100%;padding:11px 14px 11px 38px;border-radius:10px;border:1.5px solid var(--gray-200);font-size:15px;font-family:inherit;background:#fff;color:var(--gray-900);outline:none;box-sizing:border-box;transition:border .2s"
             onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--gray-200)'"
             onkeydown="if(event.key==='Enter')searchNIK()"
-            oninput="if(this.value.trim())clearTimeout(this._t);this._t=setTimeout(()=>searchNIK(),500)">
+            oninput="clearTimeout(this._t);if(this.value.trim().length>=3){this._t=setTimeout(()=>searchNIK(),500)}else if(!this.value.trim()){clearSearch()}">
         </div>
         <button onclick="searchNIK()" style="padding:11px 16px;border-radius:10px;background:var(--blue);color:#fff;border:none;font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0"><i class="fas fa-search"></i></button>
       </div>
