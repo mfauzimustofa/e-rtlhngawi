@@ -345,6 +345,29 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
   #pgWebgis .map-wrap{padding-bottom:54px}
 }
 
+/* ══ UX IMPROVEMENTS ══ */
+/* Tombol salin NIK */
+.copy-nik-btn{background:none;border:1px solid var(--gray-300);border-radius:6px;padding:2px 8px;font-size:.65rem;cursor:pointer;color:var(--gray-500);transition:var(--transition)}
+.copy-nik-btn:hover{background:var(--gray-100);color:var(--gray-700)}
+/* Search input auto-complete */
+.nik-search-input{-webkit-user-select:text;user-select:text}
+/* Status badge di sidebar lebih besar di mobile */
+@media(max-width:768px){
+  .ri-badges{gap:4px}
+  .badge{font-size:.62rem;padding:2px 6px}
+  .ri-sub{font-size:.72rem}
+  /* Search box lebih besar */
+  .nik-search-input{font-size:16px!important;padding:14px 16px}
+  .nik-search-btn{padding:0 20px;font-size:.9rem}
+  /* Hero lebih compact */
+  .hero{padding:24px 16px 16px}
+  .hero h1{font-size:1.6rem}
+  .hero p{font-size:.8rem}
+}
+/* Loading skeleton */
+.skeleton{background:linear-gradient(90deg,var(--gray-100) 25%,var(--gray-200) 50%,var(--gray-100) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
 /* TABLE EDITOR */
 .te-th{background:var(--navy);color:#fff;padding:8px 10px;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;position:sticky;top:0;border-right:1px solid rgba(255,255,255,.1);user-select:none;cursor:pointer}
 .te-th:hover{background:var(--navy-80)}
@@ -399,8 +422,8 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
   </div>
   <div class="mo-card">
     <div class="mo-msg">
-      <i class="fas fa-hard-hat"></i>
-      Sistem sedang dalam tahap pengembangan.<br>
+      <i class="fas fa-shield-alt"></i>
+      Akses terbatas untuk staf DPRKP Kabupaten Ngawi.<br>
       Akses saat ini hanya untuk <strong style="color:#FBBF24">staf DPRKP Kab. Ngawi</strong>.<br>
       Silakan login untuk melanjutkan.
     </div>
@@ -460,7 +483,13 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
         <h1>e-<span>RTLH</span> Kabupaten Ngawi</h1>
         <p>Pusat Data Rumah Tidak Layak Huni (RTLH) untuk 19 Kecamatan dan 217 Desa/Kelurahan se-Kabupaten Ngawi.</p>
         <div class="nik-search-wrap">
-          <input class="nik-search-input" id="nikSearchInput" type="text" placeholder="Cari NIK / KK / Nama / Desa / Kecamatan" maxlength="80" onkeydown="if(event.key==='Enter')searchNIK()">
+          <input class="nik-search-input" id="nikSearchInput" type="text" 
+            placeholder="Cari nama, NIK, desa, kecamatan..." 
+            maxlength="80" 
+            autocomplete="off" autocorrect="off" spellcheck="false"
+            inputmode="search"
+            onkeydown="if(event.key==='Enter')searchNIK()"
+            oninput="if(this.value.length>=3)clearTimeout(this._t);this._t=setTimeout(()=>searchNIK(),600)">
           <button class="nik-search-btn" onclick="searchNIK()"><i class="fas fa-search"></i> Cari</button>
         </div>
         <div style="display:none;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center" id="searchFilters">
@@ -1791,6 +1820,9 @@ function initMap(){
 const _kecCacheTime={};
 async function loadKec(){
   if(!user)return; // Guard: harus login
+  // Tampilkan loading di sidebar
+  const sidebarList=document.getElementById('sidebarList');
+  if(sidebarList&&!brAll.length)sidebarList.innerHTML='<div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin" style="font-size:1.5rem;margin-bottom:8px;display:block"></i><div style="font-size:.78rem">Memuat data...</div></div>';
   const now=Date.now();
   const cacheKey=currentKec+'_'+currentDesa;
   if(brAll.length&&_kecCacheTime[cacheKey]&&(now-_kecCacheTime[cacheKey])<120000){
@@ -1812,7 +1844,7 @@ async function loadKec(){
     let q=sb.from('rtlh').select(cols).order('id').range(pg*pgSize,(pg+1)*pgSize-1).limit(pgSize);
     if(currentKec)q=q.eq('kec',currentKec);
     const{data,error}=await q;
-    if(error){toast('Gagal memuat data','error');return;}
+    if(error){toast('Gagal memuat data. Coba refresh halaman.','error');return;}
     allRows=[...allRows,...(data||[])];
     if(!data||data.length<pgSize)isDone=true;
     else pg++;
@@ -1961,7 +1993,7 @@ function renderSidebarList(){
         <div style="width:22px;height:22px;border-radius:6px;background:${color}18;color:${color};font-size:.6rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div>
         <div style="flex:1;min-width:0">
           <div class="ri-name">${showNama(r.kep_kk)}</div>
-          <div class="ri-sub">${dn(r.desa)}</div>
+          <div class="ri-sub">${dn(r.desa)}${r.kec&&r.kec!==currentKec?` · ${r.kec}`:''}</div>
         </div>
         <div style="font-size:.62rem;color:var(--gray-400);flex-shrink:0"><i class="fas fa-chevron-down" id="ico_${r.id}"></i></div>
       </div>
@@ -2042,7 +2074,10 @@ function showDetail(r){
   const desilNum=String(r.desil||'').match(/\d+/)?.[0];
   document.getElementById('dpBody').innerHTML=`
     <div class="detail-grid">
-      <div class="detail-item full"><div class="dl">NIK</div><div class="dv" style="font-family:monospace;font-size:.82rem;font-weight:700;letter-spacing:1px">${showNIK(r.nik)}</div></div>
+      <div class="detail-item full"><div class="dl">NIK</div><div class="dv" style="display:flex;align-items:center;gap:8px">
+        <span style="font-family:monospace;font-size:.82rem;font-weight:700;letter-spacing:1px">${showNIK(r.nik)}</span>
+        ${r.nik?`<button onclick="navigator.clipboard.writeText('${r.nik}');toast('NIK disalin','success')" style="background:none;border:1px solid var(--gray-300);border-radius:6px;padding:2px 8px;font-size:.65rem;cursor:pointer;color:var(--gray-500)"><i class='fas fa-copy'></i></button>`:''}
+      </div></div>
       <div class="detail-item full"><div class="dl">No. KK</div><div class="dv" style="font-family:monospace;font-size:.82rem;font-weight:700;letter-spacing:1px">${showKK(r.no_kk)}</div></div>
       <div class="detail-item"><div class="dl">Desa</div><div class="dv">${dn(r.desa)}</div></div>
       <div class="detail-item"><div class="dl">Kecamatan</div><div class="dv">${dn(r.kec)}</div></div>
@@ -3053,13 +3088,13 @@ async function doMaintenanceLogin(){
   const errEl=document.getElementById('moErr');
   const btn=document.querySelector('#maintenanceOverlay .mo-btn');
   errEl.textContent='';
-  if(!input||!pass){errEl.textContent='Isi username dan password';return;}
+  if(!input||!pass){errEl.innerHTML='<i class="fas fa-exclamation-circle"></i> Isi username dan password';return;}
   btn.disabled=true;btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Memverifikasi...';
   try{
     const{data:adm}=await sb.from('admin_users').select('email,status').eq('username',input).single();
-    if(!adm||adm.status!=='approved'){errEl.textContent='Username atau password salah';return;}
+    if(!adm||adm.status!=='approved'){errEl.innerHTML='<i class="fas fa-exclamation-circle"></i> Username atau password salah';return;}
     const{error}=await sb.auth.signInWithPassword({email:adm.email,password:pass});
-    if(error){errEl.textContent='Username atau password salah';return;}
+    if(error){errEl.innerHTML='<i class="fas fa-exclamation-circle"></i> Username atau password salah';return;}
     hideMaintenanceOverlay();
   }catch(e){
     errEl.textContent='Login gagal';
