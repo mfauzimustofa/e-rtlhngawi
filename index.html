@@ -12,6 +12,12 @@
 <link rel="icon" type="image/png" sizes="32x32" href="data/favicon-32.png">
 <link rel="apple-touch-icon" href="data/favicon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="data/favicon-192.png">
+<!-- Security headers via meta -->
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+<meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(self)">
+<meta name="rating" content="general">
 <!-- Open Graph -->
 <meta property="og:title" content="e-RTLH Kabupaten Ngawi">
 <meta property="og:description" content="Sistem Informasi RTLH Kabupaten Ngawi — DPRKP">
@@ -485,7 +491,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
   <div class="page-scroll">
 
         <!-- HERO compact -->
-    <div class="hero" style="padding:16px 16px 8px">
+    <div class="hero" style="padding:32px 20px 28px">
       <div class="hero-inner">
         <div class="hero-chip"><i class="fas fa-shield-alt"></i> Sistem Informasi RTLH Terpadu</div>
         <h1>e-<span>RTLH</span> Kabupaten Ngawi</h1>
@@ -494,8 +500,8 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
     </div>
 
     <!-- STAT CARDS -->
-    <div class="section pull-up" style="margin-bottom:0;padding-bottom:6px;padding-top:0">
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+    <div class="section" style="margin-bottom:0;padding-bottom:6px;padding-top:12px">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
         <div class="mini-stat" onclick="nav('keclist')"><div class="ms-icon" style="background:linear-gradient(135deg,var(--blue),var(--blue-light))"><i class="fas fa-database"></i></div><div class="ms-texts"><div class="ms-val" id="gs-total">-</div><div class="ms-label">Total Data</div></div></div>
         <div class="mini-stat" onclick="nav('keclist')"><div class="ms-icon" style="background:linear-gradient(135deg,#16A34A,#22C55E)"><i class="fas fa-home"></i></div><div class="ms-texts"><div class="ms-val" id="gs-layak">-</div><div class="ms-label">Layak Huni</div></div></div>
         <div class="mini-stat" onclick="nav('keclist')"><div class="ms-icon" style="background:linear-gradient(135deg,var(--danger),#F87171)"><i class="fas fa-house-damage"></i></div><div class="ms-texts"><div class="ms-val" id="gs-belum">-</div><div class="ms-label">RTLH</div></div></div>
