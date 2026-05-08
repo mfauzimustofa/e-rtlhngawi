@@ -1873,10 +1873,9 @@ function renderSidebarList(){
             ['Kondisi Lantai',dn(r.kondisi_la)],
           ].map(([lbl,val])=>`<div style="padding:5px 0;border-bottom:1px solid var(--gray-100)"><div style="font-size:.58rem;font-weight:700;color:var(--gray-400);text-transform:uppercase">${lbl}</div><div style="font-size:.75rem;font-weight:600;color:var(--gray-800);margin-top:1px">${val}</div></div>`).join('')}
         </div>
-        ${canEdit()?`<div style="display:flex;gap:6px;margin-top:10px">
-
+        ${canEdit()?`<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+          <button class="btn btn-primary" style="font-size:.7rem;padding:5px 12px" onclick="event.stopPropagation();openForm(String(${r.id}))"><i class="fas fa-edit"></i> Edit</button>
           <button class="btn btn-danger" style="font-size:.7rem;padding:5px 12px" onclick="event.stopPropagation();deleteItem(${r.id})"><i class="fas fa-trash"></i> Hapus</button>
-          ${isSuperAdmin()?`<button class="btn" style="font-size:.7rem;padding:5px 12px;background:var(--warning-bg);color:#B45309;border:1px solid var(--warning)" onclick="event.stopPropagation();openNIKModal(${r.id})"><i class="fas fa-id-card"></i> NIK/KK</button>`:''}
         </div>`:''}
       </div>
     </div>`;
@@ -1895,7 +1894,7 @@ function updateMap(){
     if(!r.latitude||!r.longitude)return;
     const desilNum=String(r.desil||'').match(/\d+/)?.[0];
     const desilColor=desilNum&&parseInt(desilNum)<=4?DESIL_COLORS[parseInt(desilNum)]:'#888';
-    const mk=L.circleMarker([r.latitude,r.longitude],{radius:7,fillColor:color,color:'#fff',weight:1.5,fillOpacity:.85});
+    const mk=L.circleMarker([r.latitude,r.longitude],{radius:7,fillColor:desilNum?getDesilColor(desilNum):'#888',color:'#fff',weight:1.5,fillOpacity:.85});
     mk.on('click',()=>selectItem(r.id));
     mk.bindTooltip(`<b>${showNama(r.kep_kk)}</b><br>${dn(r.desa)}${desilNum?` | Desil ${desilNum}`:''}`,{direction:'top',offset:[0,-8]});
     mcg.addLayer(mk);
