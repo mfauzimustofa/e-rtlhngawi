@@ -359,10 +359,13 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
   /* Search box lebih besar */
   .nik-search-input{font-size:16px!important;padding:14px 16px}
   .nik-search-btn{padding:0 20px;font-size:.9rem}
-  /* Hero lebih compact */
-  .hero{padding:24px 16px 16px}
-  .hero h1{font-size:1.6rem}
-  .hero p{font-size:.8rem}
+  /* Hero lebih compact di mobile */
+  .hero{padding:20px 16px 12px!important}
+  .hero h1{font-size:1.4rem!important;margin-bottom:4px}
+  .hero p.hero-desc{font-size:.75rem!important;margin-bottom:0;opacity:.8}
+  .hero-chip{font-size:.62rem!important;padding:3px 10px!important}
+  /* Search sticky */
+  .section[style*='sticky']{padding:8px 12px!important}
 }
 /* Loading skeleton */
 .skeleton{background:linear-gradient(90deg,var(--gray-100) 25%,var(--gray-200) 50%,var(--gray-100) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
@@ -476,42 +479,45 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 <div class="page active" id="pgBeranda">
   <div class="page-scroll">
 
-    <!-- HERO -->
-    <div class="hero">
+        <!-- HERO compact -->
+    <div class="hero" style="padding-bottom:16px">
       <div class="hero-inner">
         <div class="hero-chip"><i class="fas fa-shield-alt"></i> Sistem Informasi RTLH Terpadu</div>
         <h1>e-<span>RTLH</span> Kabupaten Ngawi</h1>
-        <p>Pusat Data Rumah Tidak Layak Huni (RTLH) untuk 19 Kecamatan dan 217 Desa/Kelurahan se-Kabupaten Ngawi.</p>
-        <div class="nik-search-wrap">
-          <input class="nik-search-input" id="nikSearchInput" type="text" 
-            placeholder="Cari nama, NIK, desa, kecamatan..." 
-            maxlength="80" 
-            autocomplete="off" autocorrect="off" spellcheck="false"
-            inputmode="search"
-            onkeydown="if(event.key==='Enter')searchNIK()"
-            oninput="if(this.value.length>=3)clearTimeout(this._t);this._t=setTimeout(()=>searchNIK(),600)">
-          <button class="nik-search-btn" onclick="searchNIK()"><i class="fas fa-search"></i> Cari</button>
-        </div>
-        <div style="display:none;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center" id="searchFilters">
-          <span style="font-size:.72rem;color:rgba(255,255,255,.6)">Filter:</span>
-          <select id="searchStatus" onchange="searchNIK()" style="padding:7px 12px;border-radius:8px;border:1.5px solid rgba(255,255,255,.3);background:rgba(15,23,42,.85);color:#fff;font-size:.75rem;font-family:inherit;cursor:pointer;min-width:160px">
-            <option value="">Semua Status</option>
-            <option value="RTLH">RTLH (Belum Ditangani)</option>
-            <option value="Layak Huni">Layak Huni</option>
-            <option value="Dibatalkan">Dibatalkan</option>
-          </select>
-        </div>
-        <div id="nikResult"></div>
+        <p class="hero-desc">Data RTLH 19 Kecamatan, 217 Desa/Kelurahan se-Kabupaten Ngawi.</p>
       </div>
     </div>
 
-    <!-- STAT CARDS (pull up over hero) -->
-    <div class="section pull-up">
+    <!-- STAT CARDS -->
+    <div class="section pull-up" style="margin-bottom:0;padding-bottom:8px">
       <div class="grid-4">
-        <div class="mini-stat" onclick="nav('keclist')" title="Lihat data per kecamatan"><div class="ms-icon" style="background:linear-gradient(135deg,var(--blue),var(--blue-light))"><i class="fas fa-house-damage"></i></div><div class="ms-texts"><div class="ms-val" id="gs-total">-</div><div class="ms-label">Total Data</div></div></div>
-        <div class="mini-stat" onclick="nav('keclist')" title="Sudah Ditangani + Dalam Proses = Layak Huni"><div class="ms-icon" style="background:linear-gradient(135deg,#16A34A,#22C55E)"><i class="fas fa-home"></i></div><div class="ms-texts"><div class="ms-val" id="gs-layak">-</div><div class="ms-label">Layak Huni</div></div></div>
-        <div class="mini-stat" onclick="nav('keclist')" title="Belum Ditangani = RTLH"><div class="ms-icon" style="background:linear-gradient(135deg,var(--danger),#F87171)"><i class="fas fa-house-damage"></i></div><div class="ms-texts"><div class="ms-val" id="gs-belum">-</div><div class="ms-label">RTLH</div></div></div>
+        <div class="mini-stat" onclick="nav('keclist')"><div class="ms-icon" style="background:linear-gradient(135deg,var(--blue),var(--blue-light))"><i class="fas fa-database"></i></div><div class="ms-texts"><div class="ms-val" id="gs-total">-</div><div class="ms-label">Total Data</div></div></div>
+        <div class="mini-stat" onclick="nav('keclist')"><div class="ms-icon" style="background:linear-gradient(135deg,#16A34A,#22C55E)"><i class="fas fa-home"></i></div><div class="ms-texts"><div class="ms-val" id="gs-layak">-</div><div class="ms-label">Layak Huni</div></div></div>
+        <div class="mini-stat" onclick="nav('keclist')"><div class="ms-icon" style="background:linear-gradient(135deg,var(--danger),#F87171)"><i class="fas fa-house-damage"></i></div><div class="ms-texts"><div class="ms-val" id="gs-belum">-</div><div class="ms-label">RTLH</div></div></div>
       </div>
+    </div>
+
+    <!-- SEARCH BAR sticky -->
+    <div class="section" style="padding:10px 16px;position:sticky;top:0;z-index:100;background:var(--gray-50);box-shadow:0 2px 8px rgba(0,0,0,.06)">
+      <div style="display:flex;gap:8px">
+        <input id="nikSearchInput" type="text"
+          placeholder="🔍 Cari nama, NIK, desa, kecamatan..."
+          maxlength="80" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="search"
+          style="flex:1;padding:12px 16px;border-radius:12px;border:2px solid var(--gray-200);font-size:16px;font-family:inherit;background:#fff;color:var(--gray-900);outline:none;transition:border .2s"
+          onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--gray-200)'"
+          onkeydown="if(event.key==='Enter')searchNIK()"
+          oninput="if(this.value.length>=3)clearTimeout(this._t);this._t=setTimeout(()=>searchNIK(),600)">
+        <button onclick="searchNIK()" style="padding:12px 18px;border-radius:12px;background:var(--blue);color:#fff;border:none;font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0"><i class="fas fa-search"></i></button>
+      </div>
+      <div style="display:none;gap:8px;margin-top:8px;align-items:center" id="searchFilters">
+        <select id="searchStatus" onchange="searchNIK()" style="padding:8px 12px;border-radius:8px;border:1.5px solid var(--gray-300);background:#fff;color:var(--gray-800);font-size:.78rem;font-family:inherit;cursor:pointer;flex:1">
+          <option value="">Semua Status</option>
+          <option value="RTLH">RTLH</option>
+          <option value="Layak Huni">Layak Huni</option>
+          <option value="Dibatalkan">Dibatalkan</option>
+        </select>
+      </div>
+      <div id="nikResult"></div>
     </div>
 
     <!-- PETA SEBARAN RTLH -->
