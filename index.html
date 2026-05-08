@@ -1209,8 +1209,17 @@ function closeModal(id){document.getElementById(id).classList.remove('open')}
 async function loadGlobalStats(){
   if(!user)return; // Guard: harus login
   try{
-    const{data,error}=await sb.from('rtlh').select('kec,status_rtlh,desil');
-    if(error)throw error;
+    // Fetch semua data dengan pagination (Supabase default limit 1000)
+    let allData=[], page=0, pageSize=1000, done=false;
+    while(!done){
+      const{data,error}=await sb.from('rtlh').select('kec,status_rtlh,desil')
+        .range(page*pageSize,(page+1)*pageSize-1);
+      if(error)throw error;
+      allData=[...allData,...(data||[])];
+      if(!data||data.length<pageSize)done=true;
+      else page++;
+    }
+    const data=allData;
     const total=data.length;
     const layak=data.filter(r=>r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses').length;
     const belum=data.filter(r=>r.status_rtlh==='RTLH'||r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
@@ -1715,11 +1724,18 @@ async function loadKec(){
   if(brCache[currentKec]){brAll=brCache[currentKec];brFeatures=[...brAll];renderSidebar();renderKecDashboard();updateMap();return;}
 
   const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,dtsen,backlog,desil,nik,no_kk,updated_at';
-  let query=sb.from('rtlh').select(cols).order('id');
-  if(currentKec)query=query.eq('kec',currentKec);
-  const{data,error}=await query;
-  if(error){toast('Gagal memuat data','error');return;}
-  brAll=data.map(r=>{r._score=calcScore(r);r._cat=getCat(r._score);return r;});
+  // Fetch dengan pagination (antisipasi lebih dari 1000 data per kecamatan)
+  let allRows=[], pg=0, pgSize=1000, isDone=false;
+  while(!isDone){
+    let q=sb.from('rtlh').select(cols).order('id').range(pg*pgSize,(pg+1)*pgSize-1);
+    if(currentKec)q=q.eq('kec',currentKec);
+    const{data,error}=await q;
+    if(error){toast('Gagal memuat data','error');return;}
+    allRows=[...allRows,...(data||[])];
+    if(!data||data.length<pgSize)isDone=true;
+    else pg++;
+  }
+  brAll=allRows.map(r=>{r._score=calcScore(r);r._cat=getCat(r._score);return r;});
   brCache[currentKec]=brAll;
   brFeatures=[...brAll];
   renderSidebar();
@@ -2381,13 +2397,21 @@ async function downloadExcelKab(withNIK){
   const btn=document.querySelector('#ovExcelKab .btn-success');
   if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Mengambil data...';}
   try{
-    let q=sb.from('rtlh').select('*').order('kec').order('desa').order('id');
-    if(kec)q=q.eq('kec',kec);
-    if(status)q=q.eq('status_rtlh',status);
-    if(desil)q=q.eq('desil',desil.replace('Desil ',''));
-    if(tahun)q=q.eq('tahun_bantuan',tahun);
-    const{data,error}=await q;
-    if(error)return toast('Gagal ambil data: '+error.message,'error');
+    let allRows2=[],pg2=0,done2=false;
+    while(!done2){
+      let q=sb.from('rtlh').select('*').order('kec').order('desa').order('id')
+        .range(pg2*1000,(pg2+1)*1000-1);
+      if(kec)q=q.eq('kec',kec);
+      if(status)q=q.eq('status_rtlh',status);
+      if(desil)q=q.eq('desil',desil.replace('Desil ',''));
+      if(tahun)q=q.eq('tahun_bantuan',tahun);
+      const{data:chunk,error}=await q;
+      if(error)return toast('Gagal ambil data: '+error.message,'error');
+      allRows2=[...allRows2,...(chunk||[])];
+      if(!chunk||chunk.length<1000)done2=true;
+      else pg2++;
+    }
+    const data=allRows2;
     if(!data||!data.length)return toast('Tidak ada data','error');
     const rows=data.map(r=>({
       ID:r.id,Kecamatan:r.kec,Desa:r.desa,'Nama KK':r.kep_kk,
