@@ -1222,11 +1222,10 @@ async function loadGlobalStats(){
     const{data,error}=await sb.from('rtlh').select('kec,status_rtlh,desil');
     if(error)throw error;
     const total=data.length;
-    const sudah=data.filter(r=>r.status_rtlh==='Sudah Ditangani').length;
-    const proses=data.filter(r=>r.status_rtlh==='Dalam Proses').length;
-    const belum=data.filter(r=>r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
+    const layak=data.filter(r=>r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses').length;
+    const belum=data.filter(r=>r.status_rtlh==='RTLH'||r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
     const batal=data.filter(r=>r.status_rtlh==='Dibatalkan').length;
-    const layak=sudah+proses; // Layak Huni = Sudah + Proses
+    const sudah=layak; const proses=0;
 
     document.getElementById('gs-total').textContent=total.toLocaleString('id');
     document.getElementById('gs-layak').textContent=layak.toLocaleString('id');
@@ -1244,7 +1243,7 @@ async function loadGlobalStats(){
       const k=(r.kec||'').toUpperCase();
       if(!kecCounts[k])kecCounts[k]={total:0,sudah:0,proses:0,belum:0};
       kecCounts[k].total++;
-      if(r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')kecCounts[k].sudah++;
+      if(r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')kecCounts[k].sudah++;
       else if(r.status_rtlh!=='Dibatalkan')kecCounts[k].belum++;
     });
 
@@ -1655,7 +1654,7 @@ async function ensureKecCounts(force=false){
       const k=(r.kec||'').toUpperCase();
       if(!kecCounts[k])kecCounts[k]={total:0,sudah:0,proses:0,belum:0};
       kecCounts[k].total++;
-      if(r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')kecCounts[k].sudah++;
+      if(r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')kecCounts[k].sudah++;
       else if(r.status_rtlh!=='Dibatalkan')kecCounts[k].belum++;
     });
   }catch(e){console.error(e);}
@@ -1861,7 +1860,7 @@ function renderSidebarList(){
   l.innerHTML=sorted.map((r,i)=>{
     const desilNum=String(r.desil||'').match(/\d+/)?.[0]||'';
     const color=desilNum?getDesilColor(desilNum):'#94A3B8';
-    const statusCls=(r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')?'sudah':r.status_rtlh==='Dibatalkan'?'batal':'belum';
+    const statusCls=r.status_rtlh==='Layak Huni'?'sudah':r.status_rtlh==='Dibatalkan'?'batal':'belum';
     return`<div class="rtlh-item" id="ri_${r.id}" onclick="selectItem(${r.id})">
       <div style="display:flex;align-items:center;gap:8px">
         <div style="width:22px;height:22px;border-radius:6px;background:${color}18;color:${color};font-size:.6rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div>
@@ -1959,7 +1958,7 @@ function showDetail(r){
       <div class="detail-item"><div class="dl">Jml Penghuni</div><div class="dv">${dn(r.jml_peng)}</div></div>
       <div class="detail-item"><div class="dl">Luas Rumah</div><div class="dv">${dn(r.luas_rum)} m²</div></div>
       <div class="detail-item"><div class="dl">Desil</div><div class="dv" style="color:${desilNum?getDesilColor(desilNum):'inherit'};font-weight:700">${dn(r.desil)||'Tidak ada data'}</div></div>
-      <div class="detail-item"><div class="dl">Status RTLH</div><div class="dv">${r.status_rtlh?`<span class="badge ${(r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')?'sudah':r.status_rtlh==='Dibatalkan'?'batal':'belum'}">${r.status_rtlh}</span>`:'-'}</div></div>
+      <div class="detail-item"><div class="dl">Status RTLH</div><div class="dv">${r.status_rtlh?`<span class="badge ${(r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')?'sudah':r.status_rtlh==='Dibatalkan'?'batal':'belum'}">${r.status_rtlh}</span>`:'-'}</div></div>
       ${r.status_rtlh==='Dibatalkan'&&r.status_batal?`<div class="detail-item"><div class="dl">Alasan Batal</div><div class="dv" style="color:var(--danger);font-weight:600">${r.status_batal}</div></div>`:''}
       <div class="detail-item"><div class="dl">Status MyPKP</div><div class="dv">${dn(r.dtsen)}</div></div>
 
@@ -2088,7 +2087,7 @@ const FIELDS=[
   {key:'kondisi_la',label:'Kondisi Lantai',type:'text'},
   {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['RTLH','Layak Huni','Dibatalkan']},
   {key:'status_batal',label:'Alasan Dibatalkan',type:'select',opts:['','Meninggal Dunia','Tidak Bersedia Dibantu','Tidak Ada Biaya','Pindah Tempat Tinggal','Sudah Mampu Mandiri','Tidak Memenuhi Syarat','Lainnya']},
-  {key:'jenis_bantuan',label:'Jenis Bantuan',type:'select',opts:['','RTLH','BSPS','Dana Desa','CSR','Lainnya']},
+  {key:'jenis_bantuan',label:'Jenis Bantuan',type:'select',opts:['','RTLH','BSPS','DD','CSR','Lainnya']},
   {key:'tahun_bantuan',label:'Tahun Bantuan',type:'text',placeholder:'misal: 2025'},
   {key:'dtsen',label:'Status (Cek Bantuan MyPKP)',type:'select',opts:['','Eligible','Not Eligible','Not Eligible1']},
   {key:'backlog',label:'Backlog',type:'select',opts:['','Backlog 1','Backlog 2']},
@@ -2244,7 +2243,7 @@ function addExcelDropdowns(ws, rows){
   const OPTS={
     'Status RTLH':'"RTLH,Layak Huni,Dibatalkan"',
     'Alasan Batal':'"Meninggal Dunia,Tidak Bersedia Dibantu,Tidak Ada Biaya,Pindah Tempat Tinggal,Sudah Mampu Mandiri,Tidak Memenuhi Syarat,Lainnya"',
-    'Jenis Bantuan':'"RTLH,BSPS,Dana Desa,CSR,Lainnya"',
+    'Jenis Bantuan':'"RTLH,BSPS,DD,CSR,Lainnya"',
     'Status MyPKP':'"Eligible,Not Eligible,Not Eligible1"'
   };
   // Cari indeks kolom dari header
@@ -2451,9 +2450,26 @@ async function importExcelKab(input){
           kondisi_at:xlVal(row['Kondisi Atap']||row['kondisi_at']),
           material_l:xlVal(row['Material Lantai']||row['material_l']),
           kondisi_la:xlVal(row['Kondisi Lantai']||row['kondisi_la']),
-          status_rtlh:xlVal(row['Status RTLH']||row['status_rtlh']),
+          status_rtlh:(()=>{
+            const v=xlVal(row['Status RTLH']||row['status_rtlh']);
+            if(!v)return null;
+            const u=v.toUpperCase().trim();
+            if(u==='LAYAK HUNI'||u==='SUDAH DITANGANI'||u==='SUDAH')return 'Layak Huni';
+            if(u==='RTLH'||u==='BELUM DITANGANI'||u==='BELUM')return 'RTLH';
+            if(u==='DIBATALKAN'||u==='BATAL')return 'Dibatalkan';
+            return v; // pakai apa adanya kalau tidak dikenal
+          })(),
           status_batal:xlVal(row['Alasan Batal']||row['status_batal']),
-          jenis_bantuan:xlVal(row['Jenis Bantuan']||row['jenis_bantuan']),
+          jenis_bantuan:(()=>{
+            const v=xlVal(row['Jenis Bantuan']||row['jenis_bantuan']);
+            if(!v)return null;
+            const u=v.toUpperCase().trim();
+            if(u==='RTLH')return 'RTLH';
+            if(u==='BSPS')return 'BSPS';
+            if(u==='DD'||u==='DANA DESA')return 'Dana Desa';
+            if(u==='CSR')return 'CSR';
+            return v;
+          })(),
           tahun_bantuan:xlVal(String(row['Tahun Bantuan']||row['tahun_bantuan']||'').replace(/[^0-9]/g,'')),
           dtsen:xlVal(row['Status MyPKP']||row['DTSEN']||row['dtsen']),
           desil:xlVal(row['Desil']||row['desil']),
