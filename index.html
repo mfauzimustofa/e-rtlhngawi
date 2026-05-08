@@ -2775,59 +2775,56 @@ async function importExcelKab(input){
       const ws=wb.Sheets[wb.SheetNames[0]];
       const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
       if(!rows.length){log.innerHTML='<span style="color:var(--danger)">File kosong atau format salah</span>';return;}
-      log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memproses ${rows.length} baris...`;
+      
+      // Deteksi kolom yang ada di file Excel
+      const excelHeaders=rows.length>0?Object.keys(rows[0]).map(h=>h.toLowerCase().trim()):[];
+      const hasCol=(names)=>names.some(n=>excelHeaders.includes(n.toLowerCase()));
+      
+      log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memproses ${rows.length} baris... (${excelHeaders.length} kolom terdeteksi)`;
       let ok=0,fail=0,errors=[];
-      // Proses per batch 10 untuk tidak overload
       for(let i=0;i<rows.length;i++){
         const row=rows[i];
-        const rowNum=i+2; // baris excel (header=1)
-        const obj={
-          kec:xlVal(row['Kecamatan']||row['kec']),
-          desa:xlVal(row['Desa']||row['desa']),
-          kep_kk:xlVal(row['Nama KK']||row['kep_kk']),
-          alamat:xlVal(row['Alamat']||row['alamat']),
-          jen_kel:xlVal(row['Jenis Kelamin']||row['jen_kel']),
-          umur:xlInt(row['Umur']||row['umur']),
-          pend_ter:xlVal(row['Pendidikan']||row['pend_ter']),
-          pekerjaan:xlVal(row['Pekerjaan']||row['pekerjaan']),
-          pengh:xlVal(row['Penghasilan']||row['pengh']),
-          luas_rum:xlNum(row['Luas Rumah (m²)']||row['Luas Rumah']||row['luas_rum']),
-          luas_tan:xlNum(row['Luas Tanah (m²)']||row['Luas Tanah']||row['luas_tan']),
-          jml_peng:xlInt(row['Jml Penghuni']||row['jml_peng']),
-          status_kep:xlVal(row['Status Kepemilikan']||row['status_kep']),
-          material_d:xlVal(row['Material Dinding']||row['material_d']),
-          kondisi_di:xlVal(row['Kondisi Dinding']||row['kondisi_di']),
-          material_a:xlVal(row['Material Atap']||row['material_a']),
-          kondisi_at:xlVal(row['Kondisi Atap']||row['kondisi_at']),
-          material_l:xlVal(row['Material Lantai']||row['material_l']),
-          kondisi_la:xlVal(row['Kondisi Lantai']||row['kondisi_la']),
-          status_rtlh:(()=>{
-            const v=xlVal(row['Status RTLH']||row['status_rtlh']);
-            if(!v)return null;
-            const u=v.toUpperCase().trim();
-            if(u==='LAYAK HUNI'||u==='SUDAH DITANGANI'||u==='SUDAH')return 'Layak Huni';
-            if(u==='RTLH'||u==='BELUM DITANGANI'||u==='BELUM')return 'RTLH';
-            if(u==='DIBATALKAN'||u==='BATAL')return 'Dibatalkan';
-            return v; // pakai apa adanya kalau tidak dikenal
-          })(),
-          status_batal:xlVal(row['Alasan Batal']||row['status_batal']),
-          jenis_bantuan:(()=>{
-            const v=xlVal(row['Jenis Bantuan']||row['jenis_bantuan']);
-            if(!v)return null;
-            const u=v.toUpperCase().trim();
-            if(u==='RTLH')return 'RTLH';
-            if(u==='BSPS')return 'BSPS';
-            if(u==='DD'||u==='DANA DESA')return 'Dana Desa';
-            if(u==='CSR')return 'CSR';
-            return v;
-          })(),
-          tahun_bantuan:xlVal(String(row['Tahun Bantuan']||row['tahun_bantuan']||'').replace(/[^0-9]/g,'')),
-          dtsen:xlVal(row['Status MyPKP']||row['DTSEN']||row['dtsen']),
-          desil:xlVal(row['Desil']||row['desil']),
-          backlog:xlVal(row['Backlog']||row['backlog']),
-          latitude:xlNum(row['Latitude']||row['latitude']),
-          longitude:xlNum(row['Longitude']||row['longitude']),
-        };
+        const rowNum=i+2;
+        const obj={};
+        // Hanya masukkan kolom yang ADA di file Excel
+        if(hasCol(['Kecamatan','kec']))obj.kec=xlVal(row['Kecamatan']||row['kec']);
+        if(hasCol(['Desa','desa']))obj.desa=xlVal(row['Desa']||row['desa']);
+        if(hasCol(['Nama KK','kep_kk']))obj.kep_kk=xlVal(row['Nama KK']||row['kep_kk']);
+        if(hasCol(['Alamat','alamat']))obj.alamat=xlVal(row['Alamat']||row['alamat']);
+        if(hasCol(['Jenis Kelamin','jen_kel']))obj.jen_kel=xlVal(row['Jenis Kelamin']||row['jen_kel']);
+        if(hasCol(['Umur','umur']))obj.umur=xlInt(row['Umur']||row['umur']);
+        if(hasCol(['Pendidikan','pend_ter']))obj.pend_ter=xlVal(row['Pendidikan']||row['pend_ter']);
+        if(hasCol(['Pekerjaan','pekerjaan']))obj.pekerjaan=xlVal(row['Pekerjaan']||row['pekerjaan']);
+        if(hasCol(['Penghasilan','pengh']))obj.pengh=xlVal(row['Penghasilan']||row['pengh']);
+        if(hasCol(['Luas Rumah (m²)','Luas Rumah','luas_rum']))obj.luas_rum=xlNum(row['Luas Rumah (m²)']||row['Luas Rumah']||row['luas_rum']);
+        if(hasCol(['Luas Tanah (m²)','Luas Tanah','luas_tan']))obj.luas_tan=xlNum(row['Luas Tanah (m²)']||row['Luas Tanah']||row['luas_tan']);
+        if(hasCol(['Jml Penghuni','jml_peng']))obj.jml_peng=xlInt(row['Jml Penghuni']||row['jml_peng']);
+        if(hasCol(['Status Kepemilikan','status_kep']))obj.status_kep=xlVal(row['Status Kepemilikan']||row['status_kep']);
+        if(hasCol(['Material Dinding','material_d']))obj.material_d=xlVal(row['Material Dinding']||row['material_d']);
+        if(hasCol(['Kondisi Dinding','kondisi_di']))obj.kondisi_di=xlVal(row['Kondisi Dinding']||row['kondisi_di']);
+        if(hasCol(['Material Atap','material_a']))obj.material_a=xlVal(row['Material Atap']||row['material_a']);
+        if(hasCol(['Kondisi Atap','kondisi_at']))obj.kondisi_at=xlVal(row['Kondisi Atap']||row['kondisi_at']);
+        if(hasCol(['Material Lantai','material_l']))obj.material_l=xlVal(row['Material Lantai']||row['material_l']);
+        if(hasCol(['Kondisi Lantai','kondisi_la']))obj.kondisi_la=xlVal(row['Kondisi Lantai']||row['kondisi_la']);
+        if(hasCol(['Status RTLH','status_rtlh'])){
+          const v=xlVal(row['Status RTLH']||row['status_rtlh']);
+          if(v){const u=v.toUpperCase().trim();
+            obj.status_rtlh=u==='LAYAK HUNI'||u==='SUDAH DITANGANI'||u==='SUDAH'?'Layak Huni':u==='RTLH'||u==='BELUM DITANGANI'||u==='BELUM'?'RTLH':u==='DIBATALKAN'||u==='BATAL'?'Dibatalkan':v;
+          }
+        }
+        if(hasCol(['Alasan Batal','status_batal']))obj.status_batal=xlVal(row['Alasan Batal']||row['status_batal']);
+        if(hasCol(['Jenis Bantuan','jenis_bantuan'])){
+          const v=xlVal(row['Jenis Bantuan']||row['jenis_bantuan']);
+          if(v){const u=v.toUpperCase().trim();
+            obj.jenis_bantuan=u==='RTLH'?'RTLH':u==='BSPS'?'BSPS':u==='DD'||u==='DANA DESA'?'Dana Desa':u==='CSR'?'CSR':v;
+          }
+        }
+        if(hasCol(['Tahun Bantuan','tahun_bantuan']))obj.tahun_bantuan=xlVal(String(row['Tahun Bantuan']||row['tahun_bantuan']||'').replace(/[^0-9]/g,''));
+        if(hasCol(['Status MyPKP','DTSEN','dtsen']))obj.dtsen=xlVal(row['Status MyPKP']||row['DTSEN']||row['dtsen']);
+        if(hasCol(['Desil','desil']))obj.desil=xlVal(row['Desil']||row['desil']);
+        if(hasCol(['Backlog','backlog']))obj.backlog=xlVal(row['Backlog']||row['backlog']);
+        if(hasCol(['Latitude','latitude']))obj.latitude=xlNum(row['Latitude']||row['latitude']);
+        if(hasCol(['Longitude','longitude']))obj.longitude=xlNum(row['Longitude']||row['longitude']);
         // Hapus key yang null supaya tidak overwrite data existing dengan null
         Object.keys(obj).forEach(k=>{if(obj[k]===null)delete obj[k];});
         const nik=String(row['NIK']||row['nik']||'').replace(/[^0-9]/g,'');
