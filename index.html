@@ -2126,50 +2126,6 @@ function toggleDesaGroup(id){
   if(ico)ico.style.transform=open?'rotate(-90deg)':'';
 }
 
-    const desilNum=String(r.desil||'').match(/\d+/)?.[0]||'';
-    const color=desilNum?getDesilColor(desilNum):'#94A3B8';
-    const statusCls=r.status_rtlh==='Layak Huni'?'sudah':r.status_rtlh==='Dibatalkan'?'batal':'belum';
-    return`<div class="rtlh-item" id="ri_${r.id}" onclick="selectItem(${r.id})">
-      <div style="display:flex;align-items:center;gap:8px">
-        <div style="width:22px;height:22px;border-radius:6px;background:${color}18;color:${color};font-size:.6rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div>
-        <div style="flex:1;min-width:0">
-          <div class="ri-name">${showNama(r.kep_kk)}</div>
-          <div class="ri-sub">${dn(r.desa)}${r.kec&&r.kec!==currentKec?` · ${r.kec}`:''}</div>
-        </div>
-        <div style="font-size:.62rem;color:var(--gray-400);flex-shrink:0"><i class="fas fa-chevron-down" id="ico_${r.id}"></i></div>
-      </div>
-      <div class="ri-badges">
-        <span class="badge ${statusCls}">${r.status_rtlh||'Belum'}</span>
-        ${desilNum?`<span class="badge desil" style="background:${getDesilColor(desilNum)}22;color:${getDesilColor(desilNum)}">Desil ${desilNum}</span>`:''}
-        ${r.dtsen?`<span class="badge" style="background:#EFF6FF;color:#1D4ED8">MyPKP:${r.dtsen}</span>`:''}
-      </div>
-      <div class="ri-detail" id="det_${r.id}">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
-          ${[
-            ['NIK',showNIK(r.nik)],['No. KK',showKK(r.no_kk)],
-            ['Nama KK',showNama(r.kep_kk)],['Desa',dn(r.desa)],
-            ['Alamat',showAlamat(r.alamat)],['Jenis Kelamin',dn(r.jen_kel)],
-            ['Umur',dn(r.umur)+' thn'],['Pekerjaan',dn(r.pekerjaan)],
-            ['Penghasilan',dn(r.pengh)],['Jml Penghuni',dn(r.jml_peng)],
-            ['Luas Rumah',dn(r.luas_rum)+' m²'],['Desil',dn(r.desil)],
-            ['Tahun Bantuan',dn(r.tahun_bantuan)],
-            ['Status MyPKP',dn(r.dtsen)],['Material Dinding',dn(r.material_d)],
-            ['Kondisi Dinding',dn(r.kondisi_di)],['Material Atap',dn(r.material_a)],
-            ['Kondisi Atap',dn(r.kondisi_at)],['Material Lantai',dn(r.material_l)],
-            ['Kondisi Lantai',dn(r.kondisi_la)],
-          ].map(([lbl,val])=>`<div style="padding:5px 0;border-bottom:1px solid var(--gray-100)"><div style="font-size:.58rem;font-weight:700;color:var(--gray-400);text-transform:uppercase">${lbl}</div><div style="font-size:.75rem;font-weight:600;color:var(--gray-800);margin-top:1px">${val}</div></div>`).join('')}
-        </div>
-        ${canEdit()?`<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
-          <button class="btn btn-primary" style="font-size:.7rem;padding:5px 12px" onclick="event.stopPropagation();openForm(String(${r.id}))"><i class="fas fa-edit"></i> Edit</button>
-          <button class="btn btn-danger" style="font-size:.7rem;padding:5px 12px" onclick="event.stopPropagation();deleteItem(${r.id})"><i class="fas fa-trash"></i> Hapus</button>
-        </div>`:''}
-      </div>
-    </div>`;
-  }).join('');
-}
-
-
-
 // ══════════════════════════════════════════════════
 // MAP MARKERS
 // ══════════════════════════════════════════════════
