@@ -437,9 +437,8 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
           <span style="font-size:.72rem;color:rgba(255,255,255,.6)">Filter:</span>
           <select id="searchStatus" onchange="searchNIK()" style="padding:7px 12px;border-radius:8px;border:1.5px solid rgba(255,255,255,.3);background:rgba(15,23,42,.85);color:#fff;font-size:.75rem;font-family:inherit;cursor:pointer;min-width:160px">
             <option value="">Semua Status</option>
-            <option value="Belum Ditangani">Belum Ditangani</option>
-            <option value="Dalam Proses">Dalam Proses</option>
-            <option value="Sudah Ditangani">Sudah Ditangani</option>
+            <option value="RTLH">RTLH (Belum Ditangani)</option>
+            <option value="Layak Huni">Layak Huni</option>
             <option value="Dibatalkan">Dibatalkan</option>
           </select>
         </div>
@@ -452,8 +451,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
       <div class="grid-4">
         <div class="mini-stat" onclick="nav('keclist')" title="Lihat data per kecamatan"><div class="ms-icon" style="background:linear-gradient(135deg,var(--blue),var(--blue-light))"><i class="fas fa-house-damage"></i></div><div class="ms-texts"><div class="ms-val" id="gs-total">-</div><div class="ms-label">Total Data</div></div></div>
         <div class="mini-stat" onclick="nav('keclist')" title="Sudah Ditangani + Dalam Proses = Layak Huni"><div class="ms-icon" style="background:linear-gradient(135deg,#16A34A,#22C55E)"><i class="fas fa-home"></i></div><div class="ms-texts"><div class="ms-val" id="gs-layak">-</div><div class="ms-label">Layak Huni</div></div></div>
-        <div class="mini-stat" onclick="nav('keclist')" title="Lihat data dalam proses"><div class="ms-icon" style="background:linear-gradient(135deg,#F59E0B,#FBBF24)"><i class="fas fa-clock"></i></div><div class="ms-texts"><div class="ms-val" id="gs-proses">-</div><div class="ms-label">Dalam Proses</div></div></div>
-        <div class="mini-stat" onclick="nav('keclist')" title="Lihat data belum ditangani"><div class="ms-icon" style="background:linear-gradient(135deg,var(--danger),#F87171)"><i class="fas fa-exclamation-triangle"></i></div><div class="ms-texts"><div class="ms-val" id="gs-belum">-</div><div class="ms-label">RTLH (Belum)</div></div></div>
+        <div class="mini-stat" onclick="nav('keclist')" title="Belum Ditangani = RTLH"><div class="ms-icon" style="background:linear-gradient(135deg,var(--danger),#F87171)"><i class="fas fa-house-damage"></i></div><div class="ms-texts"><div class="ms-val" id="gs-belum">-</div><div class="ms-label">RTLH</div></div></div>
       </div>
     </div>
 
@@ -488,13 +486,11 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
           <div class="status-bar-title"><i class="fas fa-chart-pie"></i> Status Layak Huni vs RTLH</div>
           <div class="prog-bar-track" id="statusBar">
             <div class="prog-bar-seg" id="pbSudah" style="background:var(--success)"></div>
-            <div class="prog-bar-seg" id="pbProses" style="background:var(--warning)"></div>
             <div class="prog-bar-seg" id="pbBelum" style="background:var(--danger)"></div>
           </div>
           <div class="status-legend" style="margin-bottom:14px">
             <div class="sl-item"><div class="sl-dot" style="background:var(--success)"></div><span id="lgSudah">Layak Huni: 0%</span></div>
-            <div class="sl-item"><div class="sl-dot" style="background:var(--warning)"></div><span id="lgProses">Proses: 0%</span></div>
-            <div class="sl-item"><div class="sl-dot" style="background:var(--danger)"></div><span id="lgBelum">RTLH (Belum): 0%</span></div>
+            <div class="sl-item"><div class="sl-dot" style="background:var(--danger)"></div><span id="lgBelum">RTLH: 0%</span></div>
           </div>
           <div style="font-size:.72rem;font-weight:700;color:var(--gray-600);margin-bottom:8px">Stacked per Kecamatan</div>
           <div style="position:relative;height:180px"><canvas id="chartStatus"></canvas></div>
@@ -1234,17 +1230,13 @@ async function loadGlobalStats(){
 
     document.getElementById('gs-total').textContent=total.toLocaleString('id');
     document.getElementById('gs-layak').textContent=layak.toLocaleString('id');
-    const gsProses=document.getElementById('gs-proses');
-    if(gsProses)gsProses.textContent=proses.toLocaleString('id');
     document.getElementById('gs-belum').textContent=belum.toLocaleString('id');
 
-    const playak=pct(layak,total),pp=pct(proses,total),pb=pct(belum,total);
+    const playak=pct(layak,total),pb=pct(belum,total);
     document.getElementById('pbSudah').style.width=playak+'%';
-    document.getElementById('pbProses').style.width='0%'; // gabung ke layak
     document.getElementById('pbBelum').style.width=pb+'%';
     document.getElementById('lgSudah').textContent=`Layak Huni: ${playak}% (${layak})`;
-    document.getElementById('lgProses').textContent=`RTLH: ${pb}% (${belum})`;
-    document.getElementById('lgBelum').textContent=`Dibatalkan: ${batal}`;
+    document.getElementById('lgBelum').textContent=`RTLH: ${pb}% (${belum})`;
 
     // Per kec counts
     kecCounts={};
@@ -1252,8 +1244,7 @@ async function loadGlobalStats(){
       const k=(r.kec||'').toUpperCase();
       if(!kecCounts[k])kecCounts[k]={total:0,sudah:0,proses:0,belum:0};
       kecCounts[k].total++;
-      if(r.status_rtlh==='Sudah Ditangani')kecCounts[k].sudah++;
-      else if(r.status_rtlh==='Dalam Proses')kecCounts[k].proses++;
+      if(r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')kecCounts[k].sudah++;
       else if(r.status_rtlh!=='Dibatalkan')kecCounts[k].belum++;
     });
 
@@ -1664,8 +1655,7 @@ async function ensureKecCounts(force=false){
       const k=(r.kec||'').toUpperCase();
       if(!kecCounts[k])kecCounts[k]={total:0,sudah:0,proses:0,belum:0};
       kecCounts[k].total++;
-      if(r.status_rtlh==='Sudah Ditangani')kecCounts[k].sudah++;
-      else if(r.status_rtlh==='Dalam Proses')kecCounts[k].proses++;
+      if(r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')kecCounts[k].sudah++;
       else if(r.status_rtlh!=='Dibatalkan')kecCounts[k].belum++;
     });
   }catch(e){console.error(e);}
@@ -1802,9 +1792,8 @@ function renderSidebar(){
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
       <span style="font-size:.68rem;font-weight:700;color:var(--gray-500)">Status:</span>
       <button class="filter-chip ${filterStatus==='all'?'active':''}" onclick="setFilterStatus('all')">Semua</button>
-      <button class="filter-chip ${filterStatus==='Belum Ditangani'?'active':''}" onclick="setFilterStatus('Belum Ditangani')">Belum</button>
-      <button class="filter-chip ${filterStatus==='Dalam Proses'?'active':''}" onclick="setFilterStatus('Dalam Proses')">Proses</button>
-      <button class="filter-chip ${filterStatus==='Sudah Ditangani'?'active':''}" onclick="setFilterStatus('Sudah Ditangani')">Sudah</button>
+      <button class="filter-chip ${filterStatus==='RTLH'?'active':''}" onclick="setFilterStatus('RTLH')" style="${filterStatus==='RTLH'?'':'border-color:#DC2626;color:#DC2626'}">RTLH</button>
+      <button class="filter-chip ${filterStatus==='Layak Huni'?'active':''}" onclick="setFilterStatus('Layak Huni')" style="${filterStatus==='Layak Huni'?'':'border-color:#16A34A;color:#16A34A'}">Layak Huni</button>
       <button class="filter-chip ${filterStatus==='Dibatalkan'?'active':''}" onclick="setFilterStatus('Dibatalkan')" style="${filterStatus==='Dibatalkan'?'':'border-color:#9CA3AF;color:#6B7280'}">Batal</button>
       <span style="font-size:.68rem;font-weight:700;color:var(--gray-500);margin-left:6px">Desil:</span>
       <button class="filter-chip ${filterDesil==='all'?'active':''}" onclick="setFilterDesil('all')">Semua</button>
@@ -1872,7 +1861,7 @@ function renderSidebarList(){
   l.innerHTML=sorted.map((r,i)=>{
     const desilNum=String(r.desil||'').match(/\d+/)?.[0]||'';
     const color=desilNum?getDesilColor(desilNum):'#94A3B8';
-    const statusCls=r.status_rtlh==='Sudah Ditangani'?'sudah':r.status_rtlh==='Dalam Proses'?'proses':r.status_rtlh==='Dibatalkan'?'batal':'belum';
+    const statusCls=(r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')?'sudah':r.status_rtlh==='Dibatalkan'?'batal':'belum';
     return`<div class="rtlh-item" id="ri_${r.id}" onclick="selectItem(${r.id})">
       <div style="display:flex;align-items:center;gap:8px">
         <div style="width:22px;height:22px;border-radius:6px;background:${color}18;color:${color};font-size:.6rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div>
@@ -1896,7 +1885,7 @@ function renderSidebarList(){
             ['Umur',dn(r.umur)+' thn'],['Pekerjaan',dn(r.pekerjaan)],
             ['Penghasilan',dn(r.pengh)],['Jml Penghuni',dn(r.jml_peng)],
             ['Luas Rumah',dn(r.luas_rum)+' m²'],['Desil',dn(r.desil)],
-            ['Tahun Bantuan',dn(r.tahun_bantuan)],['Sumber Dana',dn(r.sumber_dana)],
+            ['Tahun Bantuan',dn(r.tahun_bantuan)],
             ['Status MyPKP',dn(r.dtsen)],['Material Dinding',dn(r.material_d)],
             ['Kondisi Dinding',dn(r.kondisi_di)],['Material Atap',dn(r.material_a)],
             ['Kondisi Atap',dn(r.kondisi_at)],['Material Lantai',dn(r.material_l)],
@@ -1970,7 +1959,7 @@ function showDetail(r){
       <div class="detail-item"><div class="dl">Jml Penghuni</div><div class="dv">${dn(r.jml_peng)}</div></div>
       <div class="detail-item"><div class="dl">Luas Rumah</div><div class="dv">${dn(r.luas_rum)} m²</div></div>
       <div class="detail-item"><div class="dl">Desil</div><div class="dv" style="color:${desilNum?getDesilColor(desilNum):'inherit'};font-weight:700">${dn(r.desil)||'Tidak ada data'}</div></div>
-      <div class="detail-item"><div class="dl">Status RTLH</div><div class="dv">${r.status_rtlh?`<span class="badge ${r.status_rtlh==='Sudah Ditangani'?'sudah':r.status_rtlh==='Dalam Proses'?'proses':r.status_rtlh==='Dibatalkan'?'batal':'belum'}">${r.status_rtlh}</span>`:'-'}</div></div>
+      <div class="detail-item"><div class="dl">Status RTLH</div><div class="dv">${r.status_rtlh?`<span class="badge ${(r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')?'sudah':r.status_rtlh==='Dibatalkan'?'batal':'belum'}">${r.status_rtlh}</span>`:'-'}</div></div>
       ${r.status_rtlh==='Dibatalkan'&&r.status_batal?`<div class="detail-item"><div class="dl">Alasan Batal</div><div class="dv" style="color:var(--danger);font-weight:600">${r.status_batal}</div></div>`:''}
       <div class="detail-item"><div class="dl">Status MyPKP</div><div class="dv">${dn(r.dtsen)}</div></div>
 
@@ -2097,7 +2086,7 @@ const FIELDS=[
   {key:'kondisi_at',label:'Kondisi Atap',type:'text'},
   {key:'material_l',label:'Material Lantai',type:'text'},
   {key:'kondisi_la',label:'Kondisi Lantai',type:'text'},
-  {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['Belum Ditangani','Dalam Proses','Sudah Ditangani','Dibatalkan']},
+  {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['RTLH','Layak Huni','Dibatalkan']},
   {key:'status_batal',label:'Alasan Dibatalkan',type:'select',opts:['','Meninggal Dunia','Tidak Bersedia Dibantu','Tidak Ada Biaya','Pindah Tempat Tinggal','Sudah Mampu Mandiri','Tidak Memenuhi Syarat','Lainnya']},
   {key:'jenis_bantuan',label:'Jenis Bantuan',type:'select',opts:['','RTLH','BSPS','Dana Desa','CSR','Lainnya']},
   {key:'tahun_bantuan',label:'Tahun Bantuan',type:'text',placeholder:'misal: 2025'},
@@ -2253,7 +2242,7 @@ function addExcelDropdowns(ws, rows){
     'Status MyPKP':'AE'
   };
   const OPTS={
-    'Status RTLH':'"Belum Ditangani,Dalam Proses,Sudah Ditangani,Dibatalkan"',
+    'Status RTLH':'"RTLH,Layak Huni,Dibatalkan"',
     'Alasan Batal':'"Meninggal Dunia,Tidak Bersedia Dibantu,Tidak Ada Biaya,Pindah Tempat Tinggal,Sudah Mampu Mandiri,Tidak Memenuhi Syarat,Lainnya"',
     'Jenis Bantuan':'"RTLH,BSPS,Dana Desa,CSR,Lainnya"',
     'Status MyPKP':'"Eligible,Not Eligible,Not Eligible1"'
