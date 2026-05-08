@@ -509,26 +509,37 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
     </div>
 
     <!-- SEARCH BAR sticky -->
-    <div class="section" style="padding:8px 12px;position:sticky;top:0;z-index:100;background:var(--gray-50);box-shadow:0 2px 8px rgba(0,0,0,.06)">
-      <div style="display:flex;gap:8px">
-        <input id="nikSearchInput" type="text"
-          placeholder="🔍 Cari nama, NIK, desa, kecamatan..."
-          maxlength="80" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="search"
-          style="flex:1;padding:12px 16px;border-radius:12px;border:2px solid var(--gray-200);font-size:16px;font-family:inherit;background:#fff;color:var(--gray-900);outline:none;transition:border .2s"
-          onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--gray-200)'"
-          onkeydown="if(event.key==='Enter')searchNIK()"
-          oninput="if(this.value.length>=3)clearTimeout(this._t);this._t=setTimeout(()=>searchNIK(),600)">
-        <button onclick="searchNIK()" style="padding:12px 18px;border-radius:12px;background:var(--blue);color:#fff;border:none;font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0"><i class="fas fa-search"></i></button>
+    <div style="padding:10px 14px;position:sticky;top:0;z-index:100;background:var(--gray-50);box-shadow:0 2px 8px rgba(0,0,0,.08)">
+      <div style="display:flex;gap:8px;align-items:center">
+        <div style="flex:1;position:relative">
+          <i class="fas fa-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--gray-400);font-size:.85rem;pointer-events:none"></i>
+          <input id="nikSearchInput" type="text"
+            placeholder="Cari nama, NIK, desa, atau kecamatan..."
+            maxlength="80" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="search"
+            style="width:100%;padding:11px 14px 11px 38px;border-radius:10px;border:1.5px solid var(--gray-200);font-size:15px;font-family:inherit;background:#fff;color:var(--gray-900);outline:none;box-sizing:border-box;transition:border .2s"
+            onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--gray-200)'"
+            onkeydown="if(event.key==='Enter')searchNIK()"
+            oninput="if(this.value.trim())clearTimeout(this._t);this._t=setTimeout(()=>searchNIK(),500)">
+        </div>
+        <button onclick="searchNIK()" style="padding:11px 16px;border-radius:10px;background:var(--blue);color:#fff;border:none;font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0"><i class="fas fa-search"></i></button>
       </div>
-      <div style="display:none;gap:8px;margin-top:8px;align-items:center" id="searchFilters">
-        <select id="searchStatus" onchange="searchNIK()" style="padding:8px 12px;border-radius:8px;border:1.5px solid var(--gray-300);background:#fff;color:var(--gray-800);font-size:.78rem;font-family:inherit;cursor:pointer;flex:1">
-          <option value="">Semua Status</option>
-          <option value="RTLH">RTLH</option>
-          <option value="Layak Huni">Layak Huni</option>
-          <option value="Dibatalkan">Dibatalkan</option>
-        </select>
+    </div>
+
+    <!-- SEARCH RESULTS — di luar sticky, tidak menimpa peta -->
+    <div id="searchResultsWrap" style="display:none;background:#fff;border-bottom:1px solid var(--gray-200);z-index:99">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px 4px">
+        <div id="searchResultCount" style="font-size:.72rem;color:var(--gray-500)"></div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <select id="searchStatus" onchange="searchNIK()" style="padding:5px 10px;border-radius:7px;border:1.5px solid var(--gray-200);background:#fff;color:var(--gray-700);font-size:.72rem;font-family:inherit;cursor:pointer">
+            <option value="">Semua Status</option>
+            <option value="RTLH">RTLH</option>
+            <option value="Layak Huni">Layak Huni</option>
+            <option value="Dibatalkan">Dibatalkan</option>
+          </select>
+          <button onclick="clearSearch()" style="background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:.78rem;padding:4px"><i class="fas fa-times"></i></button>
+        </div>
       </div>
-      <div id="nikResult"></div>
+      <div id="nikResult" style="max-height:60vh;overflow-y:auto"></div>
     </div>
 
     <!-- PETA SEBARAN RTLH -->
@@ -1693,6 +1704,13 @@ function renderChartDesil(counts){
 // ══════════════════════════════════════════════════
 // NIK SEARCH
 // ══════════════════════════════════════════════════
+function clearSearch(){
+  document.getElementById('nikSearchInput').value='';
+  const wrap=document.getElementById('searchResultsWrap');
+  if(wrap)wrap.style.display='none';
+  document.getElementById('nikResult').innerHTML='';
+}
+
 async function searchNIK(){
   const q=(document.getElementById('nikSearchInput').value||'').trim();
   if(!q)return;
@@ -1721,25 +1739,54 @@ async function searchNIK(){
     return;
   }
   if(!data||!data.length){
-    res.innerHTML='<div style="color:rgba(255,255,255,.5);font-size:.78rem;margin-top:12px"><i class="fas fa-times-circle"></i> Data tidak ditemukan.</div>';
-    return;
+    const wrap2=document.getElementById('searchResultsWrap');if(wrap2)wrap2.style.display='block';
+    const cnt=document.getElementById('searchResultCount');if(cnt)cnt.innerHTML='<i class="fas fa-times-circle"></i> Data tidak ditemukan';
+    res.innerHTML='';return;
   }
-  // Tampilkan filter
-  document.getElementById('searchFilters').style.display='flex';
-  const infoHtml=`<div style="color:rgba(255,255,255,.6);font-size:.7rem;margin-top:10px;margin-bottom:4px"><i class="fas fa-search"></i> Ditemukan <strong style="color:#fff">${data.length}</strong> hasil${data.length>=50?' (tampil 50 teratas, coba kata kunci lebih spesifik)':''}</div>`;
-  res.innerHTML=infoHtml+data.map(r=>`<div class="nik-result">
-    <h4><i class="fas fa-id-card" style="color:var(--gold)"></i> ${showNama(r.kep_kk)}</h4>
-    <div class="nr-item"><span class="nr-label">NIK</span><span class="nr-val">${showNIK(r.nik)}</span></div>
-    <div class="nr-item"><span class="nr-label">No. KK</span><span class="nr-val">${showKK(r.no_kk)}</span></div>
-    <div class="nr-item"><span class="nr-label">Kecamatan</span><span class="nr-val">${dn(r.kec)}</span></div>
-    <div class="nr-item"><span class="nr-label">Desa</span><span class="nr-val">${dn(r.desa)}</span></div>
-    <div class="nr-item"><span class="nr-label">Alamat</span><span class="nr-val">${showAlamat(r.alamat)}</span></div>
-    <div class="nr-item"><span class="nr-label">Status RTLH</span><span class="nr-val">${dn(r.status_rtlh)}</span></div>
-    <div class="nr-item"><span class="nr-label">Desil</span><span class="nr-val">${dn(r.desil)}</span></div>
-    <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
-      <button class="btn btn-primary" style="font-size:.72rem" onclick="bukaDetailDariSearch('${r.id}','${Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||''}')"><i class="fas fa-user"></i> Lihat Detail</button>
+  // Tampilkan results wrap
+  const wrap=document.getElementById('searchResultsWrap');
+  if(wrap)wrap.style.display='block';
+  const countEl=document.getElementById('searchResultCount');
+  if(countEl)countEl.innerHTML=`<i class="fas fa-search"></i> <strong>${data.length}</strong> hasil ditemukan${data.length>=50?' · coba lebih spesifik':''}`;
+  const infoHtml='';
+  // Kelompokkan per desa
+  const byDesa={};
+  data.forEach(r=>{
+    const key=(r.desa||'-')+' | '+(r.kec||'-');
+    if(!byDesa[key])byDesa[key]={desa:r.desa,kec:r.kec,items:[]};
+    byDesa[key].items.push(r);
+  });
+  res.innerHTML=Object.values(byDesa).map(group=>`
+    <div style="border-bottom:2px solid var(--blue-bg)">
+      <div style="padding:8px 14px;background:var(--blue-bg);display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:2">
+        <i class="fas fa-map-marker-alt" style="color:var(--blue);font-size:.8rem"></i>
+        <span style="font-size:.75rem;font-weight:800;color:var(--blue)">${group.desa||'-'}</span>
+        <span style="font-size:.68rem;color:var(--gray-500)">· ${group.kec||'-'}</span>
+        <span style="margin-left:auto;font-size:.65rem;background:var(--blue);color:#fff;border-radius:99px;padding:1px 8px">${group.items.length}</span>
+      </div>
+      ${group.items.map(r=>{
+        const isLayak=r.status_rtlh==='Layak Huni';
+        const isBatal=r.status_rtlh==='Dibatalkan';
+        const statusColor=isLayak?'var(--success)':isBatal?'var(--gray-400)':'var(--danger)';
+        const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
+        return`<div onclick="bukaDetailDariSearch('${r.id}','${kecKey}')"
+          style="padding:12px 14px;border-bottom:1px solid var(--gray-100);cursor:pointer;display:flex;align-items:center;gap:12px;transition:background .15s;active:background:var(--gray-50)"
+          onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
+          <div style="width:36px;height:36px;border-radius:50%;background:${statusColor}20;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <i class="fas fa-${isLayak?'home':'house-damage'}" style="color:${statusColor};font-size:.85rem"></i>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:800;font-size:.82rem;color:var(--gray-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${showNama(r.kep_kk)}</div>
+            <div style="font-size:.68rem;color:var(--gray-500);margin-top:1px">${showNIK(r.nik)} ${r.desil?'· '+r.desil:''}</div>
+          </div>
+          <div style="flex-shrink:0;text-align:right">
+            <span style="font-size:.65rem;font-weight:700;color:${statusColor};background:${statusColor}15;padding:2px 8px;border-radius:99px">${r.status_rtlh||'RTLH'}</span>
+            <div style="font-size:.6rem;color:var(--gray-400);margin-top:2px"><i class="fas fa-chevron-right"></i></div>
+          </div>
+        </div>`;
+      }).join('')}
     </div>
-  </div>`).join('');
+  `).join('');
 }
 
 async function bukaDetailDariSearch(id, kecKey){
@@ -1997,9 +2044,88 @@ function applyFilters(){
 function renderSidebarList(){
   const l=document.getElementById('sidebarList');
   if(!l)return;
-  if(!brFeatures.length){l.innerHTML='<div style="padding:24px;text-align:center;color:var(--gray-400);font-size:.78rem">Tidak ada data sesuai filter</div>';return;}
-  const sorted=[...brFeatures].sort((a,b)=>{const da=parseInt(String(a.desil||'99').match(/\d+/)?.[0]||'99');const db=parseInt(String(b.desil||'99').match(/\d+/)?.[0]||'99');return da-db;});
-  l.innerHTML=sorted.map((r,i)=>{
+  if(!brFeatures.length){l.innerHTML='<div style="padding:24px;text-align:center;color:var(--gray-400);font-size:.78rem"><i class="fas fa-inbox" style="font-size:1.5rem;display:block;margin-bottom:8px"></i>Tidak ada data sesuai filter</div>';return;}
+  const sorted=[...brFeatures].sort((a,b)=>{
+    const da=(a.desa||'').localeCompare(b.desa||'');
+    if(da!==0)return da;
+    const sa=parseInt(String(a.desil||'99').match(/\d+/)?.[0]||'99');
+    const sb=parseInt(String(b.desil||'99').match(/\d+/)?.[0]||'99');
+    return sa-sb;
+  });
+  // Kelompokkan per desa
+  const byDesa={};
+  sorted.forEach(r=>{
+    const key=r.desa||'Tanpa Desa';
+    if(!byDesa[key])byDesa[key]=[];
+    byDesa[key].push(r);
+  });
+  l.innerHTML=Object.entries(byDesa).map(([desa,items])=>{
+    const layak=items.filter(r=>r.status_rtlh==='Layak Huni').length;
+    const rtlh=items.filter(r=>r.status_rtlh!=='Layak Huni'&&r.status_rtlh!=='Dibatalkan').length;
+    return`<div class="desa-group">
+      <div class="desa-header" onclick="toggleDesaGroup('dg_${desa.replace(/\s/g,'_')}')" style="padding:8px 14px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);border-top:2px solid var(--blue-bg);display:flex;align-items:center;gap:8px;cursor:pointer;position:sticky;top:0;z-index:5">
+        <i class="fas fa-map-marker-alt" style="color:var(--blue);font-size:.72rem;flex-shrink:0"></i>
+        <span style="font-size:.75rem;font-weight:800;color:var(--gray-800);flex:1">${desa}</span>
+        <span style="font-size:.62rem;color:var(--success);font-weight:700">${layak} LH</span>
+        <span style="font-size:.62rem;color:var(--danger);font-weight:700;margin-left:4px">${rtlh} RTLH</span>
+        <span style="font-size:.6rem;background:var(--blue);color:#fff;border-radius:99px;padding:1px 7px;margin-left:4px">${items.length}</span>
+        <i class="fas fa-chevron-down" id="ico_dg_${desa.replace(/\s/g,'_')}" style="color:var(--gray-400);font-size:.65rem;transition:.2s"></i>
+      </div>
+      <div id="dg_${desa.replace(/\s/g,'_')}">
+        ${items.map((r,i)=>{
+          const desilNum=String(r.desil||'').match(/\d+/)?.[0]||'';
+          const color=desilNum?getDesilColor(desilNum):'#94A3B8';
+          const statusCls=r.status_rtlh==='Layak Huni'?'sudah':r.status_rtlh==='Dibatalkan'?'batal':'belum';
+          return`<div class="rtlh-item" id="ri_${r.id}" onclick="selectItem(${r.id})">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:22px;height:22px;border-radius:6px;background:${color}18;color:${color};font-size:.6rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div>
+              <div style="flex:1;min-width:0">
+                <div class="ri-name">${showNama(r.kep_kk)}</div>
+                <div class="ri-sub" style="font-size:.65rem;color:var(--gray-400)">${showNIK(r.nik)}</div>
+              </div>
+              <div style="font-size:.62rem;color:var(--gray-400);flex-shrink:0"><i class="fas fa-chevron-down" id="ico_${r.id}"></i></div>
+            </div>
+            <div class="ri-badges">
+              <span class="badge ${statusCls}">${r.status_rtlh||'RTLH'}</span>
+              ${desilNum?`<span class="badge desil" style="background:${getDesilColor(desilNum)}22;color:${getDesilColor(desilNum)}">Desil ${desilNum}</span>`:''}
+              ${r.dtsen?`<span class="badge" style="background:#EFF6FF;color:#1D4ED8">MyPKP:${r.dtsen}</span>`:''}
+            </div>
+            <div class="ri-detail" id="det_${r.id}">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+                ${[
+                  ['NIK',showNIK(r.nik)],['No. KK',showKK(r.no_kk)],
+                  ['Alamat',showAlamat(r.alamat)],['Jenis Kelamin',dn(r.jen_kel)],
+                  ['Umur',dn(r.umur)+' thn'],['Pekerjaan',dn(r.pekerjaan)],
+                  ['Penghasilan',dn(r.pengh)],['Jml Penghuni',dn(r.jml_peng)],
+                  ['Luas Rumah',dn(r.luas_rum)+' m²'],['Desil',dn(r.desil)],
+                  ['Jenis Bantuan',dn(r.jenis_bantuan)],['Tahun Bantuan',dn(r.tahun_bantuan)],
+                  ['Status MyPKP',dn(r.dtsen)],['Material Dinding',dn(r.material_d)],
+                  ['Kondisi Dinding',dn(r.kondisi_di)],['Material Atap',dn(r.material_a)],
+                  ['Kondisi Atap',dn(r.kondisi_at)],['Material Lantai',dn(r.material_l)],
+                  ['Kondisi Lantai',dn(r.kondisi_la)],
+                ].map(([lbl,val])=>`<div style="padding:5px 0;border-bottom:1px solid var(--gray-100)"><div style="font-size:.58rem;font-weight:700;color:var(--gray-400);text-transform:uppercase">${lbl}</div><div style="font-size:.75rem;font-weight:600;color:var(--gray-800);margin-top:1px">${val}</div></div>`).join('')}
+              </div>
+              ${canEdit()?`<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+                <button class="btn btn-primary" style="font-size:.7rem;padding:5px 12px" onclick="event.stopPropagation();openForm(String(${r.id}))"><i class="fas fa-edit"></i> Edit</button>
+                <button class="btn btn-danger" style="font-size:.7rem;padding:5px 12px" onclick="event.stopPropagation();deleteItem(${r.id})"><i class="fas fa-trash"></i> Hapus</button>
+              </div>`:''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleDesaGroup(id){
+  const el=document.getElementById(id);
+  const ico=document.getElementById('ico_'+id);
+  if(!el)return;
+  const open=el.style.display!=='none';
+  el.style.display=open?'none':'block';
+  if(ico)ico.style.transform=open?'rotate(-90deg)':'';
+}
+
     const desilNum=String(r.desil||'').match(/\d+/)?.[0]||'';
     const color=desilNum?getDesilColor(desilNum):'#94A3B8';
     const statusCls=r.status_rtlh==='Layak Huni'?'sudah':r.status_rtlh==='Dibatalkan'?'batal':'belum';
