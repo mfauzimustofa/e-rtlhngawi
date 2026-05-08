@@ -1262,9 +1262,11 @@ async function loadGlobalStats(){
     // Desil counts
     const desilCounts={};
     for(let i=1;i<=8;i++)desilCounts[i]=0;
+    desilCounts[0]=0; // Tanpa Desil
     data.forEach(r=>{
-      const m=r.desil?.match(/\d+/);
+      const m=(r.desil||'').match(/\d+/);
       if(m){const d=parseInt(m[0]);if(d>=1&&d<=8)desilCounts[d]++;}
+      else desilCounts[0]++;
     });
 
     renderDesilGrid(desilCounts);
@@ -1282,14 +1284,20 @@ function renderDesilGrid(counts){
   const colors=['#BE123C','#DC2626','#EA580C','#D97706','#84CC16','#16A34A','#0891B2','#7C3AED'];
   const bgs=['#FFF1F2','#FEF2F2','#FFF7ED','#FFFBEB','#F7FEE7','#F0FDF4','#ECFEFF','#F5F3FF'];
   const g=document.getElementById('desilGrid');
-  g.innerHTML=labels.map((l,i)=>{
-    const priority=''; // tidak dipakai
-    return`<div class="desil-chip" style="background:${bgs[i]};border-color:${colors[i]}30" onclick="document.getElementById('kecGrid').scrollIntoView({behavior:'smooth'})">
+  const desilCards=labels.map((l,i)=>`<div class="desil-chip" style="background:${bgs[i]};border-color:${colors[i]}30" onclick="document.getElementById('kecGrid').scrollIntoView({behavior:'smooth'})">
       <div class="dc-label" style="color:${colors[i]};font-size:.7rem;font-weight:800">${l}</div>
       <div class="dc-count" style="color:var(--gray-800);font-size:1.3rem;font-weight:900;line-height:1.1">${counts[i+1]||0}</div>
       <div style="font-size:.55rem;color:var(--gray-500)">data</div>
-    </div>`;
-  }).join('');
+    </div>`);
+  // Tambah kartu Tanpa Desil jika ada
+  if(counts[0]>0){
+    desilCards.push(`<div class="desil-chip" style="background:#F9FAFB;border-color:#9CA3AF30">
+      <div class="dc-label" style="color:#6B7280;font-size:.7rem;font-weight:800">Tanpa Desil</div>
+      <div class="dc-count" style="color:var(--gray-800);font-size:1.3rem;font-weight:900;line-height:1.1">${counts[0]}</div>
+      <div style="font-size:.55rem;color:var(--gray-500)">data</div>
+    </div>`);
+  }
+  g.innerHTML=desilCards.join('');
 }
 
 function renderKecGrid(){
@@ -1613,6 +1621,8 @@ function renderChartDesil(counts){
   const labels=['D1','D2','D3','D4','D5','D6','D7','D8'];
   const vals=[1,2,3,4,5,6,7,8].map(i=>counts[i]||0);
   const colors=['#BE123C','#DC2626','#EA580C','#D97706','#84CC16','#16A34A','#0891B2','#7C3AED'];
+  // Tambah Tanpa Desil jika ada
+  if(counts[0]>0){labels.push('Tdk Ada');vals.push(counts[0]);colors.push('#9CA3AF');}
   chartDesil=new Chart(ctx,{
     type:'bar',
     data:{labels,datasets:[{data:vals,backgroundColor:colors.map(c=>c+'99'),borderColor:colors,borderWidth:1}]},
@@ -1641,7 +1651,8 @@ async function searchNIK(){
   } else if(isNumeric){
     query = query.or(`nik.eq.${q},no_kk.eq.${q}`);
   } else {
-    query = query.or(`kep_kk.ilike.%${q}%,desa.ilike.%${q}%,kec.ilike.%${q}%,alamat.ilike.%${q}%`);
+    // Pisah query untuk hindari masalah karakter khusus di alamat
+    query = query.or(`kep_kk.ilike.%${q}%,desa.ilike.%${q}%,kec.ilike.%${q}%`);
   }
   if(statusFilter) query = query.eq('status_rtlh', statusFilter);
   const{data,error}=await query.limit(50);
