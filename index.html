@@ -2817,6 +2817,10 @@ async function importExcelKab(input){
           const v=xlVal(row['Jenis Bantuan']||row['jenis_bantuan']);
           if(v){const u=v.toUpperCase().trim();
             obj.jenis_bantuan=u==='RTLH'?'RTLH':u==='BSPS'?'BSPS':u==='DD'||u==='DANA DESA'?'Dana Desa':u==='CSR'?'CSR':v;
+            // Otomatis set Layak Huni jika jenis bantuan terisi dan status bukan Dibatalkan
+            if(!obj.status_rtlh||obj.status_rtlh!=='Dibatalkan'){
+              obj.status_rtlh='Layak Huni';
+            }
           }
         }
         if(hasCol(['Tahun Bantuan','tahun_bantuan']))obj.tahun_bantuan=xlVal(String(row['Tahun Bantuan']||row['tahun_bantuan']||'').replace(/[^0-9]/g,''));
