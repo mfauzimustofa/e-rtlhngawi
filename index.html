@@ -152,7 +152,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 #map{width:100%;height:100%;min-height:60dvh}
 .sidebar{display:none}
 .wg-body{padding:14px 16px;max-width:1100px;margin:0 auto;width:100%}
-.filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}.filter-row::-webkit-scrollbar{display:none}
 .filter-chip{padding:4px 10px;border-radius:99px;border:1.5px solid var(--gray-200);font-size:.65rem;font-weight:700;cursor:pointer;font-family:inherit;background:#fff;color:var(--gray-600);transition:var(--transition)}
 .filter-chip.active{background:var(--navy);border-color:var(--navy);color:#fff}
 .sidebar-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px;margin-top:10px}
@@ -310,11 +310,23 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
   .keclist-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
   .grid-4{grid-template-columns:repeat(2,1fr)}
   .form-grid{grid-template-columns:1fr}
-  .detail-panel{max-width:calc(100% - 20px)}
+  .detail-panel{max-width:calc(100% - 20px);max-height:85dvh}
   .modal{max-width:100%;margin:0;border-radius:var(--radius) var(--radius) 0 0;align-self:flex-end;max-height:95dvh}
   .overlay{align-items:flex-end;padding:0}
   .mob-sidebar-toggle{display:flex!important}
   .modal-head h3{font-size:.85rem}
+  /* Form input lebih besar di HP */
+  .form-group input,.form-group select,.form-group textarea{font-size:16px!important;padding:10px 12px}
+  /* Tombol aksi detail panel lebih besar */
+  #dpActions{padding:12px 14px 16px;gap:10px}
+  #dpActions .btn{padding:10px 16px;font-size:.82rem;flex:1;justify-content:center}
+  /* Filter chips scroll horizontal */
+  .filter-row{flex-wrap:nowrap!important;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:6px}
+  .filter-row::-webkit-scrollbar{display:none}
+  .filter-chip{flex-shrink:0;white-space:nowrap;padding:6px 12px;font-size:.75rem}
+  /* Sidebar item tap area lebih besar */
+  .rtlh-item{padding:14px 16px}
+  .ri-head{gap:10px}
 }
 @media(min-width:769px){
   .mob-sidebar-toggle{display:none!important}
@@ -1874,11 +1886,14 @@ function renderSidebar(){
       <button class="filter-chip ${filterStatus==='Dibatalkan'?'active':''}" onclick="setFilterStatus('Dibatalkan')" style="${filterStatus==='Dibatalkan'?'':'border-color:#9CA3AF;color:#6B7280'}">Batal</button>
       <span style="font-size:.68rem;font-weight:700;color:var(--gray-500);margin-left:6px">Desil:</span>
       <button class="filter-chip ${filterDesil==='all'?'active':''}" onclick="setFilterDesil('all')">Semua</button>
-      <button class="filter-chip ${filterDesil==='1'?'active':''}" onclick="setFilterDesil('1')" style="color:#BE123C">D1</button>
-      <button class="filter-chip ${filterDesil==='2'?'active':''}" onclick="setFilterDesil('2')" style="color:#DC2626">D2</button>
-      <button class="filter-chip ${filterDesil==='3'?'active':''}" onclick="setFilterDesil('3')" style="color:#EA580C">D3</button>
-      <button class="filter-chip ${filterDesil==='4'?'active':''}" onclick="setFilterDesil('4')" style="color:#D97706">D4</button>
-      <button class="filter-chip ${filterDesil==='5+'?'active':''}" onclick="setFilterDesil('5+')">D5+</button>
+      <button class="filter-chip ${filterDesil==='1'?'active':''}" onclick="setFilterDesil('1')" style="${filterDesil==='1'?'':'color:#BE123C'}">D1</button>
+      <button class="filter-chip ${filterDesil==='2'?'active':''}" onclick="setFilterDesil('2')" style="${filterDesil==='2'?'':'color:#DC2626'}">D2</button>
+      <button class="filter-chip ${filterDesil==='3'?'active':''}" onclick="setFilterDesil('3')" style="${filterDesil==='3'?'':'color:#EA580C'}">D3</button>
+      <button class="filter-chip ${filterDesil==='4'?'active':''}" onclick="setFilterDesil('4')" style="${filterDesil==='4'?'':'color:#D97706'}">D4</button>
+      <button class="filter-chip ${filterDesil==='5'?'active':''}" onclick="setFilterDesil('5')" style="${filterDesil==='5'?'':'color:#84CC16'}">D5</button>
+      <button class="filter-chip ${filterDesil==='6'?'active':''}" onclick="setFilterDesil('6')" style="${filterDesil==='6'?'':'color:#16A34A'}">D6</button>
+      <button class="filter-chip ${filterDesil==='7'?'active':''}" onclick="setFilterDesil('7')" style="${filterDesil==='7'?'':'color:#0891B2'}">D7</button>
+      <button class="filter-chip ${filterDesil==='8'?'active':''}" onclick="setFilterDesil('8')" style="${filterDesil==='8'?'':'color:#7C3AED'}">D8</button>
     </div>
     <div class="sidebar-list" id="sidebarList"></div>`;
   renderKecDashboard();
@@ -1889,27 +1904,26 @@ function renderKecDashboard(){
   const d=document.getElementById('kecDashboard');
   if(!d)return;
   const total=brAll.length;
-  const sudah=brAll.filter(r=>r.status_rtlh==='Sudah Ditangani').length;
-  const proses=brAll.filter(r=>r.status_rtlh==='Dalam Proses').length;
-  const belum=total-sudah-proses;
+  const layak=brAll.filter(r=>r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses').length;
+  const rtlh=brAll.filter(r=>r.status_rtlh==='RTLH'||r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
+  const batal=brAll.filter(r=>r.status_rtlh==='Dibatalkan').length;
   const desil14=brAll.filter(r=>{const m=String(r.desil||'').match(/\d+/);return m&&parseInt(m[0])<=4;}).length;
   d.innerHTML=`
     <div class="kd-stat">
-      <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--success)">${sudah}</div><div class="kdsi-lbl">Sudah</div></div>
-      <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--warning)">${proses}</div><div class="kdsi-lbl">Proses</div></div>
-      <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--danger)">${belum}</div><div class="kdsi-lbl">Belum</div></div>
+      <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--success)">${layak}</div><div class="kdsi-lbl">Layak Huni</div></div>
+      <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--danger)">${rtlh}</div><div class="kdsi-lbl">RTLH</div></div>
+      <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--gray-500)">${batal}</div><div class="kdsi-lbl">Dibatalkan</div></div>
     </div>
     <div style="background:var(--blue-bg);border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:.68rem;color:var(--blue);font-weight:600"><i class="fas fa-layer-group"></i> Desil 1–4: <strong>${desil14}</strong> data</div>
     <div class="canvas-wrap"><canvas id="chartKecStatus"></canvas></div>`;
   setTimeout(()=>{
     const ctx=document.getElementById('chartKecStatus');
     if(!ctx)return;
-    // Destroy existing chart on this canvas if any
     const existing=Chart.getChart(ctx);
     if(existing)existing.destroy();
     new Chart(ctx,{type:'doughnut',
-      data:{labels:['Sudah','Proses','Belum'],datasets:[{data:[sudah,proses,belum],backgroundColor:['#16A34A','#F59E0B','#DC2626'],borderWidth:2}]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:9},boxWidth:10}}}}
+      data:{labels:['Layak Huni','RTLH','Dibatalkan'],datasets:[{data:[layak,rtlh,batal],backgroundColor:['#16A34A','#DC2626','#94A3B8'],borderWidth:2,cutout:'65%'}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:9},boxWidth:10,padding:6}}}}
     });
   },50);
 }
