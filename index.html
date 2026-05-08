@@ -1892,7 +1892,7 @@ function renderSidebarList(){
           ].map(([lbl,val])=>`<div style="padding:5px 0;border-bottom:1px solid var(--gray-100)"><div style="font-size:.58rem;font-weight:700;color:var(--gray-400);text-transform:uppercase">${lbl}</div><div style="font-size:.75rem;font-weight:600;color:var(--gray-800);margin-top:1px">${val}</div></div>`).join('')}
         </div>
         ${canEdit()?`<div style="display:flex;gap:6px;margin-top:10px">
-          <button class="btn btn-primary" style="font-size:.7rem;padding:5px 12px" onclick="event.stopPropagation();openForm(${r.id})"><i class="fas fa-edit"></i> Edit</button>
+
           <button class="btn btn-danger" style="font-size:.7rem;padding:5px 12px" onclick="event.stopPropagation();deleteItem(${r.id})"><i class="fas fa-trash"></i> Hapus</button>
           ${isSuperAdmin()?`<button class="btn" style="font-size:.7rem;padding:5px 12px;background:var(--warning-bg);color:#B45309;border:1px solid var(--warning)" onclick="event.stopPropagation();openNIKModal(${r.id})"><i class="fas fa-id-card"></i> NIK/KK</button>`:''}
         </div>`:''}
@@ -1947,21 +1947,37 @@ function showDetail(r){
   const desilNum=String(r.desil||'').match(/\d+/)?.[0];
   document.getElementById('dpBody').innerHTML=`
     <div class="detail-grid">
-      <div class="detail-item full"><div class="dl">NIK</div><div class="dv">${showNIK(r.nik)}</div></div>
-      <div class="detail-item full"><div class="dl">No. KK</div><div class="dv">${showKK(r.no_kk)}</div></div>
+      <div class="detail-item full"><div class="dl">NIK</div><div class="dv" style="font-family:monospace;font-size:.82rem;font-weight:700;letter-spacing:1px">${showNIK(r.nik)}</div></div>
+      <div class="detail-item full"><div class="dl">No. KK</div><div class="dv" style="font-family:monospace;font-size:.82rem;font-weight:700;letter-spacing:1px">${showKK(r.no_kk)}</div></div>
       <div class="detail-item"><div class="dl">Desa</div><div class="dv">${dn(r.desa)}</div></div>
-      <div class="detail-item"><div class="dl">Alamat</div><div class="dv">${showAlamat(r.alamat)}</div></div>
+      <div class="detail-item"><div class="dl">Kecamatan</div><div class="dv">${dn(r.kec)}</div></div>
+      <div class="detail-item full"><div class="dl">Alamat</div><div class="dv">${showAlamat(r.alamat)}</div></div>
       <div class="detail-item"><div class="dl">Jenis Kelamin</div><div class="dv">${dn(r.jen_kel)}</div></div>
-      <div class="detail-item"><div class="dl">Umur</div><div class="dv">${dn(r.umur)} thn</div></div>
+      <div class="detail-item"><div class="dl">Umur</div><div class="dv">${r.umur?r.umur+' thn':'-'}</div></div>
+      <div class="detail-item"><div class="dl">Pendidikan</div><div class="dv">${dn(r.pend_ter)}</div></div>
       <div class="detail-item"><div class="dl">Pekerjaan</div><div class="dv">${dn(r.pekerjaan)}</div></div>
       <div class="detail-item"><div class="dl">Penghasilan</div><div class="dv">${dn(r.pengh)}</div></div>
-      <div class="detail-item"><div class="dl">Jml Penghuni</div><div class="dv">${dn(r.jml_peng)}</div></div>
-      <div class="detail-item"><div class="dl">Luas Rumah</div><div class="dv">${dn(r.luas_rum)} m²</div></div>
-      <div class="detail-item"><div class="dl">Desil</div><div class="dv" style="color:${desilNum?getDesilColor(desilNum):'inherit'};font-weight:700">${dn(r.desil)||'Tidak ada data'}</div></div>
+      <div class="detail-item"><div class="dl">Jml Penghuni</div><div class="dv">${dn(r.jml_peng)} jiwa</div></div>
+      <div class="detail-item"><div class="dl">Status Kepemilikan</div><div class="dv">${dn(r.status_kep)}</div></div>
+      <div class="detail-item"><div class="dl">Luas Rumah</div><div class="dv">${r.luas_rum?r.luas_rum+' m²':'-'}</div></div>
+      <div class="detail-item"><div class="dl">Luas Tanah</div><div class="dv">${r.luas_tan?r.luas_tan+' m²':'-'}</div></div>
+    </div>
+    <div style="margin:10px 0;padding:10px;background:var(--gray-50);border-radius:10px;border:1px solid var(--gray-200)">
+      <div style="font-size:.65rem;font-weight:800;color:var(--gray-500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Kondisi Bangunan</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:.72rem">
+        <div><span style="color:var(--gray-500)">Dinding</span><br><strong>${dn(r.material_d)}</strong> — ${dn(r.kondisi_di)}</div>
+        <div><span style="color:var(--gray-500)">Atap</span><br><strong>${dn(r.material_a)}</strong> — ${dn(r.kondisi_at)}</div>
+        <div><span style="color:var(--gray-500)">Lantai</span><br><strong>${dn(r.material_l)}</strong> — ${dn(r.kondisi_la)}</div>
+      </div>
+    </div>
+    <div class="detail-grid">
       <div class="detail-item"><div class="dl">Status RTLH</div><div class="dv">${r.status_rtlh?`<span class="badge ${(r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')?'sudah':r.status_rtlh==='Dibatalkan'?'batal':'belum'}">${r.status_rtlh}</span>`:'-'}</div></div>
-      ${r.status_rtlh==='Dibatalkan'&&r.status_batal?`<div class="detail-item"><div class="dl">Alasan Batal</div><div class="dv" style="color:var(--danger);font-weight:600">${r.status_batal}</div></div>`:''}
-      <div class="detail-item"><div class="dl">Status MyPKP</div><div class="dv">${dn(r.dtsen)}</div></div>
-
+      <div class="detail-item"><div class="dl">Desil</div><div class="dv" style="color:${desilNum?getDesilColor(desilNum):'inherit'};font-weight:700">${dn(r.desil)||'-'}</div></div>
+      <div class="detail-item"><div class="dl">Status MyPKP</div><div class="dv">${dn(r.dtsen)||'-'}</div></div>
+      <div class="detail-item"><div class="dl">Backlog</div><div class="dv">${dn(r.backlog)||'-'}</div></div>
+      ${r.status_rtlh==='Dibatalkan'&&r.status_batal?`<div class="detail-item full"><div class="dl">Alasan Batal</div><div class="dv" style="color:var(--danger);font-weight:600">${r.status_batal}</div></div>`:''}
+      ${r.jenis_bantuan?`<div class="detail-item"><div class="dl">Jenis Bantuan</div><div class="dv">${r.jenis_bantuan}</div></div>`:''}
+      ${r.tahun_bantuan?`<div class="detail-item"><div class="dl">Tahun Bantuan</div><div class="dv">${r.tahun_bantuan}</div></div>`:''}
     </div>
     <div style="margin-top:14px">
       <div style="font-size:.72rem;font-weight:800;color:var(--gray-600);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px"><i class="fas fa-hand-holding-heart" style="color:var(--gold)"></i> Riwayat Program Bantuan</div>
@@ -1995,20 +2011,13 @@ function showDetail(r){
   acts.innerHTML='';
   if(canEdit()){
     const eb=document.createElement('button');
-    eb.className='btn btn-primary';eb.innerHTML='<i class="fas fa-edit"></i> Edit';
+    eb.className='btn btn-primary';eb.innerHTML='<i class="fas fa-edit"></i> Edit Data';
     eb.onclick=()=>openForm(String(r.id));
     acts.appendChild(eb);
     const db=document.createElement('button');
     db.className='btn btn-danger';db.innerHTML='<i class="fas fa-trash"></i> Hapus';
     db.onclick=()=>deleteItem(r.id);
     acts.appendChild(db);
-  }
-  if(isSuperAdmin()){
-    const nb=document.createElement('button');
-    nb.className='btn';nb.style.background='var(--warning-bg)';nb.style.color='#B45309';nb.style.border='1px solid var(--warning)';
-    nb.innerHTML='<i class="fas fa-id-card"></i> Edit NIK & KK';
-    nb.onclick=()=>openNIKModal(r.id);
-    acts.appendChild(nb);
   }
   p.classList.add('open');
   // Simpan ke session supaya tidak hilang saat refresh
@@ -2067,6 +2076,8 @@ async function saveNIK(){
 // CRUD
 // ══════════════════════════════════════════════════
 const FIELDS=[
+  {key:'nik',label:'NIK',type:'text',placeholder:'16 digit NIK'},
+  {key:'no_kk',label:'No. KK',type:'text',placeholder:'16 digit No. KK'},
   {key:'kep_kk',label:'Nama KK',type:'text',full:true},
   {key:'desa',label:'Desa',type:'desa_select'},
   {key:'alamat',label:'Alamat',type:'text'},
