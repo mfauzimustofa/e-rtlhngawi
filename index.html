@@ -2097,6 +2097,38 @@ function showDetail(r){
     db.onclick=()=>deleteItem(r.id);
     acts.appendChild(db);
   }
+  // Tombol unduh Excel per individu
+  const xb=document.createElement('button');
+  xb.className='btn';
+  xb.style.cssText='background:#16A34A;color:#fff;border:none';
+  xb.innerHTML='<i class="fas fa-file-excel"></i> Unduh';
+  xb.onclick=()=>downloadExcelIndividu(r);
+  acts.appendChild(xb);
+  // Tombol upload Excel per individu
+  if(canEdit()){
+    const ub=document.createElement('button');
+    ub.className='btn';
+    ub.style.cssText='background:#0891B2;color:#fff;border:none';
+    ub.innerHTML='<i class="fas fa-upload"></i> Upload Excel';
+    ub.onclick=()=>{
+      const fileInput=document.getElementById('dpExcelUpload');
+      if(fileInput)fileInput.click();
+    };
+    acts.appendChild(ub);
+  }
+  // Area upload tersembunyi + log
+  const uploadArea=document.createElement('div');
+  uploadArea.style.cssText='width:100%;margin-top:8px;padding:0 14px';
+  uploadArea.innerHTML=`
+    <input type="file" id="dpExcelUpload" accept=".xlsx" style="display:none" onchange="uploadExcelIndividu(this,'${r.id}')">
+    <div id="dpUploadLog" style="font-size:.72rem;min-height:0"></div>`;
+  // Masukkan setelah dpActions
+  const dpActionsEl=document.getElementById('dpActions');
+  if(dpActionsEl.nextSibling){
+    dpActionsEl.parentNode.insertBefore(uploadArea,dpActionsEl.nextSibling);
+  }else{
+    dpActionsEl.parentNode.appendChild(uploadArea);
+  }
   p.classList.add('open');
   // Simpan ke session supaya tidak hilang saat refresh
   saveDetailSession(r);
@@ -2758,6 +2790,115 @@ async function deleteVerif(id){
   toast('Verifikasi dihapus','success');
   loadVerifHistori(_verifRtlhId);
   loadVerifList(_verifRtlhId);
+}
+
+// ══════════════════════════════════════════════════
+// DOWNLOAD & UPLOAD EXCEL PER INDIVIDU
+// ══════════════════════════════════════════════════
+function downloadExcelIndividu(r){
+  const row={
+    ID:r.id, NIK:r.nik||'', 'No. KK':r.no_kk||'',
+    'Nama KK':r.kep_kk||'', Kecamatan:r.kec||'', Desa:r.desa||'',
+    Alamat:r.alamat||'', 'Jenis Kelamin':r.jen_kel||'', Umur:r.umur||'',
+    Pendidikan:r.pend_ter||'', Pekerjaan:r.pekerjaan||'', Penghasilan:r.pengh||'',
+    'Luas Rumah (m²)':r.luas_rum||'', 'Luas Tanah (m²)':r.luas_tan||'',
+    'Jml Penghuni':r.jml_peng||'', 'Status Kepemilikan':r.status_kep||'',
+    'Material Dinding':r.material_d||'', 'Kondisi Dinding':r.kondisi_di||'',
+    'Material Atap':r.material_a||'', 'Kondisi Atap':r.kondisi_at||'',
+    'Material Lantai':r.material_l||'', 'Kondisi Lantai':r.kondisi_la||'',
+    'Status RTLH':r.status_rtlh||'', 'Alasan Batal':r.status_batal||'',
+    'Jenis Bantuan':r.jenis_bantuan||'', 'Tahun Bantuan':r.tahun_bantuan||'',
+    'Status MyPKP':r.dtsen||'', Desil:r.desil||'',
+    Latitude:r.latitude||'', Longitude:r.longitude||'',
+  };
+  const ws=XLSX.utils.json_to_sheet([row]);
+  ws['!cols']=Object.keys(row).map(k=>({wch:Math.max(k.length+2,16)}));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Data RTLH');
+  const nama=(r.kep_kk||'data').replace(/[^a-zA-Z0-9]/g,'_');
+  XLSX.writeFile(wb,`RTLH_${nama}_${r.nik||r.id}.xlsx`);
+}
+
+async function uploadExcelIndividu(input, rtlhId){
+  const file=input.files[0];
+  if(!file)return;
+  const log=document.getElementById('dpUploadLog');
+  if(log)log.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Memproses...';
+  const reader=new FileReader();
+  reader.onload=async(e)=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'binary',cellText:true});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      if(!rows.length){if(log)log.innerHTML='<span style="color:var(--danger)">File kosong</span>';return;}
+      const row=rows[0]; // ambil baris pertama saja
+      const obj={};
+      const map={
+        'Nama KK':'kep_kk','Desa':'desa','Alamat':'alamat',
+        'Jenis Kelamin':'jen_kel','Umur':'umur','Pendidikan':'pend_ter',
+        'Pekerjaan':'pekerjaan','Penghasilan':'pengh',
+        'Luas Rumah (m²)':'luas_rum','Luas Tanah (m²)':'luas_tan',
+        'Jml Penghuni':'jml_peng','Status Kepemilikan':'status_kep',
+        'Material Dinding':'material_d','Kondisi Dinding':'kondisi_di',
+        'Material Atap':'material_a','Kondisi Atap':'kondisi_at',
+        'Material Lantai':'material_l','Kondisi Lantai':'kondisi_la',
+        'Status RTLH':'status_rtlh','Alasan Batal':'status_batal',
+        'Jenis Bantuan':'jenis_bantuan','Tahun Bantuan':'tahun_bantuan',
+        'Status MyPKP':'dtsen','Desil':'desil',
+      };
+      for(const[k,v] of Object.entries(map)){
+        const val=String(row[k]||'').trim();
+        if(val)obj[v]=val;
+      }
+      // Normalisasi status
+      if(obj.status_rtlh){
+        const u=obj.status_rtlh.toUpperCase();
+        if(u==='LAYAK HUNI')obj.status_rtlh='Layak Huni';
+        else if(u==='RTLH'||u==='BELUM DITANGANI')obj.status_rtlh='RTLH';
+      }
+      obj.updated_at=new Date().toISOString();
+
+      // Ambil data lama untuk catat riwayat
+      const{data:oldData}=await sb.from('rtlh').select('*').eq('id',parseInt(rtlhId)).single();
+
+      const{error}=await sb.from('rtlh').update(obj).eq('id',parseInt(rtlhId));
+      if(error){if(log)log.innerHTML=`<span style="color:var(--danger)">Gagal: ${error.message}</span>`;return;}
+
+      // Catat riwayat perubahan
+      if(oldData){
+        const FIELD_LABELS={
+          kep_kk:'Nama KK',desa:'Desa',alamat:'Alamat',jen_kel:'Jenis Kelamin',
+          umur:'Umur',pend_ter:'Pendidikan',pekerjaan:'Pekerjaan',pengh:'Penghasilan',
+          luas_rum:'Luas Rumah',luas_tan:'Luas Tanah',jml_peng:'Jml Penghuni',
+          status_kep:'Status Kepemilikan',material_d:'Material Dinding',
+          kondisi_di:'Kondisi Dinding',material_a:'Material Atap',kondisi_at:'Kondisi Atap',
+          material_l:'Material Lantai',kondisi_la:'Kondisi Lantai',
+          status_rtlh:'Status RTLH',status_batal:'Alasan Batal',
+          jenis_bantuan:'Jenis Bantuan',tahun_bantuan:'Tahun Bantuan',
+          dtsen:'Status MyPKP',desil:'Desil',
+        };
+        const changes=[];
+        for(const[key,label] of Object.entries(FIELD_LABELS)){
+          if(!(key in obj))continue;
+          const lama=String(oldData[key]||'');
+          const baru=String(obj[key]||'');
+          if(lama!==baru)changes.push({
+            nik:oldData.nik,rtlh_id:parseInt(rtlhId),
+            field_name:label,nilai_lama:lama||null,nilai_baru:baru||null,
+            diubah_oleh:user?.email
+          });
+        }
+        if(changes.length)await sb.from('rtlh_riwayat').insert(changes);
+      }
+      if(log)log.innerHTML='<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Data berhasil diperbarui!</span>';
+      input.value='';
+      // Refresh detail
+      const{data:fresh}=await sb.from('rtlh').select('*').eq('id',parseInt(rtlhId)).single();
+      if(fresh){fresh._score=calcScore(fresh);const idx=brAll.findIndex(x=>String(x.id)===String(rtlhId));if(idx>=0)brAll[idx]=fresh;showDetail(fresh);}
+      toast('Data berhasil diupdate dari Excel','success');
+    }catch(err){if(log)log.innerHTML=`<span style="color:var(--danger)">Error: ${err.message}</span>`;}
+  };
+  reader.readAsBinaryString(file);
 }
 
 // ══════════════════════════════════════════════════
