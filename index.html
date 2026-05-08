@@ -1238,11 +1238,6 @@ async function loadGlobalStats(){
     const belum=data.filter(r=>r.status_rtlh==='RTLH'||r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
     const batal=data.filter(r=>r.status_rtlh==='Dibatalkan').length;
     const sudah=layak; const proses=0;
-    const total=data.length;
-    const layak=data.filter(r=>r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses').length;
-    const belum=data.filter(r=>r.status_rtlh==='RTLH'||r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
-    const batal=data.filter(r=>r.status_rtlh==='Dibatalkan').length;
-    const sudah=layak; const proses=0;
 
     document.getElementById('gs-total').textContent=total.toLocaleString('id');
     document.getElementById('gs-layak').textContent=layak.toLocaleString('id');
