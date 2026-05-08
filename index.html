@@ -110,7 +110,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 .desil-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px}
 .desil-chip{border-radius:var(--radius-xs);padding:10px 8px;text-align:center;cursor:pointer;transition:var(--transition);border:2px solid transparent}
 .desil-chip:hover{transform:translateY(-2px)}
-.desil-chip .dc-num{font-size:1.1rem;font-weight:800}
+.desil-chip .dc-label{font-size:.65rem;font-weight:700;text-transform:uppercase}
 .desil-chip .dc-label{font-size:.58rem;font-weight:700;text-transform:uppercase;opacity:.7}
 .desil-chip .dc-count{font-size:.72rem;font-weight:600;margin-top:3px}
 
@@ -492,8 +492,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
             <div class="sl-item"><div class="sl-dot" style="background:var(--success)"></div><span id="lgSudah">Layak Huni: 0%</span></div>
             <div class="sl-item"><div class="sl-dot" style="background:var(--danger)"></div><span id="lgBelum">RTLH: 0%</span></div>
           </div>
-          <div style="font-size:.72rem;font-weight:700;color:var(--gray-600);margin-bottom:8px">Stacked per Kecamatan</div>
-          <div style="position:relative;height:180px"><canvas id="chartStatus"></canvas></div>
+
         </div>
 
         <!-- Distribusi Desil -->
@@ -509,28 +508,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
       </div>
     </div>
 
-    <!-- TABEL REKAP -->
-    <div class="section">
-      <div class="section-head"><i class="fas fa-table"></i> Rekap RTLH per Kecamatan</div>
-      <div class="card" style="overflow:auto">
-        <table id="kecTable" style="width:100%;border-collapse:collapse;font-size:.75rem">
-          <thead>
-            <tr style="background:var(--navy);color:#fff">
-              <th style="padding:10px 14px;text-align:left;font-size:.65rem;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap">Kecamatan</th>
-              <th style="padding:10px 14px;text-align:center;font-size:.65rem;text-transform:uppercase;letter-spacing:.04em">Total</th>
-              <th style="padding:10px 14px;text-align:center;font-size:.65rem;text-transform:uppercase;letter-spacing:.04em">Sudah</th>
-              <th style="padding:10px 14px;text-align:center;font-size:.65rem;text-transform:uppercase;letter-spacing:.04em">Proses</th>
-              <th style="padding:10px 14px;text-align:center;font-size:.65rem;text-transform:uppercase;letter-spacing:.04em">Belum</th>
-              <th style="padding:10px 14px;text-align:left;font-size:.65rem;text-transform:uppercase;letter-spacing:.04em;min-width:120px">Progress</th>
-              <th style="padding:10px 14px;text-align:center;font-size:.65rem;text-transform:uppercase;letter-spacing:.04em">Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="kecTableBody">
-            <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+
 
     <!-- GRID KARTU KECAMATAN -->
     <div class="section">
@@ -570,7 +548,6 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
     <span class="tb-title" id="tbTitle">WebGIS RTLH</span>
     <div class="tb-sep"></div>
     <button class="tb-btn" id="btnAddRtlh" onclick="openForm(null)" style="display:none"><i class="fas fa-plus"></i> <span class="tb-label">Tambah</span></button>
-    <button class="tb-btn" id="btnTableEditor" onclick="openTableEditor()" style="display:none" title="Table Editor — Edit seperti spreadsheet"><i class="fas fa-table"></i> <span class="tb-label">Tabel</span></button>
     <button class="tb-btn" id="btnDownload" onclick="openDownloadModal()"><i class="fas fa-download"></i></button>
     <button class="tb-btn danger" id="btnDelAll" onclick="deleteAllKec()" style="display:none"><i class="fas fa-trash-alt"></i></button>
   </div>
@@ -1136,7 +1113,6 @@ function updAuth(){
   }
   // Update toolbar buttons
   document.getElementById('btnAddRtlh').style.display=canEdit()?'flex':'none';
-  document.getElementById('btnTableEditor').style.display=isAdmin?'flex':'none';
   document.getElementById('btnDelAll').style.display=(isSuperAdmin()&&currentKec)?'flex':'none';
   document.getElementById('btnExcelKab').style.display=isAdmin?'flex':'none';
   const exSec=document.getElementById('btnExcelKabSection');
@@ -1271,12 +1247,11 @@ function renderDesilGrid(counts){
   const bgs=['#FFF1F2','#FEF2F2','#FFF7ED','#FFFBEB','#F7FEE7','#F0FDF4','#ECFEFF','#F5F3FF'];
   const g=document.getElementById('desilGrid');
   g.innerHTML=labels.map((l,i)=>{
-    const priority='';
+    const priority=''; // tidak dipakai
     return`<div class="desil-chip" style="background:${bgs[i]};border-color:${colors[i]}30" onclick="document.getElementById('kecGrid').scrollIntoView({behavior:'smooth'})">
-      <div class="dc-num" style="color:${colors[i]}">${i+1}</div>
-      <div class="dc-label" style="color:${colors[i]}">${l}</div>
-      <div class="dc-count" style="color:${colors[i]}">${counts[i+1]||0} jiwa</div>
-      ${priority}
+      <div class="dc-label" style="color:${colors[i]};font-size:.7rem;font-weight:800">${l}</div>
+      <div class="dc-count" style="color:var(--gray-800);font-size:1.3rem;font-weight:900;line-height:1.1">${counts[i+1]||0}</div>
+      <div style="font-size:.55rem;color:var(--gray-500)">data</div>
     </div>`;
   }).join('');
 }
@@ -1294,13 +1269,11 @@ function renderKecGrid(){
       <div class="kc-sub">total RTLH</div>
       <div class="kc-mini-bar">
         <div class="kc-mb-seg" style="width:${ps}%;background:var(--success)"></div>
-        <div class="kc-mb-seg" style="width:${pp}%;background:var(--warning)"></div>
-        <div class="kc-mb-seg" style="width:${100-ps-pp}%;background:var(--danger)"></div>
+        <div class="kc-mb-seg" style="width:${100-ps}%;background:var(--danger)"></div>
       </div>
       <div style="display:flex;gap:8px;margin-top:6px">
-        <span style="font-size:.6rem;color:var(--success);font-weight:600">✓${c.sudah}</span>
-        <span style="font-size:.6rem;color:var(--warning);font-weight:600">⏳${c.proses}</span>
-        <span style="font-size:.6rem;color:var(--danger);font-weight:600">✗${c.belum}</span>
+        <span style="font-size:.6rem;color:var(--success);font-weight:600">🏠 ${c.sudah}</span>
+        <span style="font-size:.6rem;color:var(--danger);font-weight:600">🏚 ${c.belum}</span>
       </div>
     </div>`;
   }).join('');
@@ -1538,20 +1511,29 @@ function renderChartStatus(data){
   if(!ctx)return;
   if(chartStatus){chartStatus.destroy();chartStatus=null;}
   const existing=Chart.getChart(ctx);if(existing)existing.destroy();
-  const names=Object.keys(KEC_CONFIG).sort();
-  const sudahData=names.map(k=>(kecCounts[k.toUpperCase()]||{}).sudah||0);
-  const prosesData=names.map(k=>(kecCounts[k.toUpperCase()]||{}).proses||0);
-  const belumData=names.map(k=>(kecCounts[k.toUpperCase()]||{}).belum||0);
+  const layak=data.filter(r=>r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses').length;
+  const belum=data.filter(r=>r.status_rtlh==='RTLH'||r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
+  const batal=data.filter(r=>r.status_rtlh==='Dibatalkan').length;
+  const tot=layak+belum+batal;
   chartStatus=new Chart(ctx,{
-    type:'bar',
-    data:{labels:names.map(n=>n.slice(0,6)),datasets:[
-      {label:'Sudah',data:sudahData,backgroundColor:'#16A34A88',borderColor:'#16A34A',borderWidth:1},
-      {label:'Proses',data:prosesData,backgroundColor:'#F59E0B88',borderColor:'#F59E0B',borderWidth:1},
-      {label:'Belum',data:belumData,backgroundColor:'#DC262688',borderColor:'#DC2626',borderWidth:1},
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:9},boxWidth:10}}},
-      scales:{x:{stacked:true,ticks:{font:{size:7}}},y:{stacked:true,ticks:{font:{size:8}}}}}
+    type:'doughnut',
+    data:{
+      labels:['Layak Huni','RTLH','Dibatalkan'],
+      datasets:[{data:[layak,belum,batal],backgroundColor:['#16A34A','#DC2626','#94A3B8'],borderWidth:3,borderColor:'#fff',hoverOffset:8}]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'70%',
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:c=>` ${c.label}: ${c.parsed} (${pct(c.parsed,tot)}%)`}}
+      }
+    }
   });
+  // Update legend manual
+  const elL=document.getElementById('lgSudah');
+  const elR=document.getElementById('lgBelum');
+  if(elL)elL.innerHTML=`<strong style="color:var(--success)">${layak}</strong> Layak Huni (${pct(layak,tot)}%)`;
+  if(elR)elR.innerHTML=`<strong style="color:var(--danger)">${belum}</strong> RTLH (${pct(belum,tot)}%)`;
 }
 
 function renderChartDesil(counts){
