@@ -2014,6 +2014,23 @@ function renderSidebar(){
       </div>
     </div>
     <div class="kec-dashboard" id="kecDashboard"></div>
+    <!-- Search bar sama seperti beranda -->
+    <div style="position:sticky;top:0;z-index:10;background:var(--gray-50);padding:8px 0 10px;margin-bottom:4px">
+      <div style="display:flex;gap:8px;align-items:center">
+        <div style="flex:1;position:relative">
+          <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--gray-400);font-size:.8rem;pointer-events:none"></i>
+          <input id="sidebarSearchInput" type="text"
+            placeholder="Cari nama, NIK, desa, BSPS 2024..."
+            maxlength="80" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="search"
+            style="width:100%;padding:10px 12px 10px 34px;border-radius:10px;border:2px solid var(--gray-200);font-size:14px;font-family:inherit;background:#fff;color:var(--gray-900);outline:none;box-sizing:border-box;transition:all .25s;box-shadow:0 0 0 3px rgba(59,130,246,.1);animation:searchPulse 2.5s ease-in-out infinite"
+            onfocus="this.style.borderColor='#3B82F6';this.style.boxShadow='0 0 0 4px rgba(59,130,246,.2)';this.style.animation='none'"
+            onblur="this.style.borderColor='var(--gray-200)';this.style.boxShadow='0 0 0 3px rgba(59,130,246,.1)';this.style.animation='searchPulse 2.5s ease-in-out infinite'"
+            onkeydown="if(event.key==='Enter')searchSidebar()"
+            oninput="clearTimeout(this._t);if(this.value.trim().length>=2){this._t=setTimeout(()=>searchSidebar(),400)}else if(!this.value.trim()){resetSidebarSearch()}">
+        </div>
+        <button onclick="searchSidebar()" style="padding:10px 14px;border-radius:10px;background:var(--blue);color:#fff;border:none;font-size:.82rem;cursor:pointer;flex-shrink:0"><i class="fas fa-search"></i></button>
+      </div>
+    </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
       <span style="font-size:.68rem;font-weight:700;color:var(--gray-500)">Status:</span>
       <button class="filter-chip ${filterStatus==='all'?'active':''}" onclick="setFilterStatus('all')">Semua</button>
@@ -2077,6 +2094,61 @@ function applyFilters(){
   });
   renderSidebarList();
   updateMap();
+}
+
+function resetSidebarSearch(){
+  brFeatures=[...brAll];
+  applyFilters();
+}
+
+async function searchSidebar(){
+  const input=document.getElementById('sidebarSearchInput');
+  const q=(input?.value||'').trim();
+  if(!q){resetSidebarSearch();return;}
+
+  const ql=q.toLowerCase();
+  const isNumeric=/^\d+$/.test(q);
+
+  // Deteksi jenis bantuan
+  const bantuanMap={'rtlh':'RTLH','bsps':'BSPS','dd':'Dana Desa','dana desa':'Dana Desa','csr':'CSR','lainnya':'Lainnya'};
+  let jenisBantuan=null, tahunBantuan=null;
+  for(const[key,val] of Object.entries(bantuanMap)){
+    if(ql.startsWith(key)){
+      jenisBantuan=val;
+      const rest=q.slice(key.length).trim();
+      if(/^\d{4}$/.test(rest))tahunBantuan=rest;
+      break;
+    }
+  }
+
+  if(jenisBantuan){
+    // Filter dari brAll by jenis bantuan
+    brFeatures=brAll.filter(r=>{
+      const jb=(r.jenis_bantuan||'').toLowerCase();
+      const match=jb.includes(jenisBantuan.toLowerCase());
+      return match&&(!tahunBantuan||String(r.tahun_bantuan||''===tahunBantuan));
+    });
+  } else if(isNumeric&&q.length>=10){
+    // Search by NIK dari DB langsung
+    const{data}=await sb.from('rtlh').select('*').eq('nik',q).eq('kec',currentKec).single();
+    if(data){data._score=calcScore(data);brFeatures=[data];const idx=brAll.findIndex(x=>String(x.id)===String(data.id));if(idx>=0)brAll[idx]=data;else brAll.push(data);}
+    else brFeatures=[];
+  } else {
+    // Filter lokal dari brAll
+    brFeatures=brAll.filter(r=>{
+      return (r.kep_kk||'').toLowerCase().includes(ql)||
+             (r.desa||'').toLowerCase().includes(ql)||
+             (r.alamat||'').toLowerCase().includes(ql)||
+             (r.nik||'').includes(q);
+    });
+  }
+  renderSidebarList();
+  updateMap();
+  // Tampilkan info hasil
+  const l=document.getElementById('sidebarList');
+  if(l&&brFeatures.length===0){
+    l.innerHTML=`<div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fas fa-search" style="font-size:1.5rem;display:block;margin-bottom:8px"></i><div style="font-size:.78rem">Tidak ada hasil untuk "<strong>${q}</strong>"</div></div>`;
+  }
 }
 
 function renderSidebarList(){
