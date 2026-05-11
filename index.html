@@ -231,7 +231,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 .modal-footer{padding:14px 20px;padding-bottom:max(14px,calc(env(safe-area-inset-bottom) + 8px));border-top:1px solid var(--gray-200);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0;background:#fff;position:sticky;bottom:0}
 
 /* FORM */
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-grid{display:block}
 .form-group{display:flex;flex-direction:column;gap:5px}
 .form-group.full{grid-column:1/-1}
 .form-group label{font-size:.68rem;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.04em}
@@ -2607,42 +2607,59 @@ function openForm(id){
   const r=editId?brAll.find(x=>String(x.id)===String(editId)):{};
   // Super admin = isAdmin AND userKec is null/empty (no kecamatan restriction)
   const superAdmin=isSuperAdmin(); // Level 1 only can see/edit NIK
+  // Kelompokkan FIELDS per section
+  const SECTIONS=[
+    {title:'Identitas',icon:'fas fa-id-card',color:'var(--blue)',keys:['nik','no_kk','kep_kk','desa','alamat','jen_kel','umur']},
+    {title:'Sosial Ekonomi',icon:'fas fa-briefcase',color:'#7C3AED',keys:['pend_ter','pekerjaan','pengh','jml_peng','status_kep','luas_rum','luas_tan']},
+    {title:'Kondisi Bangunan',icon:'fas fa-home',color:'#EA580C',keys:['material_d','kondisi_di','material_a','kondisi_at','material_l','kondisi_la']},
+    {title:'Status & Bantuan',icon:'fas fa-hand-holding-heart',color:'var(--success)',keys:['status_rtlh','status_batal','jenis_bantuan','tahun_bantuan','backlog','desil','keterangan']},
+    {title:'Koordinat',icon:'fas fa-map-marker-alt',color:'var(--danger)',keys:['latitude','longitude']},
+  ];
+  const fieldMap=Object.fromEntries(FIELDS.map(f=>[f.key,f]));
   const g=document.getElementById('formGrid');
-  g.innerHTML=FIELDS.map(f=>{
-    const val=r?.[f.key]||'';
-    const cls=f.full?'form-group full':'form-group';
-    const locked=f.sensitive&&!superAdmin;
-    if(f.type==='desa_select'){
-      const dl=getDesaList();
-      // Cek apakah val ada di daftar (case-insensitive)
-      const valUpper=val.toUpperCase();
-      const inList=dl.some(d=>d.toUpperCase()===valUpper);
-      if(dl.length){
-        // Kalau val tidak ada di list, tambahkan sebagai option
-        const extraOption=val&&!inList?`<option value="${val}" selected>${val}</option>`:'';
-        return`<div class="${cls}"><label>${f.label}</label><select id="ff_${f.key}"><option value="">-- Pilih Desa --</option>${extraOption}${dl.map(d=>`<option value="${d}" ${valUpper===d.toUpperCase()?'selected':''}>${d}</option>`).join('')}</select></div>`;
+  g.innerHTML=SECTIONS.map(sec=>{
+    const secFields=sec.keys.map(k=>fieldMap[k]).filter(Boolean);
+    const fieldsHtml=secFields.map(f=>{
+      const val=r?.[f.key]||'';
+      const locked=f.sensitive&&!superAdmin;
+      let inputHtml='';
+      if(f.type==='desa_select'){
+        const dl=getDesaList();
+        const valUpper=val.toUpperCase();
+        const inList=dl.some(d=>d.toUpperCase()===valUpper);
+        if(dl.length){
+          const extraOption=val&&!inList?`<option value="${val}" selected>${val}</option>`:'';
+          inputHtml=`<select id="ff_${f.key}" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.85rem;color:var(--gray-900);outline:none;background:#fff"><option value="">-- Pilih Desa --</option>${extraOption}${dl.map(d=>`<option value="${d}" ${valUpper===d.toUpperCase()?'selected':''}>${d}</option>`).join('')}</select>`;
+        } else {
+          inputHtml=`<input type="text" id="ff_${f.key}" value="${val}" placeholder="Nama desa" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.85rem;color:var(--gray-900);outline:none;box-sizing:border-box">`;
+        }
+      } else if(f.type==='select'){
+        const onChange=f.onChange?f.onChange:'';
+        const extraChange=f.key==='jenis_bantuan'?"if(this.value){const s=document.getElementById('ff_status_rtlh');if(s&&s.value!=='Dibatalkan')s.value='Layak Huni';}":'';
+        inputHtml=`<select id="ff_${f.key}" ${locked?'disabled':''} onchange="${extraChange}${onChange}" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.85rem;color:var(--gray-900);outline:none;background:#fff">${f.opts.map(o=>`<option value="${o==='-'?'':o}" ${(val===o||(o==='-'&&!val))?'selected':''}>${o||'(kosong)'}</option>`).join('')}</select>`;
+      } else if(f.sensitive){
+        if(locked){
+          inputHtml=`<input type="text" id="ff_${f.key}" value="${val}" readonly style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-100);font-family:inherit;font-size:.85rem;color:var(--gray-400);background:var(--gray-50);cursor:not-allowed;box-sizing:border-box">`;
+        } else {
+          inputHtml=`<input type="text" id="ff_${f.key}" value="${val}" placeholder="${f.key==='nik'?'16 digit NIK':'16 digit No. KK'}" maxlength="20" inputmode="numeric" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--success);font-family:inherit;font-size:.85rem;color:var(--gray-900);outline:none;box-sizing:border-box;font-weight:700;letter-spacing:1px">`;
+        }
+      } else {
+        inputHtml=`<input type="${f.type}" id="ff_${f.key}" value="${val}" ${f.placeholder?`placeholder="${f.placeholder}"`:''} style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.85rem;color:var(--gray-900);outline:none;box-sizing:border-box">`;
       }
-      // Fallback: input text dengan nilai lama terjaga
-      return`<div class="${cls}"><label>${f.label}</label><input type="text" id="ff_${f.key}" value="${val}" placeholder="Nama desa"></div>`;
-    }
-    if(f.type==='select'){
-      const onChange=f.onChange?f.onChange:'';
-      const extraChange=f.key==='jenis_bantuan'?"if(this.value){const s=document.getElementById('ff_status_rtlh');if(s&&s.value!=='Dibatalkan')s.value='Layak Huni';}":'';
-      return`<div class="${cls}"><label>${f.label}</label><select id="ff_${f.key}" ${locked?'disabled':''}
-        onchange="${extraChange}${onChange}"
-        >${f.opts.map(o=>`<option value="${o==='-'?'':o}" ${(val===o||(o==='-'&&!val))?'selected':''}>${o||'(kosong)'}</option>`).join('')}</select></div>`;
-    }
-    if(f.sensitive){
-      // Always render NIK/KK — locked or editable depending on role
-      if(locked){
-        return`<div class="${cls}"><label>${f.label} <span style="color:var(--gold);font-size:.6rem">(Admin Inti)</span></label>
-          <input type="text" id="ff_${f.key}" value="${val}" class="locked" readonly style="background:var(--gray-50);color:var(--gray-400);cursor:not-allowed" maxlength="20"></div>`;
-      }else{
-        return`<div class="${cls}"><label>${f.label} <span style="color:var(--success);font-size:.6rem">✓ Dapat diedit</span></label>
-          <input type="text" id="ff_${f.key}" value="${val}" placeholder="${f.key==='nik'?'16 digit NIK':'16 digit No. KK'}" maxlength="20" inputmode="numeric" style="border-color:var(--success)"></div>`;
-      }
-    }
-    return`<div class="${cls}"><label>${f.label}</label><input type="${f.type}" id="ff_${f.key}" value="${val}"></div>`;
+      return`<div style="display:flex;flex-direction:column;gap:4px;${f.full?'grid-column:1/-1':''}">
+        <label style="font-size:.6rem;font-weight:800;color:var(--gray-500);text-transform:uppercase;letter-spacing:.06em">${f.label}</label>
+        ${inputHtml}
+      </div>`;
+    }).join('');
+    return`<div style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid ${sec.color}22">
+        <i class="${sec.icon}" style="color:${sec.color};font-size:.8rem"></i>
+        <span style="font-size:.72rem;font-weight:800;color:${sec.color};text-transform:uppercase;letter-spacing:.06em">${sec.title}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        ${fieldsHtml}
+      </div>
+    </div>`;
   }).join('');
   document.getElementById('photoUploadSection').style.display=isAdmin?'block':'none';
   document.getElementById('ovForm').classList.add('open');
