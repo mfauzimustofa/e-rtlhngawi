@@ -3234,21 +3234,261 @@ async function deleteDok(id,path){
 // ══════════════════════════════════════════════════
 // CHATBOT AI — Asisten e-RTLH Ngawi
 // ══════════════════════════════════════════════════
-let chatHistory=[];
 let chatOpened=false;
 
-const CHAT_SYSTEM=`Kamu adalah Asisten AI untuk sistem e-RTLH Kabupaten Ngawi, sebuah sistem informasi Rumah Tidak Layak Huni (RTLH) milik DPRKP Kabupaten Ngawi, Jawa Timur.
+// ══ FAQ ENGINE LOKAL — 100% gratis, tanpa API ══
+const FAQ=[
+  {k:['halo','hai','hi','selamat','assalam','hei','hello'],j:'Halo! 👋 Selamat datang di Asisten e-RTLH Ngawi. Saya siap membantu Anda. Silakan tanyakan tentang cara penggunaan sistem, program RTLH, atau data yang Anda butuhkan! 😊'},
+  {k:['rtlh','rumah tidak layak','layak huni','pengertian rtlh','apa itu rtlh','definisi'],j:'**Rumah Tidak Layak Huni (RTLH)** adalah rumah yang tidak memenuhi syarat keselamatan, kesehatan, dan kecukupan ruang.
 
-Kamu membantu staf dinas DPRKP dengan:
-- Cara menggunakan fitur web e-RTLH (search, edit data, upload/download Excel, verifikasi lapangan, upload dokumen)
-- Penjelasan tentang program bantuan RTLH (BSPS, Dana Desa, CSR)
-- Kebijakan dan regulasi perumahan rakyat
-- Interpretasi data RTLH dan desil
-- Pertanyaan umum seputar RTLH Ngawi
+Kriteria RTLH:
+• Dinding, atap, atau lantai dalam kondisi tidak layak
+• Luas lantai < 7,2 m² per jiwa
+• Tidak memiliki akses sanitasi yang baik
 
-Data saat ini: 19 Kecamatan, 217 Desa/Kelurahan, data dikelola berbasis NIK sebagai identitas unik.
+Di Kabupaten Ngawi, data RTLH mencakup 19 Kecamatan dan 217 Desa/Kelurahan. 🏚️'},
+  {k:['bsps','bantuan stimulan','stimulan perumahan'],j:'**BSPS (Bantuan Stimulan Perumahan Swadaya)** adalah program pemerintah pusat (APBN) untuk rehabilitasi RTLH.
 
-Gaya bicara: Ramah, santun, menggunakan bahasa Indonesia yang baik. Jawaban singkat dan langsung ke inti. Gunakan emoji secukupnya agar terasa hangat. Jika ditanya hal di luar konteks, tetap bantu dengan sopan.`;
+Besaran bantuan:
+• Rp 20.000.000 per unit
+• Disalurkan langsung ke rekening penerima
+• Dikerjakan secara swadaya oleh penerima
+
+Syarat penerima: WNI, memiliki/menempati RTLH, penghasilan rendah, terdaftar di DTSEN. 🏗️'},
+  {k:['dana desa','dd','blt','apbdes'],j:'**Dana Desa untuk RTLH** adalah program rehabilitasi rumah yang bersumber dari APBDES.
+
+• Besaran bervariasi sesuai kemampuan desa
+• Diputuskan melalui Musyawarah Desa
+• Penerima dipilih berdasarkan skala prioritas
+• Data penerima dicatat di sistem e-RTLH dengan jenis bantuan "Dana Desa" 🏘️'},
+  {k:['csr','corporate social','perusahaan'],j:'**CSR (Corporate Social Responsibility)** untuk RTLH adalah bantuan dari perusahaan swasta.
+
+• Bersifat hibah/donasi
+• Jumlah bervariasi sesuai kebijakan perusahaan
+• Perlu MoU antara dinas dan perusahaan
+• Dicatat di sistem dengan jenis bantuan "CSR" 🤝'},
+  {k:['desil','dtsen','prioritas','ranking'],j:'**Desil DTSEN** adalah pengelompokan kesejahteraan keluarga:
+
+• **Desil 1-2**: Sangat miskin → prioritas utama bantuan
+• **Desil 3-4**: Miskin → prioritas kedua
+• **Desil 5-6**: Rentan miskin
+• **Desil 7-8**: Hampir mampu
+• **Eligible**: Layak menerima bantuan
+• **Not Eligible**: Tidak layak bantuan
+• **Not Eligible1**: Kategori khusus tidak layak
+
+Desil 1 mendapat prioritas tertinggi untuk program RTLH. 📊'},
+  {k:['search','cari','pencarian','ketik','temukan','mencari'],j:'**Cara menggunakan fitur pencarian:**
+
+• Ketik nama KK → hasil muncul otomatis setelah 3 huruf
+• Ketik NIK (16 digit) → langsung buka detail
+• Ketik nama desa atau kecamatan
+• Ketik **BSPS**, **RTLH**, **Dana Desa**, **CSR** → cari per jenis bantuan
+• Ketik **BSPS 2024** → cari BSPS tahun 2024
+• Hapus teks → hasil hilang otomatis 🔍'},
+  {k:['edit','ubah','update','ganti','simpan','perubahan'],j:'**Cara edit data:**
+
+1. Cari nama/NIK di kolom pencarian
+2. Klik nama → detail terbuka
+3. Klik tombol **Edit Data** (biru)
+4. Ubah field yang diinginkan
+5. Klik **Simpan**
+
+💡 Tips: Saat Jenis Bantuan diisi, Status RTLH otomatis berubah ke Layak Huni.
+
+Setiap perubahan dicatat di **Riwayat Perubahan** lengkap dengan waktu dan petugas. ✏️'},
+  {k:['upload','import','excel','xlsx','unggah'],j:'**Cara upload/import Excel:**
+
+**Upload massal (seluruh kabupaten):**
+1. Klik ikon Excel di header
+2. Pilih "Excel Kabupaten"
+3. Seret atau klik area upload
+4. File langsung diproses
+
+**Upload per individu:**
+1. Buka detail orang
+2. Klik "Upload Excel"
+3. Pilih file Excel yang sudah diedit
+
+💡 **Fitur cerdas:** Upload hanya 2 kolom (NIK + Jenis Bantuan) → hanya kolom itu yang berubah, data lain aman! 📤'},
+  {k:['download','unduh','export'],j:'**Cara download/unduh Excel:**
+
+**Per Kecamatan:** Buka WebGIS kecamatan → klik ikon unduh (↓)
+
+**Seluruh Kabupaten:**
+1. Klik ikon Excel di header
+2. Pilih filter (kecamatan/status/desil)
+3. Klik "Unduh Excel"
+
+**Per Individu:**
+1. Buka detail orang
+2. Klik tombol hijau **Unduh**
+3. File langsung terdownload
+
+Excel sudah dilengkapi dropdown untuk Status RTLH, Jenis Bantuan, Status MyPKP. 📥'},
+  {k:['tambah','input','data baru','entry','menambah'],j:'**Cara tambah data baru:**
+
+1. Masuk ke WebGIS kecamatan terlebih dahulu
+2. Klik tombol **+ Tambah** di toolbar
+3. Isi form (NIK wajib diisi, harus 16 digit unik)
+4. Klik **Simpan**
+
+⚠️ NIK adalah identitas unik — tidak boleh duplikat.
+
+Alternatif: Upload Excel massal untuk input banyak data sekaligus. ➕'},
+  {k:['hapus','delete','menghapus'],j:'**Cara hapus data:**
+
+1. Buka detail data yang ingin dihapus
+2. Klik tombol **Hapus** (merah)
+3. Konfirmasi nama yang muncul
+4. Data terhapus permanen
+
+⚠️ Hapus tidak bisa dibatalkan. Pastikan sudah benar sebelum konfirmasi.
+
+💡 Jika data salah, lebih baik edit daripada hapus — riwayat perubahan tetap tersimpan. 🗑️'},
+  {k:['verifikasi','lapangan','cek lapangan','survey'],j:'**Verifikasi Lapangan:**
+
+1. Buka detail rumah yang akan diverifikasi
+2. Di bagian "Riwayat Verifikasi Lapangan" klik **+ Tambah**
+3. Isi: Hasil (Layak/Tidak Layak), Keterangan, Tahun
+4. Isi nama petugas
+5. Klik **Simpan Verifikasi**
+
+Data verifikasi tersimpan per tahun — bisa ditambah lagi tahun berikutnya tanpa menghapus yang lama. 📋'},
+  {k:['dokumen','foto','ba','berita acara','upload foto','surat'],j:'**Upload Dokumen & Foto:**
+
+1. Buka detail data
+2. Di bagian "Dokumen & Foto" klik **Upload**
+3. Pilih jenis dokumen:
+   • Foto Rumah
+   • Berita Acara (BA)
+   • Surat Pernyataan
+   • KTP / KK
+   • Foto Lokasi
+4. Tambah keterangan
+5. Pilih file (JPG/PNG/PDF, maks 10MB)
+6. Klik Upload
+
+File tersimpan permanen di cloud. 📄'},
+  {k:['peta','map','lokasi','koordinat','marker','gis','webgis'],j:'**Peta WebGIS e-RTLH:**
+
+**Beranda:** Peta sebaran per kecamatan dalam bentuk pie chart hijau-merah (Layak Huni vs RTLH).
+
+**WebGIS Kecamatan:**
+• Marker **hijau** = Layak Huni
+• Marker **merah** = RTLH
+• Marker **abu** = Dibatalkan
+• Klik marker → buka detail
+
+**Ganti kecamatan:** Ketuk nama kecamatan di toolbar → dropdown muncul 🗺️'},
+  {k:['nik','kk','identitas','duplikat'],j:'**NIK sebagai Identitas Unik:**
+
+NIK (Nomor Induk Kependudukan) 16 digit adalah primary key di sistem ini.
+
+• Setiap NIK hanya boleh terdaftar 1 kali
+• NIK tidak bisa duplikat
+• Pencarian by NIK langsung ke detail orangnya
+• Upload Excel by NIK → update data spesifik orang itu
+
+No. KK bisa sama (satu keluarga), tapi NIK harus unik. 🪪'},
+  {k:['status','layak huni','dibatalkan','batal','meninggal'],j:'**Status RTLH:**
+
+• **RTLH**: Rumah belum ditangani
+• **Layak Huni**: Sudah mendapat bantuan/sudah layak
+• **Dibatalkan**: Tidak jadi menerima bantuan
+
+Alasan Dibatalkan:
+• Meninggal Dunia
+• Tidak Bersedia Dibantu
+• Tidak Ada Biaya
+• Pindah Tempat Tinggal
+• Sudah Mampu Mandiri
+• Tidak Memenuhi Syarat
+• Lainnya
+
+💡 Saat Jenis Bantuan diisi → Status otomatis Layak Huni 🏠'},
+  {k:['login','masuk','username','password','lupa'],j:'**Login e-RTLH:**
+
+Gunakan **username** dan **password** yang diberikan Super Admin.
+
+Jika lupa password → hubungi Super Admin DPRKP untuk reset.
+
+Admin level:
+• **Super Admin (Level 1)**: Akses penuh semua fitur
+• **Admin (Level 2)**: Akses sesuai kecamatan
+
+🔐 Akses hanya untuk staf DPRKP Kab. Ngawi'},
+  {k:['riwayat','history','log','perubahan','siapa yang'],j:'**Riwayat Perubahan:**
+
+Setiap perubahan data otomatis dicatat:
+• Field apa yang berubah
+• Nilai lama → nilai baru
+• Siapa yang mengubah
+• Kapan diubah
+
+Cara lihat: Buka detail data → scroll ke bawah → bagian **Riwayat Perubahan** 📜'},
+  {k:['kecamatan','desa','wilayah','19','217'],j:'**Wilayah Kabupaten Ngawi:**
+
+19 Kecamatan: Bringin, Geneng, Gerih, Jogorogo, Karanganyar, Karangjati, Kasreman, Kedunggalar, Kendal, Kwadungan, Mantingan, Ngawi, Ngrambe, Padas, Pangkur, Paron, Pitu, Sine, Widodaren.
+
+Total: 217 Desa/Kelurahan
+
+Data RTLH tersebar di seluruh 19 kecamatan. 🗺️'},
+  {k:['myPKP','mypkp','pkp','eligible','not eligible'],j:'**Status MyPKP (Cek Bantuan):**
+
+Hasil verifikasi kelayakan dari sistem DTSEN:
+• **Eligible**: Layak menerima bantuan
+• **Not Eligible**: Tidak layak bantuan
+• **Not Eligible1**: Kategori khusus tidak layak
+
+Status ini berasal dari data DTSEN (Data Terpadu Sosial Ekonomi Nasional) dan mempengaruhi prioritas penerima bantuan. 📋'},
+  {k:['realtime','otomatis','update otomatis','langsung berubah'],j:'**Update Data Real-time:**
+
+Sistem menggunakan Supabase Realtime — data otomatis terupdate di semua perangkat tanpa perlu refresh.
+
+Artinya: jika teman di kantor lain mengubah data, di HP Anda juga langsung terlihat perubahannya! ⚡'},
+  {k:['terima kasih','makasih','thanks','tq'],j:'Sama-sama! 😊 Senang bisa membantu. Jika ada pertanyaan lain seputar e-RTLH Ngawi, jangan sungkan untuk bertanya ya! 🙏'},
+  {k:['bantuan','help','tolong','bingung'],j:'Tentu, saya siap membantu! 😊
+
+Silakan tanyakan tentang:
+• 🔍 Cara mencari data
+• ✏️ Cara edit/update data
+• 📤 Upload/download Excel
+• 🗺️ Penggunaan peta WebGIS
+• 🏚️ Program RTLH (BSPS, Dana Desa, CSR)
+• 📋 Verifikasi lapangan
+• ❓ Pertanyaan lainnya'},
+];
+
+function findAnswer(q){
+  const ql=q.toLowerCase();
+  // Cari exact match keyword
+  for(const faq of FAQ){
+    if(faq.k.some(k=>ql.includes(k)))return faq.j;
+  }
+  // Tidak ketemu
+  return null;
+}
+
+function chatReply(q){
+  const ans=findAnswer(q);
+  if(ans)return ans;
+  // Jawaban fallback cerdas
+  const ql=q.toLowerCase();
+  if(ql.match(/\d{16}/))return'Sepertinya Anda memasukkan NIK. Untuk mencari data, ketik NIK di kolom pencarian di halaman Beranda. Sistem akan langsung membuka detail orangnya. 🔍';
+  if(ql.includes('?'))return'Pertanyaan yang bagus! 🤔 Saya belum memiliki jawaban spesifik untuk itu. Silakan hubungi Super Admin DPRKP atau coba tanyakan dengan kata kunci yang berbeda.
+
+Topik yang bisa saya bantu: search, edit, upload, download, peta, BSPS, Dana Desa, desil, login, verifikasi.';
+  return'Mohon maaf, saya belum bisa menjawab pertanyaan tersebut dengan tepat. 🙏
+
+Coba tanyakan dengan kata kunci seperti:
+• "cara upload excel"
+• "apa itu BSPS"
+• "cara edit data"
+• "apa itu desil"
+
+Atau hubungi Super Admin DPRKP untuk bantuan lebih lanjut.';
+}
 
 function toggleChat(){
   const box=document.getElementById('chatBox');
@@ -3288,52 +3528,25 @@ function addUserMessage(text){
   msgs.scrollTop=msgs.scrollHeight;
 }
 
-async function sendChat(){
+function sendChat(){
   const input=document.getElementById('chatInput');
   const btn=document.getElementById('chatSendBtn');
   const text=(input?.value||'').trim();
-  if(!text||btn?.disabled)return;
+  if(!text)return;
 
   addUserMessage(text);
   input.value='';
   input.style.height='auto';
   btn.disabled=true;
 
-  chatHistory.push({role:'user',content:text});
-
-  // Tampilkan typing indicator
+  // Tampilkan typing singkat lalu jawab
   const typing=addBotMessage('',true);
-
-  try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:600,
-        system:CHAT_SYSTEM,
-        messages:chatHistory.slice(-10) // simpan 10 pesan terakhir
-      })
-    });
-    const data=await res.json();
-    const reply=data.content?.[0]?.text||'Maaf, tidak bisa menjawab saat ini.';
-
-    // Hapus typing, tampilkan jawaban
+  setTimeout(()=>{
     typing?.remove();
-    addBotMessage(reply);
-    chatHistory.push({role:'assistant',content:reply});
-
-    // Batasi history
-    if(chatHistory.length>20)chatHistory=chatHistory.slice(-20);
-
-  }catch(e){
-    typing?.remove();
-    addBotMessage('Maaf, koneksi bermasalah. Coba lagi ya. 🙏');
-    chatHistory.pop(); // hapus pesan user yang gagal
-  }finally{
+    addBotMessage(chatReply(text));
     btn.disabled=false;
     input.focus();
-  }
+  },400);
 }
 
 // Tampilkan badge setelah 5 detik jika chat belum dibuka
