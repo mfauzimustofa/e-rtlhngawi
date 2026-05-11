@@ -467,7 +467,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
 <!-- HEADER -->
 <header class="app-header">
-  <div class="brand" onclick="nav('beranda')">
+  <div class="brand" onclick="nav('beranda');document.getElementById('wgSearchBar').style.display='none'">
     <img src="data/logo-dprkp.png" alt="Logo" onerror="this.style.display='none'">
     <div class="brand-text">
       <span class="brand-sub">DPRKP Kab. Ngawi</span>
@@ -655,6 +655,23 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
         <div style="display:flex;align-items:center;gap:6px;font-size:.72rem"><div style="width:12px;height:12px;border-radius:50%;background:#DC2626;flex-shrink:0"></div>RTLH</div>
         <div style="display:flex;align-items:center;gap:6px;font-size:.72rem"><div style="width:12px;height:12px;border-radius:50%;background:#94A3B8;flex-shrink:0"></div>Dibatalkan</div>
       </div>
+    </div>
+  </div>
+  <!-- Search bar WebGIS - STATIS, tidak ikut re-render -->
+  <div id="wgSearchBar" style="display:none;padding:8px 14px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);position:sticky;top:0;z-index:50">
+    <div style="display:flex;gap:8px;align-items:center">
+      <div style="flex:1;position:relative">
+        <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--gray-400);font-size:.8rem;pointer-events:none"></i>
+        <input id="sidebarSearchInput" type="text"
+          placeholder="Cari nama, NIK, desa, BSPS 2024..."
+          maxlength="80" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="search"
+          style="width:100%;padding:10px 12px 10px 34px;border-radius:10px;border:2px solid var(--gray-200);font-size:14px;font-family:inherit;background:#fff;color:var(--gray-900);outline:none;box-sizing:border-box;transition:all .25s;box-shadow:0 0 0 3px rgba(59,130,246,.1);animation:searchPulse 2.5s ease-in-out infinite"
+          onfocus="this.style.borderColor='#3B82F6';this.style.boxShadow='0 0 0 4px rgba(59,130,246,.2)';this.style.animation='none'"
+          onblur="this.style.borderColor='var(--gray-200)';this.style.boxShadow='0 0 0 3px rgba(59,130,246,.1)';this.style.animation='searchPulse 2.5s ease-in-out infinite'"
+          onkeydown="if(event.key==='Enter')searchSidebar()"
+          oninput="clearTimeout(this._t);if(this.value.trim().length>=2){this._t=setTimeout(()=>searchSidebar(),400)}else if(!this.value.trim()){resetSidebarSearch()}">
+      </div>
+      <button onclick="searchSidebar()" style="padding:10px 14px;border-radius:10px;background:var(--blue);color:#fff;border:none;font-size:.82rem;cursor:pointer;flex-shrink:0"><i class="fas fa-search"></i></button>
     </div>
   </div>
   <div class="wg-body" id="wgBody"></div>
@@ -1076,6 +1093,7 @@ function restoreSession(){
   const detailStr=sessionStorage.getItem('ertlh_detail');
   if(kec)currentKec=kec;
   if(pg==='pgWebgis'&&kec){
+    document.getElementById('wgSearchBar').style.display='block';
     nav('webgis');
     // Restore detail panel setelah data dimuat
     if(detailStr){
@@ -1119,6 +1137,7 @@ function nav(pg){
     ensureKecCounts().then(()=>renderKecList());
   } else if(pg==='webgis'){
     document.getElementById('pgWebgis').classList.add('active');
+  document.getElementById('wgSearchBar').style.display='block';
     document.getElementById('ntWebgis')?.classList.add('active');
     document.getElementById('mnWebgis')?.classList.add('active');
     initMap();
@@ -2006,10 +2025,7 @@ function renderSidebar(){
   const sc=document.getElementById('wgBody');
   if(!sc)return;
   const kecName=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===currentKec)||currentKec;
-  // Hanya render ulang jika kecamatan berubah atau belum ada shell
-  if(!document.getElementById('sidebarSearchInput')||sc.dataset.kec!==currentKec){
-    sc.dataset.kec=currentKec;
-    sc.innerHTML=`
+  sc.innerHTML=`
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px">
       <div>
         <div style="font-size:.88rem;font-weight:800;color:var(--gray-900)">${kecName} — BNBA RTLH</div>
@@ -2017,23 +2033,6 @@ function renderSidebar(){
       </div>
     </div>
     <div class="kec-dashboard" id="kecDashboard"></div>
-    <!-- Search bar sama seperti beranda -->
-    <div style="position:sticky;top:0;z-index:10;background:var(--gray-50);padding:8px 0 10px;margin-bottom:4px">
-      <div style="display:flex;gap:8px;align-items:center">
-        <div style="flex:1;position:relative">
-          <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--gray-400);font-size:.8rem;pointer-events:none"></i>
-          <input id="sidebarSearchInput" type="text"
-            placeholder="Cari nama, NIK, desa, BSPS 2024..."
-            maxlength="80" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="search"
-            style="width:100%;padding:10px 12px 10px 34px;border-radius:10px;border:2px solid var(--gray-200);font-size:14px;font-family:inherit;background:#fff;color:var(--gray-900);outline:none;box-sizing:border-box;transition:all .25s;box-shadow:0 0 0 3px rgba(59,130,246,.1);animation:searchPulse 2.5s ease-in-out infinite"
-            onfocus="this.style.borderColor='#3B82F6';this.style.boxShadow='0 0 0 4px rgba(59,130,246,.2)';this.style.animation='none'"
-            onblur="this.style.borderColor='var(--gray-200)';this.style.boxShadow='0 0 0 3px rgba(59,130,246,.1)';this.style.animation='searchPulse 2.5s ease-in-out infinite'"
-            onkeydown="if(event.key==='Enter')searchSidebar()"
-            oninput="clearTimeout(this._t);if(this.value.trim().length>=2){this._t=setTimeout(()=>searchSidebar(),400)}else if(!this.value.trim()){resetSidebarSearch()}">
-        </div>
-        <button onclick="searchSidebar()" style="padding:10px 14px;border-radius:10px;background:var(--blue);color:#fff;border:none;font-size:.82rem;cursor:pointer;flex-shrink:0"><i class="fas fa-search"></i></button>
-      </div>
-    </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
       <span style="font-size:.68rem;font-weight:700;color:var(--gray-500)">Status:</span>
       <button class="filter-chip ${filterStatus==='all'?'active':''}" onclick="setFilterStatus('all')">Semua</button>
