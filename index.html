@@ -1371,7 +1371,7 @@ async function loadGlobalStats(){
     // Per kec counts
     kecCounts={};
     data.forEach(r=>{
-      const k=(r.kec||'').toUpperCase();
+      const k=(r.kec||'').toUpperCase().trim();
       if(!kecCounts[k])kecCounts[k]={total:0,sudah:0,proses:0,belum:0};
       kecCounts[k].total++;
       if(r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')kecCounts[k].sudah++;
@@ -1897,7 +1897,7 @@ async function ensureKecCounts(force=false){
     const all=ps.flatMap(r=>r.data||[]);
     kecCounts={};
     all.forEach(r=>{
-      const k=(r.kec||'').toUpperCase();
+      const k=(r.kec||'').toUpperCase().trim();
       if(!kecCounts[k])kecCounts[k]={total:0,sudah:0,proses:0,belum:0};
       kecCounts[k].total++;
       if(r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')kecCounts[k].sudah++;
@@ -2060,7 +2060,7 @@ async function loadKec(){
   let allRows=[], pg=0, pgSize=1000, isDone=false;
   while(!isDone){
     let q=sb.from('rtlh').select(cols).order('id').range(pg*pgSize,(pg+1)*pgSize-1).limit(pgSize);
-    if(currentKec)q=q.eq('kec',currentKec);
+    if(currentKec)q=q.ilike('kec',currentKec);
     const{data,error}=await q;
     if(error){toast('Gagal memuat data. Coba refresh halaman.','error');return;}
     allRows=[...allRows,...(data||[])];
