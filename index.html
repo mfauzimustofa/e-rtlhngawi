@@ -1816,8 +1816,8 @@ async function searchNIK(){
   // Kelompokkan per desa
   const byDesa={};
   data.forEach(r=>{
-    const key=(r.desa||'-')+' | '+(r.kec||'-');
-    if(!byDesa[key])byDesa[key]={desa:r.desa,kec:r.kec,items:[]};
+    const key=((r.desa||'-')+' | '+(r.kec||'-')).toUpperCase();
+    if(!byDesa[key])byDesa[key]={desa:normCase(r.desa)||'-',kec:normCase(r.kec)||'-',items:[]};
     byDesa[key].items.push(r);
   });
   res.innerHTML=Object.values(byDesa).map(group=>`
@@ -1951,7 +1951,7 @@ async function searchKeclist(){
 
   cnt.innerHTML=`<strong>${data.length}</strong> hasil${data.length>=50?' · coba lebih spesifik':''}`;
   const byDesa={};
-  data.forEach(r=>{const key=(r.desa||'-')+'|'+(r.kec||'-');if(!byDesa[key])byDesa[key]={desa:r.desa,kec:r.kec,items:[]};byDesa[key].items.push(r);});
+  data.forEach(r=>{const key=((r.desa||'-')+'|'+(r.kec||'-')).toUpperCase();if(!byDesa[key])byDesa[key]={desa:normCase(r.desa)||'-',kec:normCase(r.kec)||'-',items:[]};byDesa[key].items.push(r);});
   res.innerHTML=Object.values(byDesa).map(g=>`
     <div style="border-bottom:2px solid var(--blue-bg)">
       <div style="padding:7px 12px;background:var(--blue-bg);display:flex;align-items:center;gap:6px">
@@ -2253,7 +2253,7 @@ function renderSidebarList(){
   if(!l)return;
   if(!brFeatures.length){l.innerHTML='<div style="padding:24px;text-align:center;color:var(--gray-400);font-size:.78rem"><i class="fas fa-inbox" style="font-size:1.5rem;display:block;margin-bottom:8px"></i>Tidak ada data sesuai filter</div>';return;}
   const sorted=[...brFeatures].sort((a,b)=>{
-    const da=(a.desa||'').localeCompare(b.desa||'');
+    const da=(a.desa||'').toUpperCase().localeCompare((b.desa||'').toUpperCase());
     if(da!==0)return da;
     const sa=parseInt(String(a.desil||'99').match(/\d+/)?.[0]||'99');
     const sb=parseInt(String(b.desil||'99').match(/\d+/)?.[0]||'99');
@@ -2262,11 +2262,14 @@ function renderSidebarList(){
   // Kelompokkan per desa
   const byDesa={};
   sorted.forEach(r=>{
-    const key=r.desa||'Tanpa Desa';
-    if(!byDesa[key])byDesa[key]=[];
-    byDesa[key].push(r);
+    const desaKey=(r.desa||'Tanpa Desa').toUpperCase();
+    const desaLabel=normCase(r.desa)||'Tanpa Desa';
+    if(!byDesa[desaKey]){byDesa[desaKey]={desa:desaLabel,items:[]};}
+    byDesa[desaKey].items.push(r);
   });
-  l.innerHTML=Object.entries(byDesa).map(([desa,items])=>{
+  l.innerHTML=Object.values(byDesa).map(group=>{
+    const desa=group.desa;
+    const items=group.items;
     const layak=items.filter(r=>r.status_rtlh==='Layak Huni').length;
     const rtlh=items.filter(r=>r.status_rtlh!=='Layak Huni'&&r.status_rtlh!=='Dibatalkan').length;
     return`<div class="desa-group">
