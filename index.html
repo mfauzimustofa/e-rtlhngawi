@@ -388,35 +388,6 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 .skeleton{background:linear-gradient(90deg,var(--gray-100) 25%,var(--gray-200) 50%,var(--gray-100) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
-/* ══ CHATBOT AI ══ */
-#chatBtn{position:fixed;bottom:70px;right:16px;z-index:9000;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#7C3AED,#4F46E5);color:#fff;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(124,58,237,.4);display:flex;align-items:center;justify-content:center;font-size:1.2rem;transition:transform .2s,box-shadow .2s}
-#chatBtn:hover{transform:scale(1.1);box-shadow:0 6px 20px rgba(124,58,237,.5)}
-#chatBtn .chat-badge{position:absolute;top:-3px;right:-3px;background:#EF4444;color:#fff;border-radius:99px;font-size:.55rem;font-weight:800;padding:1px 5px;display:none}
-#chatBox{position:fixed;bottom:134px;right:16px;z-index:9000;width:340px;max-width:calc(100vw - 32px);background:#fff;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.18);display:none;flex-direction:column;overflow:hidden;max-height:70vh}
-#chatBox.open{display:flex}
-.chat-head{background:linear-gradient(135deg,#7C3AED,#4F46E5);padding:14px 16px;display:flex;align-items:center;gap:10px}
-.chat-head .ch-avatar{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
-.chat-head .ch-info .ch-name{font-size:.85rem;font-weight:800;color:#fff}
-.chat-head .ch-info .ch-status{font-size:.65rem;color:rgba(255,255,255,.75)}
-.chat-head .ch-close{margin-left:auto;background:none;border:none;color:rgba(255,255,255,.8);cursor:pointer;font-size:.9rem;padding:4px}
-.chat-messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:200px}
-.chat-msg{max-width:85%;font-size:.8rem;line-height:1.5;padding:10px 12px;border-radius:12px}
-.chat-msg.bot{background:var(--gray-100);color:var(--gray-800);align-self:flex-start;border-bottom-left-radius:4px}
-.chat-msg.user{background:linear-gradient(135deg,#7C3AED,#4F46E5);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
-.chat-msg.typing{background:var(--gray-100);align-self:flex-start;padding:12px 16px}
-.typing-dots span{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gray-400);animation:typingDot 1.2s infinite}
-.typing-dots span:nth-child(2){animation-delay:.2s}
-.typing-dots span:nth-child(3){animation-delay:.4s}
-@keyframes typingDot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
-.chat-input-wrap{padding:10px 12px;border-top:1px solid var(--gray-200);display:flex;gap:8px}
-.chat-input{flex:1;padding:9px 12px;border-radius:10px;border:1.5px solid var(--gray-200);font-size:.82rem;font-family:inherit;outline:none;resize:none;max-height:80px;transition:border .2s}
-.chat-input:focus{border-color:#7C3AED}
-.chat-send{padding:9px 14px;border-radius:10px;background:linear-gradient(135deg,#7C3AED,#4F46E5);color:#fff;border:none;cursor:pointer;font-size:.82rem;font-family:inherit;font-weight:700;flex-shrink:0;transition:opacity .2s}
-.chat-send:disabled{opacity:.5;cursor:default}
-@media(max-width:768px){
-  #chatBox{width:calc(100vw - 24px);right:12px;bottom:72px;max-height:75vh}
-  #chatBtn{bottom:64px;right:12px}
-}
 
 /* TABLE EDITOR */
 .te-th{background:var(--navy);color:#fff;padding:8px 10px;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;position:sticky;top:0;border-right:1px solid rgba(255,255,255,.1);user-select:none;cursor:pointer}
@@ -3233,106 +3204,6 @@ async function deleteDok(id,path){
 // ══════════════════════════════════════════════════
 // CHATBOT AI — Asisten e-RTLH Ngawi
 // ══════════════════════════════════════════════════
-let chatOpened=false;
-
-// ══ FAQ ENGINE LOKAL — 100% gratis, tanpa API ══
-const FAQ=[
-  {k:['halo','hai','hi','selamat','hei','hello'],
-   j:'Halo! 👋 Selamat datang di Asisten e-RTLH Ngawi. Saya siap membantu! Tanyakan tentang cara penggunaan, program RTLH, atau data yang dibutuhkan. 😊'},
-  {k:['rtlh','rumah tidak layak','pengertian','definisi','apa itu'],
-   j:'RTLH (Rumah Tidak Layak Huni) adalah rumah yang tidak memenuhi syarat keselamatan, kesehatan, dan kecukupan ruang. Kriteria: dinding/atap/lantai tidak layak, luas < 7,2 m²/jiwa. Di Ngawi mencakup 19 Kecamatan, 217 Desa. 🏚️'},
-  {k:['bsps','bantuan stimulan','stimulan perumahan'],
-   j:'BSPS (Bantuan Stimulan Perumahan Swadaya) adalah program APBN untuk rehabilitasi RTLH. Besaran: Rp 20 juta/unit, disalurkan ke rekening penerima, dikerjakan secara swadaya. Syarat: WNI, miliki RTLH, penghasilan rendah, terdaftar DTSEN. 🏗️'},
-  {k:['dana desa','dd','apbdes'],
-   j:'Dana Desa untuk RTLH bersumber dari APBDES. Besaran bervariasi sesuai kemampuan desa, diputuskan melalui Musdes. Penerima berdasarkan skala prioritas, dicatat di e-RTLH dengan jenis bantuan Dana Desa. 🏘️'},
-  {k:['csr','corporate','perusahaan'],
-   j:'CSR untuk RTLH adalah bantuan hibah dari perusahaan swasta. Jumlah bervariasi, perlu MoU antara dinas dan perusahaan. Dicatat di sistem dengan jenis bantuan CSR. 🤝'},
-  {k:['desil','dtsen','prioritas','ranking'],
-   j:'Desil DTSEN: Desil 1-2 = sangat miskin (prioritas utama), Desil 3-4 = miskin, Desil 5-6 = rentan miskin, Desil 7-8 = hampir mampu. Eligible = layak bantuan, Not Eligible = tidak layak. Desil 1 prioritas tertinggi RTLH. 📊'},
-  {k:['search','cari','pencarian','temukan','mencari'],
-   j:'Cara cari data: Ketik nama/NIK/desa di kolom cari → hasil otomatis muncul. Ketik BSPS/RTLH/Dana Desa untuk cari per jenis bantuan. Ketik BSPS 2024 untuk tahun tertentu. Hapus teks → hasil hilang otomatis. 🔍'},
-  {k:['edit','ubah','update','ganti','simpan'],
-   j:'Cara edit: Cari nama/NIK → klik nama → klik Edit Data → ubah field → Simpan. Tips: Saat Jenis Bantuan diisi, Status otomatis Layak Huni. Setiap perubahan tercatat di Riwayat Perubahan. ✏️'},
-  {k:['upload','import','excel','xlsx','unggah'],
-   j:'Upload massal: klik ikon Excel di header → Excel Kabupaten → upload file. Upload per orang: buka detail → klik Upload Excel. Fitur cerdas: upload 2 kolom (NIK+Jenis Bantuan) → hanya itu yang berubah. 📤'},
-  {k:['download','unduh','export'],
-   j:'Download per kecamatan: WebGIS → klik ikon unduh. Download kabupaten: ikon Excel → Excel Kabupaten → filter → Unduh. Download per orang: buka detail → klik tombol hijau Unduh. 📥'},
-  {k:['tambah','input','data baru','entry','menambah'],
-   j:'Cara tambah data: masuk WebGIS kecamatan → klik + Tambah → isi form (NIK wajib 16 digit unik) → Simpan. Atau upload Excel massal untuk banyak data sekaligus. ➕'},
-  {k:['hapus','delete','menghapus'],
-   j:'Cara hapus: buka detail → klik Hapus (merah) → konfirmasi nama. Hapus tidak bisa dibatalkan. Lebih baik edit daripada hapus jika data salah. 🗑️'},
-  {k:['verifikasi','lapangan','survey'],
-   j:'Verifikasi lapangan: buka detail → bagian Riwayat Verifikasi → + Tambah → isi Hasil (Layak/Tidak Layak), Keterangan, Tahun, Petugas → Simpan. Bisa ditambah tiap tahun tanpa hapus data lama. 📋'},
-  {k:['dokumen','foto','ba','berita acara','surat'],
-   j:'Upload dokumen: buka detail → bagian Dokumen & Foto → klik Upload → pilih jenis (Foto Rumah/BA/Surat/KTP/KK) → tambah keterangan → pilih file → Upload. Format: JPG/PNG/PDF, maks 10MB. 📄'},
-  {k:['peta','map','lokasi','koordinat','gis','webgis'],
-   j:'Peta beranda: pie chart per kecamatan (hijau=Layak Huni, merah=RTLH). WebGIS kecamatan: marker hijau=Layak Huni, merah=RTLH, abu=Dibatalkan. Klik marker → detail. Ganti kecamatan: ketuk nama di toolbar. 🗺️'},
-  {k:['nik','kk','identitas','duplikat'],
-   j:'NIK 16 digit adalah identitas unik di sistem. Setiap NIK hanya boleh terdaftar 1 kali. Pencarian NIK langsung ke detail. Upload Excel by NIK → update data orang itu saja. No. KK bisa sama (satu keluarga). 🪪'},
-  {k:['status','layak huni','dibatalkan','batal','meninggal'],
-   j:'Status RTLH: RTLH (belum ditangani), Layak Huni (sudah dapat bantuan), Dibatalkan. Alasan batal: Meninggal, Tidak Bersedia, Tidak Ada Biaya, Pindah, Sudah Mampu, Tidak Memenuhi Syarat. Saat Jenis Bantuan diisi → otomatis Layak Huni. 🏠'},
-  {k:['login','masuk','username','password','lupa'],
-   j:'Login dengan username dan password dari Super Admin. Lupa password → hubungi Super Admin DPRKP untuk reset. Level: Super Admin (akses penuh), Admin (sesuai kecamatan). 🔐'},
-  {k:['riwayat','history','log','perubahan'],
-   j:'Riwayat Perubahan: setiap edit otomatis dicatat (field berubah, nilai lama → baru, siapa, kapan). Lihat: buka detail → scroll ke Riwayat Perubahan. 📜'},
-  {k:['kecamatan','desa','wilayah','ngawi'],
-   j:'Kabupaten Ngawi: 19 Kecamatan (Bringin, Geneng, Gerih, Jogorogo, Karanganyar, Karangjati, Kasreman, Kedunggalar, Kendal, Kwadungan, Mantingan, Ngawi, Ngrambe, Padas, Pangkur, Paron, Pitu, Sine, Widodaren), 217 Desa/Kelurahan. 🗺️'},
-  {k:['mypkp','pkp','eligible'],
-   j:'Status MyPKP dari DTSEN: Eligible (layak bantuan), Not Eligible (tidak layak), Not Eligible1 (kategori khusus). Mempengaruhi prioritas penerima bantuan RTLH. 📋'},
-  {k:['terima kasih','makasih','thanks'],
-   j:'Sama-sama! 😊 Senang bisa membantu. Jika ada pertanyaan lain, jangan sungkan bertanya ya! 🙏'},
-  {k:['bantuan','help','tolong','bingung','fitur'],
-   j:'Saya bisa membantu tentang: 🔍 Pencarian data, ✏️ Edit/update, 📤 Upload/download Excel, 🗺️ Peta WebGIS, 🏚️ Program RTLH (BSPS/Dana Desa/CSR), 📋 Verifikasi lapangan, 🪪 NIK/identitas, ❓ Pertanyaan lainnya.'},
-];
-
-
-
-function findAnswer(q){
-  const ql=q.toLowerCase();
-  // Cari exact match keyword
-  for(const faq of FAQ){
-    if(faq.k.some(k=>ql.includes(k)))return faq.j;
-  }
-  // Tidak ketemu
-  return null;
-}
-
-function chatReply(q){
-  const ans=findAnswer(q);
-  if(ans)return ans;
-  const ql=q.toLowerCase();
-  if(/\d{16}/.test(ql))return'Sepertinya Anda memasukkan NIK. Ketik di kolom pencarian Beranda untuk langsung buka detail. 🔍';
-  if(ql.includes('?'))return'Pertanyaan bagus! 🤔 Coba kata kunci: search, edit, upload, download, peta, BSPS, Dana Desa, desil, login, verifikasi.';
-  return'Belum bisa menjawab itu. 🙏 Coba: "upload excel", "apa itu BSPS", "cara edit data", "desil". Atau hubungi Super Admin DPRKP.';
-}
-function sendChat(){
-  const input=document.getElementById('chatInput');
-  const btn=document.getElementById('chatSendBtn');
-  const text=(input?.value||'').trim();
-  if(!text)return;
-
-  addUserMessage(text);
-  input.value='';
-  input.style.height='auto';
-  btn.disabled=true;
-
-  // Tampilkan typing singkat lalu jawab
-  const typing=addBotMessage('',true);
-  setTimeout(()=>{
-    typing?.remove();
-    addBotMessage(chatReply(text));
-    btn.disabled=false;
-    input.focus();
-  },400);
-}
-
-// Tampilkan badge setelah 5 detik jika chat belum dibuka
-setTimeout(()=>{
-  if(!chatOpened){
-    const badge=document.getElementById('chatBadge');
-    if(badge)badge.style.display='block';
-  }
-},5000);
 
 // ══════════════════════════════════════════════════
 // MAINTENANCE MODE — Akses terbatas hanya staf dinas
@@ -3418,29 +3289,7 @@ window.addEventListener('DOMContentLoaded',async()=>{
   }
 });
 </script>
-<!-- ═══ CHATBOT AI ═══ -->
-<button id="chatBtn" onclick="toggleChat()" title="Tanya AI Asisten">
-  <i class="fas fa-robot"></i>
-  <span class="chat-badge" id="chatBadge">!</span>
-</button>
 
-<div id="chatBox">
-  <div class="chat-head">
-    <div class="ch-avatar"><i class="fas fa-robot"></i></div>
-    <div class="ch-info">
-      <div class="ch-name">Asisten e-RTLH</div>
-      <div class="ch-status">● Online · Powered by AI</div>
-    </div>
-    <button class="ch-close" onclick="toggleChat()"><i class="fas fa-times"></i></button>
-  </div>
-  <div class="chat-messages" id="chatMessages"></div>
-  <div class="chat-input-wrap">
-    <textarea class="chat-input" id="chatInput" placeholder="Ketik pertanyaan..." rows="1"
-      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"
-      oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,80)+'px'"></textarea>
-    <button class="chat-send" id="chatSendBtn" onclick="sendChat()"><i class="fas fa-paper-plane"></i></button>
-  </div>
-</div>
 
 <!-- ═══ END APP SHELL ═══ -->
 </div>
