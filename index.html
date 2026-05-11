@@ -1800,13 +1800,16 @@ async function searchNIK(){
     query = query.or(`kep_kk.ilike.%${q}%,desa.ilike.%${q}%,kec.ilike.%${q}%`);
   }
   if(statusFilter) query = query.eq('status_rtlh', statusFilter);
-  const{data,error}=await query.limit(50);
+  // Fetch semua hasil tanpa batas
+  const{count:searchTotal}=await query.select('*',{count:'exact',head:true}).then?.(r=>r)||{count:0};
+  const{data:firstPage,error}=await query.limit(1000);
   if(error){
     console.error('Search error:', error);
     res.innerHTML=`<div style="color:rgba(255,100,100,.9);font-size:.78rem;margin-top:12px"><i class="fas fa-exclamation-circle"></i> Error: ${error.message}</div>`;
     return;
   }
-  if(!data||!data.length){
+  const data=firstPage||[];
+  if(!data.length){
     const wrap2=document.getElementById('searchResultsWrap');if(wrap2)wrap2.style.display='block';
     const cnt=document.getElementById('searchResultCount');if(cnt)cnt.innerHTML='<i class="fas fa-times-circle"></i> Data tidak ditemukan';
     res.innerHTML='';return;
@@ -1815,7 +1818,7 @@ async function searchNIK(){
   const wrap=document.getElementById('searchResultsWrap');
   if(wrap)wrap.style.display='block';
   const countEl=document.getElementById('searchResultCount');
-  if(countEl)countEl.innerHTML=`<i class="fas fa-search"></i> <strong>${data.length}</strong> hasil ditemukan${data.length>=50?' · coba lebih spesifik':''}`;
+  if(countEl)countEl.innerHTML=`<i class="fas fa-search"></i> <strong>${data.length}</strong> hasil ditemukan`;
   const infoHtml='';
   // Kelompokkan per desa
   const byDesa={};
@@ -2027,10 +2030,10 @@ async function searchKeclist(){
   if(jenisBantuan){query=query.ilike('jenis_bantuan',`%${jenisBantuan}%`);if(tahunBantuan)query=query.eq('tahun_bantuan',tahunBantuan);}
   else if(isNumeric&&q.length>=10){query=query.eq('nik',q);}
   else{query=query.or(`kep_kk.ilike.%${q}%,desa.ilike.%${q}%`);}
-  const{data,error}=await query.limit(50);
+  const{data,error}=await query.limit(5000);
   if(error||!data?.length){res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:.78rem">Tidak ada hasil ditemukan</div>';cnt.innerHTML='0 hasil';return;}
 
-  cnt.innerHTML=`<strong>${data.length}</strong> hasil${data.length>=50?' · coba lebih spesifik':''}`;
+  cnt.innerHTML=`<strong>${data.length}</strong> hasil`;
   const byDesa={};
   data.forEach(r=>{const key=((r.desa||'-')+'|'+(r.kec||'-')).toUpperCase();if(!byDesa[key])byDesa[key]={desa:normCase(r.desa)||'-',kec:normCase(r.kec)||'-',items:[]};byDesa[key].items.push(r);});
   res.innerHTML=Object.values(byDesa).map(g=>`
