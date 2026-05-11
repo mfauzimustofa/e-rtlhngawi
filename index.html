@@ -1918,7 +1918,7 @@ async function navWithFilter(status){
   },300);
 }
 
-function applyGlobalFilter(){
+async function applyGlobalFilter(){
   if(!_globalStatusFilter){
     // Semua data — hapus filter
     document.getElementById('keclistResult').innerHTML='';
@@ -1933,10 +1933,17 @@ function applyGlobalFilter(){
   cnt.innerHTML=`<span style="background:${_globalStatusFilter==='Layak Huni'?'#F0FDF4':'#FEF2F2'};color:${_globalStatusFilter==='Layak Huni'?'#16A34A':'#DC2626'};padding:2px 10px;border-radius:99px;font-weight:700;font-size:.72rem">${_globalStatusFilter}</span>`;
   res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>';
   // Fetch data berdasarkan status
-  sb.from('rtlh').select('id,kec,desa,kep_kk,nik,status_rtlh,desil,jenis_bantuan,tahun_bantuan')
-    .eq('status_rtlh',_globalStatusFilter).order('kec').order('desa').limit(200)
-    .then(({data,error})=>{
-      if(error||!data?.length){
+  // Fetch semua data dengan parallel pagination
+  const{count:totalCnt}=await sb.from('rtlh').select('*',{count:'exact',head:true}).eq('status_rtlh',_globalStatusFilter);
+  const pages=Math.ceil((totalCnt||0)/1000);
+  const results=await Promise.all(Array.from({length:pages},(_,p)=>
+    sb.from('rtlh').select('id,kec,desa,kep_kk,nik,status_rtlh,desil')
+      .eq('status_rtlh',_globalStatusFilter).order('kec').order('desa')
+      .range(p*1000,(p+1)*1000-1)
+  ));
+  const data=results.flatMap(r=>r.data||[]);
+  const error=results.find(r=>r.error)?.error;
+  if(error||!data?.length){
         res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:.78rem">Tidak ada data</div>';
         return;
       }
@@ -1973,7 +1980,6 @@ function applyGlobalFilter(){
             </div>`;
           }).join('')}
         </div>`).join('');
-    });
 }
 
 function clearKeclistSearch(){
