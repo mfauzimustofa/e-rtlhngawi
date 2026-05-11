@@ -1856,7 +1856,7 @@ async function searchNIK(){
 async function bukaDetailDariSearch(id, kecKey){
   if(!kecKey)return toast('Kecamatan tidak ditemukan','error');
   // Fetch data lengkap langsung dari Supabase — tidak perlu tunggu loadKec
-  const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,dtsen,backlog,desil,nik,no_kk,updated_at';
+  const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,dtsen,backlog,desil,nik,no_kk,updated_at,keterangan';
   const{data,error}=await sb.from('rtlh').select(cols).eq('id',parseInt(id)).single();
   if(error||!data)return toast('Data tidak ditemukan','error');
   // Hitung skor
@@ -2051,7 +2051,7 @@ async function loadKec(){
 
   if(brCache[currentKec]){brAll=brCache[currentKec];brFeatures=[...brAll];renderSidebar();renderKecDashboard();updateMap();return;}
 
-  const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,dtsen,backlog,desil,nik,no_kk,updated_at';
+  const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,dtsen,backlog,desil,nik,no_kk,updated_at,keterangan';
   // Fetch dengan pagination (antisipasi lebih dari 1000 data per kecamatan)
   let allRows=[], pg=0, pgSize=1000, isDone=false;
   while(!isDone){
@@ -2410,7 +2410,7 @@ function showDetail(r){
       <div class="detail-item"><div class="dl">Status MyPKP</div><div class="dv">${dn(r.dtsen)||'-'}</div></div>
       <div class="detail-item"><div class="dl">Backlog</div><div class="dv">${dn(r.backlog)||'-'}</div></div>
       ${r.status_rtlh==='Dibatalkan'&&r.status_batal?`<div class="detail-item full"><div class="dl">Alasan Batal</div><div class="dv" style="color:var(--danger);font-weight:600">${r.status_batal}</div></div>`:''}
-      ${r.jenis_bantuan?`<div class="detail-item"><div class="dl">Jenis Bantuan</div><div class="dv">${r.jenis_bantuan}</div></div>`:''}
+      ${r.jenis_bantuan?`<div class="detail-item"><div class="dl">Jenis Bantuan</div><div class="dv">${r.jenis_bantuan}</div></div>`:''}      ${r.keterangan?`<div class="detail-item full"><div class="dl">Keterangan</div><div class="dv" style="font-style:italic;color:var(--gray-700)">${r.keterangan}</div></div>`:''}
       ${r.tahun_bantuan?`<div class="detail-item"><div class="dl">Tahun Bantuan</div><div class="dv">${r.tahun_bantuan}</div></div>`:''}
     </div>
     <div style="margin-top:14px">
@@ -2563,12 +2563,13 @@ const FIELDS=[
   {key:'material_l',label:'Material Lantai',type:'text'},
   {key:'kondisi_la',label:'Kondisi Lantai',type:'text'},
   {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['RTLH','Layak Huni','Dibatalkan']},
-  {key:'status_batal',label:'Alasan Dibatalkan',type:'select',opts:['','Meninggal Dunia','Tidak Bersedia Dibantu','Tidak Ada Biaya','Pindah Tempat Tinggal','Sudah Mampu Mandiri','Tidak Memenuhi Syarat','Lainnya']},
+  {key:'status_batal',label:'Alasan Dibatalkan',type:'select',opts:['','-','Meninggal Dunia','Tidak Bersedia Dibantu','Tidak Ada Biaya','Pindah Tempat Tinggal','Sudah Mampu Mandiri','Tidak Memenuhi Syarat','Lainnya'],onChange:'handleAlasanBatal(this)'},
+
   {key:'jenis_bantuan',label:'Jenis Bantuan',type:'select',opts:['','RTLH','BSPS','DD','CSR','Lainnya']},
   {key:'tahun_bantuan',label:'Tahun Bantuan',type:'text',placeholder:'misal: 2025'},
-  {key:'dtsen',label:'Status (Cek Bantuan MyPKP)',type:'select',opts:['','Eligible','Not Eligible','Not Eligible1']},
   {key:'backlog',label:'Backlog',type:'select',opts:['','Backlog 1','Backlog 2']},
   {key:'desil',label:'Desil',type:'select',opts:['','Desil 1','Desil 2','Desil 3','Desil 4','Desil 5','Desil 6','Desil 7','Desil 8']},
+  {key:'keterangan',label:'Keterangan',type:'text',full:true,noNorm:true},
   {key:'latitude',label:'Latitude',type:'number'},
   {key:'longitude',label:'Longitude',type:'number'},
 ];
@@ -2605,9 +2606,11 @@ function openForm(id){
       return`<div class="${cls}"><label>${f.label}</label><input type="text" id="ff_${f.key}" value="${val}" placeholder="Nama desa"></div>`;
     }
     if(f.type==='select'){
+      const onChange=f.onChange?f.onChange:'';
+      const extraChange=f.key==='jenis_bantuan'?"if(this.value){const s=document.getElementById('ff_status_rtlh');if(s&&s.value!=='Dibatalkan')s.value='Layak Huni';}":'';
       return`<div class="${cls}"><label>${f.label}</label><select id="ff_${f.key}" ${locked?'disabled':''}
-        ${f.key==='jenis_bantuan'?`onchange="if(this.value){const s=document.getElementById('ff_status_rtlh');if(s&&s.value!=='Dibatalkan')s.value='Layak Huni';}"`:''}
-        >${f.opts.map(o=>`<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('')}</select></div>`;
+        onchange="${extraChange}${onChange}"
+        >${f.opts.map(o=>`<option value="${o==='-'?'':o}" ${(val===o||(o==='-'&&!val))?'selected':''}>${o||'(kosong)'}</option>`).join('')}</select></div>`;
     }
     if(f.sensitive){
       // Always render NIK/KK — locked or editable depending on role
@@ -2641,9 +2644,10 @@ async function saveForm(){
     else{v=el.value.trim();}
     if(f.type==='number')obj[f.key]=v?parseFloat(v):null;
     else{
-      // Jangan overwrite dengan kosong kalau field sudah ada isinya di data lama
-      if(!v&&oldRec&&oldRec[f.key])obj[f.key]=oldRec[f.key];
-      else obj[f.key]=v||null;
+      // Normalize case untuk field teks bebas
+      const normalized=f.noNorm?v:(f.upper?normUpper(v):normCase(v));
+      if(!normalized&&oldRec&&oldRec[f.key])obj[f.key]=oldRec[f.key];
+      else obj[f.key]=normalized||null;
     }
   }
   // Tambah timestamp update
@@ -2917,6 +2921,15 @@ async function downloadExcelKab(withNIK){
 
 // Helper: ambil nilai string atau null (bukan string kosong)
 function xlVal(v){const s=String(v==null?'':v).trim();return s||null;}
+
+// Normalize case: "GENENG" → "Geneng", "KARANGJATI" → "Karangjati"
+function normCase(v){
+  if(!v)return v;
+  // Field tertentu pakai Title Case
+  return String(v).trim().toLowerCase().replace(/(?:^|\s|\/)\S/g,c=>c.toUpperCase());
+}
+// Untuk field yang huruf semua besar OK (NIK, No KK)
+function normUpper(v){return v?String(v).trim().toUpperCase():v;}
 function xlNum(v){const n=parseFloat(String(v||'').replace(',','.'));return isNaN(n)?null:n;}
 function xlInt(v){const n=parseInt(String(v||''));return isNaN(n)?null:n;}
 
@@ -2946,9 +2959,10 @@ async function importExcelKab(input){
         const rowNum=i+2;
         const obj={};
         // Hanya masukkan kolom yang ADA di file Excel
-        if(hasCol(['Kecamatan','kec']))obj.kec=xlVal(row['Kecamatan']||row['kec']);
-        if(hasCol(['Desa','desa']))obj.desa=xlVal(row['Desa']||row['desa']);
-        if(hasCol(['Nama KK','kep_kk']))obj.kep_kk=xlVal(row['Nama KK']||row['kep_kk']);
+        if(hasCol(['Kecamatan','kec']))obj.kec=normCase(xlVal(row['Kecamatan']||row['kec']));
+        if(hasCol(['Keterangan','keterangan']))obj.keterangan=xlVal(row['Keterangan']||row['keterangan']);
+        if(hasCol(['Desa','desa']))obj.desa=normCase(xlVal(row['Desa']||row['desa']));
+        if(hasCol(['Nama KK','kep_kk']))obj.kep_kk=normCase(xlVal(row['Nama KK']||row['kep_kk']));
         if(hasCol(['Alamat','alamat']))obj.alamat=xlVal(row['Alamat']||row['alamat']);
         if(hasCol(['Jenis Kelamin','jen_kel']))obj.jen_kel=xlVal(row['Jenis Kelamin']||row['jen_kel']);
         if(hasCol(['Umur','umur']))obj.umur=xlInt(row['Umur']||row['umur']);
