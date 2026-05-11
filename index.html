@@ -2006,11 +2006,14 @@ function renderSidebar(){
   const sc=document.getElementById('wgBody');
   if(!sc)return;
   const kecName=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===currentKec)||currentKec;
-  sc.innerHTML=`
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+  // Hanya render ulang jika kecamatan berubah atau belum ada shell
+  if(!document.getElementById('sidebarSearchInput')||sc.dataset.kec!==currentKec){
+    sc.dataset.kec=currentKec;
+    sc.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px">
       <div>
         <div style="font-size:.88rem;font-weight:800;color:var(--gray-900)">${kecName} — BNBA RTLH</div>
-        <div style="font-size:.65rem;color:var(--gray-500);margin-top:2px">${brAll.length} jiwa terdaftar</div>
+        <div style="font-size:.65rem;color:var(--gray-500);margin-top:2px" id="sidebarCount">${brAll.length} data terdaftar</div>
       </div>
     </div>
     <div class="kec-dashboard" id="kecDashboard"></div>
