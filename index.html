@@ -3183,6 +3183,19 @@ async function saveVerif(){
     created_by:user?.email
   });
   if(error)return toast('Gagal simpan: '+error.message,'error');
+  // Jika hasil verifikasi Layak → update status RTLH jadi Layak Huni
+  if(hasil==='Layak'){
+    const r=brAll.find(x=>String(x.id)===String(_verifRtlhId));
+    if(r&&r.status_rtlh!=='Layak Huni'&&r.status_rtlh!=='Dibatalkan'){
+      await sb.from('rtlh').update({status_rtlh:'Layak Huni',updated_at:new Date().toISOString()}).eq('id',parseInt(_verifRtlhId));
+      // Catat riwayat
+      await sb.from('rtlh_riwayat').insert({nik:r.nik,rtlh_id:parseInt(_verifRtlhId),field_name:'Status RTLH',nilai_lama:r.status_rtlh||null,nilai_baru:'Layak Huni',diubah_oleh:user?.email});
+      // Update local
+      r.status_rtlh='Layak Huni';
+      brCache[currentKec]=brAll;
+      toast('Status RTLH diperbarui ke Layak Huni','success');
+    }
+  }
   toast('Verifikasi berhasil disimpan','success');
   loadVerifHistori(_verifRtlhId);
   loadVerifList(_verifRtlhId);
