@@ -2204,7 +2204,10 @@ function renderSidebar(){
   const sc=document.getElementById('wgBody');
   if(!sc)return;
   const kecName=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===currentKec)||currentKec;
-  sc.innerHTML=`
+  // Hanya rebuild HTML jika kecamatan berubah atau belum ada shell
+  if(sc.dataset.kec!==currentKec){
+    sc.dataset.kec=currentKec;
+    sc.innerHTML=`
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px">
       <div>
         <div style="font-size:.88rem;font-weight:800;color:var(--gray-900)">${kecName} — BNBA RTLH</div>
@@ -2214,23 +2217,27 @@ function renderSidebar(){
     <div class="kec-dashboard" id="kecDashboard"></div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
       <span style="font-size:.68rem;font-weight:700;color:var(--gray-500)">Status:</span>
-      <button class="filter-chip ${filterStatus==='all'?'active':''}" onclick="setFilterStatus('all')">Semua</button>
-      <button class="filter-chip ${filterStatus==='RTLH'?'active':''}" onclick="setFilterStatus('RTLH')" style="${filterStatus==='RTLH'?'':'border-color:#DC2626;color:#DC2626'}">RTLH</button>
-      <button class="filter-chip ${filterStatus==='Layak Huni'?'active':''}" onclick="setFilterStatus('Layak Huni')" style="${filterStatus==='Layak Huni'?'':'border-color:#16A34A;color:#16A34A'}">Layak Huni</button>
-      <button class="filter-chip ${filterStatus==='Dibatalkan'?'active':''}" onclick="setFilterStatus('Dibatalkan')" style="${filterStatus==='Dibatalkan'?'':'border-color:#9CA3AF;color:#6B7280'}">Batal</button>
+      <button class="filter-chip active" data-status-chip="all" onclick="setFilterStatus('all')">Semua</button>
+      <button class="filter-chip" data-status-chip="RTLH" onclick="setFilterStatus('RTLH')" style="border-color:#DC2626;color:#DC2626">RTLH</button>
+      <button class="filter-chip" data-status-chip="Layak Huni" onclick="setFilterStatus('Layak Huni')" style="border-color:#16A34A;color:#16A34A">Layak Huni</button>
+      <button class="filter-chip" data-status-chip="Dibatalkan" onclick="setFilterStatus('Dibatalkan')" style="border-color:#9CA3AF;color:#6B7280">Batal</button>
       <span style="font-size:.68rem;font-weight:700;color:var(--gray-500);margin-left:6px">Desil:</span>
-      <button class="filter-chip ${filterDesil==='all'?'active':''}" onclick="setFilterDesil('all')">Semua</button>
-      <button class="filter-chip ${filterDesil==='1'?'active':''}" onclick="setFilterDesil('1')" style="${filterDesil==='1'?'':'color:#BE123C'}">D1</button>
-      <button class="filter-chip ${filterDesil==='2'?'active':''}" onclick="setFilterDesil('2')" style="${filterDesil==='2'?'':'color:#DC2626'}">D2</button>
-      <button class="filter-chip ${filterDesil==='3'?'active':''}" onclick="setFilterDesil('3')" style="${filterDesil==='3'?'':'color:#EA580C'}">D3</button>
-      <button class="filter-chip ${filterDesil==='4'?'active':''}" onclick="setFilterDesil('4')" style="${filterDesil==='4'?'':'color:#D97706'}">D4</button>
-      <button class="filter-chip ${filterDesil==='5'?'active':''}" onclick="setFilterDesil('5')" style="${filterDesil==='5'?'':'color:#84CC16'}">D5</button>
-      <button class="filter-chip ${filterDesil==='6'?'active':''}" onclick="setFilterDesil('6')" style="${filterDesil==='6'?'':'color:#16A34A'}">D6</button>
-      <button class="filter-chip ${filterDesil==='7'?'active':''}" onclick="setFilterDesil('7')" style="${filterDesil==='7'?'':'color:#0891B2'}">D7</button>
-      <button class="filter-chip ${filterDesil==='8'?'active':''}" onclick="setFilterDesil('8')" style="${filterDesil==='8'?'':'color:#7C3AED'}">D8</button>
+      <button class="filter-chip active" data-desil-chip="all" onclick="setFilterDesil('all')">Semua</button>
+      <button class="filter-chip" data-desil-chip="1" onclick="setFilterDesil('1')" style="color:#BE123C">D1</button>
+      <button class="filter-chip" data-desil-chip="2" onclick="setFilterDesil('2')" style="color:#DC2626">D2</button>
+      <button class="filter-chip" data-desil-chip="3" onclick="setFilterDesil('3')" style="color:#EA580C">D3</button>
+      <button class="filter-chip" data-desil-chip="4" onclick="setFilterDesil('4')" style="color:#D97706">D4</button>
+      <button class="filter-chip" data-desil-chip="5" onclick="setFilterDesil('5')" style="color:#84CC16">D5</button>
+      <button class="filter-chip" data-desil-chip="6" onclick="setFilterDesil('6')" style="color:#16A34A">D6</button>
+      <button class="filter-chip" data-desil-chip="7" onclick="setFilterDesil('7')" style="color:#0891B2">D7</button>
+      <button class="filter-chip" data-desil-chip="8" onclick="setFilterDesil('8')" style="color:#7C3AED">D8</button>
     </div>
     <div class="sidebar-list" id="sidebarList"></div>`;
-  renderKecDashboard();
+    renderKecDashboard();
+  } else {
+    const cnt=document.getElementById('sidebarCount');
+    if(cnt)cnt.textContent=brAll.length+' data terdaftar';
+  }
   renderSidebarList();
 }
 
@@ -2261,8 +2268,21 @@ function renderKecDashboard(){
   },50);
 }
 
-function setFilterStatus(s){filterStatus=s;applyFilters();}
-function setFilterDesil(d){filterDesil=d;applyFilters();}
+function setFilterStatus(s){
+  filterStatus=s;
+  // Update chip UI tanpa rebuild — langsung toggle class
+  document.querySelectorAll('[data-status-chip]').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.statusChip===s);
+  });
+  applyFilters();
+}
+function setFilterDesil(d){
+  filterDesil=d;
+  document.querySelectorAll('[data-desil-chip]').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.desilChip===d);
+  });
+  applyFilters();
+}
 function applyFilters(){
   brFeatures=brAll.filter(r=>{
     if(filterStatus!=='all'&&r.status_rtlh!==filterStatus)return false;
