@@ -3300,61 +3300,11 @@ function findAnswer(q){
 function chatReply(q){
   const ans=findAnswer(q);
   if(ans)return ans;
-  // Jawaban fallback cerdas
   const ql=q.toLowerCase();
-  if(ql.match(/\d{16}/))return'Sepertinya Anda memasukkan NIK. Untuk mencari data, ketik NIK di kolom pencarian di halaman Beranda. Sistem akan langsung membuka detail orangnya. 🔍';
-  if(ql.includes('?'))return'Pertanyaan yang bagus! 🤔 Saya belum memiliki jawaban spesifik untuk itu. Silakan hubungi Super Admin DPRKP atau coba tanyakan dengan kata kunci yang berbeda.
-
-Topik yang bisa saya bantu: search, edit, upload, download, peta, BSPS, Dana Desa, desil, login, verifikasi.';
-  return'Mohon maaf, saya belum bisa menjawab pertanyaan tersebut dengan tepat. 🙏
-
-Coba tanyakan dengan kata kunci seperti:
-• "cara upload excel"
-• "apa itu BSPS"
-• "cara edit data"
-• "apa itu desil"
-
-Atau hubungi Super Admin DPRKP untuk bantuan lebih lanjut.';
+  if(/\d{16}/.test(ql))return'Sepertinya Anda memasukkan NIK. Ketik di kolom pencarian Beranda untuk langsung buka detail. 🔍';
+  if(ql.includes('?'))return'Pertanyaan bagus! 🤔 Coba kata kunci: search, edit, upload, download, peta, BSPS, Dana Desa, desil, login, verifikasi.';
+  return'Belum bisa menjawab itu. 🙏 Coba: "upload excel", "apa itu BSPS", "cara edit data", "desil". Atau hubungi Super Admin DPRKP.';
 }
-
-function toggleChat(){
-  const box=document.getElementById('chatBox');
-  const isOpen=box.classList.contains('open');
-  box.classList.toggle('open');
-  if(!isOpen&&!chatOpened){
-    chatOpened=true;
-    document.getElementById('chatBadge').style.display='none';
-    addBotMessage('Halo! 👋 Saya Asisten e-RTLH Ngawi. Ada yang bisa saya bantu?\n\nContoh pertanyaan:\n• Cara upload data Excel?\n• Apa itu Desil 1?\n• Bagaimana edit status RTLH?');
-  }
-  if(!isOpen)setTimeout(()=>document.getElementById('chatInput')?.focus(),300);
-}
-
-function addBotMessage(text,isTyping=false){
-  const msgs=document.getElementById('chatMessages');
-  if(!msgs)return;
-  const div=document.createElement('div');
-  div.className='chat-msg bot'+(isTyping?' typing':'');
-  div.id=isTyping?'typingIndicator':'';
-  if(isTyping){
-    div.innerHTML='<div class="typing-dots"><span></span><span></span><span></span></div>';
-  }else{
-    div.innerHTML=text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/•/g,'&bull;');
-  }
-  msgs.appendChild(div);
-  msgs.scrollTop=msgs.scrollHeight;
-  return div;
-}
-
-function addUserMessage(text){
-  const msgs=document.getElementById('chatMessages');
-  if(!msgs)return;
-  const div=document.createElement('div');
-  div.className='chat-msg user';
-  div.textContent=text;
-  msgs.appendChild(div);
-  msgs.scrollTop=msgs.scrollHeight;
-}
-
 function sendChat(){
   const input=document.getElementById('chatInput');
   const btn=document.getElementById('chatSendBtn');
