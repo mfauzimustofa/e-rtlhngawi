@@ -1856,7 +1856,7 @@ async function searchNIK(){
 async function bukaDetailDariSearch(id, kecKey){
   if(!kecKey)return toast('Kecamatan tidak ditemukan','error');
   // Fetch data lengkap langsung dari Supabase — tidak perlu tunggu loadKec
-  const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,dtsen,backlog,desil,nik,no_kk,updated_at,keterangan';
+  const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,backlog,desil,nik,no_kk,updated_at,keterangan';
   const{data,error}=await sb.from('rtlh').select(cols).eq('id',parseInt(id)).single();
   if(error||!data)return toast('Data tidak ditemukan','error');
   // Hitung skor
@@ -2051,7 +2051,7 @@ async function loadKec(){
 
   if(brCache[currentKec]){brAll=brCache[currentKec];brFeatures=[...brAll];renderSidebar();renderKecDashboard();updateMap();return;}
 
-  const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,dtsen,backlog,desil,nik,no_kk,updated_at,keterangan';
+  const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,backlog,desil,nik,no_kk,updated_at,keterangan';
   // Fetch dengan pagination (antisipasi lebih dari 1000 data per kecamatan)
   let allRows=[], pg=0, pgSize=1000, isDone=false;
   while(!isDone){
@@ -2295,7 +2295,7 @@ function renderSidebarList(){
             <div class="ri-badges">
               <span class="badge ${statusCls}">${r.status_rtlh||'RTLH'}</span>
               ${desilNum?`<span class="badge desil" style="background:${getDesilColor(desilNum)}22;color:${getDesilColor(desilNum)}">Desil ${desilNum}</span>`:''}
-              ${r.dtsen?`<span class="badge" style="background:#EFF6FF;color:#1D4ED8">MyPKP:${r.dtsen}</span>`:''}
+              
             </div>
             <div class="ri-detail" id="det_${r.id}">
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
@@ -2306,7 +2306,7 @@ function renderSidebarList(){
                   ['Penghasilan',dn(r.pengh)],['Jml Penghuni',dn(r.jml_peng)],
                   ['Luas Rumah',dn(r.luas_rum)+' m²'],['Desil',dn(r.desil)],
                   ['Jenis Bantuan',dn(r.jenis_bantuan)],['Tahun Bantuan',dn(r.tahun_bantuan)],
-                  ['Status MyPKP',dn(r.dtsen)],['Material Dinding',dn(r.material_d)],
+                  ['Material Dinding',dn(r.material_d)],
                   ['Kondisi Dinding',dn(r.kondisi_di)],['Material Atap',dn(r.material_a)],
                   ['Kondisi Atap',dn(r.kondisi_at)],['Material Lantai',dn(r.material_l)],
                   ['Kondisi Lantai',dn(r.kondisi_la)],
@@ -2407,7 +2407,7 @@ function showDetail(r){
     <div class="detail-grid">
       <div class="detail-item"><div class="dl">Status RTLH</div><div class="dv">${r.status_rtlh?`<span class="badge ${(r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')?'sudah':r.status_rtlh==='Dibatalkan'?'batal':'belum'}">${r.status_rtlh}</span>`:'-'}</div></div>
       <div class="detail-item"><div class="dl">Desil</div><div class="dv" style="color:${desilNum?getDesilColor(desilNum):'inherit'};font-weight:700">${dn(r.desil)||'-'}</div></div>
-      <div class="detail-item"><div class="dl">Status MyPKP</div><div class="dv">${dn(r.dtsen)||'-'}</div></div>
+      
       <div class="detail-item"><div class="dl">Backlog</div><div class="dv">${dn(r.backlog)||'-'}</div></div>
       ${r.status_rtlh==='Dibatalkan'&&r.status_batal?`<div class="detail-item full"><div class="dl">Alasan Batal</div><div class="dv" style="color:var(--danger);font-weight:600">${r.status_batal}</div></div>`:''}
       ${r.jenis_bantuan?`<div class="detail-item"><div class="dl">Jenis Bantuan</div><div class="dv">${r.jenis_bantuan}</div></div>`:''}      ${r.keterangan?`<div class="detail-item full"><div class="dl">Keterangan</div><div class="dv" style="font-style:italic;color:var(--gray-700)">${r.keterangan}</div></div>`:''}
@@ -2668,7 +2668,7 @@ async function saveForm(){
     const changes=[];
     const FIELD_LABELS={kep_kk:'Nama KK',desa:'Desa',alamat:'Alamat',status_rtlh:'Status RTLH',
       status_batal:'Alasan Batal',jenis_bantuan:'Jenis Bantuan',tahun_bantuan:'Tahun Bantuan',
-      dtsen:'Status MyPKP',desil:'Desil',luas_rum:'Luas Rumah',jml_peng:'Jml Penghuni',
+      desil:'Desil',luas_rum:'Luas Rumah',jml_peng:'Jml Penghuni',
       pekerjaan:'Pekerjaan',jen_kel:'Jenis Kelamin',umur:'Umur',material_d:'Material Dinding',
       kondisi_di:'Kondisi Dinding',material_a:'Material Atap',kondisi_at:'Kondisi Atap',
       material_l:'Material Lantai',kondisi_la:'Kondisi Lantai'};
@@ -2784,8 +2784,7 @@ function downloadExcel(withNIK){
     'Material Lantai':r.material_l,'Kondisi Lantai':r.kondisi_la,
     'Status RTLH':r.status_rtlh,'Alasan Batal':r.status_batal,
     'Jenis Bantuan':r.jenis_bantuan,'Tahun Bantuan':r.tahun_bantuan,
-    'Status MyPKP':r.dtsen,Backlog:r.backlog,Desil:r.desil,
-    DTSEN:r.dtsen,
+    Backlog:r.backlog,Desil:r.desil,
     Latitude:r.latitude,Longitude:r.longitude,
   }));
   const ws=XLSX.utils.json_to_sheet(rows);
@@ -2819,7 +2818,6 @@ async function importExcel(input){
         no_kk:isSuperAdmin()?String(row['No. KK']||row['no_kk']||'').replace(/[^0-9]/g,'')||null:undefined,
         desil:row['Desil']||row['desil']||null,
         status_rtlh:row['Status RTLH']||row['status_rtlh']||null,
-        dtsen:row['DTSEN']||row['dtsen']||null,
         luas_rum:parseFloat(row['Luas Rumah']||row['luas_rum'])||null,
         jml_peng:parseInt(row['Jml Penghuni']||row['jml_peng'])||null,
         pekerjaan:row['Pekerjaan']||row['pekerjaan']||null,
@@ -2902,7 +2900,7 @@ async function downloadExcelKab(withNIK){
       'Material Lantai':r.material_l,'Kondisi Lantai':r.kondisi_la,
       'Status RTLH':r.status_rtlh,'Alasan Batal':r.status_batal,
       'Jenis Bantuan':r.jenis_bantuan,'Tahun Bantuan':r.tahun_bantuan,
-      'Status MyPKP':r.dtsen,Backlog:r.backlog,Desil:r.desil,
+      Backlog:r.backlog,Desil:r.desil,
       Latitude:r.latitude,Longitude:r.longitude,
       'Terakhir Update':r.updated_at?new Date(r.updated_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'-',
     }));
@@ -2997,7 +2995,6 @@ async function importExcelKab(input){
           }
         }
         if(hasCol(['Tahun Bantuan','tahun_bantuan']))obj.tahun_bantuan=xlVal(String(row['Tahun Bantuan']||row['tahun_bantuan']||'').replace(/[^0-9]/g,''));
-        if(hasCol(['Status MyPKP','DTSEN','dtsen']))obj.dtsen=xlVal(row['Status MyPKP']||row['DTSEN']||row['dtsen']);
         if(hasCol(['Desil','desil']))obj.desil=xlVal(row['Desil']||row['desil']);
         if(hasCol(['Backlog','backlog']))obj.backlog=xlVal(row['Backlog']||row['backlog']);
         if(hasCol(['Latitude','latitude']))obj.latitude=xlNum(row['Latitude']||row['latitude']);
@@ -3196,7 +3193,7 @@ function downloadExcelIndividu(r){
     'Material Lantai':r.material_l||'', 'Kondisi Lantai':r.kondisi_la||'',
     'Status RTLH':r.status_rtlh||'', 'Alasan Batal':r.status_batal||'',
     'Jenis Bantuan':r.jenis_bantuan||'', 'Tahun Bantuan':r.tahun_bantuan||'',
-    'Status MyPKP':r.dtsen||'', Desil:r.desil||'',
+    Desil:r.desil||'',
     Latitude:r.latitude||'', Longitude:r.longitude||'',
   };
   const ws=XLSX.utils.json_to_sheet([row]);
@@ -3232,7 +3229,7 @@ async function uploadExcelIndividu(input, rtlhId){
         'Material Lantai':'material_l','Kondisi Lantai':'kondisi_la',
         'Status RTLH':'status_rtlh','Alasan Batal':'status_batal',
         'Jenis Bantuan':'jenis_bantuan','Tahun Bantuan':'tahun_bantuan',
-        'Status MyPKP':'dtsen','Desil':'desil',
+        'Desil':'desil',
       };
       for(const[k,v] of Object.entries(map)){
         const val=String(row[k]||'').trim();
@@ -3263,7 +3260,7 @@ async function uploadExcelIndividu(input, rtlhId){
           material_l:'Material Lantai',kondisi_la:'Kondisi Lantai',
           status_rtlh:'Status RTLH',status_batal:'Alasan Batal',
           jenis_bantuan:'Jenis Bantuan',tahun_bantuan:'Tahun Bantuan',
-          dtsen:'Status MyPKP',desil:'Desil',
+          desil:'Desil',
         };
         const changes=[];
         for(const[key,label] of Object.entries(FIELD_LABELS)){
