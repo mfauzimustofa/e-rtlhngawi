@@ -3458,6 +3458,8 @@ window.addEventListener('DOMContentLoaded',async()=>{
   }
   await initAuth();
   restoreSession();
+  // Pastikan stats dimuat setelah auth selesai
+  if(user)await loadGlobalStats();
   // Load GeoJSON boundary — cache di sessionStorage biar tidak fetch ulang
   const _geoKey='e-rtlh-batas-ngawi-v1';
   const _geoCached=sessionStorage.getItem(_geoKey);
