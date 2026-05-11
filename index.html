@@ -1936,10 +1936,11 @@ async function applyGlobalFilter(){
   // Fetch semua data dengan parallel pagination
   const{count:totalCnt}=await sb.from('rtlh').select('*',{count:'exact',head:true}).eq('status_rtlh',_globalStatusFilter);
   const pages=Math.ceil((totalCnt||0)/1000);
+  cnt.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memuat ${totalCnt} data...`;
   const results=await Promise.all(Array.from({length:pages},(_,p)=>
     sb.from('rtlh').select('id,kec,desa,kep_kk,nik,status_rtlh,desil')
       .eq('status_rtlh',_globalStatusFilter).order('kec').order('desa')
-      .range(p*1000,(p+1)*1000-1)
+      .range(p*1000,(p+1)*1000-1).limit(1000)
   ));
   const data=results.flatMap(r=>r.data||[]);
   const error=results.find(r=>r.error)?.error;
@@ -1947,7 +1948,7 @@ async function applyGlobalFilter(){
         res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:.78rem">Tidak ada data</div>';
         return;
       }
-      cnt.innerHTML=`<span style="font-weight:700">${data.length}</span> data ${_globalStatusFilter}${data.length>=200?' (tampil 200 teratas)':''}`;
+      cnt.innerHTML=`<span style="font-weight:700">${data.length}</span> data ${_globalStatusFilter}`;
       const byDesa={};
       data.forEach(r=>{
         const key=((r.desa||'-')+'|'+(r.kec||'-')).toUpperCase();
