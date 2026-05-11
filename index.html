@@ -14,7 +14,6 @@
 <link rel="icon" type="image/png" sizes="192x192" href="data/favicon-192.png">
 <!-- Security headers via meta -->
 <meta http-equiv="X-Content-Type-Options" content="nosniff">
-<meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
 <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(self)">
 <meta name="rating" content="general">
@@ -3238,227 +3237,55 @@ let chatOpened=false;
 
 // ══ FAQ ENGINE LOKAL — 100% gratis, tanpa API ══
 const FAQ=[
-  {k:['halo','hai','hi','selamat','assalam','hei','hello'],j:'Halo! 👋 Selamat datang di Asisten e-RTLH Ngawi. Saya siap membantu Anda. Silakan tanyakan tentang cara penggunaan sistem, program RTLH, atau data yang Anda butuhkan! 😊'},
-  {k:['rtlh','rumah tidak layak','layak huni','pengertian rtlh','apa itu rtlh','definisi'],j:'**Rumah Tidak Layak Huni (RTLH)** adalah rumah yang tidak memenuhi syarat keselamatan, kesehatan, dan kecukupan ruang.
-
-Kriteria RTLH:
-• Dinding, atap, atau lantai dalam kondisi tidak layak
-• Luas lantai < 7,2 m² per jiwa
-• Tidak memiliki akses sanitasi yang baik
-
-Di Kabupaten Ngawi, data RTLH mencakup 19 Kecamatan dan 217 Desa/Kelurahan. 🏚️'},
-  {k:['bsps','bantuan stimulan','stimulan perumahan'],j:'**BSPS (Bantuan Stimulan Perumahan Swadaya)** adalah program pemerintah pusat (APBN) untuk rehabilitasi RTLH.
-
-Besaran bantuan:
-• Rp 20.000.000 per unit
-• Disalurkan langsung ke rekening penerima
-• Dikerjakan secara swadaya oleh penerima
-
-Syarat penerima: WNI, memiliki/menempati RTLH, penghasilan rendah, terdaftar di DTSEN. 🏗️'},
-  {k:['dana desa','dd','blt','apbdes'],j:'**Dana Desa untuk RTLH** adalah program rehabilitasi rumah yang bersumber dari APBDES.
-
-• Besaran bervariasi sesuai kemampuan desa
-• Diputuskan melalui Musyawarah Desa
-• Penerima dipilih berdasarkan skala prioritas
-• Data penerima dicatat di sistem e-RTLH dengan jenis bantuan "Dana Desa" 🏘️'},
-  {k:['csr','corporate social','perusahaan'],j:'**CSR (Corporate Social Responsibility)** untuk RTLH adalah bantuan dari perusahaan swasta.
-
-• Bersifat hibah/donasi
-• Jumlah bervariasi sesuai kebijakan perusahaan
-• Perlu MoU antara dinas dan perusahaan
-• Dicatat di sistem dengan jenis bantuan "CSR" 🤝'},
-  {k:['desil','dtsen','prioritas','ranking'],j:'**Desil DTSEN** adalah pengelompokan kesejahteraan keluarga:
-
-• **Desil 1-2**: Sangat miskin → prioritas utama bantuan
-• **Desil 3-4**: Miskin → prioritas kedua
-• **Desil 5-6**: Rentan miskin
-• **Desil 7-8**: Hampir mampu
-• **Eligible**: Layak menerima bantuan
-• **Not Eligible**: Tidak layak bantuan
-• **Not Eligible1**: Kategori khusus tidak layak
-
-Desil 1 mendapat prioritas tertinggi untuk program RTLH. 📊'},
-  {k:['search','cari','pencarian','ketik','temukan','mencari'],j:'**Cara menggunakan fitur pencarian:**
-
-• Ketik nama KK → hasil muncul otomatis setelah 3 huruf
-• Ketik NIK (16 digit) → langsung buka detail
-• Ketik nama desa atau kecamatan
-• Ketik **BSPS**, **RTLH**, **Dana Desa**, **CSR** → cari per jenis bantuan
-• Ketik **BSPS 2024** → cari BSPS tahun 2024
-• Hapus teks → hasil hilang otomatis 🔍'},
-  {k:['edit','ubah','update','ganti','simpan','perubahan'],j:'**Cara edit data:**
-
-1. Cari nama/NIK di kolom pencarian
-2. Klik nama → detail terbuka
-3. Klik tombol **Edit Data** (biru)
-4. Ubah field yang diinginkan
-5. Klik **Simpan**
-
-💡 Tips: Saat Jenis Bantuan diisi, Status RTLH otomatis berubah ke Layak Huni.
-
-Setiap perubahan dicatat di **Riwayat Perubahan** lengkap dengan waktu dan petugas. ✏️'},
-  {k:['upload','import','excel','xlsx','unggah'],j:'**Cara upload/import Excel:**
-
-**Upload massal (seluruh kabupaten):**
-1. Klik ikon Excel di header
-2. Pilih "Excel Kabupaten"
-3. Seret atau klik area upload
-4. File langsung diproses
-
-**Upload per individu:**
-1. Buka detail orang
-2. Klik "Upload Excel"
-3. Pilih file Excel yang sudah diedit
-
-💡 **Fitur cerdas:** Upload hanya 2 kolom (NIK + Jenis Bantuan) → hanya kolom itu yang berubah, data lain aman! 📤'},
-  {k:['download','unduh','export'],j:'**Cara download/unduh Excel:**
-
-**Per Kecamatan:** Buka WebGIS kecamatan → klik ikon unduh (↓)
-
-**Seluruh Kabupaten:**
-1. Klik ikon Excel di header
-2. Pilih filter (kecamatan/status/desil)
-3. Klik "Unduh Excel"
-
-**Per Individu:**
-1. Buka detail orang
-2. Klik tombol hijau **Unduh**
-3. File langsung terdownload
-
-Excel sudah dilengkapi dropdown untuk Status RTLH, Jenis Bantuan, Status MyPKP. 📥'},
-  {k:['tambah','input','data baru','entry','menambah'],j:'**Cara tambah data baru:**
-
-1. Masuk ke WebGIS kecamatan terlebih dahulu
-2. Klik tombol **+ Tambah** di toolbar
-3. Isi form (NIK wajib diisi, harus 16 digit unik)
-4. Klik **Simpan**
-
-⚠️ NIK adalah identitas unik — tidak boleh duplikat.
-
-Alternatif: Upload Excel massal untuk input banyak data sekaligus. ➕'},
-  {k:['hapus','delete','menghapus'],j:'**Cara hapus data:**
-
-1. Buka detail data yang ingin dihapus
-2. Klik tombol **Hapus** (merah)
-3. Konfirmasi nama yang muncul
-4. Data terhapus permanen
-
-⚠️ Hapus tidak bisa dibatalkan. Pastikan sudah benar sebelum konfirmasi.
-
-💡 Jika data salah, lebih baik edit daripada hapus — riwayat perubahan tetap tersimpan. 🗑️'},
-  {k:['verifikasi','lapangan','cek lapangan','survey'],j:'**Verifikasi Lapangan:**
-
-1. Buka detail rumah yang akan diverifikasi
-2. Di bagian "Riwayat Verifikasi Lapangan" klik **+ Tambah**
-3. Isi: Hasil (Layak/Tidak Layak), Keterangan, Tahun
-4. Isi nama petugas
-5. Klik **Simpan Verifikasi**
-
-Data verifikasi tersimpan per tahun — bisa ditambah lagi tahun berikutnya tanpa menghapus yang lama. 📋'},
-  {k:['dokumen','foto','ba','berita acara','upload foto','surat'],j:'**Upload Dokumen & Foto:**
-
-1. Buka detail data
-2. Di bagian "Dokumen & Foto" klik **Upload**
-3. Pilih jenis dokumen:
-   • Foto Rumah
-   • Berita Acara (BA)
-   • Surat Pernyataan
-   • KTP / KK
-   • Foto Lokasi
-4. Tambah keterangan
-5. Pilih file (JPG/PNG/PDF, maks 10MB)
-6. Klik Upload
-
-File tersimpan permanen di cloud. 📄'},
-  {k:['peta','map','lokasi','koordinat','marker','gis','webgis'],j:'**Peta WebGIS e-RTLH:**
-
-**Beranda:** Peta sebaran per kecamatan dalam bentuk pie chart hijau-merah (Layak Huni vs RTLH).
-
-**WebGIS Kecamatan:**
-• Marker **hijau** = Layak Huni
-• Marker **merah** = RTLH
-• Marker **abu** = Dibatalkan
-• Klik marker → buka detail
-
-**Ganti kecamatan:** Ketuk nama kecamatan di toolbar → dropdown muncul 🗺️'},
-  {k:['nik','kk','identitas','duplikat'],j:'**NIK sebagai Identitas Unik:**
-
-NIK (Nomor Induk Kependudukan) 16 digit adalah primary key di sistem ini.
-
-• Setiap NIK hanya boleh terdaftar 1 kali
-• NIK tidak bisa duplikat
-• Pencarian by NIK langsung ke detail orangnya
-• Upload Excel by NIK → update data spesifik orang itu
-
-No. KK bisa sama (satu keluarga), tapi NIK harus unik. 🪪'},
-  {k:['status','layak huni','dibatalkan','batal','meninggal'],j:'**Status RTLH:**
-
-• **RTLH**: Rumah belum ditangani
-• **Layak Huni**: Sudah mendapat bantuan/sudah layak
-• **Dibatalkan**: Tidak jadi menerima bantuan
-
-Alasan Dibatalkan:
-• Meninggal Dunia
-• Tidak Bersedia Dibantu
-• Tidak Ada Biaya
-• Pindah Tempat Tinggal
-• Sudah Mampu Mandiri
-• Tidak Memenuhi Syarat
-• Lainnya
-
-💡 Saat Jenis Bantuan diisi → Status otomatis Layak Huni 🏠'},
-  {k:['login','masuk','username','password','lupa'],j:'**Login e-RTLH:**
-
-Gunakan **username** dan **password** yang diberikan Super Admin.
-
-Jika lupa password → hubungi Super Admin DPRKP untuk reset.
-
-Admin level:
-• **Super Admin (Level 1)**: Akses penuh semua fitur
-• **Admin (Level 2)**: Akses sesuai kecamatan
-
-🔐 Akses hanya untuk staf DPRKP Kab. Ngawi'},
-  {k:['riwayat','history','log','perubahan','siapa yang'],j:'**Riwayat Perubahan:**
-
-Setiap perubahan data otomatis dicatat:
-• Field apa yang berubah
-• Nilai lama → nilai baru
-• Siapa yang mengubah
-• Kapan diubah
-
-Cara lihat: Buka detail data → scroll ke bawah → bagian **Riwayat Perubahan** 📜'},
-  {k:['kecamatan','desa','wilayah','19','217'],j:'**Wilayah Kabupaten Ngawi:**
-
-19 Kecamatan: Bringin, Geneng, Gerih, Jogorogo, Karanganyar, Karangjati, Kasreman, Kedunggalar, Kendal, Kwadungan, Mantingan, Ngawi, Ngrambe, Padas, Pangkur, Paron, Pitu, Sine, Widodaren.
-
-Total: 217 Desa/Kelurahan
-
-Data RTLH tersebar di seluruh 19 kecamatan. 🗺️'},
-  {k:['myPKP','mypkp','pkp','eligible','not eligible'],j:'**Status MyPKP (Cek Bantuan):**
-
-Hasil verifikasi kelayakan dari sistem DTSEN:
-• **Eligible**: Layak menerima bantuan
-• **Not Eligible**: Tidak layak bantuan
-• **Not Eligible1**: Kategori khusus tidak layak
-
-Status ini berasal dari data DTSEN (Data Terpadu Sosial Ekonomi Nasional) dan mempengaruhi prioritas penerima bantuan. 📋'},
-  {k:['realtime','otomatis','update otomatis','langsung berubah'],j:'**Update Data Real-time:**
-
-Sistem menggunakan Supabase Realtime — data otomatis terupdate di semua perangkat tanpa perlu refresh.
-
-Artinya: jika teman di kantor lain mengubah data, di HP Anda juga langsung terlihat perubahannya! ⚡'},
-  {k:['terima kasih','makasih','thanks','tq'],j:'Sama-sama! 😊 Senang bisa membantu. Jika ada pertanyaan lain seputar e-RTLH Ngawi, jangan sungkan untuk bertanya ya! 🙏'},
-  {k:['bantuan','help','tolong','bingung'],j:'Tentu, saya siap membantu! 😊
-
-Silakan tanyakan tentang:
-• 🔍 Cara mencari data
-• ✏️ Cara edit/update data
-• 📤 Upload/download Excel
-• 🗺️ Penggunaan peta WebGIS
-• 🏚️ Program RTLH (BSPS, Dana Desa, CSR)
-• 📋 Verifikasi lapangan
-• ❓ Pertanyaan lainnya'},
+  {k:['halo','hai','hi','selamat','hei','hello'],
+   j:'Halo! 👋 Selamat datang di Asisten e-RTLH Ngawi. Saya siap membantu! Tanyakan tentang cara penggunaan, program RTLH, atau data yang dibutuhkan. 😊'},
+  {k:['rtlh','rumah tidak layak','pengertian','definisi','apa itu'],
+   j:'RTLH (Rumah Tidak Layak Huni) adalah rumah yang tidak memenuhi syarat keselamatan, kesehatan, dan kecukupan ruang. Kriteria: dinding/atap/lantai tidak layak, luas < 7,2 m²/jiwa. Di Ngawi mencakup 19 Kecamatan, 217 Desa. 🏚️'},
+  {k:['bsps','bantuan stimulan','stimulan perumahan'],
+   j:'BSPS (Bantuan Stimulan Perumahan Swadaya) adalah program APBN untuk rehabilitasi RTLH. Besaran: Rp 20 juta/unit, disalurkan ke rekening penerima, dikerjakan secara swadaya. Syarat: WNI, miliki RTLH, penghasilan rendah, terdaftar DTSEN. 🏗️'},
+  {k:['dana desa','dd','apbdes'],
+   j:'Dana Desa untuk RTLH bersumber dari APBDES. Besaran bervariasi sesuai kemampuan desa, diputuskan melalui Musdes. Penerima berdasarkan skala prioritas, dicatat di e-RTLH dengan jenis bantuan Dana Desa. 🏘️'},
+  {k:['csr','corporate','perusahaan'],
+   j:'CSR untuk RTLH adalah bantuan hibah dari perusahaan swasta. Jumlah bervariasi, perlu MoU antara dinas dan perusahaan. Dicatat di sistem dengan jenis bantuan CSR. 🤝'},
+  {k:['desil','dtsen','prioritas','ranking'],
+   j:'Desil DTSEN: Desil 1-2 = sangat miskin (prioritas utama), Desil 3-4 = miskin, Desil 5-6 = rentan miskin, Desil 7-8 = hampir mampu. Eligible = layak bantuan, Not Eligible = tidak layak. Desil 1 prioritas tertinggi RTLH. 📊'},
+  {k:['search','cari','pencarian','temukan','mencari'],
+   j:'Cara cari data: Ketik nama/NIK/desa di kolom cari → hasil otomatis muncul. Ketik BSPS/RTLH/Dana Desa untuk cari per jenis bantuan. Ketik BSPS 2024 untuk tahun tertentu. Hapus teks → hasil hilang otomatis. 🔍'},
+  {k:['edit','ubah','update','ganti','simpan'],
+   j:'Cara edit: Cari nama/NIK → klik nama → klik Edit Data → ubah field → Simpan. Tips: Saat Jenis Bantuan diisi, Status otomatis Layak Huni. Setiap perubahan tercatat di Riwayat Perubahan. ✏️'},
+  {k:['upload','import','excel','xlsx','unggah'],
+   j:'Upload massal: klik ikon Excel di header → Excel Kabupaten → upload file. Upload per orang: buka detail → klik Upload Excel. Fitur cerdas: upload 2 kolom (NIK+Jenis Bantuan) → hanya itu yang berubah. 📤'},
+  {k:['download','unduh','export'],
+   j:'Download per kecamatan: WebGIS → klik ikon unduh. Download kabupaten: ikon Excel → Excel Kabupaten → filter → Unduh. Download per orang: buka detail → klik tombol hijau Unduh. 📥'},
+  {k:['tambah','input','data baru','entry','menambah'],
+   j:'Cara tambah data: masuk WebGIS kecamatan → klik + Tambah → isi form (NIK wajib 16 digit unik) → Simpan. Atau upload Excel massal untuk banyak data sekaligus. ➕'},
+  {k:['hapus','delete','menghapus'],
+   j:'Cara hapus: buka detail → klik Hapus (merah) → konfirmasi nama. Hapus tidak bisa dibatalkan. Lebih baik edit daripada hapus jika data salah. 🗑️'},
+  {k:['verifikasi','lapangan','survey'],
+   j:'Verifikasi lapangan: buka detail → bagian Riwayat Verifikasi → + Tambah → isi Hasil (Layak/Tidak Layak), Keterangan, Tahun, Petugas → Simpan. Bisa ditambah tiap tahun tanpa hapus data lama. 📋'},
+  {k:['dokumen','foto','ba','berita acara','surat'],
+   j:'Upload dokumen: buka detail → bagian Dokumen & Foto → klik Upload → pilih jenis (Foto Rumah/BA/Surat/KTP/KK) → tambah keterangan → pilih file → Upload. Format: JPG/PNG/PDF, maks 10MB. 📄'},
+  {k:['peta','map','lokasi','koordinat','gis','webgis'],
+   j:'Peta beranda: pie chart per kecamatan (hijau=Layak Huni, merah=RTLH). WebGIS kecamatan: marker hijau=Layak Huni, merah=RTLH, abu=Dibatalkan. Klik marker → detail. Ganti kecamatan: ketuk nama di toolbar. 🗺️'},
+  {k:['nik','kk','identitas','duplikat'],
+   j:'NIK 16 digit adalah identitas unik di sistem. Setiap NIK hanya boleh terdaftar 1 kali. Pencarian NIK langsung ke detail. Upload Excel by NIK → update data orang itu saja. No. KK bisa sama (satu keluarga). 🪪'},
+  {k:['status','layak huni','dibatalkan','batal','meninggal'],
+   j:'Status RTLH: RTLH (belum ditangani), Layak Huni (sudah dapat bantuan), Dibatalkan. Alasan batal: Meninggal, Tidak Bersedia, Tidak Ada Biaya, Pindah, Sudah Mampu, Tidak Memenuhi Syarat. Saat Jenis Bantuan diisi → otomatis Layak Huni. 🏠'},
+  {k:['login','masuk','username','password','lupa'],
+   j:'Login dengan username dan password dari Super Admin. Lupa password → hubungi Super Admin DPRKP untuk reset. Level: Super Admin (akses penuh), Admin (sesuai kecamatan). 🔐'},
+  {k:['riwayat','history','log','perubahan'],
+   j:'Riwayat Perubahan: setiap edit otomatis dicatat (field berubah, nilai lama → baru, siapa, kapan). Lihat: buka detail → scroll ke Riwayat Perubahan. 📜'},
+  {k:['kecamatan','desa','wilayah','ngawi'],
+   j:'Kabupaten Ngawi: 19 Kecamatan (Bringin, Geneng, Gerih, Jogorogo, Karanganyar, Karangjati, Kasreman, Kedunggalar, Kendal, Kwadungan, Mantingan, Ngawi, Ngrambe, Padas, Pangkur, Paron, Pitu, Sine, Widodaren), 217 Desa/Kelurahan. 🗺️'},
+  {k:['mypkp','pkp','eligible'],
+   j:'Status MyPKP dari DTSEN: Eligible (layak bantuan), Not Eligible (tidak layak), Not Eligible1 (kategori khusus). Mempengaruhi prioritas penerima bantuan RTLH. 📋'},
+  {k:['terima kasih','makasih','thanks'],
+   j:'Sama-sama! 😊 Senang bisa membantu. Jika ada pertanyaan lain, jangan sungkan bertanya ya! 🙏'},
+  {k:['bantuan','help','tolong','bingung','fitur'],
+   j:'Saya bisa membantu tentang: 🔍 Pencarian data, ✏️ Edit/update, 📤 Upload/download Excel, 🗺️ Peta WebGIS, 🏚️ Program RTLH (BSPS/Dana Desa/CSR), 📋 Verifikasi lapangan, 🪪 NIK/identitas, ❓ Pertanyaan lainnya.'},
 ];
+
+
 
 function findAnswer(q){
   const ql=q.toLowerCase();
