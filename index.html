@@ -655,7 +655,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 <!-- ═══════════════════════════════ PAGE: WEBGIS ═══════════════════════════════ -->
 <div class="page" id="pgWebgis">
   <div class="webgis-toolbar">
-    <button class="tb-btn" onclick="nav('beranda')" title="Kembali ke Beranda"><i class="fas fa-home"></i> <span class="tb-label">Beranda</span></button>
+    <button class="tb-btn" onclick="nav('beranda');document.getElementById('wgSearchBar').style.display='none'" title="Kembali ke Beranda"><i class="fas fa-home"></i> <span class="tb-label">Beranda</span></button>
     <div class="tb-sep"></div>
     <span class="tb-title" id="tbTitle">WebGIS RTLH</span>
     <div class="tb-sep"></div>
@@ -1015,6 +1015,10 @@ const KEC_CONFIG={
   "Widodaren":{lat:-7.4065,lng:111.2304}
 };
 
+// Normalize helpers (diperlukan sebelum FIELDS)
+function normCase(v){if(!v)return v;return String(v).trim().toLowerCase().replace(/(?:^|\s|\/)\S/g,c=>c.toUpperCase());}
+function normUpper(v){return v?String(v).trim().toUpperCase():v;}
+
 const DESIL_COLORS=['','#BE123C','#DC2626','#EA580C','#D97706','#65A30D','#16A34A','#0891B2','#7C3AED'];
 
 // State
@@ -1031,6 +1035,7 @@ let kecCounts={};
 let mobSidebarOpen=false;
 let loginTab='username';
 let _adminUsername=null;
+let adminKecamatan="";
 
 // ══════════════════════════════════════════════════
 // HELPERS
@@ -1438,8 +1443,7 @@ function renderKecGrid(){
 }
 
 function renderKecTable(){
-  const tb=document.getElementById('kecTableBody');
-  if(!tb)return;
+  return; // tabel dihapus dari UI
   const names=Object.keys(KEC_CONFIG).sort();
   let grandTotal=0,grandSudah=0,grandProses=0,grandBelum=0;
   const rows=names.map((k,i)=>{
@@ -2581,6 +2585,19 @@ function getDesaList(){
   if(!window._batasNgawi||!currentKec)return[];
   const kecName=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===currentKec)||'';
   return[...new Set(window._batasNgawi.features.filter(f=>f.properties.WADMKC===kecName).map(f=>f.properties.NAMOBJ))].sort();
+}
+
+function handleAlasanBatal(sel){
+  const statusEl=document.getElementById('ff_status_rtlh');
+  if(!statusEl)return;
+  if(sel.value&&sel.value!=='-'){
+    statusEl.value='Dibatalkan';
+  } else {
+    const jbEl=document.getElementById('ff_jenis_bantuan');
+    if(jbEl&&jbEl.value)statusEl.value='Layak Huni';
+    else statusEl.value='RTLH';
+    sel.value='';
+  }
 }
 
 function openForm(id){
