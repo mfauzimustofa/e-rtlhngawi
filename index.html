@@ -2951,8 +2951,8 @@ async function importExcel(input){
         kep_kk:row['Nama KK']||row['kep_kk']||null,
         desa:row['Desa']||row['desa']||null,
         alamat:row['Alamat']||row['alamat']||null,
-        nik:isSuperAdmin()?String(row['NIK']||row['nik']||'').replace(/[^0-9]/g,'')||null:undefined,
-        no_kk:isSuperAdmin()?String(row['No. KK']||row['no_kk']||'').replace(/[^0-9]/g,'')||null:undefined,
+        nik:isSuperAdmin()?String(getCol(row,'NIK','nik')||'').replace(/[^0-9]/g,'')||null:undefined,
+        no_kk:isSuperAdmin()?String(getCol(row,'No. KK','no_kk')||'').replace(/[^0-9]/g,'')||null:undefined,
         desil:row['Desil']||row['desil']||null,
         status_rtlh:row['Status RTLH']||row['status_rtlh']||null,
         luas_rum:parseFloat(row['Luas Rumah']||row['luas_rum'])||null,
@@ -2962,7 +2962,7 @@ async function importExcel(input){
         longitude:parseFloat(row['Longitude']||row['longitude'])||null,
       };
       if(!isSuperAdmin()){delete obj.nik;delete obj.no_kk;}
-      const id=row['ID']||row['id'];
+      const id=getCol(row,'ID','id')||row['ID']||row['id'];
       if(id){
         const{data}=await sb.from('rtlh').select('id').eq('id',id).single();
         if(data){
@@ -3057,6 +3057,22 @@ async function downloadExcelKab(withNIK){
 // Helper: ambil nilai string atau null (bukan string kosong)
 function xlVal(v){const s=String(v==null?'':v).trim();return s||null;}
 
+// Case-insensitive column getter dari row Excel
+function getCol(row, ...names){
+  // Buat lookup map header lowercase sekali
+  if(!row._ciMap){
+    row._ciMap={};
+    for(const k of Object.keys(row)){
+      row._ciMap[k.toLowerCase().trim()]=k;
+    }
+  }
+  for(const name of names){
+    const actualKey=row._ciMap[name.toLowerCase().trim()];
+    if(actualKey!==undefined&&row[actualKey]!==undefined&&row[actualKey]!=='')return String(row[actualKey]);
+  }
+  return '';
+}
+
 // Normalize case: "GENENG" → "Geneng", "KARANGJATI" → "Karangjati"
 function normCase(v){
   if(!v)return v;
@@ -3094,35 +3110,35 @@ async function importExcelKab(input){
         const rowNum=i+2;
         const obj={};
         // Hanya masukkan kolom yang ADA di file Excel
-        if(hasCol(['Kecamatan','kec']))obj.kec=normCase(xlVal(row['Kecamatan']||row['kec']));
-        if(hasCol(['Keterangan','keterangan']))obj.keterangan=xlVal(row['Keterangan']||row['keterangan']);
-        if(hasCol(['Desa','desa']))obj.desa=normCase(xlVal(row['Desa']||row['desa']));
-        if(hasCol(['Nama KK','kep_kk']))obj.kep_kk=normCase(xlVal(row['Nama KK']||row['kep_kk']));
-        if(hasCol(['Alamat','alamat']))obj.alamat=xlVal(row['Alamat']||row['alamat']);
-        if(hasCol(['Jenis Kelamin','jen_kel']))obj.jen_kel=xlVal(row['Jenis Kelamin']||row['jen_kel']);
-        if(hasCol(['Umur','umur']))obj.umur=xlInt(row['Umur']||row['umur']);
-        if(hasCol(['Pendidikan','pend_ter']))obj.pend_ter=xlVal(row['Pendidikan']||row['pend_ter']);
-        if(hasCol(['Pekerjaan','pekerjaan']))obj.pekerjaan=xlVal(row['Pekerjaan']||row['pekerjaan']);
-        if(hasCol(['Penghasilan','pengh']))obj.pengh=xlVal(row['Penghasilan']||row['pengh']);
-        if(hasCol(['Luas Rumah (m²)','Luas Rumah','luas_rum']))obj.luas_rum=xlNum(row['Luas Rumah (m²)']||row['Luas Rumah']||row['luas_rum']);
-        if(hasCol(['Luas Tanah (m²)','Luas Tanah','luas_tan']))obj.luas_tan=xlNum(row['Luas Tanah (m²)']||row['Luas Tanah']||row['luas_tan']);
-        if(hasCol(['Jml Penghuni','jml_peng']))obj.jml_peng=xlInt(row['Jml Penghuni']||row['jml_peng']);
-        if(hasCol(['Status Kepemilikan','status_kep']))obj.status_kep=xlVal(row['Status Kepemilikan']||row['status_kep']);
-        if(hasCol(['Material Dinding','material_d']))obj.material_d=xlVal(row['Material Dinding']||row['material_d']);
-        if(hasCol(['Kondisi Dinding','kondisi_di']))obj.kondisi_di=xlVal(row['Kondisi Dinding']||row['kondisi_di']);
-        if(hasCol(['Material Atap','material_a']))obj.material_a=xlVal(row['Material Atap']||row['material_a']);
-        if(hasCol(['Kondisi Atap','kondisi_at']))obj.kondisi_at=xlVal(row['Kondisi Atap']||row['kondisi_at']);
-        if(hasCol(['Material Lantai','material_l']))obj.material_l=xlVal(row['Material Lantai']||row['material_l']);
-        if(hasCol(['Kondisi Lantai','kondisi_la']))obj.kondisi_la=xlVal(row['Kondisi Lantai']||row['kondisi_la']);
+        if(hasCol(['Kecamatan','kec']))obj.kec=normCase(xlVal(getCol(row,'Kecamatan','kec')));
+        if(hasCol(['Keterangan','keterangan']))obj.keterangan=xlVal(getCol(row,'Keterangan','keterangan'));
+        if(hasCol(['Desa','desa']))obj.desa=normCase(xlVal(getCol(row,'Desa','desa')));
+        if(hasCol(['Nama KK','kep_kk']))obj.kep_kk=normCase(xlVal(getCol(row,'Nama KK','kep_kk')));
+        if(hasCol(['Alamat','alamat']))obj.alamat=xlVal(getCol(row,'Alamat','alamat'));
+        if(hasCol(['Jenis Kelamin','jen_kel']))obj.jen_kel=xlVal(getCol(row,'Jenis Kelamin','jen_kel'));
+        if(hasCol(['Umur','umur']))obj.umur=xlInt(getCol(row,'Umur','umur'));
+        if(hasCol(['Pendidikan','pend_ter']))obj.pend_ter=xlVal(getCol(row,'Pendidikan','pend_ter'));
+        if(hasCol(['Pekerjaan','pekerjaan']))obj.pekerjaan=xlVal(getCol(row,'Pekerjaan','pekerjaan'));
+        if(hasCol(['Penghasilan','pengh']))obj.pengh=xlVal(getCol(row,'Penghasilan','pengh'));
+        if(hasCol(['Luas Rumah (m²)','Luas Rumah','luas_rum']))obj.luas_rum=xlNum(getCol(row,'Luas Rumah (m²)','Luas Rumah','luas_rum'));
+        if(hasCol(['Luas Tanah (m²)','Luas Tanah','luas_tan']))obj.luas_tan=xlNum(getCol(row,'Luas Tanah (m²)','Luas Tanah','luas_tan'));
+        if(hasCol(['Jml Penghuni','jml_peng']))obj.jml_peng=xlInt(getCol(row,'Jml Penghuni','jml_peng'));
+        if(hasCol(['Status Kepemilikan','status_kep']))obj.status_kep=xlVal(getCol(row,'Status Kepemilikan','status_kep'));
+        if(hasCol(['Material Dinding','material_d']))obj.material_d=xlVal(getCol(row,'Material Dinding','material_d'));
+        if(hasCol(['Kondisi Dinding','kondisi_di']))obj.kondisi_di=xlVal(getCol(row,'Kondisi Dinding','kondisi_di'));
+        if(hasCol(['Material Atap','material_a']))obj.material_a=xlVal(getCol(row,'Material Atap','material_a'));
+        if(hasCol(['Kondisi Atap','kondisi_at']))obj.kondisi_at=xlVal(getCol(row,'Kondisi Atap','kondisi_at'));
+        if(hasCol(['Material Lantai','material_l']))obj.material_l=xlVal(getCol(row,'Material Lantai','material_l'));
+        if(hasCol(['Kondisi Lantai','kondisi_la']))obj.kondisi_la=xlVal(getCol(row,'Kondisi Lantai','kondisi_la'));
         if(hasCol(['Status RTLH','status_rtlh'])){
-          const v=xlVal(row['Status RTLH']||row['status_rtlh']);
+          const v=xlVal(getCol(row,'Status RTLH','status_rtlh'));
           if(v){const u=v.toUpperCase().trim();
             obj.status_rtlh=u==='LAYAK HUNI'||u==='SUDAH DITANGANI'||u==='SUDAH'?'Layak Huni':u==='RTLH'||u==='BELUM DITANGANI'||u==='BELUM'?'RTLH':u==='DIBATALKAN'||u==='BATAL'?'Dibatalkan':v;
           }
         }
-        if(hasCol(['Alasan Batal','status_batal']))obj.status_batal=xlVal(row['Alasan Batal']||row['status_batal']);
+        if(hasCol(['Alasan Batal','status_batal']))obj.status_batal=xlVal(getCol(row,'Alasan Batal','status_batal'));
         if(hasCol(['Jenis Bantuan','jenis_bantuan'])){
-          const v=xlVal(row['Jenis Bantuan']||row['jenis_bantuan']);
+          const v=xlVal(getCol(row,'Jenis Bantuan','jenis_bantuan'));
           if(v){const u=v.toUpperCase().trim();
             obj.jenis_bantuan=u==='RTLH'?'RTLH':u==='BSPS'?'BSPS':u==='DD'||u==='DANA DESA'?'Dana Desa':u==='CSR'?'CSR':v;
             // Otomatis set Layak Huni jika jenis bantuan terisi dan status bukan Dibatalkan
@@ -3131,18 +3147,18 @@ async function importExcelKab(input){
             }
           }
         }
-        if(hasCol(['Tahun Bantuan','tahun_bantuan']))obj.tahun_bantuan=xlVal(String(row['Tahun Bantuan']||row['tahun_bantuan']||'').replace(/[^0-9]/g,''));
-        if(hasCol(['Desil','desil']))obj.desil=xlVal(row['Desil']||row['desil']);
-        if(hasCol(['Backlog','backlog']))obj.backlog=xlVal(row['Backlog']||row['backlog']);
-        if(hasCol(['Latitude','latitude']))obj.latitude=xlNum(row['Latitude']||row['latitude']);
-        if(hasCol(['Longitude','longitude']))obj.longitude=xlNum(row['Longitude']||row['longitude']);
+        if(hasCol(['Tahun Bantuan','tahun_bantuan']))obj.tahun_bantuan=xlVal(String(getCol(row,'Tahun Bantuan','tahun_bantuan')||'').replace(/[^0-9]/g,''));
+        if(hasCol(['Desil','desil']))obj.desil=xlVal(getCol(row,'Desil','desil'));
+        if(hasCol(['Backlog','backlog']))obj.backlog=xlVal(getCol(row,'Backlog','backlog'));
+        if(hasCol(['Latitude','latitude']))obj.latitude=xlNum(getCol(row,'Latitude','latitude'));
+        if(hasCol(['Longitude','longitude']))obj.longitude=xlNum(getCol(row,'Longitude','longitude'));
         // Hapus key yang null supaya tidak overwrite data existing dengan null
         Object.keys(obj).forEach(k=>{if(obj[k]===null)delete obj[k];});
-        const nik=String(row['NIK']||row['nik']||'').replace(/[^0-9]/g,'');
-        const noKk=String(row['No. KK']||row['no_kk']||'').replace(/[^0-9]/g,'');
+        const nik=String(getCol(row,'NIK','nik')||'').replace(/[^0-9]/g,'');
+        const noKk=String(getCol(row,'No. KK','no_kk')||'').replace(/[^0-9]/g,'');
         if(nik)obj.nik=nik;
         if(noKk)obj.no_kk=noKk;
-        const id=row['ID']||row['id'];
+        const id=getCol(row,'ID','id')||row['ID']||row['id'];
         let error=null;
         if(id&&parseInt(id)){
           // Update by ID
