@@ -1011,9 +1011,9 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
 <!-- NIK/KK MODAL (Super Admin only - dedicated, never re-renders) -->
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" defer></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <script>
 // ══════════════════════════════════════════════════
@@ -1173,7 +1173,7 @@ function nav(pg){
     // Tutup detail panel saat kembali ke beranda
     document.getElementById('detailPanel')?.classList.remove('open');
     clearDetailSession();
-    if(sb) loadGlobalStats();
+    if(sb&&user)loadGlobalStats();
   } else if(pg==='keclist'){
     document.getElementById('pgKecList').classList.add('active');
     document.getElementById('ntWebgis')?.classList.add('active');
@@ -1529,6 +1529,7 @@ function renderKecTable(){
 let mapBeranda=null,tileLayerBeranda=null,kecBoundaryLayer=null,isSatellite=false,showKecBoundary=true;
 
 function initMapBeranda(){
+  if(!window.L)return;
   if(!mapBeranda){
     mapBeranda=L.map('mapBeranda',{zoomControl:true,scrollWheelZoom:true}).setView([-7.42,111.42],10);
     tileLayerBeranda=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
@@ -2131,6 +2132,7 @@ function renderKecList(){
 // ══════════════════════════════════════════════════
 function initMap(){
   if(map)return;
+  if(!window.L){console.warn("Leaflet not ready");return;}
   map=L.map('map',{zoomControl:true}).setView([-7.4,111.4],11);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:19}).addTo(map);
   mcg=L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:40}).addTo(map);
@@ -4241,7 +4243,19 @@ async function doMaintenanceLogin(){
   }
 }
 
+// Tunggu semua library eksternal siap sebelum init
+async function waitLibs(){
+  const MAX=50; // max 5 detik
+  for(let i=0;i<MAX;i++){
+    if(window.L&&window.Chart&&window.XLSX&&window.supabase)return true;
+    await new Promise(r=>setTimeout(r,100));
+  }
+  return false; // timeout
+}
+
 window.addEventListener('DOMContentLoaded',async()=>{
+  // Tunggu library siap
+  await waitLibs();
   // Init Supabase client dulu sebelum apapun
   sb = window.supabase.createClient(SUPA_URL, SUPA_KEY, {auth:{persistSession:true,storageKey:'ertlh-auth',autoRefreshToken:true}});
   // Cek session dulu
@@ -4269,9 +4283,15 @@ window.addEventListener('DOMContentLoaded',async()=>{
     });
   }
   await initAuth();
+  // Render auth UI dulu
+  updAuth();
+  // Restore session
   restoreSession();
-  // Pastikan stats dimuat setelah auth selesai
-  if(user)await loadGlobalStats();
+  // Pastikan stats dimuat setelah auth & restore selesai
+  if(user){
+    const activePg=document.querySelector('.page.active')?.id;
+    if(activePg==='pgBeranda'||!activePg)await loadGlobalStats();
+  }
   // Load GeoJSON boundary — cache di sessionStorage biar tidak fetch ulang
   const _geoKey='e-rtlh-batas-ngawi-v1';
   const _geoCached=sessionStorage.getItem(_geoKey);
