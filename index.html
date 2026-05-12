@@ -2712,7 +2712,7 @@ const FIELDS=[
   {key:'material_l',label:'Material Lantai',type:'text'},
   {key:'kondisi_la',label:'Kondisi Lantai',type:'text'},
   {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['RTLH','Layak Huni','SK Dibatalkan']},
-  {key:'status_batal',label:'Alasan Dibatalkan',type:'select',opts:['','-','Meninggal Dunia','Tidak Bersedia Dibantu','Tidak Ada Biaya','Pindah Tempat Tinggal','Sudah Mampu Mandiri','Tidak Memenuhi Syarat','Lainnya'],onChange:'handleAlasanBatal(this)'},
+  {key:'status_batal',label:'Alasan SK Dibatalkan',type:'select',opts:['','-','Meninggal Dunia','Tidak Bersedia Dibantu','Tidak Ada Biaya','Pindah Tempat Tinggal','Sudah Mampu Mandiri','Tidak Memenuhi Syarat','Lainnya'],onChange:'handleAlasanBatal(this)'},
 
   {key:'jenis_bantuan',label:'Jenis Bantuan',type:'select',opts:['','RTLH','BSPS','DD','CSR','Lainnya']},
   {key:'tahun_bantuan',label:'Tahun Bantuan',type:'text',placeholder:'misal: 2025'},
@@ -2846,7 +2846,7 @@ async function saveForm(){
     // Catat perubahan ke rtlh_riwayat
     const changes=[];
     const FIELD_LABELS={kep_kk:'Nama KK',desa:'Desa',alamat:'Alamat',status_rtlh:'Status RTLH',
-      status_batal:'Alasan Batal',jenis_bantuan:'Jenis Bantuan',tahun_bantuan:'Tahun Bantuan',
+      status_batal:'Alasan SK Dibatalkan',jenis_bantuan:'Jenis Bantuan',tahun_bantuan:'Tahun Bantuan',
       desil:'Desil',luas_rum:'Luas Rumah',jml_peng:'Jml Penghuni',
       pekerjaan:'Pekerjaan',jen_kel:'Jenis Kelamin',umur:'Umur',material_d:'Material Dinding',
       kondisi_di:'Kondisi Dinding',material_a:'Material Atap',kondisi_at:'Kondisi Atap',
@@ -2985,7 +2985,7 @@ async function downloadExcel(withNIK){
       'Material Dinding':r.material_d,'Kondisi Dinding':r.kondisi_di,
       'Material Atap':r.material_a,'Kondisi Atap':r.kondisi_at,
       'Material Lantai':r.material_l,'Kondisi Lantai':r.kondisi_la,
-      'Status RTLH':r.status_rtlh,'Alasan Batal':r.status_batal,
+      'Status RTLH':r.status_rtlh,'Alasan SK Dibatalkan':r.status_batal,
       'Jenis Bantuan':r.jenis_bantuan,'Tahun Bantuan':r.tahun_bantuan,
       Backlog:r.backlog,Desil:r.desil,Keterangan:r.keterangan||'',
       Latitude:r.latitude,Longitude:r.longitude,
@@ -3121,7 +3121,7 @@ async function downloadExcelKab(withNIK){
       'Material Dinding':r.material_d,'Kondisi Dinding':r.kondisi_di,
       'Material Atap':r.material_a,'Kondisi Atap':r.kondisi_at,
       'Material Lantai':r.material_l,'Kondisi Lantai':r.kondisi_la,
-      'Status RTLH':r.status_rtlh,'Alasan Batal':r.status_batal,
+      'Status RTLH':r.status_rtlh,'Alasan SK Dibatalkan':r.status_batal,
       'Jenis Bantuan':r.jenis_bantuan,'Tahun Bantuan':r.tahun_bantuan,
       Backlog:r.backlog,Desil:r.desil,Keterangan:r.keterangan||'',
       Latitude:r.latitude,Longitude:r.longitude,
@@ -3226,7 +3226,7 @@ async function importExcelKab(input){
             obj.status_rtlh=u==='LAYAK HUNI'||u==='SUDAH DITANGANI'||u==='SUDAH'?'Layak Huni':u==='RTLH'||u==='BELUM DITANGANI'||u==='BELUM'?'RTLH':u==='DIBATALKAN'||u==='BATAL'||u==='SK DIBATALKAN'?'SK Dibatalkan':v;
           }
         }
-        if(hasCol(['Alasan Batal','status_batal']))obj.status_batal=xlVal(getCol(row,'Alasan Batal','status_batal'));
+        if(hasCol(['Alasan Batal','status_batal']))obj.status_batal=xlVal(getCol(row,'Alasan SK Dibatalkan','Alasan Batal','status_batal'));
         if(hasCol(['Jenis Bantuan','jenis_bantuan'])){
           const v=xlVal(getCol(row,'Jenis Bantuan','jenis_bantuan'));
           if(v){const u=v.toUpperCase().trim();
@@ -3542,7 +3542,7 @@ function downloadExcelIndividu(r){
     'Material Dinding':r.material_d||'', 'Kondisi Dinding':r.kondisi_di||'',
     'Material Atap':r.material_a||'', 'Kondisi Atap':r.kondisi_at||'',
     'Material Lantai':r.material_l||'', 'Kondisi Lantai':r.kondisi_la||'',
-    'Status RTLH':r.status_rtlh||'', 'Alasan Batal':r.status_batal||'',
+    'Status RTLH':r.status_rtlh||'', 'Alasan SK Dibatalkan':r.status_batal||'',
     'Jenis Bantuan':r.jenis_bantuan||'', 'Tahun Bantuan':r.tahun_bantuan||'',
     Desil:r.desil||'',
     Latitude:r.latitude||'', Longitude:r.longitude||'',
@@ -3609,7 +3609,7 @@ async function uploadExcelIndividu(input, rtlhId){
           status_kep:'Status Kepemilikan',material_d:'Material Dinding',
           kondisi_di:'Kondisi Dinding',material_a:'Material Atap',kondisi_at:'Kondisi Atap',
           material_l:'Material Lantai',kondisi_la:'Kondisi Lantai',
-          status_rtlh:'Status RTLH',status_batal:'Alasan Batal',
+          status_rtlh:'Status RTLH',status_batal:'Alasan SK Dibatalkan',
           jenis_bantuan:'Jenis Bantuan',tahun_bantuan:'Tahun Bantuan',
           desil:'Desil',
         };
