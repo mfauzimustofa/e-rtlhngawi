@@ -3903,38 +3903,18 @@ async function runAutoLinkFromLib(dokId){
   const prog=document.getElementById('autoLinkProgress');
   prog.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Mencari penerima yang cocok...';
   
-  const jb=d.jenis_bantuan; // misal "RTLH"
-  const tahun=d.tahun;      // misal 2026
+  // Ambil setting dari form edit (yang sedang dibuka) atau dari data dokumen
+  const jb=document.getElementById('editDlJenisBantuan')?.value||d.jenis_bantuan||null;
+  const tahunBantuan=document.getElementById('editDlTahunBantuan')?.value||null;
+  const tahun=tahunBantuan?parseInt(tahunBantuan):null;
   
-  if(!jb&&!tahun){prog.innerHTML='<span style="color:var(--danger)">Isi Jenis Bantuan atau Tahun terlebih dahulu</span>';return;}
+  if(!jb&&!tahun){prog.innerHTML='<span style="color:var(--danger)">Pilih Jenis Bantuan atau Tahun terlebih dahulu</span>';return;}
   
-  // Cari semua penerima yang cocok
-  let q=sb.from('rtlh').select('id');
-  if(jb)q=q.ilike('jenis_bantuan',`%${jb}%`);
-  if(tahun)q=q.eq('tahun_bantuan',String(tahun));
+  prog.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Mencari penerima yang cocok...';
   
-  // Ambil semua dengan pagination
-  const{count:total}=await sb.from('rtlh').select('*',{count:'exact',head:true})
-    .ilike(jb?'jenis_bantuan':'id',jb?`%${jb}%`:'%');
-  
-  prog.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memuat data penerima...`;
-  
-  const pages=Math.ceil((total||0)/1000);
-  let allIds=[];
-  let baseQ=sb.from('rtlh').select('id');
-  if(jb)baseQ=baseQ.ilike('jenis_bantuan',`%${jb}%`);
-  if(tahun)baseQ=baseQ.eq('tahun_bantuan',String(tahun));
-  
-  const results=await Promise.all(Array.from({length:Math.max(1,pages)},(_,p)=>
-    sb.from('rtlh').select('id')
-      .ilike(jb?'jenis_bantuan':'id',jb?`%${jb}%`:'%')
-      .eq(tahun?'tahun_bantuan':'id',tahun?String(tahun):'%')
-      .range(p*1000,(p+1)*1000-1)
-  ));
-  
-  // Fetch lebih simpel
+  // Query penerima yang cocok
   let qSimple=sb.from('rtlh').select('id');
-  if(jb)qSimple=qSimple.ilike('jenis_bantuan',`%${jb}%`);
+  if(jb)qSimple=qSimple.ilike('jenis_bantuan','%'+jb+'%');
   if(tahun)qSimple=qSimple.eq('tahun_bantuan',String(tahun));
   const{data:matched}=await qSimple;
   
@@ -3982,6 +3962,7 @@ function openEditDokLib(id){
   document.getElementById('editDlFile').value='';
   document.getElementById('editDlCurrentFile').textContent=d.path.split('/').pop();
   document.getElementById('editDlJenisBantuan').value=d.jenis_bantuan||'';
+  if(document.getElementById('editDlTahunBantuan'))document.getElementById('editDlTahunBantuan').value=d.tahun_bantuan||'';
   document.getElementById('autoLinkProgress').innerHTML='';
   document.getElementById('ovEditDokLib').classList.add('open');
 }
@@ -3997,7 +3978,8 @@ async function saveEditDokLib(){
   const prog=document.getElementById('editDlProgress');
   prog.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Menyimpan...';
   const jenisBantuan=document.getElementById('editDlJenisBantuan')?.value||null;
-  const updateObj={jenis,judul,tahun,kecamatan:kec,jenis_bantuan:jenisBantuan||null};
+  const tahunBantuan=document.getElementById('editDlTahunBantuan')?.value||null;
+  const updateObj={jenis,judul,tahun,kecamatan:kec,jenis_bantuan:jenisBantuan||null,tahun_bantuan:tahunBantuan?parseInt(tahunBantuan):null};
   // Kalau ada file baru — upload dulu, hapus yang lama
   if(file){
     if(file.size>20*1024*1024){prog.innerHTML='<span style="color:var(--danger)">File terlalu besar (maks 20MB)</span>';return;}
@@ -4399,13 +4381,26 @@ window.addEventListener('DOMContentLoaded',async()=>{
       </div>
       <div class="form-group" style="margin-bottom:10px">
         <label>Berlaku untuk Jenis Bantuan <span style="font-weight:400;color:var(--gray-400)">(auto-link)</span></label>
-        <select id="editDlJenisBantuan">
-          <option value="">Semua / Tidak spesifik</option>
-          <option value="RTLH">RTLH</option>
-          <option value="BSPS">BSPS</option>
-          <option value="Dana Desa">Dana Desa</option>
-          <option value="CSR">CSR</option>
-        </select>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <select id="editDlJenisBantuan">
+            <option value="">Semua / Tidak spesifik</option>
+            <option value="RTLH">RTLH</option>
+            <option value="BSPS">BSPS</option>
+            <option value="Dana Desa">Dana Desa</option>
+            <option value="CSR">CSR</option>
+          </select>
+          <select id="editDlTahunBantuan">
+            <option value="">Semua Tahun</option>
+            <option value="2021">2021</option>
+            <option value="2022">2022</option>
+            <option value="2023">2023</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+          </select>
+        </div>
+        <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Contoh: RTLH + 2026 → semua penerima RTLH 2026 akan terhubung ke dokumen ini</div>
       </div>
       <div class="form-group" style="margin-bottom:10px">
         <label style="font-size:.68rem;font-weight:700;color:var(--gray-600)">AUTO-LINK KE PENERIMA</label>
