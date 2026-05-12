@@ -3818,13 +3818,72 @@ async function uploadDokLib(){
   const path=`${jenis}/${tahun||'umum'}/${safeName}_${Date.now()}.${ext}`;
   const{error:upErr}=await sb.storage.from('dokumen-kab').upload(path,file,{upsert:false});
   if(upErr){prog.innerHTML=`<span style="color:var(--danger)">Gagal upload: ${upErr.message}</span>`;return;}
+  const jenisBantuan=document.getElementById('dlJenisBantuan')?.value||null;
   const{error:dbErr}=await sb.from('rtlh_dokumen_kabupaten').insert({
-    jenis,judul,tahun,kecamatan:kec,path,ukuran:file.size,uploaded_by:user?.email
+    jenis,judul,tahun,kecamatan:kec,path,ukuran:file.size,uploaded_by:user?.email,
+    jenis_bantuan:jenisBantuan||null
   });
   if(dbErr){prog.innerHTML=`<span style="color:var(--danger)">Gagal simpan: ${dbErr.message}</span>`;return;}
   prog.innerHTML='<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Berhasil diupload!</span>';
   toast('Dokumen berhasil diupload','success');
   setTimeout(()=>{closeModal('ovUploadDokLib');loadDokLib();},800);
+}
+
+async function runAutoLinkFromLib(dokId){
+  const d=_dokLibData.find(x=>x.id===dokId);
+  if(!d)return;
+  const prog=document.getElementById('autoLinkProgress');
+  prog.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Mencari penerima yang cocok...';
+  
+  const jb=d.jenis_bantuan; // misal "RTLH"
+  const tahun=d.tahun;      // misal 2026
+  
+  if(!jb&&!tahun){prog.innerHTML='<span style="color:var(--danger)">Isi Jenis Bantuan atau Tahun terlebih dahulu</span>';return;}
+  
+  // Cari semua penerima yang cocok
+  let q=sb.from('rtlh').select('id');
+  if(jb)q=q.ilike('jenis_bantuan',`%${jb}%`);
+  if(tahun)q=q.eq('tahun_bantuan',String(tahun));
+  
+  // Ambil semua dengan pagination
+  const{count:total}=await sb.from('rtlh').select('*',{count:'exact',head:true})
+    .ilike(jb?'jenis_bantuan':'id',jb?`%${jb}%`:'%');
+  
+  prog.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memuat data penerima...`;
+  
+  const pages=Math.ceil((total||0)/1000);
+  let allIds=[];
+  let baseQ=sb.from('rtlh').select('id');
+  if(jb)baseQ=baseQ.ilike('jenis_bantuan',`%${jb}%`);
+  if(tahun)baseQ=baseQ.eq('tahun_bantuan',String(tahun));
+  
+  const results=await Promise.all(Array.from({length:Math.max(1,pages)},(_,p)=>
+    sb.from('rtlh').select('id')
+      .ilike(jb?'jenis_bantuan':'id',jb?`%${jb}%`:'%')
+      .eq(tahun?'tahun_bantuan':'id',tahun?String(tahun):'%')
+      .range(p*1000,(p+1)*1000-1)
+  ));
+  
+  // Fetch lebih simpel
+  let qSimple=sb.from('rtlh').select('id');
+  if(jb)qSimple=qSimple.ilike('jenis_bantuan',`%${jb}%`);
+  if(tahun)qSimple=qSimple.eq('tahun_bantuan',String(tahun));
+  const{data:matched}=await qSimple;
+  
+  if(!matched?.length){prog.innerHTML='Tidak ada penerima yang cocok ditemukan.';return;}
+  
+  prog.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Menghubungkan ${matched.length} penerima...`;
+  
+  // Batch upsert link — 100 per batch
+  let linked=0;
+  for(let i=0;i<matched.length;i+=100){
+    const batch=matched.slice(i,i+100).map(r=>({rtlh_id:r.id,dokumen_id:dokId,linked_by:user?.email}));
+    await sb.from('rtlh_dokumen_link').upsert(batch,{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
+    linked+=batch.length;
+    prog.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> ${linked}/${matched.length} terhubung...`;
+  }
+  prog.innerHTML=`<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Berhasil! ${linked} penerima dihubungkan ke dokumen ini.</span>`;
+  toast(`${linked} penerima berhasil di-link ke dokumen ini`,'success');
 }
 
 async function deleteDokLib(id,path){
@@ -3854,6 +3913,8 @@ function openEditDokLib(id){
   document.getElementById('editDlProgress').innerHTML='';
   document.getElementById('editDlFile').value='';
   document.getElementById('editDlCurrentFile').textContent=d.path.split('/').pop();
+  document.getElementById('editDlJenisBantuan').value=d.jenis_bantuan||'';
+  document.getElementById('autoLinkProgress').innerHTML='';
   document.getElementById('ovEditDokLib').classList.add('open');
 }
 
@@ -3867,7 +3928,8 @@ async function saveEditDokLib(){
   if(!judul)return toast('Isi judul dokumen','error');
   const prog=document.getElementById('editDlProgress');
   prog.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Menyimpan...';
-  const updateObj={jenis,judul,tahun,kecamatan:kec};
+  const jenisBantuan=document.getElementById('editDlJenisBantuan')?.value||null;
+  const updateObj={jenis,judul,tahun,kecamatan:kec,jenis_bantuan:jenisBantuan||null};
   // Kalau ada file baru — upload dulu, hapus yang lama
   if(file){
     if(file.size>20*1024*1024){prog.innerHTML='<span style="color:var(--danger)">File terlalu besar (maks 20MB)</span>';return;}
@@ -4160,6 +4222,16 @@ window.addEventListener('DOMContentLoaded',async()=>{
           <option value="">Seluruh Kabupaten</option>
         </select>
       </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Berlaku untuk Jenis Bantuan <span style="font-weight:400;color:var(--gray-400)">(untuk auto-link)</span></label>
+        <select id="dlJenisBantuan">
+          <option value="">Semua / Tidak spesifik</option>
+          <option value="RTLH">RTLH</option>
+          <option value="BSPS">BSPS</option>
+          <option value="Dana Desa">Dana Desa</option>
+          <option value="CSR">CSR</option>
+        </select>
+      </div>
       <div class="form-group" style="margin-bottom:4px">
         <label>File PDF <span style="color:var(--danger)">*</span></label>
         <input type="file" id="dlFile" accept=".pdf,.doc,.docx,.jpg,.png" style="font-size:.8rem">
@@ -4232,6 +4304,24 @@ window.addEventListener('DOMContentLoaded',async()=>{
         <select id="editDlKec">
           <option value="">Seluruh Kabupaten</option>
         </select>
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Berlaku untuk Jenis Bantuan <span style="font-weight:400;color:var(--gray-400)">(auto-link)</span></label>
+        <select id="editDlJenisBantuan">
+          <option value="">Semua / Tidak spesifik</option>
+          <option value="RTLH">RTLH</option>
+          <option value="BSPS">BSPS</option>
+          <option value="Dana Desa">Dana Desa</option>
+          <option value="CSR">CSR</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label style="font-size:.68rem;font-weight:700;color:var(--gray-600)">AUTO-LINK KE PENERIMA</label>
+        <button onclick="runAutoLinkFromLib(document.getElementById('editDlId').value)" 
+          style="width:100%;padding:9px;border-radius:8px;background:var(--success-bg);color:var(--success);border:1px solid var(--success);font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px">
+          <i class="fas fa-magic"></i> Terapkan ke semua penerima yang cocok
+        </button>
+        <div id="autoLinkProgress" style="font-size:.68rem;color:var(--gray-500);margin-top:6px;text-align:center"></div>
       </div>
       <div class="form-group" style="margin-bottom:4px">
         <label>Ganti File (opsional)</label>
