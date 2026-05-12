@@ -3104,10 +3104,12 @@ async function importExcelKab(input){
       const hasCol=(names)=>names.some(n=>excelHeaders.includes(n.toLowerCase()));
       
       log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memproses ${rows.length} baris... (${excelHeaders.length} kolom terdeteksi)`;
-      let ok=0,fail=0,errors=[];
+      
+      // ── Build semua obj sekaligus ──
+      const toUpdate=[], toInsert=[], toUpsertByNIK=[];
+      
       for(let i=0;i<rows.length;i++){
         const row=rows[i];
-        const rowNum=i+2;
         const obj={};
         // Hanya masukkan kolom yang ADA di file Excel
         if(hasCol(['Kecamatan','kec']))obj.kec=normCase(xlVal(getCol(row,'Kecamatan','kec')));
@@ -3141,10 +3143,7 @@ async function importExcelKab(input){
           const v=xlVal(getCol(row,'Jenis Bantuan','jenis_bantuan'));
           if(v){const u=v.toUpperCase().trim();
             obj.jenis_bantuan=u==='RTLH'?'RTLH':u==='BSPS'?'BSPS':u==='DD'||u==='DANA DESA'?'Dana Desa':u==='CSR'?'CSR':v;
-            // Otomatis set Layak Huni jika jenis bantuan terisi dan status bukan Dibatalkan
-            if(!obj.status_rtlh||obj.status_rtlh!=='Dibatalkan'){
-              obj.status_rtlh='Layak Huni';
-            }
+            if(!obj.status_rtlh||obj.status_rtlh!=='Dibatalkan')obj.status_rtlh='Layak Huni';
           }
         }
         if(hasCol(['Tahun Bantuan','tahun_bantuan']))obj.tahun_bantuan=xlVal(String(getCol(row,'Tahun Bantuan','tahun_bantuan')||'').replace(/[^0-9]/g,''));
@@ -3152,36 +3151,60 @@ async function importExcelKab(input){
         if(hasCol(['Backlog','backlog']))obj.backlog=xlVal(getCol(row,'Backlog','backlog'));
         if(hasCol(['Latitude','latitude']))obj.latitude=xlNum(getCol(row,'Latitude','latitude'));
         if(hasCol(['Longitude','longitude']))obj.longitude=xlNum(getCol(row,'Longitude','longitude'));
-        // Hapus key yang null supaya tidak overwrite data existing dengan null
+
         Object.keys(obj).forEach(k=>{if(obj[k]===null)delete obj[k];});
         const nik=String(getCol(row,'NIK','nik')||'').replace(/[^0-9]/g,'');
         const noKk=String(getCol(row,'No. KK','no_kk')||'').replace(/[^0-9]/g,'');
         if(nik)obj.nik=nik;
         if(noKk)obj.no_kk=noKk;
-        const id=getCol(row,'ID','id')||row['ID']||row['id'];
-        let error=null;
-        if(id&&parseInt(id)){
-          // Update by ID
-          const res=await sb.from('rtlh').update(obj).eq('id',parseInt(id));
-          error=res.error;
-        } else if(nik){
-          // Upsert by NIK
-          const{data:existing}=await sb.from('rtlh').select('id').eq('nik',nik).single();
-          if(existing){
-            const res=await sb.from('rtlh').update(obj).eq('nik',nik);
-            error=res.error;
-          } else {
-            const res=await sb.from('rtlh').insert(obj);
-            error=res.error;
-          }
-        } else {
-          const res=await sb.from('rtlh').insert(obj);
-          error=res.error;
+        const id=parseInt(getCol(row,'ID','id')||0);
+        if(id){toUpdate.push({id,obj});}
+        else if(nik){toUpsertByNIK.push({nik,obj});}
+        else{toInsert.push(obj);}
+      }
+
+      log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Mengirim data ke server...`;
+      let ok=0,fail=0,errors=[];
+
+      // ── Batch update by ID (parallel 10) ──
+      const BATCH=10;
+      for(let i=0;i<toUpdate.length;i+=BATCH){
+        const batch=toUpdate.slice(i,i+BATCH);
+        const results=await Promise.all(batch.map(({id,obj})=>sb.from('rtlh').update(obj).eq('id',id)));
+        results.forEach((r,j)=>{if(r.error){fail++;errors.push(`ID ${batch[j].id}: ${r.error.message}`);}else ok++;});
+        log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Update by ID: ${Math.min(i+BATCH,toUpdate.length)}/${toUpdate.length}`;
+      }
+
+      // ── Batch upsert by NIK — cek existing dulu dalam satu query ──
+      if(toUpsertByNIK.length){
+        log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Upsert by NIK: ${toUpsertByNIK.length} baris...`;
+        const niks=toUpsertByNIK.map(x=>x.nik);
+        const{data:existingRows}=await sb.from('rtlh').select('id,nik').in('nik',niks);
+        const existMap=Object.fromEntries((existingRows||[]).map(r=>[r.nik,r.id]));
+        const updates=toUpsertByNIK.filter(x=>existMap[x.nik]);
+        const inserts=toUpsertByNIK.filter(x=>!existMap[x.nik]);
+        // Update existing
+        for(let i=0;i<updates.length;i+=BATCH){
+          const batch=updates.slice(i,i+BATCH);
+          const results=await Promise.all(batch.map(({nik,obj})=>sb.from('rtlh').update(obj).eq('nik',nik)));
+          results.forEach((r,j)=>{if(r.error){fail++;errors.push(`NIK ${batch[j].nik}: ${r.error.message}`);}else ok++;});
         }
-        if(error){fail++;errors.push(`Baris ${rowNum}: ${error.message}`);}
-        else ok++;
-        // Update progress tiap 10 baris
-        if(i%10===0)log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memproses... ${i+1}/${rows.length}`;
+        // Insert baru dalam satu batch
+        if(inserts.length){
+          const{error}=await sb.from('rtlh').insert(inserts.map(x=>x.obj));
+          if(error){fail+=inserts.length;errors.push(`Insert baru: ${error.message}`);}
+          else ok+=inserts.length;
+        }
+      }
+
+      // ── Insert baru ──
+      if(toInsert.length){
+        for(let i=0;i<toInsert.length;i+=50){
+          const batch=toInsert.slice(i,i+50);
+          const{error}=await sb.from('rtlh').insert(batch);
+          if(error){fail+=batch.length;errors.push(`Insert: ${error.message}`);}
+          else ok+=batch.length;
+        }
       }
       Object.keys(_kecCacheTime).forEach(k=>delete _kecCacheTime[k]);
       Object.keys(brCache).forEach(k=>delete brCache[k]);
