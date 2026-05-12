@@ -3742,6 +3742,44 @@ async function openDokLib(){
   await loadDokLib();
 }
 
+async function refreshDokLib(){
+  const btn=document.getElementById('btnRefreshDokLib');
+  if(btn){btn.innerHTML='<i class="fas fa-sync-alt fa-spin"></i>';btn.disabled=true;}
+  // Reload data dokumen terbaru
+  await loadDokLib();
+  // Re-run auto-link untuk semua dokumen yang punya jenis_bantuan
+  const docsWithLink=_dokLibData.filter(d=>d.jenis_bantuan);
+  if(!docsWithLink.length){
+    if(btn){btn.innerHTML='<i class="fas fa-sync-alt"></i>';btn.disabled=false;}
+    toast('Data diperbarui','success');
+    return;
+  }
+  const el=document.getElementById('dokLibList');
+  const statusDiv=document.createElement('div');
+  statusDiv.style.cssText='padding:10px 14px;background:var(--blue-bg);font-size:.72rem;color:var(--blue);font-weight:600;border-bottom:1px solid var(--gray-200)';
+  statusDiv.innerHTML='<i class="fas fa-sync-alt fa-spin"></i> Menyinkronkan '+docsWithLink.length+' dokumen...';
+  el.parentElement.insertBefore(statusDiv,el);
+  let totalLinked=0;
+  for(const d of docsWithLink){
+    // Cari penerima yang cocok
+    let q=sb.from('rtlh').select('id').ilike('jenis_bantuan','%'+d.jenis_bantuan+'%');
+    if(d.tahun_bantuan)q=q.eq('tahun_bantuan',String(d.tahun_bantuan));
+    const{data:matched}=await q;
+    if(!matched?.length)continue;
+    // Batch upsert
+    for(let i=0;i<matched.length;i+=100){
+      const batch=matched.slice(i,i+100).map(r=>({rtlh_id:r.id,dokumen_id:d.id,linked_by:user?.email}));
+      await sb.from('rtlh_dokumen_link').upsert(batch,{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
+    }
+    totalLinked+=matched.length;
+    statusDiv.innerHTML='<i class="fas fa-sync-alt fa-spin"></i> Menyinkronkan: '+d.judul+' ('+matched.length+' penerima)';
+  }
+  statusDiv.innerHTML='<i class="fas fa-check-circle" style="color:var(--success)"></i> Sinkronisasi selesai — '+totalLinked+' link diperbarui';
+  setTimeout(()=>statusDiv.remove(),3000);
+  if(btn){btn.innerHTML='<i class="fas fa-sync-alt"></i>';btn.disabled=false;}
+  toast('Sinkronisasi selesai: '+totalLinked+' link diperbarui','success');
+}
+
 async function loadDokLib(){
   const el=document.getElementById('dokLibList');
   el.innerHTML='<div style="text-align:center;color:var(--gray-400);padding:32px"><i class="fas fa-circle-notch fa-spin fa-2x"></i></div>';
@@ -4247,6 +4285,7 @@ window.addEventListener('DOMContentLoaded',async()=>{
         <button class="dok-jenis-chip" id="djc_SP" onclick="filterDokLib('Surat Pernyataan')" style="background:#FFF7ED;color:#EA580C;border-color:#FED7AA">Surat Pernyataan</button>
         <button class="dok-jenis-chip" id="djc_Lainnya" onclick="filterDokLib('Lainnya')" style="background:var(--gray-100);color:var(--gray-600);border-color:var(--gray-300)">Lainnya</button>
         <button id="btnUploadDokLib" onclick="openUploadDokLib()" style="display:none;margin-left:auto;padding:5px 12px;border-radius:8px;background:var(--blue);color:#fff;border:none;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit"><i class="fas fa-upload"></i> Upload Dokumen</button>
+        <button onclick="refreshDokLib()" title="Refresh & sinkronisasi link" style="padding:5px 10px;border-radius:8px;background:var(--gray-100);color:var(--gray-600);border:1px solid var(--gray-200);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit" id="btnRefreshDokLib"><i class="fas fa-sync-alt"></i></button>
       </div>
       <!-- List dokumen -->
       <div id="dokLibList" style="padding:14px 16px;min-height:200px;max-height:50vh;overflow-y:auto">
