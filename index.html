@@ -3724,7 +3724,7 @@ function renderDokLib(docs){
   const el=document.getElementById('dokLibList');
   el.innerHTML=docs.map(d=>{
     const cfg=DOK_JENIS_CONFIG[d.jenis]||DOK_JENIS_CONFIG['Lainnya'];
-    const url=sb.storage.from('rtlh-dokumen-kab').getPublicUrl(d.path).data.publicUrl;
+    const url=sb.storage.from('dokumen-kab').getPublicUrl(d.path).data.publicUrl;
     const kb=d.ukuran?Math.round(d.ukuran/1024)+'KB':'';
     return`<div class="dok-lib-card" style="margin-bottom:8px">
       <div class="dok-lib-icon" style="background:${cfg.bg};color:${cfg.color}"><i class="${cfg.icon}"></i></div>
@@ -3779,7 +3779,7 @@ async function uploadDokLib(){
   const ext=file.name.split('.').pop().toLowerCase();
   const safeName=judul.replace(/[^a-zA-Z0-9]/g,'_').slice(0,40);
   const path=`${jenis}/${tahun||'umum'}/${safeName}_${Date.now()}.${ext}`;
-  const{error:upErr}=await sb.storage.from('rtlh-dokumen-kab').upload(path,file,{upsert:false});
+  const{error:upErr}=await sb.storage.from('dokumen-kab').upload(path,file,{upsert:false});
   if(upErr){prog.innerHTML=`<span style="color:var(--danger)">Gagal upload: ${upErr.message}</span>`;return;}
   const{error:dbErr}=await sb.from('rtlh_dokumen_kabupaten').insert({
     jenis,judul,tahun,kecamatan:kec,path,ukuran:file.size,uploaded_by:user?.email
@@ -3793,7 +3793,7 @@ async function uploadDokLib(){
 async function deleteDokLib(id,path){
   if(!isSuperAdmin())return;
   if(!confirm('Hapus dokumen ini? Link ke penerima juga akan terhapus.'))return;
-  await sb.storage.from('rtlh-dokumen-kab').remove([path]);
+  await sb.storage.from('dokumen-kab').remove([path]);
   await sb.from('rtlh_dokumen_kabupaten').delete().eq('id',id);
   toast('Dokumen dihapus','success');
   loadDokLib();
@@ -3822,7 +3822,7 @@ async function loadLinkedDok(rtlhId){
     const d=lnk.rtlh_dokumen_kabupaten;
     if(!d)return'';
     const cfg=DOK_JENIS_CONFIG[d.jenis]||DOK_JENIS_CONFIG['Lainnya'];
-    const url=sb.storage.from('rtlh-dokumen-kab').getPublicUrl(d.path).data.publicUrl;
+    const url=sb.storage.from('dokumen-kab').getPublicUrl(d.path).data.publicUrl;
     return`<div class="dok-link-item">
       <div style="width:28px;height:28px;border-radius:6px;background:${cfg.bg};color:${cfg.color};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.8rem"><i class="${cfg.icon}"></i></div>
       <div style="flex:1;min-width:0">
@@ -3881,7 +3881,7 @@ async function loadDokLink(rtlhId){
     const d=lnk.rtlh_dokumen_kabupaten;
     if(!d)return'';
     const cfg=DOK_JENIS_CONFIG[d.jenis]||DOK_JENIS_CONFIG['Lainnya'];
-    const url=sb.storage.from('rtlh-dokumen-kab').getPublicUrl(d.path).data.publicUrl;
+    const url=sb.storage.from('dokumen-kab').getPublicUrl(d.path).data.publicUrl;
     return`<a href="${url}" target="_blank" style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;border:1px solid ${cfg.color}33;background:${cfg.bg};text-decoration:none;margin-bottom:4px">
       <i class="${cfg.icon}" style="color:${cfg.color};font-size:.75rem"></i>
       <span style="font-size:.72rem;font-weight:600;color:${cfg.color};flex:1">${d.judul}</span>
