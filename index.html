@@ -389,6 +389,17 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
 
+/* ══ LIBRARY DOKUMEN ══ */
+.dok-lib-card{background:#fff;border-radius:10px;border:1.5px solid var(--gray-200);padding:12px 14px;cursor:pointer;transition:var(--transition);display:flex;align-items:center;gap:12px}
+.dok-lib-card:hover{border-color:var(--blue);background:var(--blue-bg)}
+.dok-lib-icon{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.dok-lib-info{flex:1;min-width:0}
+.dok-lib-title{font-size:.82rem;font-weight:700;color:var(--gray-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dok-lib-meta{font-size:.65rem;color:var(--gray-400);margin-top:2px}
+.dok-jenis-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;font-size:.65rem;font-weight:700;cursor:pointer;border:1.5px solid transparent;transition:var(--transition)}
+.dok-jenis-chip.active{color:#fff}
+.dok-link-item{padding:8px 10px;border-radius:8px;border:1px solid var(--gray-200);background:#fff;display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:.72rem}
+
 /* TABLE EDITOR */
 .te-th{background:var(--navy);color:#fff;padding:8px 10px;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;position:sticky;top:0;border-right:1px solid rgba(255,255,255,.1);user-select:none;cursor:pointer}
 .te-th:hover{background:var(--navy-80)}
@@ -479,6 +490,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
     <button class="nav-tab" id="ntWebgis" onclick="nav('keclist')"><i class="fas fa-map-marked-alt"></i> WebGIS</button>
   </nav>
   <div class="header-right">
+    <button class="btn-icon-sm" id="btnDokLib" onclick="openDokLib()" title="Library Dokumen Kabupaten" style="display:none"><i class="fas fa-folder-open"></i></button>
     <button class="btn-icon-sm" id="btnExcelKab" onclick="openExcelKab()" title="Unduh / Unggah Excel Kabupaten" style="display:none"><i class="fas fa-file-excel"></i></button>
     <div id="authArea"></div>
   </div>
@@ -1257,6 +1269,7 @@ function updAuth(){
   // Update toolbar buttons
   document.getElementById('btnAddRtlh').style.display=canEdit()?'flex':'none';
   document.getElementById('btnDelAll').style.display=(isSuperAdmin()&&currentKec)?'flex':'none';
+  document.getElementById('btnDokLib').style.display=isAdmin?'flex':'none';
   document.getElementById('btnExcelKab').style.display=isAdmin?'flex':'none';
   const exSec=document.getElementById('btnExcelKabSection');
   if(exSec)exSec.style.display=isAdmin?'flex':'none';
@@ -2528,6 +2541,13 @@ function showDetail(r){
         :'<span style="font-size:.72rem;color:var(--gray-400)">Belum ada riwayat bantuan</span>'}
       </div>
     </div>
+    <div style="margin-top:14px">
+      <div style="font-size:.72rem;font-weight:800;color:var(--gray-600);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px;justify-content:space-between">
+        <span><i class="fas fa-link" style="color:var(--blue)"></i> Dokumen Terhubung</span>
+        ${canEdit()?`<button onclick="openLinkDok('${r.id}')" style="font-size:.65rem;padding:3px 10px;border-radius:6px;background:var(--blue);color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:700"><i class="fas fa-link"></i> Kelola</button>`:''}
+      </div>
+      <div id="dpDokLink" style="font-size:.72rem;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
+    </div>
     <div style="margin-top:14px" id="dpVerifSection">
       <div style="font-size:.72rem;font-weight:800;color:var(--gray-600);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px;justify-content:space-between">
         <span><i class="fas fa-clipboard-check" style="color:#10B981"></i> Riwayat Verifikasi Lapangan</span>
@@ -2599,6 +2619,7 @@ function showDetail(r){
   loadVerifList(r.id);
   loadDokList(r.id);
   loadRiwayat(r.nik||r.id);
+  loadDokLink(r.id);
 }
 
 function closeDetail(){document.getElementById('detailPanel').classList.remove('open');clearDetailSession();}
@@ -3657,6 +3678,216 @@ async function deleteDok(id,path){
 // ══════════════════════════════════════════════════
 
 // ══════════════════════════════════════════════════
+// LIBRARY DOKUMEN KABUPATEN
+// ══════════════════════════════════════════════════
+let _dokLibFilter='';
+let _dokLibData=[];
+let _linkDokRtlhId=null;
+
+const DOK_JENIS_CONFIG={
+  'SK':{color:'#1D4ED8',bg:'#EFF6FF',icon:'fas fa-stamp'},
+  'BA':{color:'#16A34A',bg:'#F0FDF4',icon:'fas fa-file-signature'},
+  'Surat Pernyataan':{color:'#EA580C',bg:'#FFF7ED',icon:'fas fa-file-alt'},
+  'Lainnya':{color:'#6B7280',bg:'#F3F4F6',icon:'fas fa-file'},
+};
+
+async function openDokLib(){
+  // Isi dropdown kecamatan di form upload
+  const kecSel=document.getElementById('dlKec');
+  if(kecSel&&kecSel.options.length<=1){
+    Object.keys(KEC_CONFIG).sort().forEach(k=>{
+      const o=document.createElement('option');o.value=k;o.textContent=k;kecSel.appendChild(o);
+    });
+  }
+  document.getElementById('ovDokLib').classList.add('open');
+  await loadDokLib();
+}
+
+async function loadDokLib(){
+  const el=document.getElementById('dokLibList');
+  el.innerHTML='<div style="text-align:center;color:var(--gray-400);padding:32px"><i class="fas fa-circle-notch fa-spin fa-2x"></i></div>';
+  let q=sb.from('rtlh_dokumen_kabupaten').select('*').order('tahun',{ascending:false}).order('created_at',{ascending:false});
+  if(_dokLibFilter)q=q.eq('jenis',_dokLibFilter);
+  const{data,error}=await q;
+  _dokLibData=data||[];
+  if(error||!_dokLibData.length){
+    el.innerHTML='<div style="text-align:center;color:var(--gray-400);padding:32px"><i class="fas fa-folder-open" style="font-size:2rem;display:block;margin-bottom:8px;opacity:.3"></i><div style="font-size:.82rem">Belum ada dokumen</div></div>';
+    return;
+  }
+  renderDokLib(_dokLibData);
+}
+
+function renderDokLib(docs){
+  const el=document.getElementById('dokLibList');
+  el.innerHTML=docs.map(d=>{
+    const cfg=DOK_JENIS_CONFIG[d.jenis]||DOK_JENIS_CONFIG['Lainnya'];
+    const url=sb.storage.from('rtlh-dokumen-kab').getPublicUrl(d.path).data.publicUrl;
+    const kb=d.ukuran?Math.round(d.ukuran/1024)+'KB':'';
+    return`<div class="dok-lib-card" style="margin-bottom:8px">
+      <div class="dok-lib-icon" style="background:${cfg.bg};color:${cfg.color}"><i class="${cfg.icon}"></i></div>
+      <div class="dok-lib-info">
+        <div class="dok-lib-title">${d.judul}</div>
+        <div class="dok-lib-meta">
+          <span style="background:${cfg.bg};color:${cfg.color};padding:1px 7px;border-radius:99px;font-weight:700;font-size:.6rem">${d.jenis}</span>
+          ${d.tahun?` · ${d.tahun}`:''}
+          ${d.kecamatan?` · Kec. ${d.kecamatan}`:' · Kabupaten'}
+          ${kb?' · '+kb:''}
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <a href="${url}" target="_blank" title="Buka dokumen" style="width:32px;height:32px;border-radius:8px;background:var(--blue-bg);color:var(--blue);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:.8rem"><i class="fas fa-external-link-alt"></i></a>
+        ${isSuperAdmin()?`<button onclick="deleteDokLib('${d.id}','${d.path}')" title="Hapus" style="width:32px;height:32px;border-radius:8px;background:var(--danger-bg);color:var(--danger);border:none;cursor:pointer;font-size:.8rem"><i class="fas fa-trash"></i></button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterDokLib(jenis){
+  _dokLibFilter=jenis;
+  document.querySelectorAll('.dok-jenis-chip').forEach(btn=>{
+    btn.classList.remove('active');
+    btn.style.color='';btn.style.background='';btn.style.borderColor='';
+  });
+  const activeId=jenis?`djc_${jenis.replace(' ','')}`.replace('SuratPernyataan','SP'):'djc_all';
+  const activeBtn=document.getElementById(activeId);
+  if(activeBtn)activeBtn.classList.add('active');
+  loadDokLib();
+}
+
+function openUploadDokLib(){
+  if(!isAdmin)return toast('Hanya admin','error');
+  document.getElementById('dlJudul').value='';
+  document.getElementById('dlFile').value='';
+  document.getElementById('dlProgress').innerHTML='';
+  document.getElementById('ovUploadDokLib').classList.add('open');
+}
+
+async function uploadDokLib(){
+  const jenis=document.getElementById('dlJenis').value;
+  const judul=document.getElementById('dlJudul').value.trim();
+  const tahun=parseInt(document.getElementById('dlTahun').value)||null;
+  const kec=document.getElementById('dlKec').value||null;
+  const file=document.getElementById('dlFile').files[0];
+  if(!judul)return toast('Isi judul dokumen','error');
+  if(!file)return toast('Pilih file','error');
+  if(file.size>20*1024*1024)return toast('File terlalu besar (maks 20 MB)','error');
+  const prog=document.getElementById('dlProgress');
+  prog.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Mengupload...';
+  const ext=file.name.split('.').pop().toLowerCase();
+  const safeName=judul.replace(/[^a-zA-Z0-9]/g,'_').slice(0,40);
+  const path=`${jenis}/${tahun||'umum'}/${safeName}_${Date.now()}.${ext}`;
+  const{error:upErr}=await sb.storage.from('rtlh-dokumen-kab').upload(path,file,{upsert:false});
+  if(upErr){prog.innerHTML=`<span style="color:var(--danger)">Gagal upload: ${upErr.message}</span>`;return;}
+  const{error:dbErr}=await sb.from('rtlh_dokumen_kabupaten').insert({
+    jenis,judul,tahun,kecamatan:kec,path,ukuran:file.size,uploaded_by:user?.email
+  });
+  if(dbErr){prog.innerHTML=`<span style="color:var(--danger)">Gagal simpan: ${dbErr.message}</span>`;return;}
+  prog.innerHTML='<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Berhasil diupload!</span>';
+  toast('Dokumen berhasil diupload','success');
+  setTimeout(()=>{closeModal('ovUploadDokLib');loadDokLib();},800);
+}
+
+async function deleteDokLib(id,path){
+  if(!isSuperAdmin())return;
+  if(!confirm('Hapus dokumen ini? Link ke penerima juga akan terhapus.'))return;
+  await sb.storage.from('rtlh-dokumen-kab').remove([path]);
+  await sb.from('rtlh_dokumen_kabupaten').delete().eq('id',id);
+  toast('Dokumen dihapus','success');
+  loadDokLib();
+}
+
+// ══ Link dokumen ke penerima ══
+async function openLinkDok(rtlhId){
+  _linkDokRtlhId=rtlhId;
+  const r=brAll.find(x=>String(x.id)===String(rtlhId));
+  document.getElementById('linkDokSub').textContent=r?.kep_kk||`ID: ${rtlhId}`;
+  document.getElementById('linkDokSearch').value='';
+  document.getElementById('dokSearchResults').innerHTML='';
+  document.getElementById('ovLinkDok').classList.add('open');
+  await loadLinkedDok(rtlhId);
+  // Load semua dokumen untuk pencarian
+  if(!_dokLibData.length)await loadDokLib();
+}
+
+async function loadLinkedDok(rtlhId){
+  const el=document.getElementById('linkedDokList');
+  const{data}=await sb.from('rtlh_dokumen_link')
+    .select('id,keterangan,dokumen_id,rtlh_dokumen_kabupaten(*)')
+    .eq('rtlh_id',parseInt(rtlhId));
+  if(!data?.length){el.innerHTML='<div style="color:var(--gray-400);font-size:.72rem">Belum ada dokumen terhubung</div>';return;}
+  el.innerHTML=data.map(lnk=>{
+    const d=lnk.rtlh_dokumen_kabupaten;
+    if(!d)return'';
+    const cfg=DOK_JENIS_CONFIG[d.jenis]||DOK_JENIS_CONFIG['Lainnya'];
+    const url=sb.storage.from('rtlh-dokumen-kab').getPublicUrl(d.path).data.publicUrl;
+    return`<div class="dok-link-item">
+      <div style="width:28px;height:28px;border-radius:6px;background:${cfg.bg};color:${cfg.color};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.8rem"><i class="${cfg.icon}"></i></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.judul}</div>
+        <div style="font-size:.62rem;color:var(--gray-400)">${d.jenis} ${d.tahun||''} ${lnk.keterangan?'· '+lnk.keterangan:''}</div>
+      </div>
+      <a href="${url}" target="_blank" style="color:var(--blue);font-size:.72rem;padding:3px 8px;border-radius:6px;background:var(--blue-bg);text-decoration:none"><i class="fas fa-external-link-alt"></i></a>
+      <button onclick="unlinkDok('${lnk.id}')" style="background:none;border:none;color:var(--gray-300);cursor:pointer;font-size:.72rem;padding:3px"><i class="fas fa-unlink"></i></button>
+    </div>`;
+  }).join('');
+}
+
+function searchDokForLink(q){
+  const el=document.getElementById('dokSearchResults');
+  const filtered=_dokLibData.filter(d=>!q||d.judul.toLowerCase().includes(q.toLowerCase())||d.jenis.toLowerCase().includes(q.toLowerCase()));
+  if(!filtered.length){el.innerHTML='<div style="color:var(--gray-400);font-size:.72rem;padding:8px">Tidak ada dokumen</div>';return;}
+  el.innerHTML=filtered.map(d=>{
+    const cfg=DOK_JENIS_CONFIG[d.jenis]||DOK_JENIS_CONFIG['Lainnya'];
+    return`<div onclick="linkDokToPenerima('${d.id}')" style="padding:8px 10px;border-radius:8px;border:1px solid var(--gray-200);margin-bottom:6px;cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--blue-bg)'" onmouseout="this.style.background=''">
+      <div style="width:28px;height:28px;border-radius:6px;background:${cfg.bg};color:${cfg.color};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.8rem"><i class="${cfg.icon}"></i></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:.75rem">${d.judul}</div>
+        <div style="font-size:.62rem;color:var(--gray-400)">${d.jenis} ${d.tahun||''} ${d.kecamatan?'· Kec. '+d.kecamatan:''}</div>
+      </div>
+      <i class="fas fa-plus-circle" style="color:var(--blue);font-size:.85rem"></i>
+    </div>`;
+  }).join('');
+}
+
+async function linkDokToPenerima(dokId){
+  if(!_linkDokRtlhId)return;
+  const{error}=await sb.from('rtlh_dokumen_link').upsert({
+    rtlh_id:parseInt(_linkDokRtlhId),dokumen_id:dokId,linked_by:user?.email
+  },{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
+  if(error)return toast('Gagal: '+error.message,'error');
+  toast('Dokumen berhasil dihubungkan','success');
+  loadLinkedDok(_linkDokRtlhId);
+  loadDokLink(_linkDokRtlhId);
+}
+
+async function unlinkDok(linkId){
+  await sb.from('rtlh_dokumen_link').delete().eq('id',linkId);
+  toast('Link dihapus','success');
+  loadLinkedDok(_linkDokRtlhId);
+  loadDokLink(_linkDokRtlhId);
+}
+
+async function loadDokLink(rtlhId){
+  const el=document.getElementById('dpDokLink');
+  if(!el)return;
+  const{data}=await sb.from('rtlh_dokumen_link')
+    .select('id,rtlh_dokumen_kabupaten(id,jenis,judul,tahun,path)')
+    .eq('rtlh_id',parseInt(rtlhId));
+  if(!data?.length){el.innerHTML='<span style="color:var(--gray-400)">Belum ada dokumen terhubung</span>';return;}
+  el.innerHTML=data.map(lnk=>{
+    const d=lnk.rtlh_dokumen_kabupaten;
+    if(!d)return'';
+    const cfg=DOK_JENIS_CONFIG[d.jenis]||DOK_JENIS_CONFIG['Lainnya'];
+    const url=sb.storage.from('rtlh-dokumen-kab').getPublicUrl(d.path).data.publicUrl;
+    return`<a href="${url}" target="_blank" style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;border:1px solid ${cfg.color}33;background:${cfg.bg};text-decoration:none;margin-bottom:4px">
+      <i class="${cfg.icon}" style="color:${cfg.color};font-size:.75rem"></i>
+      <span style="font-size:.72rem;font-weight:600;color:${cfg.color};flex:1">${d.judul}</span>
+      <i class="fas fa-external-link-alt" style="color:${cfg.color};font-size:.6rem"></i>
+    </a>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════
 // MAINTENANCE MODE — Akses terbatas hanya staf dinas
 // ══════════════════════════════════════════════════
 const MAINTENANCE_MODE = true; // Ganti false untuk buka ke publik
@@ -3743,6 +3974,108 @@ window.addEventListener('DOMContentLoaded',async()=>{
 });
 </script>
 
+
+<!-- ═══ MODAL LIBRARY DOKUMEN KABUPATEN ═══ -->
+<div class="overlay" id="ovDokLib">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-head">
+      <div><h3><i class="fas fa-folder-open" style="color:var(--gold)"></i> Library Dokumen Kabupaten</h3>
+        <div class="sub">SK, BA, Surat Pernyataan — dokumen resmi RTLH</div>
+      </div>
+      <button class="modal-x" onclick="closeModal('ovDokLib')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" style="padding:0">
+      <!-- Filter jenis -->
+      <div style="padding:12px 16px;border-bottom:1px solid var(--gray-200);display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <button class="dok-jenis-chip active" id="djc_all" onclick="filterDokLib('')" style="background:var(--navy);color:#fff;border-color:var(--navy)">Semua</button>
+        <button class="dok-jenis-chip" id="djc_SK" onclick="filterDokLib('SK')" style="background:#EFF6FF;color:#1D4ED8;border-color:#BFDBFE">SK</button>
+        <button class="dok-jenis-chip" id="djc_BA" onclick="filterDokLib('BA')" style="background:#F0FDF4;color:#16A34A;border-color:#BBF7D0">BA</button>
+        <button class="dok-jenis-chip" id="djc_SP" onclick="filterDokLib('Surat Pernyataan')" style="background:#FFF7ED;color:#EA580C;border-color:#FED7AA">Surat Pernyataan</button>
+        <button class="dok-jenis-chip" id="djc_Lainnya" onclick="filterDokLib('Lainnya')" style="background:var(--gray-100);color:var(--gray-600);border-color:var(--gray-300)">Lainnya</button>
+        ${isAdmin?`<button onclick="openUploadDokLib()" style="margin-left:auto;padding:5px 12px;border-radius:8px;background:var(--blue);color:#fff;border:none;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit"><i class="fas fa-upload"></i> Upload Dokumen</button>`:''}
+      </div>
+      <!-- List dokumen -->
+      <div id="dokLibList" style="padding:14px 16px;min-height:200px;max-height:50vh;overflow-y:auto">
+        <div style="text-align:center;color:var(--gray-400);padding:32px"><i class="fas fa-circle-notch fa-spin fa-2x"></i></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ovDokLib')">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL UPLOAD DOKUMEN KABUPATEN ═══ -->
+<div class="overlay" id="ovUploadDokLib">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head">
+      <div><h3><i class="fas fa-upload" style="color:var(--blue)"></i> Upload Dokumen Kabupaten</h3></div>
+      <button class="modal-x" onclick="closeModal('ovUploadDokLib')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="form-group" style="margin:0">
+          <label>Jenis Dokumen <span style="color:var(--danger)">*</span></label>
+          <select id="dlJenis">
+            <option value="SK">SK (Surat Keputusan)</option>
+            <option value="BA">BA (Berita Acara)</option>
+            <option value="Surat Pernyataan">Surat Pernyataan</option>
+            <option value="Lainnya">Lainnya</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Tahun</label>
+          <input type="number" id="dlTahun" value="2025" min="2020" max="2030">
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Judul Dokumen <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="dlJudul" placeholder="misal: SK RTLH 2025 No. 188/...">
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Kecamatan (kosongkan jika berlaku seluruh kabupaten)</label>
+        <select id="dlKec">
+          <option value="">Seluruh Kabupaten</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:4px">
+        <label>File PDF <span style="color:var(--danger)">*</span></label>
+        <input type="file" id="dlFile" accept=".pdf,.doc,.docx,.jpg,.png" style="font-size:.8rem">
+        <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Format: PDF, DOC, JPG, PNG. Maks 20 MB.</div>
+      </div>
+      <div id="dlProgress" style="font-size:.72rem;margin-top:8px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ovUploadDokLib')">Batal</button>
+      <button class="btn btn-primary" onclick="uploadDokLib()"><i class="fas fa-upload"></i> Upload</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL LINK DOKUMEN KE PENERIMA ═══ -->
+<div class="overlay" id="ovLinkDok">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-head">
+      <div><h3><i class="fas fa-link" style="color:var(--blue)"></i> Link Dokumen ke Penerima</h3>
+        <div class="sub" id="linkDokSub">Hubungkan dokumen dengan penerima ini</div>
+      </div>
+      <button class="modal-x" onclick="closeModal('ovLinkDok')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:.72rem;font-weight:700;color:var(--gray-600);margin-bottom:8px">Dokumen Terhubung:</div>
+      <div id="linkedDokList" style="margin-bottom:14px"></div>
+      <div style="font-size:.72rem;font-weight:700;color:var(--gray-600);margin-bottom:8px;border-top:1px solid var(--gray-200);padding-top:12px">Tambah Link Dokumen:</div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Cari Dokumen</label>
+        <input type="text" id="linkDokSearch" placeholder="Ketik judul atau jenis..." oninput="searchDokForLink(this.value)">
+      </div>
+      <div id="dokSearchResults" style="max-height:200px;overflow-y:auto"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ovLinkDok')">Tutup</button>
+    </div>
+  </div>
+</div>
 
 <!-- ═══ END APP SHELL ═══ -->
 </div>
