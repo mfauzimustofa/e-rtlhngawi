@@ -3820,14 +3820,34 @@ async function uploadDokLib(){
   const{error:upErr}=await sb.storage.from('dokumen-kab').upload(path,file,{upsert:false});
   if(upErr){prog.innerHTML=`<span style="color:var(--danger)">Gagal upload: ${upErr.message}</span>`;return;}
   const jenisBantuan=document.getElementById('dlJenisBantuan')?.value||null;
+  const tahunBantuan=document.getElementById('dlTahunBantuan')?.value||null;
   const{error:dbErr}=await sb.from('rtlh_dokumen_kabupaten').insert({
     jenis,judul,tahun,kecamatan:kec,path,ukuran:file.size,uploaded_by:user?.email,
-    jenis_bantuan:jenisBantuan||null
+    jenis_bantuan:jenisBantuan||null,
+    tahun_bantuan:tahunBantuan?parseInt(tahunBantuan):null
   });
   if(dbErr){prog.innerHTML=`<span style="color:var(--danger)">Gagal simpan: ${dbErr.message}</span>`;return;}
   prog.innerHTML='<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Berhasil diupload!</span>';
   toast('Dokumen berhasil diupload','success');
-  setTimeout(()=>{closeModal('ovUploadDokLib');loadDokLib();},800);
+  // Auto-link jika ada jenis bantuan
+  if(jenisBantuan){
+    prog.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Menghubungkan ke penerima...';
+    const{data:newDoc}=await sb.from('rtlh_dokumen_kabupaten').select('id').eq('path',path).single();
+    if(newDoc){
+      let qLink=sb.from('rtlh').select('id');
+      qLink=qLink.ilike('jenis_bantuan','%'+jenisBantuan+'%');
+      if(tahunBantuan)qLink=qLink.eq('tahun_bantuan',tahunBantuan);
+      const{data:matched}=await qLink;
+      if(matched?.length){
+        for(let i=0;i<matched.length;i+=100){
+          const batch=matched.slice(i,i+100).map(r=>({rtlh_id:r.id,dokumen_id:newDoc.id,linked_by:user?.email}));
+          await sb.from('rtlh_dokumen_link').upsert(batch,{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
+        }
+        prog.innerHTML='<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Upload selesai · '+matched.length+' penerima terhubung!</span>';
+      }
+    }
+  }
+  setTimeout(()=>{closeModal('ovUploadDokLib');loadDokLib();},1200);
 }
 
 let _penerimaDokAll=[];
@@ -4274,13 +4294,26 @@ window.addEventListener('DOMContentLoaded',async()=>{
       </div>
       <div class="form-group" style="margin-bottom:10px">
         <label>Berlaku untuk Jenis Bantuan <span style="font-weight:400;color:var(--gray-400)">(untuk auto-link)</span></label>
-        <select id="dlJenisBantuan">
-          <option value="">Semua / Tidak spesifik</option>
-          <option value="RTLH">RTLH</option>
-          <option value="BSPS">BSPS</option>
-          <option value="Dana Desa">Dana Desa</option>
-          <option value="CSR">CSR</option>
-        </select>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <select id="dlJenisBantuan">
+            <option value="">Semua / Tidak spesifik</option>
+            <option value="RTLH">RTLH</option>
+            <option value="BSPS">BSPS</option>
+            <option value="Dana Desa">Dana Desa</option>
+            <option value="CSR">CSR</option>
+          </select>
+          <select id="dlTahunBantuan">
+            <option value="">Semua Tahun</option>
+            <option value="2021">2021</option>
+            <option value="2022">2022</option>
+            <option value="2023">2023</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+          </select>
+        </div>
+        <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Contoh: RTLH + 2026 → penerima RTLH 2026 otomatis terhubung saat disimpan</div>
       </div>
       <div class="form-group" style="margin-bottom:4px">
         <label>File PDF <span style="color:var(--danger)">*</span></label>
