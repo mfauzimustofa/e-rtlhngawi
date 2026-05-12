@@ -560,7 +560,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
             <option value="">Semua Status</option>
             <option value="RTLH">RTLH</option>
             <option value="Layak Huni">Layak Huni</option>
-            <option value="Dibatalkan">Dibatalkan</option>
+            <option value="SK Dibatalkan">SK Dibatalkan</option>
           </select>
           <button onclick="clearSearch()" style="background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:.78rem;padding:4px"><i class="fas fa-times"></i></button>
         </div>
@@ -688,7 +688,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
       <div style="display:flex;flex-direction:column;gap:5px">
         <div style="display:flex;align-items:center;gap:6px;font-size:.72rem"><div style="width:12px;height:12px;border-radius:50%;background:#16A34A;flex-shrink:0"></div>Layak Huni</div>
         <div style="display:flex;align-items:center;gap:6px;font-size:.72rem"><div style="width:12px;height:12px;border-radius:50%;background:#DC2626;flex-shrink:0"></div>RTLH</div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:.72rem"><div style="width:12px;height:12px;border-radius:50%;background:#94A3B8;flex-shrink:0"></div>Dibatalkan</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:.72rem"><div style="width:12px;height:12px;border-radius:50%;background:#94A3B8;flex-shrink:0"></div>SK Dibatalkan</div>
       </div>
     </div>
   </div>
@@ -770,7 +770,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
             <option value="">Semua Status</option>
             <option value="RTLH">RTLH</option>
             <option value="Layak Huni">Layak Huni</option>
-            <option value="Dibatalkan">Dibatalkan</option>
+            <option value="SK Dibatalkan">SK Dibatalkan</option>
           </select>
         </div>
         <div class="form-group" style="margin:0">
@@ -1387,7 +1387,7 @@ async function loadGlobalStats(){
     const total=data.length;
     const layak=data.filter(r=>r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses').length;
     const belum=data.filter(r=>r.status_rtlh==='RTLH'||r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
-    const batal=data.filter(r=>r.status_rtlh==='Dibatalkan').length;
+    const batal=data.filter(r=>r.status_rtlh==='SK Dibatalkan').length;
     const sudah=layak; const proses=0;
 
     document.getElementById('gs-total').textContent=total.toLocaleString('id');
@@ -1407,7 +1407,7 @@ async function loadGlobalStats(){
       if(!kecCounts[k])kecCounts[k]={total:0,sudah:0,proses:0,belum:0};
       kecCounts[k].total++;
       if(r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')kecCounts[k].sudah++;
-      else if(r.status_rtlh!=='Dibatalkan')kecCounts[k].belum++;
+      else if(r.status_rtlh!=='SK Dibatalkan')kecCounts[k].belum++;
     });
 
     // Desil counts
@@ -1741,12 +1741,12 @@ function renderChartStatus(data){
   const existing=Chart.getChart(ctx);if(existing)existing.destroy();
   const layak=data.filter(r=>r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses').length;
   const belum=data.filter(r=>r.status_rtlh==='RTLH'||r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
-  const batal=data.filter(r=>r.status_rtlh==='Dibatalkan').length;
+  const batal=data.filter(r=>r.status_rtlh==='SK Dibatalkan').length;
   const tot=layak+belum+batal;
   chartStatus=new Chart(ctx,{
     type:'doughnut',
     data:{
-      labels:['Layak Huni','RTLH','Dibatalkan'],
+      labels:['Layak Huni','RTLH','SK Dibatalkan'],
       datasets:[{data:[layak,belum,batal],backgroundColor:['#16A34A','#DC2626','#94A3B8'],borderWidth:3,borderColor:'#fff',hoverOffset:8}]
     },
     options:{
@@ -1870,7 +1870,7 @@ async function searchNIK(){
       </div>
       ${group.items.map(r=>{
         const isLayak=r.status_rtlh==='Layak Huni';
-        const isBatal=r.status_rtlh==='Dibatalkan';
+        const isBatal=r.status_rtlh==='SK Dibatalkan';
         const statusColor=isLayak?'var(--success)':isBatal?'var(--gray-400)':'var(--danger)';
         const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
         return`<div onclick="bukaDetailDariSearch('${r.id}','${kecKey}')"
@@ -1937,7 +1937,7 @@ async function ensureKecCounts(force=false){
       if(!kecCounts[k])kecCounts[k]={total:0,sudah:0,proses:0,belum:0};
       kecCounts[k].total++;
       if(r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')kecCounts[k].sudah++;
-      else if(r.status_rtlh!=='Dibatalkan')kecCounts[k].belum++;
+      else if(r.status_rtlh!=='SK Dibatalkan')kecCounts[k].belum++;
     });
   }catch(e){console.error(e);}
 }
@@ -2254,7 +2254,7 @@ function renderSidebar(){
       <button class="filter-chip active" data-status-chip="all" onclick="setFilterStatus('all')">Semua</button>
       <button class="filter-chip" data-status-chip="RTLH" onclick="setFilterStatus('RTLH')" style="border-color:#DC2626;color:#DC2626">RTLH</button>
       <button class="filter-chip" data-status-chip="Layak Huni" onclick="setFilterStatus('Layak Huni')" style="border-color:#16A34A;color:#16A34A">Layak Huni</button>
-      <button class="filter-chip" data-status-chip="Dibatalkan" onclick="setFilterStatus('Dibatalkan')" style="border-color:#9CA3AF;color:#6B7280">Batal</button>
+      <button class="filter-chip" data-status-chip="Dibatalkan" onclick="setFilterStatus('SK Dibatalkan')" style="border-color:#9CA3AF;color:#6B7280">SK Dibatalkan</button>
       <span style="font-size:.68rem;font-weight:700;color:var(--gray-500);margin-left:6px">Desil:</span>
       <button class="filter-chip active" data-desil-chip="all" onclick="setFilterDesil('all')">Semua</button>
       <button class="filter-chip" data-desil-chip="1" onclick="setFilterDesil('1')" style="color:#BE123C">D1</button>
@@ -2281,13 +2281,13 @@ function renderKecDashboard(){
   const total=brAll.length;
   const layak=brAll.filter(r=>r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses').length;
   const rtlh=brAll.filter(r=>r.status_rtlh==='RTLH'||r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
-  const batal=brAll.filter(r=>r.status_rtlh==='Dibatalkan').length;
+  const batal=brAll.filter(r=>r.status_rtlh==='SK Dibatalkan').length;
   const desil14=brAll.filter(r=>{const m=String(r.desil||'').match(/\d+/);return m&&parseInt(m[0])<=4;}).length;
   d.innerHTML=`
     <div class="kd-stat">
       <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--success)">${layak}</div><div class="kdsi-lbl">Layak Huni</div></div>
       <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--danger)">${rtlh}</div><div class="kdsi-lbl">RTLH</div></div>
-      <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--gray-500)">${batal}</div><div class="kdsi-lbl">Dibatalkan</div></div>
+      <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--gray-500)">${batal}</div><div class="kdsi-lbl">SK Dibatalkan</div></div>
     </div>
     <div class="canvas-wrap"><canvas id="chartKecStatus"></canvas></div>`;
   setTimeout(()=>{
@@ -2296,7 +2296,7 @@ function renderKecDashboard(){
     const existing=Chart.getChart(ctx);
     if(existing)existing.destroy();
     new Chart(ctx,{type:'doughnut',
-      data:{labels:['Layak Huni','RTLH','Dibatalkan'],datasets:[{data:[layak,rtlh,batal],backgroundColor:['#16A34A','#DC2626','#94A3B8'],borderWidth:2,cutout:'65%'}]},
+      data:{labels:['Layak Huni','RTLH','SK Dibatalkan'],datasets:[{data:[layak,rtlh,batal],backgroundColor:['#16A34A','#DC2626','#94A3B8'],borderWidth:2,cutout:'65%'}]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:9},boxWidth:10,padding:6}}}}
     });
   },50);
@@ -2409,7 +2409,7 @@ function renderSidebarList(){
     const desa=group.desa;
     const items=group.items;
     const layak=items.filter(r=>r.status_rtlh==='Layak Huni').length;
-    const rtlh=items.filter(r=>r.status_rtlh!=='Layak Huni'&&r.status_rtlh!=='Dibatalkan').length;
+    const rtlh=items.filter(r=>r.status_rtlh!=='Layak Huni'&&r.status_rtlh!=='SK Dibatalkan').length;
     return`<div class="desa-group">
       <div class="desa-header" onclick="toggleDesaGroup('dg_${desa.replace(/\s/g,'_')}')" style="padding:8px 14px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);border-top:2px solid var(--blue-bg);display:flex;align-items:center;gap:8px;cursor:pointer;position:sticky;top:0;z-index:5">
         <i class="fas fa-map-marker-alt" style="color:var(--blue);font-size:.72rem;flex-shrink:0"></i>
@@ -2423,7 +2423,7 @@ function renderSidebarList(){
         ${items.map((r,i)=>{
           const desilNum=String(r.desil||'').match(/\d+/)?.[0]||'';
           const color=desilNum?getDesilColor(desilNum):'#94A3B8';
-          const statusCls=r.status_rtlh==='Layak Huni'?'sudah':r.status_rtlh==='Dibatalkan'?'batal':'belum';
+          const statusCls=r.status_rtlh==='Layak Huni'?'sudah':r.status_rtlh==='SK Dibatalkan'?'batal':'belum';
           return`<div class="rtlh-item" id="ri_${r.id}" onclick="selectItem(${r.id})">
             <div style="display:flex;align-items:center;gap:8px">
               <div style="width:22px;height:22px;border-radius:6px;background:${color}18;color:${color};font-size:.6rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div>
@@ -2483,7 +2483,7 @@ function updateMap(){
   brFeatures.forEach(r=>{
     if(!r.latitude||!r.longitude)return;
     const isLayak=r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses';
-    const isBatal=r.status_rtlh==='Dibatalkan';
+    const isBatal=r.status_rtlh==='SK Dibatalkan';
     const markerColor=isLayak?'#16A34A':isBatal?'#94A3B8':'#DC2626';
     const mk=L.circleMarker([r.latitude,r.longitude],{radius:7,fillColor:markerColor,color:'#fff',weight:1.5,fillOpacity:.85});
     mk.on('click',()=>selectItem(r.id));
@@ -2546,11 +2546,11 @@ function showDetail(r){
       </div>
     </div>
     <div class="detail-grid">
-      <div class="detail-item"><div class="dl">Status RTLH</div><div class="dv">${r.status_rtlh?`<span class="badge ${(r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')?'sudah':r.status_rtlh==='Dibatalkan'?'batal':'belum'}">${r.status_rtlh}</span>`:'-'}</div></div>
+      <div class="detail-item"><div class="dl">Status RTLH</div><div class="dv">${r.status_rtlh?`<span class="badge ${(r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')?'sudah':r.status_rtlh==='SK Dibatalkan'?'batal':'belum'}">${r.status_rtlh}</span>`:'-'}</div></div>
       <div class="detail-item"><div class="dl">Desil</div><div class="dv" style="color:${desilNum?getDesilColor(desilNum):'inherit'};font-weight:700">${dn(r.desil)||'-'}</div></div>
       
       <div class="detail-item"><div class="dl">Backlog</div><div class="dv">${dn(r.backlog)||'-'}</div></div>
-      ${r.status_rtlh==='Dibatalkan'&&r.status_batal?`<div class="detail-item full"><div class="dl">Alasan Batal</div><div class="dv" style="color:var(--danger);font-weight:600">${r.status_batal}</div></div>`:''}
+      ${r.status_rtlh==='SK Dibatalkan'&&r.status_batal?`<div class="detail-item full"><div class="dl">Alasan Batal</div><div class="dv" style="color:var(--danger);font-weight:600">${r.status_batal}</div></div>`:''}
       ${r.jenis_bantuan?`<div class="detail-item"><div class="dl">Jenis Bantuan</div><div class="dv">${r.jenis_bantuan}</div></div>`:''}      ${r.keterangan?`<div class="detail-item full"><div class="dl">Keterangan</div><div class="dv" style="font-style:italic;color:var(--gray-700)">${r.keterangan}</div></div>`:''}
       ${r.tahun_bantuan?`<div class="detail-item"><div class="dl">Tahun Bantuan</div><div class="dv">${r.tahun_bantuan}</div></div>`:''}
     </div>
@@ -2711,7 +2711,7 @@ const FIELDS=[
   {key:'kondisi_at',label:'Kondisi Atap',type:'text'},
   {key:'material_l',label:'Material Lantai',type:'text'},
   {key:'kondisi_la',label:'Kondisi Lantai',type:'text'},
-  {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['RTLH','Layak Huni','Dibatalkan']},
+  {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['RTLH','Layak Huni','SK Dibatalkan']},
   {key:'status_batal',label:'Alasan Dibatalkan',type:'select',opts:['','-','Meninggal Dunia','Tidak Bersedia Dibantu','Tidak Ada Biaya','Pindah Tempat Tinggal','Sudah Mampu Mandiri','Tidak Memenuhi Syarat','Lainnya'],onChange:'handleAlasanBatal(this)'},
 
   {key:'jenis_bantuan',label:'Jenis Bantuan',type:'select',opts:['','RTLH','BSPS','DD','CSR','Lainnya']},
@@ -2733,7 +2733,7 @@ function handleAlasanBatal(sel){
   const statusEl=document.getElementById('ff_status_rtlh');
   if(!statusEl)return;
   if(sel.value&&sel.value!=='-'){
-    statusEl.value='Dibatalkan';
+    statusEl.value='SK Dibatalkan';
   } else {
     const jbEl=document.getElementById('ff_jenis_bantuan');
     if(jbEl&&jbEl.value)statusEl.value='Layak Huni';
@@ -2777,7 +2777,7 @@ function openForm(id){
         }
       } else if(f.type==='select'){
         const onChange=f.onChange?f.onChange:'';
-        const extraChange=f.key==='jenis_bantuan'?"if(this.value){const s=document.getElementById('ff_status_rtlh');if(s&&s.value!=='Dibatalkan')s.value='Layak Huni';}":'';
+        const extraChange=f.key==='jenis_bantuan'?"if(this.value){const s=document.getElementById('ff_status_rtlh');if(s&&s.value!=='SK Dibatalkan')s.value='Layak Huni';}":'';
         inputHtml=`<select id="ff_${f.key}" ${locked?'disabled':''} onchange="${extraChange}${onChange}" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.85rem;color:var(--gray-900);outline:none;background:#fff">${f.opts.map(o=>`<option value="${o==='-'?'':o}" ${(val===o||(o==='-'&&!val))?'selected':''}>${o||'(kosong)'}</option>`).join('')}</select>`;
       } else if(f.sensitive){
         if(locked){
@@ -3223,7 +3223,7 @@ async function importExcelKab(input){
         if(hasCol(['Status RTLH','status_rtlh'])){
           const v=xlVal(getCol(row,'Status RTLH','status_rtlh'));
           if(v){const u=v.toUpperCase().trim();
-            obj.status_rtlh=u==='LAYAK HUNI'||u==='SUDAH DITANGANI'||u==='SUDAH'?'Layak Huni':u==='RTLH'||u==='BELUM DITANGANI'||u==='BELUM'?'RTLH':u==='DIBATALKAN'||u==='BATAL'?'Dibatalkan':v;
+            obj.status_rtlh=u==='LAYAK HUNI'||u==='SUDAH DITANGANI'||u==='SUDAH'?'Layak Huni':u==='RTLH'||u==='BELUM DITANGANI'||u==='BELUM'?'RTLH':u==='DIBATALKAN'||u==='BATAL'||u==='SK DIBATALKAN'?'SK Dibatalkan':v;
           }
         }
         if(hasCol(['Alasan Batal','status_batal']))obj.status_batal=xlVal(getCol(row,'Alasan Batal','status_batal'));
@@ -3231,7 +3231,7 @@ async function importExcelKab(input){
           const v=xlVal(getCol(row,'Jenis Bantuan','jenis_bantuan'));
           if(v){const u=v.toUpperCase().trim();
             obj.jenis_bantuan=u==='RTLH'?'RTLH':u==='BSPS'?'BSPS':u==='DD'||u==='DANA DESA'?'Dana Desa':u==='CSR'?'CSR':v;
-            if(!obj.status_rtlh||obj.status_rtlh!=='Dibatalkan')obj.status_rtlh='Layak Huni';
+            if(!obj.status_rtlh||obj.status_rtlh!=='SK Dibatalkan')obj.status_rtlh='Layak Huni';
           }
         }
         if(hasCol(['Tahun Bantuan','tahun_bantuan']))obj.tahun_bantuan=xlVal(String(getCol(row,'Tahun Bantuan','tahun_bantuan')||'').replace(/[^0-9]/g,''));
@@ -3504,7 +3504,7 @@ async function saveVerif(){
   // Jika hasil verifikasi Layak → update status RTLH jadi Layak Huni
   if(hasil==='Layak'){
     const r=brAll.find(x=>String(x.id)===String(_verifRtlhId));
-    if(r&&r.status_rtlh!=='Layak Huni'&&r.status_rtlh!=='Dibatalkan'){
+    if(r&&r.status_rtlh!=='Layak Huni'&&r.status_rtlh!=='SK Dibatalkan'){
       await sb.from('rtlh').update({status_rtlh:'Layak Huni',updated_at:new Date().toISOString()}).eq('id',parseInt(_verifRtlhId));
       // Catat riwayat
       await sb.from('rtlh_riwayat').insert({nik:r.nik,rtlh_id:parseInt(_verifRtlhId),field_name:'Status RTLH',nilai_lama:r.status_rtlh||null,nilai_baru:'Layak Huni',diubah_oleh:user?.email});
@@ -3944,7 +3944,7 @@ function renderPenerimaDok(list){
   el.innerHTML=Object.values(byDesa).map(g=>{
     const itemsHtml=g.items.map(r=>{
       const isLayak=r.status_rtlh==='Layak Huni';
-      const sc=isLayak?'var(--success)':r.status_rtlh==='Dibatalkan'?'var(--gray-400)':'var(--danger)';
+      const sc=isLayak?'var(--success)':r.status_rtlh==='SK Dibatalkan'?'var(--gray-400)':'var(--danger)';
       const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
       return '<div onclick="closeModal(&quot;ovPenerimaDok&quot;);closeModal(&quot;ovDokLib&quot;);bukaDetailDariSearch(&quot;'+r.id+'&quot;,&quot;'+kecKey+'&quot;)"'+
         ' style="padding:8px 10px;border-radius:8px;border:1px solid var(--gray-100);margin-bottom:4px;cursor:pointer;display:flex;align-items:center;gap:8px;background:#fff"'+
