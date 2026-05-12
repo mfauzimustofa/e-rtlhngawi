@@ -3699,6 +3699,9 @@ async function openDokLib(){
       const o=document.createElement('option');o.value=k;o.textContent=k;kecSel.appendChild(o);
     });
   }
+  // Tampilkan tombol upload hanya untuk admin
+  const btnUp=document.getElementById('btnUploadDokLib');
+  if(btnUp)btnUp.style.display=isAdmin?'inline-flex':'none';
   document.getElementById('ovDokLib').classList.add('open');
   await loadDokLib();
 }
@@ -3992,7 +3995,7 @@ window.addEventListener('DOMContentLoaded',async()=>{
         <button class="dok-jenis-chip" id="djc_BA" onclick="filterDokLib('BA')" style="background:#F0FDF4;color:#16A34A;border-color:#BBF7D0">BA</button>
         <button class="dok-jenis-chip" id="djc_SP" onclick="filterDokLib('Surat Pernyataan')" style="background:#FFF7ED;color:#EA580C;border-color:#FED7AA">Surat Pernyataan</button>
         <button class="dok-jenis-chip" id="djc_Lainnya" onclick="filterDokLib('Lainnya')" style="background:var(--gray-100);color:var(--gray-600);border-color:var(--gray-300)">Lainnya</button>
-        ${isAdmin?`<button onclick="openUploadDokLib()" style="margin-left:auto;padding:5px 12px;border-radius:8px;background:var(--blue);color:#fff;border:none;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit"><i class="fas fa-upload"></i> Upload Dokumen</button>`:''}
+        <button id="btnUploadDokLib" onclick="openUploadDokLib()" style="display:none;margin-left:auto;padding:5px 12px;border-radius:8px;background:var(--blue);color:#fff;border:none;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit"><i class="fas fa-upload"></i> Upload Dokumen</button>
       </div>
       <!-- List dokumen -->
       <div id="dokLibList" style="padding:14px 16px;min-height:200px;max-height:50vh;overflow-y:auto">
