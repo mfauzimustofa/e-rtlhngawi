@@ -3860,6 +3860,8 @@ function openUploadDokLib(){
   if(!isAdmin)return toast('Hanya admin','error');
   document.getElementById('dlJudul').value='';
   document.getElementById('dlFile').value='';
+  _dlSelectedIds.clear();renderDlSelected();
+  const rdAuto=document.querySelector('input[name="dlLinkMode"][value="auto"]');if(rdAuto){rdAuto.checked=true;toggleDlLinkMode('auto');}
   document.getElementById('dlProgress').innerHTML='';
   document.getElementById('ovUploadDokLib').classList.add('open');
 }
@@ -3890,8 +3892,18 @@ async function uploadDokLib(){
   if(dbErr){prog.innerHTML=`<span style="color:var(--danger)">Gagal simpan: ${dbErr.message}</span>`;return;}
   prog.innerHTML='<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Berhasil diupload!</span>';
   toast('Dokumen berhasil diupload','success');
-  // Auto-link jika ada jenis bantuan
-  if(jenisBantuan){
+  // Auto-link atau manual link
+  const linkMode=document.querySelector('input[name="dlLinkMode"]:checked')?.value||'auto';
+  if(linkMode==='manual'&&_dlSelectedIds.size){
+    prog.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Menghubungkan '+_dlSelectedIds.size+' penerima...';
+    const{data:newDoc}=await sb.from('rtlh_dokumen_kabupaten').select('id').eq('path',path).single();
+    if(newDoc){
+      const batch=[..._dlSelectedIds].map(id=>({rtlh_id:id,dokumen_id:newDoc.id,linked_by:user?.email}));
+      await sb.from('rtlh_dokumen_link').upsert(batch,{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
+      prog.innerHTML='<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Upload selesai · '+_dlSelectedIds.size+' penerima terhubung!</span>';
+    }
+  } else if(jenisBantuan){
+  } else if(jenisBantuan){
     prog.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Menghubungkan ke penerima...';
     const{data:newDoc}=await sb.from('rtlh_dokumen_kabupaten').select('id').eq('path',path).single();
     if(newDoc){
@@ -3912,8 +3924,10 @@ async function uploadDokLib(){
 }
 
 let _penerimaDokAll=[];
+let _currentDokId=null;
 
 async function lihatPenerimaDok(dokId, judul){
+  _currentDokId=dokId;
   document.getElementById('penerimaDokSub').textContent=judul;
   document.getElementById('penerimaDokCount').innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Memuat...';
   document.getElementById('penerimaDokList').innerHTML='<div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin fa-2x"></i></div>';
@@ -3956,7 +3970,9 @@ function renderPenerimaDok(list){
         '<div style="font-size:.63rem;color:var(--gray-400)">'+showNIK(r.nik)+(r.desil?' · '+r.desil:'')+(r.jenis_bantuan?' · '+r.jenis_bantuan+(r.tahun_bantuan?' '+r.tahun_bantuan:''):'')+'</div>'+
         '</div>'+
         '<span style="font-size:.6rem;font-weight:700;color:'+sc+';background:'+sc+'15;padding:2px 7px;border-radius:99px;flex-shrink:0">'+(r.status_rtlh||'RTLH')+'</span>'+
-        '<i class="fas fa-chevron-right" style="color:var(--gray-300);font-size:.65rem;flex-shrink:0"></i></div>';
+        '<i class="fas fa-chevron-right" style="color:var(--gray-300);font-size:.65rem;flex-shrink:0"></i>'+
+      (isAdmin?'<button onclick="event.stopPropagation();unlinkPenerimaDok('+r.id+',\"'+_currentDokId+'\")" title="Hapus link" style="background:none;border:none;color:var(--gray-300);cursor:pointer;font-size:.75rem;padding:3px 4px;flex-shrink:0"><i class="fas fa-unlink"></i></button>':'')+
+      '</div>';
     }).join('');
     return '<div style="margin-bottom:12px">'+
       '<div style="padding:5px 8px;background:var(--blue-bg);border-radius:6px;display:flex;align-items:center;gap:6px;margin-bottom:4px">'+
@@ -3968,6 +3984,19 @@ function renderPenerimaDok(list){
   }).join('');
 }
 
+async function unlinkPenerimaDok(rtlhId, dokId){
+  if(!confirm('Hapus link dokumen ini dari penerima?'))return;
+  const{error}=await sb.from('rtlh_dokumen_link').delete()
+    .eq('rtlh_id',parseInt(rtlhId)).eq('dokumen_id',dokId);
+  if(error)return toast('Gagal: '+error.message,'error');
+  toast('Link dihapus','success');
+  _penerimaDokAll=_penerimaDokAll.filter(r=>String(r.id)!==String(rtlhId));
+  document.getElementById('penerimaDokCount').innerHTML='<strong>'+_penerimaDokAll.length+'</strong> penerima terhubung';
+  renderPenerimaDok(_penerimaDokAll);
+  // Refresh detail panel jika sedang terbuka
+  loadDokLink(rtlhId);
+}
+
 function filterPenerimaDok(q){
   if(!q.trim()){renderPenerimaDok(_penerimaDokAll);return;}
   const ql=q.toLowerCase();
@@ -3976,6 +4005,61 @@ function filterPenerimaDok(q){
   );
   document.getElementById('penerimaDokCount').innerHTML='<strong>'+filtered.length+'</strong> dari '+_penerimaDokAll.length+' penerima';
   renderPenerimaDok(filtered);
+}
+
+// ══ Manual link penerima di upload dokumen ══
+let _dlSelectedIds=new Set();
+
+function toggleDlLinkMode(mode){
+  document.getElementById('dlManualWrap').style.display=mode==='manual'?'block':'none';
+  if(mode==='manual'){_dlSelectedIds.clear();renderDlSelected();}
+}
+
+async function searchDlManual(q){
+  if(!q||q.length<2)return;
+  const res=document.getElementById('dlManualResults');
+  res.style.display='block';
+  res.innerHTML='<div style="padding:8px;text-align:center;color:var(--gray-400);font-size:.72rem"><i class="fas fa-circle-notch fa-spin"></i></div>';
+  const{data}=await sb.from('rtlh').select('id,kec,desa,kep_kk,nik,status_rtlh')
+    .or('kep_kk.ilike.%'+q+'%,desa.ilike.%'+q+'%,nik.eq.'+q).limit(30);
+  if(!data?.length){res.innerHTML='<div style="padding:8px;text-align:center;color:var(--gray-400);font-size:.72rem">Tidak ditemukan</div>';return;}
+  res.innerHTML=data.map(r=>{
+    const sel=_dlSelectedIds.has(r.id);
+    const sc=r.status_rtlh==='Layak Huni'?'var(--success)':'var(--danger)';
+    return`<div onclick="toggleDlSelect(${r.id},'${(r.kep_kk||'').replace(/'/g,'')}')" 
+      style="padding:8px 10px;border-bottom:1px solid var(--gray-100);cursor:pointer;display:flex;align-items:center;gap:8px;background:${sel?'var(--blue-bg)':'#fff'}"
+      onmouseover="this.style.background='var(--blue-bg)'" onmouseout="this.style.background='${sel?'var(--blue-bg)':'#fff'}'">
+      <i class="fas fa-${sel?'check-square':'square'}" style="color:${sel?'var(--blue)':'var(--gray-300)'};font-size:.85rem;flex-shrink:0"></i>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:.78rem">${r.kep_kk||'-'}</div>
+        <div style="font-size:.63rem;color:var(--gray-400)">${r.desa||'-'} · ${r.kec||'-'}</div>
+      </div>
+      <span style="font-size:.6rem;font-weight:700;color:${sc};background:${sc}15;padding:1px 6px;border-radius:99px">${r.status_rtlh||'RTLH'}</span>
+    </div>`;
+  }).join('');
+}
+
+function toggleDlSelect(id, nama){
+  if(_dlSelectedIds.has(id))_dlSelectedIds.delete(id);
+  else _dlSelectedIds.add(id);
+  renderDlSelected();
+  // Refresh hasil search
+  const q=document.getElementById('dlManualSearch')?.value||'';
+  if(q)searchDlManual(q);
+}
+
+function renderDlSelected(){
+  const cnt=document.getElementById('dlSelectedCount');
+  const list=document.getElementById('dlSelectedList');
+  if(cnt)cnt.textContent=_dlSelectedIds.size;
+  if(!list)return;
+  if(!_dlSelectedIds.size){list.innerHTML='<span style="font-size:.68rem;color:var(--gray-400)">Belum ada yang dipilih</span>';return;}
+  // Tampilkan sebagai chips — hanya ID, nama diambil dari DOM search results
+  list.innerHTML=[..._dlSelectedIds].map(id=>`
+    <span style="background:var(--blue-bg);color:var(--blue);border-radius:99px;padding:2px 8px 2px 10px;font-size:.65rem;font-weight:700;display:flex;align-items:center;gap:4px">
+      ID:${id}
+      <button onclick="toggleDlSelect(${id},'')" style="background:none;border:none;cursor:pointer;color:var(--blue);font-size:.7rem;padding:0;line-height:1">×</button>
+    </span>`).join('');
 }
 
 async function runAutoLinkFromLib(dokId){
@@ -4394,6 +4478,28 @@ window.addEventListener('DOMContentLoaded',async()=>{
           </select>
         </div>
         <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Contoh: RTLH + 2026 → penerima RTLH 2026 otomatis terhubung saat disimpan</div>
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Mode Link Penerima</label>
+        <div style="display:flex;gap:8px">
+          <label style="display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;cursor:pointer;padding:7px 12px;border-radius:8px;border:1.5px solid var(--gray-200);flex:1;text-transform:none;letter-spacing:0">
+            <input type="radio" name="dlLinkMode" value="auto" checked onchange="toggleDlLinkMode(this.value)"> Auto (Jenis+Tahun)
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;cursor:pointer;padding:7px 12px;border-radius:8px;border:1.5px solid var(--gray-200);flex:1;text-transform:none;letter-spacing:0">
+            <input type="radio" name="dlLinkMode" value="manual" onchange="toggleDlLinkMode(this.value)"> Pilih Manual
+          </label>
+        </div>
+      </div>
+      <div id="dlManualWrap" style="display:none;margin-bottom:10px">
+        <div style="font-size:.68rem;font-weight:700;color:var(--gray-600);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">Cari & Pilih Penerima</div>
+        <div style="position:relative;margin-bottom:8px">
+          <input type="text" id="dlManualSearch" placeholder="Ketik nama, NIK, atau desa..." 
+            oninput="clearTimeout(this._t);this._t=setTimeout(()=>searchDlManual(this.value),400)"
+            style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.82rem;font-family:inherit;outline:none;box-sizing:border-box">
+        </div>
+        <div id="dlManualResults" style="max-height:150px;overflow-y:auto;border:1px solid var(--gray-200);border-radius:8px;margin-bottom:8px;display:none"></div>
+        <div style="font-size:.68rem;font-weight:700;color:var(--gray-600);margin-bottom:4px">Dipilih: <span id="dlSelectedCount">0</span> penerima</div>
+        <div id="dlSelectedList" style="max-height:100px;overflow-y:auto;display:flex;flex-wrap:wrap;gap:4px"></div>
       </div>
       <div class="form-group" style="margin-bottom:4px">
         <label>File PDF <span style="color:var(--danger)">*</span></label>
