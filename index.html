@@ -2906,24 +2906,46 @@ function addExcelDropdowns(ws, rows){
   });
 }
 
-function downloadExcel(withNIK){
+async function downloadExcel(withNIK){
   const superAdmin=isSuperAdmin();
-  const rows=brAll.map(r=>({
-    ID:r.id,Kecamatan:r.kec,Desa:r.desa,'Nama KK':r.kep_kk,
-    NIK:withNIK&&superAdmin?(r.nik||''):'***',
-    'No. KK':withNIK&&superAdmin?(r.no_kk||''):'***',
-    Alamat:r.alamat,'Jenis Kelamin':r.jen_kel,Umur:r.umur,
-    Pendidikan:r.pend_ter,Pekerjaan:r.pekerjaan,Penghasilan:r.pengh,
-    'Luas Rumah (m²)':r.luas_rum,'Luas Tanah (m²)':r.luas_tan,
-    'Jml Penghuni':r.jml_peng,'Status Kepemilikan':r.status_kep,
-    'Material Dinding':r.material_d,'Kondisi Dinding':r.kondisi_di,
-    'Material Atap':r.material_a,'Kondisi Atap':r.kondisi_at,
-    'Material Lantai':r.material_l,'Kondisi Lantai':r.kondisi_la,
-    'Status RTLH':r.status_rtlh,'Alasan Batal':r.status_batal,
-    'Jenis Bantuan':r.jenis_bantuan,'Tahun Bantuan':r.tahun_bantuan,
-    Backlog:r.backlog,Desil:r.desil,
-    Latitude:r.latitude,Longitude:r.longitude,
-  }));
+  // Fetch verifikasi untuk semua data di kecamatan ini
+  const rtlhIds=brAll.map(r=>r.id);
+  let verifMap={};
+  if(rtlhIds.length){
+    const{data:verifData}=await sb.from('rtlh_verifikasi').select('*').in('rtlh_id',rtlhIds).order('tahun',{ascending:true});
+    (verifData||[]).forEach(v=>{
+      if(!verifMap[v.rtlh_id])verifMap[v.rtlh_id]=[];
+      verifMap[v.rtlh_id].push(v);
+    });
+  }
+  const rows=brAll.map(r=>{
+    const vList=verifMap[r.id]||[];
+    const verifCols={};
+    vList.forEach((v,i)=>{
+      const n=i+1;
+      verifCols[`Verif${n}_Tahun`]=v.tahun||'';
+      verifCols[`Verif${n}_Hasil`]=v.hasil||'';
+      verifCols[`Verif${n}_Keterangan`]=v.keterangan||'';
+      verifCols[`Verif${n}_Petugas`]=v.petugas||'';
+    });
+    return{
+      ID:r.id,Kecamatan:r.kec,Desa:r.desa,'Nama KK':r.kep_kk,
+      NIK:withNIK&&superAdmin?(r.nik||''):'***',
+      'No. KK':withNIK&&superAdmin?(r.no_kk||''):'***',
+      Alamat:r.alamat,'Jenis Kelamin':r.jen_kel,Umur:r.umur,
+      Pendidikan:r.pend_ter,Pekerjaan:r.pekerjaan,Penghasilan:r.pengh,
+      'Luas Rumah (m²)':r.luas_rum,'Luas Tanah (m²)':r.luas_tan,
+      'Jml Penghuni':r.jml_peng,'Status Kepemilikan':r.status_kep,
+      'Material Dinding':r.material_d,'Kondisi Dinding':r.kondisi_di,
+      'Material Atap':r.material_a,'Kondisi Atap':r.kondisi_at,
+      'Material Lantai':r.material_l,'Kondisi Lantai':r.kondisi_la,
+      'Status RTLH':r.status_rtlh,'Alasan Batal':r.status_batal,
+      'Jenis Bantuan':r.jenis_bantuan,'Tahun Bantuan':r.tahun_bantuan,
+      Backlog:r.backlog,Desil:r.desil,Keterangan:r.keterangan||'',
+      Latitude:r.latitude,Longitude:r.longitude,
+      ...verifCols,
+    };
+  });
   const ws=XLSX.utils.json_to_sheet(rows);
   ws['!cols']=Object.keys(rows[0]).map(k=>({wch:Math.max(k.length+2,14)}));
   addExcelDropdowns(ws,rows);
@@ -3024,7 +3046,25 @@ async function downloadExcelKab(withNIK){
     }
     const data=allRows2;
     if(!data||!data.length)return toast('Tidak ada data','error');
-    const rows=data.map(r=>({
+    // Fetch verifikasi kabupaten
+    const kabIds=data.map(r=>r.id);
+    let verifMapKab={};
+    for(let vi=0;vi<kabIds.length;vi+=500){
+      const chunk=kabIds.slice(vi,vi+500);
+      const{data:vd}=await sb.from('rtlh_verifikasi').select('*').in('rtlh_id',chunk).order('tahun',{ascending:true});
+      (vd||[]).forEach(v=>{if(!verifMapKab[v.rtlh_id])verifMapKab[v.rtlh_id]=[];verifMapKab[v.rtlh_id].push(v);});
+    }
+    const rows=data.map(r=>{
+      const vList=verifMapKab[r.id]||[];
+      const verifCols={};
+      vList.forEach((v,i)=>{
+        const n=i+1;
+        verifCols[`Verif${n}_Tahun`]=v.tahun||'';
+        verifCols[`Verif${n}_Hasil`]=v.hasil||'';
+        verifCols[`Verif${n}_Keterangan`]=v.keterangan||'';
+        verifCols[`Verif${n}_Petugas`]=v.petugas||'';
+      });
+      return{
       ID:r.id,Kecamatan:r.kec,Desa:r.desa,'Nama KK':r.kep_kk,
       NIK:withNIK&&superAdmin?(r.nik||''):'***',
       'No. KK':withNIK&&superAdmin?(r.no_kk||''):'***',
@@ -3037,10 +3077,12 @@ async function downloadExcelKab(withNIK){
       'Material Lantai':r.material_l,'Kondisi Lantai':r.kondisi_la,
       'Status RTLH':r.status_rtlh,'Alasan Batal':r.status_batal,
       'Jenis Bantuan':r.jenis_bantuan,'Tahun Bantuan':r.tahun_bantuan,
-      Backlog:r.backlog,Desil:r.desil,
+      Backlog:r.backlog,Desil:r.desil,Keterangan:r.keterangan||'',
       Latitude:r.latitude,Longitude:r.longitude,
       'Terakhir Update':r.updated_at?new Date(r.updated_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'-',
-    }));
+      ...verifCols,
+      };
+    });
     const ws=XLSX.utils.json_to_sheet(rows);
     ws['!cols']=Object.keys(rows[0]).map(k=>({wch:Math.max(k.length+2,14)}));
     addExcelDropdowns(ws,rows);
@@ -3206,6 +3248,46 @@ async function importExcelKab(input){
           else ok+=batch.length;
         }
       }
+      // ── Import verifikasi lapangan dari kolom Verif*_* ──
+      const verifInserts=[];
+      rows.forEach(row=>{
+        const id=parseInt(getCol(row,'ID','id')||0);
+        const nik=String(getCol(row,'NIK','nik')||'').replace(/[^0-9]/g,'');
+        if(!id&&!nik)return;
+        // Cari kolom Verif1_Tahun, Verif2_Tahun, dst
+        const allKeys=Object.keys(row);
+        const verifNums=[...new Set(allKeys.map(k=>{const m=k.match(/^[Vv]erif(\d+)_/);return m?m[1]:null}).filter(Boolean))];
+        verifNums.forEach(n=>{
+          const tahun=parseInt(getCol(row,`Verif${n}_Tahun`,`verif${n}_tahun`)||0);
+          const hasil=xlVal(getCol(row,`Verif${n}_Hasil`,`verif${n}_hasil`));
+          const ket=xlVal(getCol(row,`Verif${n}_Keterangan`,`verif${n}_keterangan`));
+          const petugas=xlVal(getCol(row,`Verif${n}_Petugas`,`verif${n}_petugas`));
+          if(tahun&&hasil)verifInserts.push({_ref:id||nik,_type:id?'id':'nik',tahun,hasil,keterangan:ket,petugas,created_by:user?.email});
+        });
+      });
+      if(verifInserts.length){
+        // Resolve rtlh_id dari ID atau NIK
+        const verifWithId=[];
+        for(const v of verifInserts){
+          let rtlhId=null;
+          if(v._type==='id'){rtlhId=v._ref;}
+          else{
+            const{data:found}=await sb.from('rtlh').select('id').eq('nik',v._ref).single();
+            if(found)rtlhId=found.id;
+          }
+          if(rtlhId){
+            // Cek apakah sudah ada verif untuk tahun ini
+            const{data:existing}=await sb.from('rtlh_verifikasi').select('id').eq('rtlh_id',rtlhId).eq('tahun',v.tahun).maybeSingle();
+            if(existing){
+              await sb.from('rtlh_verifikasi').update({hasil:v.hasil,keterangan:v.keterangan,petugas:v.petugas}).eq('id',existing.id);
+            }else{
+              verifWithId.push({rtlh_id:rtlhId,tahun:v.tahun,hasil:v.hasil,keterangan:v.keterangan,petugas:v.petugas,created_by:v.created_by});
+            }
+          }
+        }
+        if(verifWithId.length)await sb.from('rtlh_verifikasi').insert(verifWithId);
+      }
+
       Object.keys(_kecCacheTime).forEach(k=>delete _kecCacheTime[k]);
       Object.keys(brCache).forEach(k=>delete brCache[k]);
       let logHtml=`<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Selesai: <strong>${ok}</strong> berhasil`;
