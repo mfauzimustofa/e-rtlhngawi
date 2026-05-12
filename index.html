@@ -906,8 +906,8 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 <div class="overlay" id="ovDok">
   <div class="modal" style="max-width:520px">
     <div class="modal-head">
-      <div><h3><i class="fas fa-folder-open" style="color:var(--warning)"></i> Dokumen & Foto</h3>
-        <div class="sub" id="dokSub">Kelola dokumen pendukung</div>
+      <div><h3><i class="fas fa-camera" style="color:var(--warning)"></i> Foto Rumah</h3>
+        <div class="sub" id="dokSub">Upload foto kondisi rumah</div>
       </div>
       <button class="modal-x" onclick="closeModal('ovDok')"><i class="fas fa-times"></i></button>
     </div>
@@ -915,15 +915,13 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
       <div style="background:var(--gray-50);border-radius:10px;padding:14px;border:1px solid var(--gray-200);margin-bottom:14px">
         <div style="font-size:.72rem;font-weight:700;color:var(--gray-700);margin-bottom:10px">Upload Dokumen Baru</div>
         <div class="form-group" style="margin-bottom:10px">
-          <label>Jenis Dokumen</label>
+          <label>Jenis Foto</label>
           <select id="dokJenis">
-            <option value="foto_rumah">📷 Foto Rumah</option>
-            <option value="berita_acara">📄 Berita Acara (BA)</option>
-            <option value="surat_pernyataan">📝 Surat Pernyataan</option>
-            <option value="ktp">🪪 KTP</option>
-            <option value="kk_doc">👨‍👩‍👧 Kartu Keluarga</option>
-            <option value="foto_lokasi">🗺️ Foto Lokasi</option>
-            <option value="lainnya">📁 Lainnya</option>
+            <option value="foto_rumah">📷 Foto Rumah (Tampak Depan)</option>
+            <option value="foto_dalam">📷 Foto Dalam Rumah</option>
+            <option value="foto_atap">📷 Foto Atap</option>
+            <option value="foto_lantai">📷 Foto Lantai</option>
+            <option value="foto_lokasi">🗺️ Foto Lokasi/Lingkungan</option>
           </select>
         </div>
         <div class="form-group" style="margin-bottom:10px">
@@ -932,8 +930,8 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
         </div>
         <div class="form-group" style="margin-bottom:12px">
           <label>File <span style="color:var(--danger)">*</span></label>
-          <input type="file" id="dokFile" accept="image/*,application/pdf,.doc,.docx" style="font-size:.8rem">
-          <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Format: JPG, PNG, PDF, DOC. Maks 10 MB.</div>
+          <input type="file" id="dokFile" accept="image/*" style="font-size:.8rem">
+          <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Format: JPG, PNG. Maks 5 MB.</div>
         </div>
         <button class="btn btn-primary" onclick="uploadDokumen()" style="width:100%;justify-content:center"><i class="fas fa-upload"></i> Upload</button>
         <div id="dokUploadProgress" style="margin-top:8px;font-size:.72rem"></div>
@@ -2557,8 +2555,8 @@ function showDetail(r){
     </div>
     <div style="margin-top:14px" id="dpDokSection">
       <div style="font-size:.72rem;font-weight:800;color:var(--gray-600);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px;justify-content:space-between">
-        <span><i class="fas fa-folder-open" style="color:var(--warning)"></i> Dokumen & Foto</span>
-        ${isAdmin?`<button onclick="openDokModal('${r.id}')" style="font-size:.65rem;padding:3px 10px;border-radius:6px;background:var(--warning);color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:700"><i class="fas fa-upload"></i> Upload</button>`:''}
+        <span><i class="fas fa-camera" style="color:var(--warning)"></i> Foto Rumah</span>
+        ${isAdmin?`<button onclick="openDokModal('${r.id}')" style="font-size:.65rem;padding:3px 10px;border-radius:6px;background:var(--warning);color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:700"><i class="fas fa-camera"></i> Foto</button>`:''}
       </div>
       <div id="dpDokList" style="font-size:.72rem;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
     </div>
@@ -2865,6 +2863,10 @@ async function saveForm(){
   brFeatures=[...brAll];
   closeForm();
   toast(editId?'Data diperbarui':'Data ditambahkan','success');
+  // Auto-link dokumen jika ada jenis bantuan
+  if(saved.jenis_bantuan){
+    autoLinkDokumen(saved.id, saved.jenis_bantuan, saved.tahun_bantuan).catch(()=>{});
+  }
   renderSidebar();updateMap();
 }
 
@@ -3307,6 +3309,40 @@ async function importExcelKab(input){
           }
         }
         if(verifWithId.length)await sb.from('rtlh_verifikasi').insert(verifWithId);
+      }
+
+      // Auto-link dokumen untuk data yang punya jenis bantuan
+      const autoLinkBatch=rows.filter(row=>{
+        const jb=xlVal(getCol(row,'Jenis Bantuan','jenis_bantuan'));
+        return !!jb;
+      });
+      if(autoLinkBatch.length){
+        // Ambil semua dokumen library sekali
+        const{data:allDocs}=await sb.from('rtlh_dokumen_kabupaten').select('id,jenis,judul,tahun');
+        for(const row of autoLinkBatch){
+          const id=parseInt(getCol(row,'ID','id')||0);
+          const nik=String(getCol(row,'NIK','nik')||'').replace(/[^0-9]/g,'');
+          const jb=xlVal(getCol(row,'Jenis Bantuan','jenis_bantuan'));
+          const tahun=parseInt(String(getCol(row,'Tahun Bantuan','tahun_bantuan')||'').replace(/[^0-9]/g,''))||null;
+          if(!id&&!nik)continue;
+          // Resolve rtlh_id
+          let rtlhId=id;
+          if(!rtlhId&&nik){const{data:found}=await sb.from('rtlh').select('id').eq('nik',nik).single();if(found)rtlhId=found.id;}
+          if(!rtlhId)continue;
+          const jbUpper=(jb||'').toUpperCase();
+          const matches=(allDocs||[]).filter(d=>{
+            const judul=(d.judul||'').toUpperCase();
+            const tahunMatch=!tahun||!d.tahun||d.tahun===tahun;
+            const jenisMatch=judul.includes(jbUpper)||judul.includes('RTLH')||
+              (jbUpper==='BSPS'&&judul.includes('BSPS'))||
+              (jbUpper==='DANA DESA'&&(judul.includes('DD')||judul.includes('DANA DESA')));
+            return jenisMatch&&tahunMatch;
+          });
+          if(matches.length){
+            const links=matches.map(d=>({rtlh_id:rtlhId,dokumen_id:d.id,linked_by:user?.email}));
+            await sb.from('rtlh_dokumen_link').upsert(links,{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
+          }
+        }
       }
 
       Object.keys(_kecCacheTime).forEach(k=>delete _kecCacheTime[k]);
@@ -3888,6 +3924,35 @@ async function loadDokLink(rtlhId){
       <i class="fas fa-external-link-alt" style="color:${cfg.color};font-size:.6rem"></i>
     </a>`;
   }).join('');
+}
+
+// ══ AUTO-LINK DOKUMEN berdasarkan Jenis Bantuan + Tahun ══
+async function autoLinkDokumen(rtlhId, jenisBantuan, tahunBantuan){
+  if(!rtlhId||!jenisBantuan)return;
+  // Cari dokumen di library yang cocok: jenis SK atau BA, tahun sama
+  // Mapping jenis bantuan ke jenis dokumen yang relevan
+  const tahun=parseInt(tahunBantuan)||null;
+  let q=sb.from('rtlh_dokumen_kabupaten').select('id,jenis,judul,tahun');
+  if(tahun)q=q.eq('tahun',tahun);
+  const{data:docs}=await q;
+  if(!data&&!docs?.length)return;
+  // Filter: cari dokumen yang judulnya mengandung jenis bantuan atau tahun
+  const jb=(jenisBantuan||'').toUpperCase();
+  const matches=(docs||[]).filter(d=>{
+    const judul=(d.judul||'').toUpperCase();
+    // Cocok kalau judul mengandung jenis bantuan DAN tahun sama
+    const tahunMatch=!tahun||!d.tahun||d.tahun===tahun;
+    const jenisMatch=judul.includes(jb)||judul.includes('RTLH')||
+      (jb==='BSPS'&&judul.includes('BSPS'))||
+      (jb==='DANA DESA'&&(judul.includes('DD')||judul.includes('DANA DESA')))||
+      (jb==='CSR'&&judul.includes('CSR'));
+    return jenisMatch&&tahunMatch;
+  });
+  if(!matches.length)return;
+  // Link ke semua dokumen yang cocok (upsert — tidak duplikat)
+  const links=matches.map(d=>({rtlh_id:parseInt(rtlhId),dokumen_id:d.id,linked_by:user?.email}));
+  await sb.from('rtlh_dokumen_link').upsert(links,{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
+  console.log(`[autoLink] Linked ${links.length} dokumen ke rtlh_id ${rtlhId}`);
 }
 
 // ══════════════════════════════════════════════════
