@@ -3775,6 +3775,7 @@ function renderDokLib(docs){
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0">
         <a href="${url}" target="_blank" title="Buka dokumen" style="width:32px;height:32px;border-radius:8px;background:var(--blue-bg);color:var(--blue);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:.8rem"><i class="fas fa-external-link-alt"></i></a>
+        ${isAdmin?`<button onclick="openEditDokLib('${d.id}')" title="Edit" style="width:32px;height:32px;border-radius:8px;background:#FFF7ED;color:#EA580C;border:none;cursor:pointer;font-size:.8rem"><i class="fas fa-edit"></i></button>`:''}
         ${isSuperAdmin()?`<button onclick="deleteDokLib('${d.id}','${d.path}')" title="Hapus" style="width:32px;height:32px;border-radius:8px;background:var(--danger-bg);color:var(--danger);border:none;cursor:pointer;font-size:.8rem"><i class="fas fa-trash"></i></button>`:''}
       </div>
     </div>`;
@@ -3832,6 +3833,59 @@ async function deleteDokLib(id,path){
   await sb.storage.from('dokumen-kab').remove([path]);
   await sb.from('rtlh_dokumen_kabupaten').delete().eq('id',id);
   toast('Dokumen dihapus','success');
+  loadDokLib();
+}
+
+function openEditDokLib(id){
+  const d=_dokLibData.find(x=>x.id===id);
+  if(!d)return toast('Data tidak ditemukan','error');
+  // Isi dropdown kecamatan jika belum
+  const kecSel=document.getElementById('editDlKec');
+  if(kecSel&&kecSel.options.length<=1){
+    Object.keys(KEC_CONFIG).sort().forEach(k=>{
+      const o=document.createElement('option');o.value=k;o.textContent=k;kecSel.appendChild(o);
+    });
+  }
+  document.getElementById('editDlId').value=d.id;
+  document.getElementById('editDlJenis').value=d.jenis;
+  document.getElementById('editDlJudul').value=d.judul;
+  document.getElementById('editDlTahun').value=d.tahun||'';
+  document.getElementById('editDlKec').value=d.kecamatan||'';
+  document.getElementById('editDlProgress').innerHTML='';
+  document.getElementById('editDlFile').value='';
+  document.getElementById('editDlCurrentFile').textContent=d.path.split('/').pop();
+  document.getElementById('ovEditDokLib').classList.add('open');
+}
+
+async function saveEditDokLib(){
+  const id=document.getElementById('editDlId').value;
+  const jenis=document.getElementById('editDlJenis').value;
+  const judul=document.getElementById('editDlJudul').value.trim();
+  const tahun=parseInt(document.getElementById('editDlTahun').value)||null;
+  const kec=document.getElementById('editDlKec').value||null;
+  const file=document.getElementById('editDlFile').files[0];
+  if(!judul)return toast('Isi judul dokumen','error');
+  const prog=document.getElementById('editDlProgress');
+  prog.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Menyimpan...';
+  const updateObj={jenis,judul,tahun,kecamatan:kec};
+  // Kalau ada file baru — upload dulu, hapus yang lama
+  if(file){
+    if(file.size>20*1024*1024){prog.innerHTML='<span style="color:var(--danger)">File terlalu besar (maks 20MB)</span>';return;}
+    const d=_dokLibData.find(x=>x.id===id);
+    const ext=file.name.split('.').pop().toLowerCase();
+    const safeName=judul.replace(/[^a-zA-Z0-9]/g,'_').slice(0,40);
+    const newPath=`${jenis}/${tahun||'umum'}/${safeName}_${Date.now()}.${ext}`;
+    const{error:upErr}=await sb.storage.from('dokumen-kab').upload(newPath,file,{upsert:false});
+    if(upErr){prog.innerHTML=`<span style="color:var(--danger)">Gagal upload: ${upErr.message}</span>`;return;}
+    // Hapus file lama
+    if(d?.path)await sb.storage.from('dokumen-kab').remove([d.path]);
+    updateObj.path=newPath;
+    updateObj.ukuran=file.size;
+  }
+  const{error}=await sb.from('rtlh_dokumen_kabupaten').update(updateObj).eq('id',id);
+  if(error){prog.innerHTML=`<span style="color:var(--danger)">Gagal simpan: ${error.message}</span>`;return;}
+  toast('Dokumen berhasil diperbarui','success');
+  closeModal('ovEditDokLib');
   loadDokLib();
 }
 
@@ -4141,6 +4195,55 @@ window.addEventListener('DOMContentLoaded',async()=>{
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('ovLinkDok')">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL EDIT DOKUMEN KABUPATEN ═══ -->
+<div class="overlay" id="ovEditDokLib">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head">
+      <div><h3><i class="fas fa-edit" style="color:#EA580C"></i> Edit Dokumen</h3></div>
+      <button class="modal-x" onclick="closeModal('ovEditDokLib')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editDlId">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="form-group" style="margin:0">
+          <label>Jenis Dokumen</label>
+          <select id="editDlJenis">
+            <option value="SK">SK (Surat Keputusan)</option>
+            <option value="BA">BA (Berita Acara)</option>
+            <option value="Surat Pernyataan">Surat Pernyataan</option>
+            <option value="Lainnya">Lainnya</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Tahun</label>
+          <input type="number" id="editDlTahun" min="2020" max="2030">
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Judul Dokumen</label>
+        <input type="text" id="editDlJudul">
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Kecamatan (kosongkan jika seluruh kabupaten)</label>
+        <select id="editDlKec">
+          <option value="">Seluruh Kabupaten</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:4px">
+        <label>Ganti File (opsional)</label>
+        <div style="font-size:.68rem;color:var(--gray-500);margin-bottom:4px">File saat ini: <span id="editDlCurrentFile" style="font-weight:600"></span></div>
+        <input type="file" id="editDlFile" accept=".pdf,.doc,.docx,.jpg,.png" style="font-size:.8rem">
+        <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Kosongkan jika tidak ingin ganti file. Maks 20 MB.</div>
+      </div>
+      <div id="editDlProgress" style="font-size:.72rem;margin-top:8px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ovEditDokLib')">Batal</button>
+      <button class="btn btn-primary" onclick="saveEditDokLib()"><i class="fas fa-save"></i> Simpan</button>
     </div>
   </div>
 </div>
