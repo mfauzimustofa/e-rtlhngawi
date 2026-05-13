@@ -5400,13 +5400,6 @@ function xEdit(td,id,k){
   _xMode('EDIT');
 }
 
-  liveTd.appendChild(inp);
-  inp.focus();
-  try{inp.select&&inp.select();}catch(_){}
-  xEd={id:sid,k,td:liveTd,col};
-  _xMode('EDIT');
-}
-
 function _xCommit(silent){
   if(!xEd)return;
   const{id,k,td,col}=xEd; xEd=null;
