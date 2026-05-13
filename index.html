@@ -5259,9 +5259,9 @@ function xRenderBody(){
     if(dirty)tr.classList.add('xrow-dirty');
     if(idx%2===1)tr.style.background='#F8FAFC';
 
-    vis.forEach(c=>{
+    vis.forEach(col=>{
       const td=document.createElement('td');
-      if(c.k==='_no'){
+      if(col.k==='_no'){
         td.className='xno';
         td.textContent=idx+1;
       }else{
@@ -5355,704 +5355,93 @@ function _xCellVal(td,c,val){
 
 /* ── Edit inline ── */
 function xEdit(td,id,k){
-  id=String(id); // normalisasi ke string
+  const sid=String(id);
   if(!canEdit()){toast('Tidak ada akses edit','error');return;}
-  if(!xEditMode){toast('Aktifkan Mode Edit (klik tombol pensil) untuk mengedit','warning');return;}
-  const c=XC.find(x=>x.k===k);
-  if(!c||c.ed===false)return;
-  if(c.sen&&!isSuperAdmin()){toast('Hanya Super Admin yang bisa edit NIK/KK','error');return;}
+  if(!xEditMode){toast('Aktifkan Mode Edit terlebih dahulu','warning');return;}
+  const col=XC.find(x=>x.k===k);
+  if(!col||col.ed===false)return;
+  if(col.sen&&!isSuperAdmin()){toast('Hanya Super Admin yang bisa edit NIK/KK','error');return;}
 
-  if(xEd)_xCommit(true);
-
-  // Pastikan baris ada di halaman yang benar
-  const _ri=xRows.findIndex(r=>r.id===id);
-  if(_ri>=0){
-    const targetPage=Math.floor(_ri/X_PAGE_SIZE);
-    if(targetPage!==xPage){xPage=targetPage;xRenderBody();}
+  if(xEd){
+    if(xEd.id===sid&&xEd.k===k)return;
+    _xCommit(true);
   }
 
   document.querySelectorAll('#xBody tr.xrow-selected').forEach(r=>r.classList.remove('xrow-selected'));
-  const tr=document.querySelector('#xBody tr[data-id="'+id+'"]');
+  const tr=document.querySelector('#xBody tr[data-id="'+sid+'"]');
   if(tr)tr.classList.add('xrow-selected');
+  xFoc={id:sid,k}; _xUpdSB();
 
-  xFoc={id,k};
-  _xUpdSB();
+  const rowData=xRows.find(x=>String(x.id)===sid)||{};
+  const curVal=xDirty[sid]&&xDirty[sid][k]!==undefined?xDirty[sid][k]:rowData[k];
+  const liveTd=document.querySelector('#xBody td[data-id="'+sid+'"][data-k="'+k+'"]')||td;
 
-  const r=xRows.find(x=>String(x.id)===String(id))||{};
-  const cur=xDirty[id]&&xDirty[id][k]!==undefined?xDirty[id][k]:r[k];
-
-  // Pastikan td masih ada di DOM (virtual scroll mungkin sudah re-render)
-  const liveTd=document.querySelector('#xBody td[data-id="'+id+'"][data-k="'+k+'"]');
-  const target=liveTd||td;
-
-  target.classList.add('xediting');
-  target.innerHTML='';
+  liveTd.classList.add('xediting');
+  liveTd.innerHTML='';
 
   let inp;
-  if(c.sel){
+  if(col.sel){
     inp=document.createElement('select');
-    c.sel.forEach(o=>{
+    col.sel.forEach(o=>{
       const opt=document.createElement('option');
-      opt.value=o;opt.textContent=o||'(kosong)';
-      if(String(cur||'')===(o||''))opt.selected=true;
+      opt.value=o; opt.textContent=o||'(kosong)';
+      if(String(curVal??'')===(o))opt.selected=true;
       inp.appendChild(opt);
     });
   }else{
     inp=document.createElement('input');
-    inp.type=c.num?'number':'text';
-    inp.value=cur!=null?String(cur):'';
+    inp.type=col.num?'number':'text';
+    inp.value=curVal!=null?String(curVal):'';
     inp.step='any';
   }
 
   inp.addEventListener('keydown',e=>{
-    if(e.key==='Escape'){e.stopPropagation();_xCancel(target,id,k);return;}
+    if(e.key==='Escape'){e.stopPropagation();_xCancel(liveTd,sid,k);return;}
     if(e.key==='Enter'){e.preventDefault();_xCommit(false);xNavCell(1,'v');return;}
     if(e.key==='Tab'){e.preventDefault();_xCommit(false);xNavCell(e.shiftKey?-1:1,'h');return;}
   });
-  inp.addEventListener('blur',()=>setTimeout(()=>{if(xEd)_xCommit(false);},100));
+  inp.addEventListener('blur',()=>setTimeout(()=>{if(xEd&&xEd.id===sid&&xEd.k===k)_xCommit(false);},150));
 
-  target.appendChild(inp);
+  liveTd.appendChild(inp);
   inp.focus();
-  try{if(inp.select)inp.select();}catch(e){}
-
-  xEd={id,k,td:target,c};
+  try{inp.select&&inp.select();}catch(_){}
+  xEd={id:sid,k,td:liveTd,col};
   _xMode('EDIT');
 }
 
 function _xCommit(silent){
   if(!xEd)return;
-  const{id,k,td,c}=xEd; xEd=null;
-  const sid=String(id);
-
+  const{id,k,td,col}=xEd; xEd=null;
   const inp=td.querySelector('input,select');
-  if(!inp){_xRefreshCell(td,sid,k);_xMode('VIEW');return;}
+  if(!inp){_xRefreshCell(td,id,k);_xMode('VIEW');return;}
 
   let val=inp.value;
-  if(c.num) val=val!==''?(parseFloat(val)||null):null;
+  if(col.num) val=val!==''?(parseFloat(val)||null):null;
   else val=val.trim()||null;
 
-  const r=xRows.find(x=>String(x.id)===sid)||{};
-  const orig=r[k];
+  const rowData=xRows.find(x=>String(x.id)===id)||{};
+  const orig=rowData[k];
   if(String(val??'')!==String(orig??'')){
-    if(!xDirty[sid])xDirty[sid]={};
-    xDirty[sid][k]=val;
-    const tr=document.querySelector('#xBody tr[data-id="'+sid+'"]');
+    if(!xDirty[id])xDirty[id]={};
+    xDirty[id][k]=val;
+    const tr=document.querySelector('#xBody tr[data-id="'+id+'"]');
     if(tr)tr.classList.add('xrow-dirty');
-    if(!silent)toast('✏ '+c.lb+' diubah','warning');
+    if(!silent)toast('✏ '+col.lb+' diubah','warning');
   }
-
   _xRefreshCell(td,id,k);
   xUpdDirty();
   _xMode('VIEW');
 }
 
 function _xCancel(td,id,k){
-  xEd=null;_xRefreshCell(td,id,k);_xMode('VIEW');
+  xEd=null; _xRefreshCell(td,String(id),k); _xMode('VIEW');
 }
 
 function _xRefreshCell(td,id,k){
-  const c=XC.find(x=>x.k===k);if(!c)return;
+  const sid=String(id);
+  const col=XC.find(x=>x.k===k); if(!col)return;
   td.classList.remove('xediting');
-  const r=xRows.find(x=>String(x.id)===String(id))||{};
-  const val=xDirty[id]&&xDirty[id][k]!==undefined?xDirty[id][k]:r[k];
-  _xCellVal(td,c,val);
+  const rowData=xRows.find(x=>String(x.id)===sid)||{};
+  const val=xDirty[sid]&&xDirty[sid][k]!==undefined?xDirty[sid][k]:rowData[k];
+  _xCellVal(td,col,val);
 }
-
-function _xMode(m){
-  const el=document.getElementById('xSBMode');
-  if(!el)return;
-  el.textContent=m;
-  el.className='es-mode'+(m==='EDIT'?' editing':'');
-}
-
-/* ── Navigasi sel ── */
-function xNavCell(d,axis){
-  if(!xFoc)return;
-  const vis=xVisCols().filter(c=>c.k!=='_no'&&c.ed!==false);
-  const ri=xRows.findIndex(r=>r.id===xFoc.id);
-  const ci=vis.findIndex(c=>c.k===xFoc.k);
-  if(axis==='v')_xNavTo(ri+d,ci);
-  else _xNavTo(ri,ci+d);
-}
-
-function _xNavTo(ri,ci){
-  const vis=xVisCols().filter(c=>c.k!=='_no'&&c.ed!==false);
-  ri=Math.max(0,Math.min(xRows.length-1,ri));
-  ci=Math.max(0,Math.min(vis.length-1,ci));
-  const row=xRows[ri],col=vis[ci];
-  if(!row||!col)return;
-  xFoc={id:row.id,k:col.k};
-  document.querySelectorAll('#xBody td.xfocused').forEach(t=>t.classList.remove('xfocused'));
-  const td=document.querySelector('#xBody td[data-id="'+row.id+'"][data-k="'+col.k+'"]');
-  if(td){td.classList.add('xfocused');td.scrollIntoView({block:'nearest',inline:'nearest'});}
-  _xUpdSB();
-}
-
-/* ── Keyboard ── */
-function _xKey(e){
-  if(!document.getElementById('pgExcel')?.classList.contains('active'))return;
-  if(xEd)return; // input handles its own keys
-  if(!xFoc)return;
-  const{id,k}=xFoc;
-  const vis=xVisCols().filter(c=>c.k!=='_no'&&c.ed!==false);
-  const ri=xRows.findIndex(r=>r.id===id);
-  const ci=vis.findIndex(c=>c.k===k);
-  if(e.key==='ArrowDown'||e.key==='Enter'){e.preventDefault();_xNavTo(ri+1,ci);}
-  else if(e.key==='ArrowUp'){e.preventDefault();_xNavTo(ri-1,ci);}
-  else if(e.key==='ArrowRight'||e.key==='Tab'){e.preventDefault();_xNavTo(ri,ci+(e.shiftKey?-1:1));}
-  else if(e.key==='ArrowLeft'){e.preventDefault();_xNavTo(ri,ci-1);}
-  else if(e.key==='F2'){
-    const td=document.querySelector('#xBody td[data-id="'+id+'"][data-k="'+k+'"]');
-    if(td)xEdit(td,id,k);
-  }else if((e.key==='Delete'||e.key==='Backspace')){
-    const c=XC.find(x=>x.k===k);
-    if(c&&c.ed!==false&&!c.sen){
-      if(!xDirty[id])xDirty[id]={};
-      xDirty[id][k]=null;
-      const td=document.querySelector('#xBody td[data-id="'+id+'"][data-k="'+k+'"]');
-      if(td)_xRefreshCell(td,id,k);
-      const tr=document.querySelector('#xBody tr[data-id="'+id+'"]');
-      if(tr)tr.classList.add('xrow-dirty');
-      xUpdDirty();
-    }
-  }
-}
-
-/* ── Context menu ── */
-function _xCtxMenu(e){
-  const td=e.target.closest('td[data-id]');if(!td){_xCloseCtx();return;}
-  e.preventDefault();
-  xCtxId=td.dataset.id;xCtxK=td.dataset.k;
-  const m=document.getElementById('xCtxMenu');
-  m.style.left=Math.min(e.clientX,window.innerWidth-210)+'px';
-  m.style.top=Math.min(e.clientY,window.innerHeight-170)+'px';
-  m.classList.add('open');
-}
-function _xCloseCtx(){document.getElementById('xCtxMenu')?.classList.remove('open');}
-function xCtxEditCell(){_xCloseCtx();if(!xEditMode){toast('Aktifkan Mode Edit untuk mengedit','warning');return;}const td=document.querySelector('#xBody td[data-id="'+xCtxId+'"][data-k="'+xCtxK+'"]');if(td)xEdit(td,xCtxId,xCtxK);}
-function xCtxEditRow(){_xCloseCtx();if(!xEditMode){toast('Aktifkan Mode Edit untuk mengedit','warning');return;}xOpenForm(xCtxId);}
-function xCtxDupe(){_xCloseCtx();if(!xEditMode){toast('Aktifkan Mode Edit untuk menduplikasi','warning');return;}const r=xRows.find(x=>String(x.id)===String(xCtxId));if(r)xOpenForm(null,{...r,nik:undefined,no_kk:undefined});}
-function xCtxDelete(){_xCloseCtx();if(!xEditMode){toast('Aktifkan Mode Edit untuk menghapus','warning');return;}xDeleteRow(xCtxId);}
-
-/* ── Form tambah/edit (mandiri) ── */
-function xOpenAddModal(){xOpenForm(null);}
-
-function xOpenForm(editId,prefill=null){
-  if(!canEdit()){toast('Tidak ada akses','error');return;}
-  const r=editId?xRows.find(x=>String(x.id)===String(editId)):null;
-  const data=prefill?{...prefill}:(r?{...r}:{});
-
-  const sections=[
-    {lb:'Identitas',ic:'fas fa-id-card',cl:'var(--blue)',
-     keys:['kep_kk','nik','no_kk','kec','desa','alamat','jen_kel','umur']},
-    {lb:'Sosial Ekonomi',ic:'fas fa-briefcase',cl:'#7C3AED',
-     keys:['pend_ter','pekerjaan','pengh','jml_peng','status_kep','luas_rum','luas_tan']},
-    {lb:'Kondisi Bangunan',ic:'fas fa-home',cl:'#EA580C',
-     keys:['material_d','kondisi_di','material_a','kondisi_at','material_l','kondisi_la']},
-    {lb:'Status & Bantuan',ic:'fas fa-hand-holding-heart',cl:'var(--success)',
-     keys:['status_rtlh','status_batal','jenis_bantuan','tahun_bantuan','backlog','desil','keterangan']},
-    {lb:'Koordinat',ic:'fas fa-map-marker-alt',cl:'var(--danger)',
-     keys:['latitude','longitude']},
-  ];
-
-  const cmap=Object.fromEntries(XC.map(c=>[c.k,c]));
-  const su=isSuperAdmin();
-
-  let body='';
-  sections.forEach(sec=>{
-    const cols=sec.keys.map(k=>cmap[k]).filter(Boolean);
-    if(!cols.length)return;
-    body+=`<div style="margin-bottom:18px">
-      <div style="font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:${sec.cl};margin-bottom:9px;padding-bottom:5px;border-bottom:2px solid ${sec.cl}22;display:flex;align-items:center;gap:5px">
-        <i class="${sec.ic}"></i>${sec.lb}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">`;
-    cols.forEach(c=>{
-      const val=data[c.k]!=null?String(data[c.k]):'';
-      const locked=c.sen&&!su;
-      const full=(c.k==='keterangan'||c.k==='alamat')?'grid-column:1/-1':'';
-      body+=`<div style="display:flex;flex-direction:column;gap:3px;${full}">
-        <label style="font-size:.6rem;font-weight:800;color:var(--gray-500);text-transform:uppercase;letter-spacing:.06em">${c.lb}${c.req?' *':''}</label>`;
-      if(c.sel){
-        body+=`<select id="xfm_${c.k}" style="padding:7px 9px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.82rem;font-family:var(--font);outline:none;background:#fff;color:var(--gray-900)">`;
-        c.sel.forEach(o=>body+=`<option value="${o}" ${val===(o||'')||(!val&&!o)?'selected':''}>${o||'(kosong)'}</option>`);
-        body+=`</select>`;
-      }else if(locked){
-        body+=`<input type="text" id="xfm_${c.k}" value="${val.replace(/"/g,'&quot;')}" readonly
-          style="padding:7px 9px;border-radius:8px;border:1.5px solid var(--gray-100);font-size:.82rem;font-family:var(--font);background:var(--gray-50);color:var(--gray-400);cursor:not-allowed;box-sizing:border-box">`;
-      }else{
-        body+=`<input type="${c.num?'number':'text'}" id="xfm_${c.k}" value="${val.replace(/"/g,'&quot;')}" step="any"
-          style="padding:7px 9px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.82rem;font-family:var(--font);outline:none;background:#fff;color:var(--gray-900);box-sizing:border-box">`;
-      }
-      body+=`</div>`;
-    });
-    body+=`</div></div>`;
-  });
-
-  // Buat atau reuse modal
-  let ov=document.getElementById('xOvForm');
-  if(!ov){
-    ov=document.createElement('div');
-    ov.id='xOvForm';ov.className='overlay';
-    ov.innerHTML=`<div class="modal" style="max-width:640px">
-      <div class="modal-head">
-        <h3 id="xFmTitle"><i class="fas fa-edit"></i> Form Data</h3>
-        <button class="modal-x" onclick="closeModal('xOvForm')"><i class="fas fa-times"></i></button>
-      </div>
-      <div class="modal-body" id="xFmBody" style="max-height:70vh;overflow-y:auto"></div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="closeModal('xOvForm')">Batal</button>
-        <button class="btn btn-primary" id="xFmSaveBtn"><i class="fas fa-save"></i> Simpan</button>
-      </div>
-    </div>`;
-    document.body.appendChild(ov);
-  }
-
-  document.getElementById('xFmTitle').innerHTML='<i class="fas fa-'+(editId?'edit':'plus')+'"></i> '+(editId?'Edit':'Tambah')+' Data RTLH';
-  document.getElementById('xFmBody').innerHTML=body;
-  ov.classList.add('open');
-
-  document.getElementById('xFmSaveBtn').onclick=()=>xSaveForm(editId);
-}
-
-async function xSaveForm(editId){
-  const obj={};
-  XC.filter(c=>c.k!=='_no'&&c.k!=='updated_at').forEach(c=>{
-    const el=document.getElementById('xfm_'+c.k);
-    if(!el||el.readOnly)return;
-    let v=el.value.trim();
-    if(c.num)obj[c.k]=v!==''?(parseFloat(v)||null):null;
-    else obj[c.k]=v||null;
-  });
-
-  if(!obj.kep_kk)return toast('Nama KK wajib diisi','error');
-  if(!obj.status_rtlh)return toast('Status RTLH wajib diisi','error');
-  obj.updated_at=new Date().toISOString();
-
-  const saveBtn=document.getElementById('xFmSaveBtn');
-  saveBtn.disabled=true;saveBtn.textContent='Menyimpan...';
-
-  if(editId){
-    const{data,error}=await sb.from('rtlh').update(obj).eq('id',parseInt(editId)).select('*').single();
-    if(error){saveBtn.disabled=false;saveBtn.innerHTML='<i class="fas fa-save"></i> Simpan';return toast('Gagal: '+error.message,'error');}
-    const i=xAll.findIndex(x=>String(x.id)===String(editId));
-    if(i>=0)xAll[i]={...xAll[i],...data};
-    delete xDirty[editId];
-    // Sync ke brAll juga
-    const bi=brAll.findIndex(x=>String(x.id)===String(editId));
-    if(bi>=0)brAll[bi]={...brAll[bi],...data};
-    toast('Data diperbarui','success');
-  }else{
-    // Kecamatan wajib
-    if(!obj.kec)return(saveBtn.disabled=false,saveBtn.innerHTML='<i class="fas fa-save"></i> Simpan',toast('Kecamatan wajib diisi','error'));
-    const{data,error}=await sb.from('rtlh').insert(obj).select('*').single();
-    if(error){saveBtn.disabled=false;saveBtn.innerHTML='<i class="fas fa-save"></i> Simpan';return toast('Gagal: '+error.message,'error');}
-    xAll.unshift(data);
-    toast('Data ditambahkan','success');
-  }
-
-  closeModal('xOvForm');
-  xUpdDirty();
-  xFilter();
-}
-
-/* ── Hapus baris ── */
-async function xDeleteRow(id){id=String(id);
-  if(!isSuperAdmin()){toast('Hanya Super Admin yang bisa hapus','error');return;}
-  if(!confirm('Hapus baris ini dari database? Tidak bisa dibatalkan.'))return;
-  const{error}=await sb.from('rtlh').delete().eq('id',parseInt(id));
-  if(error)return toast('Gagal hapus: '+error.message,'error');
-  xAll=xAll.filter(x=>String(x.id)!==String(id));
-  brAll=brAll.filter(x=>String(x.id)!==String(id));
-  delete xDirty[id];
-  xFilter();xUpdDirty();
-  toast('Baris dihapus','success');
-}
-
-/* ── Simpan semua dirty ── */
-async function xSaveAll(){
-  const ids=Object.keys(xDirty);
-  if(!ids.length){toast('Tidak ada perubahan','info');return;}
-  if(!confirm('Simpan '+ids.length+' perubahan ke database?'))return;
-  let ok=0,fail=0;
-  for(const id of ids){
-    const changes={...xDirty[id],updated_at:new Date().toISOString()};
-    const{error}=await sb.from('rtlh').update(changes).eq('id',parseInt(id));
-    if(error){fail++;console.error('xSave fail',id,error);}
-    else{
-      ok++;
-      const ai=xAll.findIndex(x=>String(x.id)===String(id));
-      if(ai>=0)xAll[ai]={...xAll[ai],...changes};
-      const bi=brAll.findIndex(x=>String(x.id)===String(id));
-      if(bi>=0)brAll[bi]={...brAll[bi],...changes};
-      delete xDirty[id];
-    }
-  }
-  xFilter();xUpdDirty();
-  toast(fail?ok+' berhasil, '+fail+' gagal':ok+' perubahan disimpan!',fail?'warning':'success');
-  if(!fail&&xEditMode)xToggleEditMode(); // auto-off edit mode setelah simpan sukses
-}
-
-function xDiscardAll(){
-  if(!Object.keys(xDirty).length)return;
-  if(!confirm('Batalkan semua perubahan yang belum disimpan?'))return;
-  xDirty={};xFilter();xUpdDirty();
-  toast('Perubahan dibatalkan','info');
-}
-
-function xUpdDirty(){
-  const n=Object.keys(xDirty).length;
-  // Tombol Simpan & Batalkan — hanya tampil kalau edit mode ON dan ada perubahan
-  const btnSave=document.getElementById('xBtnSave');
-  const btnDiscard=document.getElementById('xBtnDiscard');
-  if(btnSave)btnSave.style.display=(xEditMode&&n>0)?'flex':'none';
-  if(btnDiscard)btnDiscard.style.display=(xEditMode&&n>0)?'flex':'none';
-  const dc=document.getElementById('xDirtyCount');if(dc)dc.textContent=n;
-  const uc2=document.getElementById('xUnsavedCount2');if(uc2)uc2.textContent=n;
-  const chip=document.getElementById('xUnsavedChip');if(chip)chip.style.display=(xEditMode&&n>0)?'flex':'none';
-  // Banner save button
-  const bannerSave=document.getElementById('xBannerSave');
-  if(bannerSave)bannerSave.style.display=n>0?'flex':'none';
-}
-
-/* ── Ekspor Excel ── */
-function xExportExcel(){
-  if(!window.XLSX){toast('XLSX tidak tersedia','error');return;}
-  if(!xRows.length){toast('Tidak ada data','error');return;}
-  const vis=xVisCols().filter(c=>c.k!=='_no');
-  const header=vis.map(c=>c.lb);
-  const rows=xRows.map(r=>vis.map(c=>{
-    const val=xDirty[r.id]&&xDirty[r.id][c.k]!==undefined?xDirty[r.id][c.k]:r[c.k];
-    if(c.k==='updated_at'&&val)return new Date(val).toLocaleDateString('id-ID');
-    return val!=null?val:'';
-  }));
-  const ws=XLSX.utils.aoa_to_sheet([header,...rows]);
-  ws['!cols']=vis.map(c=>({wch:Math.max(10,Math.round((xW[c.k]||c.w)/7))}));
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'Data RTLH');
-  const d=new Date();
-  const fn='eRTLH_'+d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'.xlsx';
-  XLSX.writeFile(wb,fn);
-  toast('Ekspor '+xRows.length.toLocaleString('id')+' baris → '+fn,'success');
-}
-
-/* ── Kolom visibility ── */
-function xOpenColModal(){
-  let html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">';
-  XC.forEach(c=>{
-    if(c.k==='_no')return;
-    const chk=xVis[c.k]!==false;
-    html+=`<label style="display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;
-      border:1px solid ${chk?'var(--blue)':'var(--gray-200)'};cursor:pointer;font-size:.72rem;
-      ${chk?'background:var(--blue-bg);':''}">
-      <input type="checkbox" id="xcv_${c.k}" ${chk?'checked':''} style="accent-color:var(--blue)"> ${c.lb}
-    </label>`;
-  });
-  html+='</div>';
-  document.getElementById('xColModalBody').innerHTML=html;
-  document.getElementById('xOvCols').classList.add('open');
-}
-function xSelectAllCols(v){document.querySelectorAll('#xColModalBody input[type=checkbox]').forEach(cb=>cb.checked=v);}
-function xApplyColConfig(){
-  XC.forEach(c=>{if(c.k==='_no')return;const cb=document.getElementById('xcv_'+c.k);if(cb)xVis[c.k]=cb.checked;});
-  closeModal('xOvCols');xRender();
-}
-
-/* ── Freeze ── */
-function xToggleFreeze(){
-  xFreeze=!xFreeze;
-  const icon=document.getElementById('xFreezeIcon');
-  const label=document.getElementById('xFreezeLabel');
-  if(icon){icon.className='fas fa-'+(xFreeze?'thumbtack':'thumbtack');icon.style.opacity=xFreeze?'1':'.4';}
-  if(label)label.textContent='Freeze: '+(xFreeze?'On':'Off');
-  xRender();
-}
-
-/* ── Column resize ── */
-let _xRK=null,_xRX=0,_xRW=0;
-function xResStart(e,k){
-  _xRK=k;_xRX=e.clientX;_xRW=xW[k]||120;
-  document.addEventListener('mousemove',_xResMove);
-  document.addEventListener('mouseup',_xResEnd);
-}
-function _xResMove(e){
-  if(!_xRK)return;
-  const nw=Math.max(48,_xRW+(e.clientX-_xRX));
-  xW[_xRK]=nw;
-  document.querySelectorAll('[data-k="'+_xRK+'"],[data-key="'+_xRK+'"]').forEach(el=>{
-    el.style.width=nw+'px';el.style.minWidth=nw+'px';
-  });
-}
-function _xResEnd(){_xRK=null;document.removeEventListener('mousemove',_xResMove);document.removeEventListener('mouseup',_xResEnd);}
-
-/* ── Status bar ── */
-function _xUpdSB(){
-  const r=document.getElementById('xSBRow');if(r)r.textContent=xRows.length;
-  const c2=document.getElementById('xSBCol');if(c2)c2.textContent=xVisCols().length;
-  if(xFoc){
-    const col=XC.find(x=>x.k===xFoc.k);
-    const ri=xRows.findIndex(r=>r.id===xFoc.id);
-    const el=document.getElementById('xSBCell');
-    if(el)el.textContent=(col?.lb||xFoc.k)+' · baris '+(ri+1);
-  }
-}
-</script>
-
-
-
-<!-- ═══ MODAL LIBRARY DOKUMEN KABUPATEN ═══ -->
-<div class="overlay" id="ovDokLib">
-  <div class="modal" style="max-width:680px">
-    <div class="modal-head">
-      <div><h3><i class="fas fa-folder-open" style="color:var(--gold)"></i> Library Dokumen Kabupaten</h3>
-        <div class="sub">SK, BA, Surat Pernyataan — dokumen resmi RTLH</div>
-      </div>
-      <button class="modal-x" onclick="closeModal('ovDokLib')"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body" style="padding:0">
-      <!-- Filter jenis -->
-      <div style="padding:12px 16px;border-bottom:1px solid var(--gray-200);display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-        <button class="dok-jenis-chip active" id="djc_all" onclick="filterDokLib('')" style="background:var(--navy);color:#fff;border-color:var(--navy)">Semua</button>
-        <button class="dok-jenis-chip" id="djc_SK" onclick="filterDokLib('SK')" style="background:#EFF6FF;color:#1D4ED8;border-color:#BFDBFE">SK</button>
-        <button class="dok-jenis-chip" id="djc_BA" onclick="filterDokLib('BA')" style="background:#F0FDF4;color:#16A34A;border-color:#BBF7D0">BA</button>
-        <button class="dok-jenis-chip" id="djc_SP" onclick="filterDokLib('Surat Pernyataan')" style="background:#FFF7ED;color:#EA580C;border-color:#FED7AA">Surat Pernyataan</button>
-        <button class="dok-jenis-chip" id="djc_Lainnya" onclick="filterDokLib('Lainnya')" style="background:var(--gray-100);color:var(--gray-600);border-color:var(--gray-300)">Lainnya</button>
-        <button id="btnUploadDokLib" onclick="openUploadDokLib()" style="display:none;margin-left:auto;padding:5px 12px;border-radius:8px;background:var(--blue);color:#fff;border:none;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit"><i class="fas fa-upload"></i> Upload Dokumen</button>
-        <button onclick="refreshDokLib()" title="Refresh & sinkronisasi link" style="padding:5px 10px;border-radius:8px;background:var(--gray-100);color:var(--gray-600);border:1px solid var(--gray-200);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit" id="btnRefreshDokLib"><i class="fas fa-sync-alt"></i></button>
-      </div>
-      <!-- List dokumen -->
-      <div id="dokLibList" style="padding:14px 16px;min-height:200px;max-height:50vh;overflow-y:auto">
-        <div style="text-align:center;color:var(--gray-400);padding:32px"><i class="fas fa-circle-notch fa-spin fa-2x"></i></div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('ovDokLib')">Tutup</button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ MODAL UPLOAD DOKUMEN KABUPATEN ═══ -->
-<div class="overlay" id="ovUploadDokLib">
-  <div class="modal" style="max-width:480px">
-    <div class="modal-head">
-      <div><h3><i class="fas fa-upload" style="color:var(--blue)"></i> Upload Dokumen Kabupaten</h3></div>
-      <button class="modal-x" onclick="closeModal('ovUploadDokLib')"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-        <div class="form-group" style="margin:0">
-          <label>Jenis Dokumen <span style="color:var(--danger)">*</span></label>
-          <select id="dlJenis">
-            <option value="SK">SK (Surat Keputusan)</option>
-            <option value="BA">BA (Berita Acara)</option>
-            <option value="Surat Pernyataan">Surat Pernyataan</option>
-            <option value="Lainnya">Lainnya</option>
-          </select>
-        </div>
-        <div class="form-group" style="margin:0">
-          <label>Tahun</label>
-          <input type="number" id="dlTahun" value="2025" min="2020" max="2030">
-        </div>
-      </div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label>Judul Dokumen <span style="color:var(--danger)">*</span></label>
-        <input type="text" id="dlJudul" placeholder="misal: SK RTLH 2025 No. 188/...">
-      </div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label>Kecamatan (kosongkan jika berlaku seluruh kabupaten)</label>
-        <select id="dlKec">
-          <option value="">Seluruh Kabupaten</option>
-        </select>
-      </div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label>Berlaku untuk Jenis Bantuan <span style="font-weight:400;color:var(--gray-400)">(untuk auto-link)</span></label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <select id="dlJenisBantuan">
-            <option value="">Semua / Tidak spesifik</option>
-            <option value="RTLH">RTLH</option>
-            <option value="BSPS">BSPS</option>
-            <option value="Dana Desa">Dana Desa</option>
-            <option value="CSR">CSR</option>
-          </select>
-          <select id="dlTahunBantuan">
-            <option value="">Semua Tahun</option>
-            <option value="2021">2021</option>
-            <option value="2022">2022</option>
-            <option value="2023">2023</option>
-            <option value="2024">2024</option>
-            <option value="2025">2025</option>
-            <option value="2026">2026</option>
-            <option value="2027">2027</option>
-          </select>
-        </div>
-        <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Contoh: RTLH + 2026 → penerima RTLH 2026 otomatis terhubung saat disimpan</div>
-      </div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label>Mode Link Penerima</label>
-        <div style="display:flex;gap:8px">
-          <label style="display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;cursor:pointer;padding:7px 12px;border-radius:8px;border:1.5px solid var(--gray-200);flex:1;text-transform:none;letter-spacing:0">
-            <input type="radio" name="dlLinkMode" value="auto" checked onchange="toggleDlLinkMode(this.value)"> Auto (Jenis+Tahun)
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;cursor:pointer;padding:7px 12px;border-radius:8px;border:1.5px solid var(--gray-200);flex:1;text-transform:none;letter-spacing:0">
-            <input type="radio" name="dlLinkMode" value="manual" onchange="toggleDlLinkMode(this.value)"> Pilih Manual
-          </label>
-        </div>
-      </div>
-      <div id="dlManualWrap" style="display:none;margin-bottom:10px">
-        <div style="font-size:.68rem;font-weight:700;color:var(--gray-600);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">Cari & Pilih Penerima</div>
-        <div style="position:relative;margin-bottom:8px">
-          <input type="text" id="dlManualSearch" placeholder="Ketik nama, NIK, atau desa..." 
-            oninput="clearTimeout(this._t);this._t=setTimeout(()=>searchDlManual(this.value),400)"
-            style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.82rem;font-family:inherit;outline:none;box-sizing:border-box">
-        </div>
-        <div id="dlManualResults" style="max-height:150px;overflow-y:auto;border:1px solid var(--gray-200);border-radius:8px;margin-bottom:8px;display:none"></div>
-        <div style="font-size:.68rem;font-weight:700;color:var(--gray-600);margin-bottom:4px">Dipilih: <span id="dlSelectedCount">0</span> penerima</div>
-        <div id="dlSelectedList" style="max-height:100px;overflow-y:auto;display:flex;flex-wrap:wrap;gap:4px"></div>
-      </div>
-      <div class="form-group" style="margin-bottom:4px">
-        <label>File PDF <span style="color:var(--danger)">*</span></label>
-        <input type="file" id="dlFile" accept=".pdf,.doc,.docx,.jpg,.png" style="font-size:.8rem">
-        <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Format: PDF, DOC, JPG, PNG. Maks 20 MB.</div>
-      </div>
-      <div id="dlProgress" style="font-size:.72rem;margin-top:8px"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('ovUploadDokLib')">Batal</button>
-      <button class="btn btn-primary" onclick="uploadDokLib()"><i class="fas fa-upload"></i> Upload</button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ MODAL LINK DOKUMEN KE PENERIMA ═══ -->
-<div class="overlay" id="ovLinkDok">
-  <div class="modal" style="max-width:500px">
-    <div class="modal-head">
-      <div><h3><i class="fas fa-link" style="color:var(--blue)"></i> Link Dokumen ke Penerima</h3>
-        <div class="sub" id="linkDokSub">Hubungkan dokumen dengan penerima ini</div>
-      </div>
-      <button class="modal-x" onclick="closeModal('ovLinkDok')"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body">
-      <div style="font-size:.72rem;font-weight:700;color:var(--gray-600);margin-bottom:8px">Dokumen Terhubung:</div>
-      <div id="linkedDokList" style="margin-bottom:14px"></div>
-      <div style="font-size:.72rem;font-weight:700;color:var(--gray-600);margin-bottom:8px;border-top:1px solid var(--gray-200);padding-top:12px">Tambah Link Dokumen:</div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label>Cari Dokumen</label>
-        <input type="text" id="linkDokSearch" placeholder="Ketik judul atau jenis..." oninput="searchDokForLink(this.value)">
-      </div>
-      <div id="dokSearchResults" style="max-height:200px;overflow-y:auto"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('ovLinkDok')">Tutup</button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ MODAL PENERIMA DOKUMEN ═══ -->
-<div class="overlay" id="ovPenerimaDok">
-  <div class="modal" style="max-width:600px">
-    <div class="modal-head">
-      <div>
-        <h3><i class="fas fa-users" style="color:#7C3AED"></i> Penerima Dokumen</h3>
-        <div class="sub" id="penerimaDokSub"></div>
-      </div>
-      <button class="modal-x" onclick="closeModal('ovPenerimaDok')"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body" style="padding:0">
-      <div style="padding:10px 16px;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;justify-content:space-between;gap:8px">
-        <div id="penerimaDokCount" style="font-size:.75rem;color:var(--gray-500)"></div>
-        <input type="text" id="penerimaDokSearch" placeholder="Cari nama atau desa..." oninput="filterPenerimaDok(this.value)"
-          style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.75rem;font-family:inherit;outline:none;width:180px">
-      </div>
-      <div id="penerimaDokList" style="max-height:60vh;overflow-y:auto;padding:10px 14px"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('ovPenerimaDok')">Tutup</button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ MODAL EDIT DOKUMEN KABUPATEN ═══ -->
-<div class="overlay" id="ovEditDokLib">
-  <div class="modal" style="max-width:480px">
-    <div class="modal-head">
-      <div><h3><i class="fas fa-edit" style="color:#EA580C"></i> Edit Dokumen</h3></div>
-      <button class="modal-x" onclick="closeModal('ovEditDokLib')"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="editDlId">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-        <div class="form-group" style="margin:0">
-          <label>Jenis Dokumen</label>
-          <select id="editDlJenis">
-            <option value="SK">SK (Surat Keputusan)</option>
-            <option value="BA">BA (Berita Acara)</option>
-            <option value="Surat Pernyataan">Surat Pernyataan</option>
-            <option value="Lainnya">Lainnya</option>
-          </select>
-        </div>
-        <div class="form-group" style="margin:0">
-          <label>Tahun</label>
-          <input type="number" id="editDlTahun" min="2020" max="2030">
-        </div>
-      </div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label>Judul Dokumen</label>
-        <input type="text" id="editDlJudul">
-      </div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label>Kecamatan (kosongkan jika seluruh kabupaten)</label>
-        <select id="editDlKec">
-          <option value="">Seluruh Kabupaten</option>
-        </select>
-      </div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label>Berlaku untuk Jenis Bantuan <span style="font-weight:400;color:var(--gray-400)">(auto-link)</span></label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <select id="editDlJenisBantuan">
-            <option value="">Semua / Tidak spesifik</option>
-            <option value="RTLH">RTLH</option>
-            <option value="BSPS">BSPS</option>
-            <option value="Dana Desa">Dana Desa</option>
-            <option value="CSR">CSR</option>
-          </select>
-          <select id="editDlTahunBantuan">
-            <option value="">Semua Tahun</option>
-            <option value="2021">2021</option>
-            <option value="2022">2022</option>
-            <option value="2023">2023</option>
-            <option value="2024">2024</option>
-            <option value="2025">2025</option>
-            <option value="2026">2026</option>
-            <option value="2027">2027</option>
-          </select>
-        </div>
-        <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Contoh: RTLH + 2026 → semua penerima RTLH 2026 akan terhubung ke dokumen ini</div>
-      </div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label style="font-size:.68rem;font-weight:700;color:var(--gray-600)">AUTO-LINK KE PENERIMA</label>
-        <button onclick="runAutoLinkFromLib(document.getElementById('editDlId').value)" 
-          style="width:100%;padding:9px;border-radius:8px;background:var(--success-bg);color:var(--success);border:1px solid var(--success);font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px">
-          <i class="fas fa-magic"></i> Terapkan ke semua penerima yang cocok
-        </button>
-        <div id="autoLinkProgress" style="font-size:.68rem;color:var(--gray-500);margin-top:6px;text-align:center"></div>
-      </div>
-      <div class="form-group" style="margin-bottom:4px">
-        <label>Ganti File (opsional)</label>
-        <div style="font-size:.68rem;color:var(--gray-500);margin-bottom:4px">File saat ini: <span id="editDlCurrentFile" style="font-weight:600"></span></div>
-        <input type="file" id="editDlFile" accept=".pdf,.doc,.docx,.jpg,.png" style="font-size:.8rem">
-        <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Kosongkan jika tidak ingin ganti file. Maks 20 MB.</div>
-      </div>
-      <div id="editDlProgress" style="font-size:.72rem;margin-top:8px"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('ovEditDokLib')">Batal</button>
-      <button class="btn btn-primary" onclick="saveEditDokLib()"><i class="fas fa-save"></i> Simpan</button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ END APP SHELL ═══ -->
-</div>
-
-</body>
-</html>
