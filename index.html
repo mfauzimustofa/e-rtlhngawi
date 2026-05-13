@@ -446,21 +446,23 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
 /* ══ PAGE EXCEL ══ */
 #pgExcel{flex-direction:column;overflow:hidden;background:#fff}
-.excel-toolbar{height:44px;background:#fff;border-bottom:1.5px solid var(--gray-200);display:flex;align-items:center;padding:0 10px;gap:4px;flex-shrink:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.excel-toolbar{height:48px;background:#fff;border-bottom:2px solid var(--gray-100);display:flex;align-items:center;padding:0 14px;gap:6px;flex-shrink:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .excel-toolbar::-webkit-scrollbar{display:none}
-.excel-filterbar{background:var(--gray-50);border-bottom:1px solid var(--gray-200);padding:6px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0}
-.excel-filterbar select,.excel-filterbar input{padding:4px 8px;border-radius:6px;border:1.5px solid var(--gray-200);font-size:.72rem;font-family:var(--font);color:var(--gray-800);outline:none;background:#fff}
-.excel-filterbar select:focus,.excel-filterbar input:focus{border-color:var(--blue)}
+.excel-toolbar .tb-sep{width:1px;height:22px;background:var(--gray-200);margin:0 3px;flex-shrink:0}
+.excel-filterbar{background:var(--gray-50);border-bottom:1.5px solid var(--gray-200);padding:7px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.excel-filterbar select,.excel-filterbar input[type=text]{padding:5px 10px;border-radius:7px;border:1.5px solid var(--gray-200);font-size:.73rem;font-family:var(--font);color:var(--gray-800);outline:none;background:#fff;height:30px}
+.excel-filterbar select:focus,.excel-filterbar input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(27,108,168,.1)}
+.excel-filterbar select{cursor:pointer}
 .excel-sheet-wrap{flex:1;overflow:auto;position:relative;min-height:0}
-.excel-sheet-wrap::-webkit-scrollbar{width:10px;height:10px}
-.excel-sheet-wrap::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:5px;border:2px solid #fff}
-.excel-sheet-wrap::-webkit-scrollbar-track{background:var(--gray-100)}
-.excel-statusbar{height:26px;background:var(--navy);display:flex;align-items:center;padding:0 12px;gap:12px;flex-shrink:0}
-.excel-statusbar span{font-size:.6rem;font-weight:600;color:rgba(255,255,255,.5)}
-.excel-statusbar strong{color:#fff}
-.excel-statusbar .es-mode{padding:1px 8px;border-radius:99px;font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;background:rgba(255,255,255,.08);color:rgba(255,255,255,.4)}
-.excel-statusbar .es-mode.editing{background:rgba(245,158,11,.2);color:var(--gold)}
-.excel-statusbar .sep{width:1px;height:12px;background:rgba(255,255,255,.15)}
+.excel-sheet-wrap::-webkit-scrollbar{width:8px;height:8px}
+.excel-sheet-wrap::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:4px;border:2px solid #fff}
+.excel-sheet-wrap::-webkit-scrollbar-track{background:transparent}
+.excel-sheet-wrap::-webkit-scrollbar-corner{background:transparent}
+.excel-statusbar{height:28px;background:var(--navy);display:flex;align-items:center;padding:0 14px;gap:14px;flex-shrink:0}
+.excel-statusbar span{font-size:.62rem;font-weight:600;color:rgba(255,255,255,.45)}
+.excel-statusbar strong{color:rgba(255,255,255,.9)}
+.excel-statusbar .es-mode{padding:2px 9px;border-radius:99px;font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;background:rgba(255,255,255,.08);color:rgba(255,255,255,.35)}
+.excel-statusbar .es-mode.editing{background:rgba(245,158,11,.18);color:var(--gold)}
 
 /* GRID */
 table.xgrid{border-collapse:separate;border-spacing:0;min-width:max-content;table-layout:fixed}
@@ -518,27 +520,30 @@ table.xgrid td.xediting select{
 table.xgrid td.xediting input{min-width:120px}
 
 /* RESIZE HANDLE */
-.xresize{position:absolute;right:0;top:0;width:5px;height:100%;cursor:col-resize;z-index:5}
-.xresize:hover,.xresize.dragging{background:var(--gold);opacity:.8}
+.xresize{position:absolute;right:0;top:0;width:4px;height:100%;cursor:col-resize;z-index:5;opacity:0;transition:opacity .15s}
+table.xgrid thead th:hover .xresize{opacity:1;background:rgba(255,255,255,.3)}
+.xresize:hover,.xresize.dragging{opacity:1!important;background:var(--gold)!important}
 
 /* STATUS BADGE in grid */
-.xbadge{display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:99px;font-size:.6rem;font-weight:700;white-space:nowrap;line-height:1.5}
-.xbadge.rtlh{background:#FEF2F2;color:#DC2626}
-.xbadge.layak{background:#F0FDF4;color:#16A34A}
-.xbadge.lain{background:#F3E8FF;color:#7C3AED}
+.xbadge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:99px;font-size:.62rem;font-weight:700;white-space:nowrap;line-height:1.4;letter-spacing:.01em}
+.xbadge.rtlh{background:#FEE2E2;color:#B91C1C;border:1px solid #FECACA}
+.xbadge.layak{background:#DCFCE7;color:#15803D;border:1px solid #BBF7D0}
+.xbadge.lain{background:#EDE9FE;color:#6D28D9;border:1px solid #DDD6FE}
+.xbadge.empty{color:#D1D5DB;font-weight:400;font-size:.7rem}
 
 /* UNSAVED BANNER */
 #xUnsavedBar{display:none;background:var(--warning);color:var(--navy);font-size:.72rem;font-weight:800;padding:5px 14px;text-align:center;flex-shrink:0;align-items:center;justify-content:center;gap:10px}
 #xUnsavedBar.show{display:flex}
 
 /* CONTEXT MENU */
-#xCtxMenu{position:fixed;z-index:9999;background:#fff;border:1px solid var(--gray-200);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.15);padding:4px;min-width:190px;display:none}
+#xCtxMenu{position:fixed;z-index:9999;background:#fff;border:1px solid var(--gray-200);border-radius:10px;box-shadow:0 4px 24px rgba(0,0,0,.12),0 1px 4px rgba(0,0,0,.06);padding:4px;min-width:200px;display:none;animation:xCtxIn .12s ease}
 #xCtxMenu.open{display:block}
-.xctx-item{display:flex;align-items:center;gap:8px;padding:6px 11px;border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;color:var(--gray-700);white-space:nowrap}
+@keyframes xCtxIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+.xctx-item{display:flex;align-items:center;gap:9px;padding:7px 12px;border-radius:7px;font-size:.77rem;font-weight:600;cursor:pointer;color:var(--gray-700);white-space:nowrap}
 .xctx-item:hover{background:var(--blue-bg);color:var(--blue)}
 .xctx-item.danger:hover{background:var(--danger-bg);color:var(--danger)}
-.xctx-item i{width:14px;text-align:center;font-size:.72rem}
-.xctx-sep{height:1px;background:var(--gray-200);margin:3px 0}
+.xctx-item i{width:15px;text-align:center;font-size:.75rem;opacity:.7}
+.xctx-sep{height:1px;background:var(--gray-100);margin:3px 0}
 </style>
 </head>
 <body>
@@ -820,17 +825,40 @@ table.xgrid td.xediting input{min-width:120px}
 <div class="page" id="pgExcel">
   <!-- Toolbar -->
   <div class="excel-toolbar">
-    <button class="tb-btn" onclick="nav('beranda')"><i class="fas fa-home"></i> <span style="font-size:.65rem">Beranda</span></button>
+    <button class="tb-btn" onclick="nav('beranda')" title="Kembali ke Beranda" style="gap:5px">
+      <i class="fas fa-arrow-left" style="font-size:.65rem"></i> Beranda
+    </button>
     <div class="tb-sep"></div>
-    <button class="tb-btn" id="xBtnSave" onclick="xSaveAll()" style="display:none;background:var(--success-bg);border-color:var(--success);color:var(--success);font-weight:700"><i class="fas fa-save"></i> Simpan (<span id="xDirtyCount">0</span>)</button>
-    <button class="tb-btn" id="xBtnDiscard" onclick="xDiscardAll()" style="display:none"><i class="fas fa-undo"></i> Batalkan</button>
+    <button class="tb-btn" id="xBtnSave" onclick="xSaveAll()" style="display:none;background:#F0FDF4;border-color:#16A34A;color:#15803D;font-weight:800;gap:5px">
+      <i class="fas fa-save"></i> Simpan <span id="xDirtyCount" style="background:#16A34A;color:#fff;border-radius:99px;padding:1px 6px;font-size:.6rem">0</span>
+    </button>
+    <button class="tb-btn" id="xBtnDiscard" onclick="xDiscardAll()" style="display:none;color:var(--danger)">
+      <i class="fas fa-times-circle"></i> Batalkan
+    </button>
     <div class="tb-sep"></div>
-    <button class="tb-btn" onclick="xOpenAddModal()"><i class="fas fa-plus"></i> Tambah Baris</button>
-    <button class="tb-btn" onclick="xExportExcel()"><i class="fas fa-file-excel" style="color:var(--success)"></i> Ekspor Excel</button>
+    <button class="tb-btn" onclick="xOpenAddModal()" title="Tambah baris baru" style="gap:5px">
+      <i class="fas fa-plus" style="font-size:.7rem"></i> Tambah
+    </button>
+    <button class="tb-btn" onclick="xExportExcel()" title="Ekspor ke Excel" style="gap:5px">
+      <i class="fas fa-file-excel" style="color:#16A34A"></i> Ekspor
+    </button>
     <div class="tb-sep"></div>
-    <button class="tb-btn" onclick="xOpenColModal()"><i class="fas fa-columns"></i> Kolom</button>
-    <button class="tb-btn" id="xBtnFreeze" onclick="xToggleFreeze()"><i class="fas fa-lock"></i> Freeze</button>
-    <div style="margin-left:auto;font-size:.62rem;font-weight:600;color:var(--gray-500);white-space:nowrap;padding-right:8px" id="xResultInfo">—</div>
+    <button class="tb-btn" onclick="xOpenColModal()" title="Atur kolom yang ditampilkan">
+      <i class="fas fa-columns"></i> Kolom
+    </button>
+    <button class="tb-btn" id="xBtnFreeze" onclick="xToggleFreeze()" title="Toggle freeze kolom kiri" style="gap:5px">
+      <i class="fas fa-thumbtack" id="xFreezeIcon"></i> <span id="xFreezeLabel">Freeze: On</span>
+    </button>
+    <button class="tb-btn" onclick="xLoad()" title="Refresh data dari server" style="gap:5px">
+      <i class="fas fa-sync-alt"></i>
+    </button>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0">
+      <div id="xUnsavedChip" style="display:none;align-items:center;gap:5px;background:#FFFBEB;border:1px solid #FCD34D;border-radius:6px;padding:2px 9px;font-size:.65rem;font-weight:700;color:#92400E">
+        <i class="fas fa-circle" style="font-size:.4rem;color:#F59E0B"></i>
+        <span id="xUnsavedCount2">0</span> belum disimpan
+      </div>
+      <span style="font-size:.68rem;font-weight:700;color:var(--gray-500);white-space:nowrap" id="xResultInfo">—</span>
+    </div>
   </div>
 
   <!-- Unsaved bar -->
@@ -842,25 +870,27 @@ table.xgrid td.xediting input{min-width:120px}
 
   <!-- Filter bar -->
   <div class="excel-filterbar">
-    <i class="fas fa-filter" style="color:var(--gray-400);font-size:.72rem"></i>
-    <select id="xFKec" onchange="xFilter()" style="max-width:140px">
+    <i class="fas fa-filter" style="color:var(--gray-400);font-size:.7rem;flex-shrink:0"></i>
+    <select id="xFKec" onchange="xFilter()" style="max-width:145px">
       <option value="">Semua Kecamatan</option>
     </select>
-    <select id="xFDesa" onchange="xFilter()" style="max-width:130px">
+    <select id="xFDesa" onchange="xFilter()" style="max-width:135px">
       <option value="">Semua Desa</option>
     </select>
-    <select id="xFStatus" onchange="xFilter()">
+    <select id="xFStatus" onchange="xFilter()" style="max-width:145px">
       <option value="">Semua Status</option>
-      <option value="RTLH">RTLH</option>
-      <option value="Layak Huni">Layak Huni</option>
-      <option value="Keterangan Lain">Keterangan Lain</option>
+      <option value="RTLH">🔴 RTLH</option>
+      <option value="Layak Huni">🟢 Layak Huni</option>
+      <option value="Keterangan Lain">🟣 Keterangan Lain</option>
     </select>
-    <div style="position:relative">
-      <i class="fas fa-search" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--gray-400);font-size:.68rem;pointer-events:none"></i>
-      <input id="xFSearch" type="text" placeholder="Cari nama / NIK / desa..." oninput="xFilter()" style="padding:4px 8px 4px 26px;width:200px">
+    <div style="position:relative;flex:1;max-width:240px;min-width:160px">
+      <i class="fas fa-search" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--gray-400);font-size:.68rem;pointer-events:none"></i>
+      <input id="xFSearch" type="text" placeholder="Nama / NIK / desa..." oninput="xFilter()" style="padding:5px 9px 5px 28px;width:100%;box-sizing:border-box;height:30px;border-radius:7px;border:1.5px solid var(--gray-200);font-family:var(--font);font-size:.73rem;outline:none">
     </div>
-    <button onclick="xClearFilter()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--gray-200);background:#fff;font-size:.68rem;cursor:pointer;font-family:inherit;color:var(--gray-600)"><i class="fas fa-times"></i> Reset</button>
-    <span style="font-size:.65rem;font-weight:600;color:var(--gray-500);margin-left:auto" id="xInfo">—</span>
+    <button onclick="xClearFilter()" style="padding:0 10px;border-radius:7px;border:1.5px solid var(--gray-200);background:#fff;height:30px;font-size:.7rem;cursor:pointer;font-family:inherit;color:var(--gray-600);display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0">
+      <i class="fas fa-times" style="font-size:.65rem"></i> Reset
+    </button>
+    <div style="margin-left:auto;font-size:.68rem;font-weight:600;color:var(--gray-500);white-space:nowrap;flex-shrink:0" id="xInfo">—</div>
   </div>
 
   <!-- Grid -->
@@ -877,7 +907,7 @@ table.xgrid td.xediting input{min-width:120px}
   </div>
 
   <!-- Pager -->
-  <div id="xPager" style="display:none;align-items:center;gap:6px;padding:6px 12px;background:#fff;border-top:1px solid var(--gray-200);flex-shrink:0;font-size:.72rem;color:var(--gray-600)"></div>
+  <div id="xPager" style="display:none;align-items:center;gap:5px;padding:5px 14px;background:#fff;border-top:1.5px solid var(--gray-100);flex-shrink:0;font-size:.72rem;color:var(--gray-600)"></div>
 
   <!-- Status bar -->
   <div class="excel-statusbar">
@@ -5146,16 +5176,20 @@ function _xRenderPager(){
   pager.style.display='flex';
   const totalPages=Math.ceil(total/X_PAGE_SIZE)||1;
   const s=xPage*X_PAGE_SIZE+1, e=Math.min((xPage+1)*X_PAGE_SIZE,total);
-  const bs='padding:3px 9px;border-radius:5px;border:1px solid var(--gray-200);background:#fff;font-size:.7rem;cursor:pointer;font-family:inherit;color:var(--gray-700)';
-  const bd='padding:3px 9px;border-radius:5px;border:1px solid var(--gray-200);background:var(--gray-100);font-size:.7rem;cursor:default;font-family:inherit;color:var(--gray-400)';
+  const bs='padding:3px 10px;border-radius:6px;border:1.5px solid var(--gray-200);background:#fff;font-size:.72rem;cursor:pointer;font-family:inherit;color:var(--gray-700);font-weight:600';
+  const bd='padding:3px 10px;border-radius:6px;border:1.5px solid var(--gray-100);background:var(--gray-50);font-size:.72rem;cursor:default;font-family:inherit;color:var(--gray-300);font-weight:600';
   pager.innerHTML=`
-    <button style="${xPage>0?bs:bd}" onclick="xGoPage(0)" ${xPage===0?'disabled':''}>«</button>
-    <button style="${xPage>0?bs:bd}" onclick="xGoPage(${xPage-1})" ${xPage===0?'disabled':''}>‹</button>
-    <span style="flex:1;text-align:center">Hal. <strong>${xPage+1}</strong>/${totalPages} &nbsp;·&nbsp; ${s}–${e} dari <strong>${total.toLocaleString('id')}</strong></span>
-    <button style="${xPage<totalPages-1?bs:bd}" onclick="xGoPage(${xPage+1})" ${xPage>=totalPages-1?'disabled':''}>›</button>
-    <button style="${xPage<totalPages-1?bs:bd}" onclick="xGoPage(${totalPages-1})" ${xPage>=totalPages-1?'disabled':''}>»</button>
-    <select onchange="xGoPage(parseInt(this.value))" style="padding:2px 6px;border-radius:5px;border:1px solid var(--gray-200);font-size:.7rem;font-family:inherit;margin-left:4px">
-      ${Array.from({length:totalPages},(_,i)=>`<option value="${i}"${i===xPage?' selected':''}>${i+1}</option>`).join('')}
+    <button style="${xPage>0?bs:bd}" onclick="xGoPage(0)" ${xPage===0?'disabled':''} title="Halaman pertama">«</button>
+    <button style="${xPage>0?bs:bd}" onclick="xGoPage(${xPage-1})" ${xPage===0?'disabled':''} title="Halaman sebelumnya">‹ Prev</button>
+    <span style="flex:1;text-align:center;font-size:.7rem;color:var(--gray-500)">
+      Hal. <strong style="color:var(--gray-800)">${xPage+1}</strong> / ${totalPages}
+      &nbsp;<span style="color:var(--gray-300)">·</span>&nbsp;
+      Baris <strong style="color:var(--gray-800)">${s.toLocaleString('id')}–${e.toLocaleString('id')}</strong> dari <strong style="color:var(--gray-800)">${total.toLocaleString('id')}</strong>
+    </span>
+    <button style="${xPage<totalPages-1?bs:bd}" onclick="xGoPage(${xPage+1})" ${xPage>=totalPages-1?'disabled':''} title="Halaman berikutnya">Next ›</button>
+    <button style="${xPage<totalPages-1?bs:bd}" onclick="xGoPage(${totalPages-1})" ${xPage>=totalPages-1?'disabled':''} title="Halaman terakhir">»</button>
+    <select onchange="xGoPage(parseInt(this.value))" style="padding:3px 6px;border-radius:6px;border:1.5px solid var(--gray-200);font-size:.7rem;font-family:inherit;margin-left:6px;cursor:pointer" title="Langsung ke halaman">
+      ${Array.from({length:totalPages},(_,i)=>`<option value="${i}"${i===xPage?' selected':''}>Hal. ${i+1}</option>`).join('')}
     </select>`;
 }
 
@@ -5192,8 +5226,8 @@ function _xCellVal(td,c,val){
   }else if(c.unit&&val!=null&&val!==''){
     td.textContent=val+' '+c.unit;
   }else{
-    if(val!=null&&val!==''){td.textContent=String(val);}
-    else{td.textContent='—';td.style.color='var(--gray-200)';}
+    if(val!=null&&val!==''){td.textContent=String(val);td.style.color='';}
+    else{td.innerHTML='<span style="color:#E2E8F0">—</span>';}
   }
 }
 
@@ -5544,7 +5578,9 @@ function xUpdDirty(){
   ['xBtnSave','xBtnDiscard'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=n?'flex':'none';});
   const dc=document.getElementById('xDirtyCount');if(dc)dc.textContent=n;
   const uc=document.getElementById('xUnsavedCount');if(uc)uc.textContent=n;
+  const uc2=document.getElementById('xUnsavedCount2');if(uc2)uc2.textContent=n;
   const ub=document.getElementById('xUnsavedBar');if(ub)ub.classList.toggle('show',n>0);
+  const chip=document.getElementById('xUnsavedChip');if(chip)chip.style.display=n?'flex':'none';
 }
 
 /* ── Ekspor Excel ── */
@@ -5593,8 +5629,10 @@ function xApplyColConfig(){
 /* ── Freeze ── */
 function xToggleFreeze(){
   xFreeze=!xFreeze;
-  const btn=document.getElementById('xBtnFreeze');
-  if(btn)btn.innerHTML='<i class="fas fa-'+(xFreeze?'lock':'lock-open')+'"></i> Freeze: '+(xFreeze?'On':'Off');
+  const icon=document.getElementById('xFreezeIcon');
+  const label=document.getElementById('xFreezeLabel');
+  if(icon){icon.className='fas fa-'+(xFreeze?'thumbtack':'thumbtack');icon.style.opacity=xFreeze?'1':'.4';}
+  if(label)label.textContent='Freeze: '+(xFreeze?'On':'Off');
   xRender();
 }
 
