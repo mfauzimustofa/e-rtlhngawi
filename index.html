@@ -4829,424 +4829,592 @@ window.addEventListener('DOMContentLoaded',async()=>{
 </script>
 
 <script>
-// ══════════════════════════════════════════════════
-// EXCEL EDITOR ENGINE
-// ══════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
+   EXCEL EDITOR — engine mandiri, tidak bergantung brAll/WebGIS
+   ═══════════════════════════════════════════════════════════ */
 
-const X_COLS=[
-  {key:'_no',    label:'No.',          width:44,  editable:false,frozen:true,noSort:true},
-  {key:'kep_kk', label:'Nama KK',      width:200, frozen:true, required:true},
-  {key:'kec',    label:'Kecamatan',    width:120},
-  {key:'desa',   label:'Desa',         width:130},
-  {key:'nik',    label:'NIK',          width:155, sensitive:true, mono:true},
-  {key:'no_kk',  label:'No. KK',       width:155, sensitive:true, mono:true},
-  {key:'alamat', label:'Alamat',       width:200},
-  {key:'jen_kel',label:'Jenis Kelamin',width:115, type:'select',opts:['LAKI-LAKI','PEREMPUAN']},
-  {key:'umur',   label:'Umur',         width:65,  type:'number', unit:'thn'},
-  {key:'pend_ter',label:'Pendidikan',  width:120},
-  {key:'pekerjaan',label:'Pekerjaan', width:140},
-  {key:'pengh',  label:'Penghasilan',  width:150},
-  {key:'jml_peng',label:'Jml Penghuni',width:100,type:'number',unit:'jiwa'},
-  {key:'status_kep',label:'Status Kepemilikan',width:150},
-  {key:'luas_rum',label:'Luas Rumah', width:100, type:'number',unit:'m²'},
-  {key:'luas_tan',label:'Luas Tanah', width:100, type:'number',unit:'m²'},
-  {key:'material_d',label:'Material Dinding',width:145},
-  {key:'kondisi_di',label:'Kondisi Dinding',width:135},
-  {key:'material_a',label:'Material Atap',  width:135},
-  {key:'kondisi_at',label:'Kondisi Atap',   width:125},
-  {key:'material_l',label:'Material Lantai',width:135},
-  {key:'kondisi_la',label:'Kondisi Lantai', width:125},
-  {key:'status_rtlh',label:'Status RTLH',  width:140,required:true,type:'select',opts:['RTLH','Layak Huni','Keterangan Lain']},
-  {key:'status_batal',label:'Alasan SK Batal',width:165,type:'select',opts:['','-','Meninggal Dunia','Tidak Bersedia Dibantu','Tidak Ada Biaya','Pindah Tempat Tinggal','Sudah Mampu Mandiri','Tidak Memenuhi Syarat','Lainnya']},
-  {key:'jenis_bantuan',label:'Jenis Bantuan',width:125,type:'select',opts:['','RTLH','BSPS','DD','CSR','Lainnya']},
-  {key:'tahun_bantuan',label:'Tahun Bantuan',width:110,type:'number'},
-  {key:'backlog',label:'Backlog',       width:105, type:'select',opts:['','Backlog 1','Backlog 2']},
-  {key:'desil',  label:'Desil',         width:95,  type:'select',opts:['','Desil 1','Desil 2','Desil 3','Desil 4','Desil 5','Desil 6','Desil 7','Desil 8']},
-  {key:'keterangan',label:'Keterangan',width:200},
-  {key:'latitude',label:'Latitude',    width:105, type:'number'},
-  {key:'longitude',label:'Longitude',  width:105, type:'number'},
-  {key:'updated_at',label:'Diperbarui',width:130, editable:false},
+/* ── Definisi kolom ── */
+const XC=[
+  {k:'_no',    lb:'No.',             w:44,  ed:false, fr:true},
+  {k:'kep_kk', lb:'Nama KK',         w:200, fr:true,  req:true},
+  {k:'kec',    lb:'Kecamatan',       w:130},
+  {k:'desa',   lb:'Desa',            w:140},
+  {k:'nik',    lb:'NIK',             w:160, sen:true, mono:true},
+  {k:'no_kk',  lb:'No. KK',          w:160, sen:true, mono:true},
+  {k:'alamat', lb:'Alamat',          w:210},
+  {k:'jen_kel',lb:'Jenis Kelamin',   w:120, sel:['LAKI-LAKI','PEREMPUAN']},
+  {k:'umur',   lb:'Umur',            w:70,  num:true, unit:'thn'},
+  {k:'pend_ter',lb:'Pendidikan',     w:130},
+  {k:'pekerjaan',lb:'Pekerjaan',     w:150},
+  {k:'pengh',  lb:'Penghasilan',     w:160},
+  {k:'jml_peng',lb:'Jml Penghuni',  w:100, num:true, unit:'jiwa'},
+  {k:'status_kep',lb:'Status Kepemilikan',w:160},
+  {k:'luas_rum',lb:'Luas Rumah',     w:100, num:true, unit:'m²'},
+  {k:'luas_tan',lb:'Luas Tanah',     w:100, num:true, unit:'m²'},
+  {k:'material_d',lb:'Material Dinding',w:150},
+  {k:'kondisi_di',lb:'Kondisi Dinding',w:140},
+  {k:'material_a',lb:'Material Atap',  w:140},
+  {k:'kondisi_at',lb:'Kondisi Atap',   w:130},
+  {k:'material_l',lb:'Material Lantai',w:140},
+  {k:'kondisi_la',lb:'Kondisi Lantai', w:130},
+  {k:'status_rtlh',lb:'Status RTLH',  w:145, req:true,
+    sel:['RTLH','Layak Huni','Keterangan Lain']},
+  {k:'status_batal',lb:'Alasan SK Batal',w:170,
+    sel:['','-','Meninggal Dunia','Tidak Bersedia Dibantu','Tidak Ada Biaya',
+         'Pindah Tempat Tinggal','Sudah Mampu Mandiri','Tidak Memenuhi Syarat','Lainnya']},
+  {k:'jenis_bantuan',lb:'Jenis Bantuan',w:130,
+    sel:['','RTLH','BSPS','DD','CSR','Lainnya']},
+  {k:'tahun_bantuan',lb:'Tahun Bantuan',w:115, num:true},
+  {k:'backlog',lb:'Backlog',          w:110, sel:['','Backlog 1','Backlog 2']},
+  {k:'desil',  lb:'Desil',            w:100,
+    sel:['','Desil 1','Desil 2','Desil 3','Desil 4','Desil 5','Desil 6','Desil 7','Desil 8']},
+  {k:'keterangan',lb:'Keterangan',   w:210},
+  {k:'latitude',lb:'Latitude',       w:110, num:true},
+  {k:'longitude',lb:'Longitude',     w:110, num:true},
+  {k:'updated_at',lb:'Diperbarui',   w:130, ed:false},
 ];
 
-// State Excel
-let xAllData=[], xFiltered=[], xDirty={}, xColVis={}, xColW={};
-let xSortKey='', xSortDir=1;
-let xFreezeOn=true;
-let xEditing=null; // {rowId,key,td}
-let xFocused=null; // {rowId,key}
-let xCtxRowId=null, xCtxKey=null;
-let xExcelInited=false;
+/* ── State ── */
+let xAll=[], xRows=[], xDirty={};
+let xVis={}, xW={};
+let xSortK='', xSortD=1;
+let xFreeze=true;
+let xEd=null;   // {id,k,td}
+let xFoc=null;  // {id,k}
+let xCtxId=null, xCtxK=null;
+let xInited=false;
 
-// ─── INIT ──────────────────────────────────────────
+/* ── Init ── */
 async function initExcel(){
   if(!isAdmin){
-    document.getElementById('xGrid').parentElement.innerHTML='<div style="padding:40px;text-align:center;color:var(--gray-400)"><i class="fas fa-lock" style="font-size:2rem;display:block;margin-bottom:12px"></i><div>Fitur ini hanya untuk Admin.</div></div>';
+    document.getElementById('xSheetWrap').innerHTML=
+      '<div style="padding:60px;text-align:center;color:var(--gray-400)"><i class="fas fa-lock" style="font-size:2.5rem;opacity:.3;display:block;margin-bottom:14px"></i>Fitur hanya untuk Admin</div>';
     return;
   }
-  // Init col visibility & width
-  X_COLS.forEach(c=>{
-    if(xColVis[c.key]===undefined)xColVis[c.key]=true;
-    if(!xColW[c.key])xColW[c.key]=c.width;
-  });
+  XC.forEach(c=>{ if(!xVis[c.k]&&xVis[c.k]!==false)xVis[c.k]=true; if(!xW[c.k])xW[c.k]=c.w; });
 
-  // Populate kec select
-  const kecSel=document.getElementById('xFKec');
-  if(!kecSel.options.length||kecSel.options.length<2){
-    kecSel.innerHTML='<option value="">Semua Kecamatan</option>';
-    Object.keys(KEC_CONFIG).forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=k;kecSel.appendChild(o);});
+  /* Isi select kecamatan */
+  const kSel=document.getElementById('xFKec');
+  if(kSel.options.length<2){
+    Object.keys(KEC_CONFIG).sort().forEach(k=>{
+      const o=document.createElement('option');o.value=k;o.textContent=k;kSel.appendChild(o);
+    });
   }
 
-  // Context menu
-  document.getElementById('xGrid').addEventListener('contextmenu',xOnContextMenu);
-  document.addEventListener('keydown',xOnKeyDown,{capture:false});
-
-  if(!xExcelInited){
-    xExcelInited=true;
-    await xLoadData();
-  }else{
-    xRenderGrid();
+  /* Event sekali saja */
+  if(!xInited){
+    xInited=true;
+    document.getElementById('xGrid').addEventListener('contextmenu',_xCtxMenu);
+    document.addEventListener('keydown',_xKey);
+    document.addEventListener('click',e=>{ if(!e.target.closest('#xCtxMenu'))_xCloseCtx(); });
+    await xLoad();
+  } else {
+    xFilter();
   }
 }
 
-// ─── LOAD DATA ────────────────────────────────────
-async function xLoadData(){
-  document.getElementById('xInfo').textContent='⏳ Memuat...';
-  xDirty={};
-  xUpdateDirtyUI();
+/* ── Load semua data dari Supabase ── */
+async function xLoad(){
+  const info=document.getElementById('xInfo');
+  info.textContent='⏳ Memuat...';
+  xDirty={}; xUpdDirty();
   try{
-    const colKeys=X_COLS.filter(c=>c.key!=='_no').map(c=>c.key).join(',');
+    const cols=XC.filter(c=>c.k!=='_no').map(c=>c.k).join(',');
     const {count}=await sb.from('rtlh').select('*',{count:'exact',head:true});
     const pages=Math.ceil((count||0)/1000);
-    const results=await Promise.all(Array.from({length:pages},(_,p)=>
-      sb.from('rtlh').select(colKeys).order('kec').order('desa').order('kep_kk').range(p*1000,(p+1)*1000-1)
+    const res=await Promise.all(Array.from({length:pages},(_,p)=>
+      sb.from('rtlh').select(cols).order('kec').order('desa').order('kep_kk')
+        .range(p*1000,(p+1)*1000-1)
     ));
-    xAllData=results.flatMap(r=>r.data||[]);
-    xApplyFilter();
-    xUpdateDesaList();
-    toast(xAllData.length.toLocaleString('id')+' data dimuat ke Excel','info');
-  }catch(e){toast('Gagal muat Excel: '+e.message,'error');}
+    xAll=res.flatMap(r=>r.data||[]);
+    xUpdDesa();
+    xFilter();
+    toast(xAll.length.toLocaleString('id')+' data dimuat','info');
+  }catch(e){ toast('Gagal muat: '+e.message,'error'); }
 }
 
-// ─── FILTER ───────────────────────────────────────
-function xApplyFilter(){
-  const kec=document.getElementById('xFKec').value;
-  const desa=document.getElementById('xFDesa').value;
-  const status=document.getElementById('xFStatus').value;
-  const q=(document.getElementById('xFSearch').value||'').trim().toLowerCase();
+/* ── Filter & sort ── */
+function xFilter(){
+  const kec=(document.getElementById('xFKec').value||'').toLowerCase();
+  const desa=(document.getElementById('xFDesa').value||'').toLowerCase();
+  const st=document.getElementById('xFStatus').value||'';
+  const q=(document.getElementById('xFSearch').value||'').toLowerCase().trim();
 
-  xFiltered=xAllData.filter(r=>{
-    if(kec&&(r.kec||'').toLowerCase()!==kec.toLowerCase())return false;
-    if(desa&&(r.desa||'').toLowerCase()!==desa.toLowerCase())return false;
-    if(status&&r.status_rtlh!==status)return false;
-    if(q){const hay=[(r.kep_kk||''),(r.nik||''),(r.desa||''),(r.kec||''),(r.alamat||'')].join(' ').toLowerCase();if(!hay.includes(q))return false;}
+  xRows=xAll.filter(r=>{
+    if(kec&&(r.kec||'').toLowerCase()!==kec)return false;
+    if(desa&&(r.desa||'').toLowerCase()!==desa)return false;
+    if(st&&r.status_rtlh!==st)return false;
+    if(q){
+      const h=[(r.kep_kk||''),(r.nik||''),(r.desa||''),(r.kec||''),(r.alamat||'')].join(' ').toLowerCase();
+      if(!h.includes(q))return false;
+    }
     return true;
   });
 
-  if(xSortKey&&xSortKey!=='_no'){
-    xFiltered.sort((a,b)=>{const av=String(a[xSortKey]||''),bv=String(b[xSortKey]||'');return av>bv?xSortDir:av<bv?-xSortDir:0;});
+  if(xSortK&&xSortK!=='_no'){
+    xRows.sort((a,b)=>{
+      const av=String(a[xSortK]||''),bv=String(b[xSortK]||'');
+      return av>bv?xSortD:av<bv?-xSortD:0;
+    });
   }
 
-  document.getElementById('xInfo').textContent=xFiltered.length.toLocaleString('id')+' dari '+xAllData.length.toLocaleString('id')+' baris';
-  document.getElementById('xResultInfo').textContent=xFiltered.length.toLocaleString('id')+' baris';
-  xRenderGrid();
-  xUpdateDesaList();
+  const info='Menampilkan '+xRows.length.toLocaleString('id')+' / '+xAll.length.toLocaleString('id')+' baris';
+  document.getElementById('xInfo').textContent=info;
+  document.getElementById('xResultInfo').textContent=xRows.length.toLocaleString('id')+' baris';
+  xRender();
+  xUpdDesa();
 }
 
 function xClearFilter(){
-  document.getElementById('xFKec').value='';
-  document.getElementById('xFDesa').value='';
-  document.getElementById('xFStatus').value='';
-  document.getElementById('xFSearch').value='';
-  xApplyFilter();
+  ['xFKec','xFDesa','xFStatus','xFSearch'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  xFilter();
 }
 
-function xUpdateDesaList(){
-  const kec=document.getElementById('xFKec').value;
+function xUpdDesa(){
+  const kec=(document.getElementById('xFKec').value||'').toLowerCase();
   const sel=document.getElementById('xFDesa');
   const cur=sel.value;
   sel.innerHTML='<option value="">Semua Desa</option>';
-  const desas=[...new Set(xAllData.filter(r=>!kec||(r.kec||'').toLowerCase()===kec.toLowerCase()).map(r=>r.desa||'').filter(Boolean))].sort();
+  const desas=[...new Set(
+    xAll.filter(r=>!kec||(r.kec||'').toLowerCase()===kec).map(r=>r.desa||'').filter(Boolean)
+  )].sort();
   desas.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;sel.appendChild(o);});
-  if(desas.includes(cur))sel.value=cur;
+  if(desas.some(d=>d.toLowerCase()===cur.toLowerCase()))sel.value=cur;
 }
 
-function xDoSort(key){
-  if(xSortKey===key)xSortDir*=-1;else{xSortKey=key;xSortDir=1;}
+function xSort(k){
+  if(xSortK===k)xSortD*=-1; else{xSortK=k;xSortD=1;}
   document.querySelectorAll('#xHead th').forEach(th=>{
     th.classList.remove('xsort-asc','xsort-desc');
-    if(th.dataset.key===key)th.classList.add(xSortDir===1?'xsort-asc':'xsort-desc');
+    if(th.dataset.k===k)th.classList.add(xSortD===1?'xsort-asc':'xsort-desc');
   });
-  xApplyFilter();
+  xFilter();
 }
 
-// ─── RENDER GRID ──────────────────────────────────
-function xGetVisCols(){return X_COLS.filter(c=>xColVis[c.key]!==false);}
+/* ── Render grid ── */
+function xVisCols(){ return XC.filter(c=>xVis[c.k]!==false); }
 
-function xRenderGrid(){
-  xRenderHead();
-  xRenderBody();
-  document.getElementById('xSBRow').textContent=xFiltered.length;
-  document.getElementById('xSBCol').textContent=xGetVisCols().length;
-}
+function xRender(){ xRenderHead(); xRenderBody(); _xUpdSB(); }
 
 function xRenderHead(){
-  const vis=xGetVisCols();
-  let html='<tr>';
+  const vis=xVisCols();
+  let h='<tr>';
+  let left=0;
   vis.forEach(c=>{
-    const w=xColW[c.key]||c.width;
-    const frozen=(xFreezeOn&&(c.frozen||c.key==='_no'))?'xfrozen':'';
-    const isNo=c.key==='_no';
-    const left=isNo?'left:0':'';
+    const w=xW[c.k]||c.w;
+    const isNo=c.k==='_no';
+    const isFr=xFreeze&&(c.fr||isNo);
+    const stickyLeft=isFr?`left:${left}px;`:'';
+    if(isFr)left+=w;
+    const cls=[isNo?'xno':'', isFr&&!isNo?'xfrozen':''].filter(Boolean).join(' ');
     if(isNo){
-      html+=`<th class="xno" style="width:${w}px;min-width:${w}px">#</th>`;
+      h+=`<th class="xno" style="width:${w}px;min-width:${w}px;max-width:${w}px;left:0">#</th>`;
     }else{
-      html+=`<th data-key="${c.key}" class="${frozen}" style="width:${w}px;min-width:${w}px;${left};position:relative" onclick="xDoSort('${c.key}')">
-        ${c.label}
-        <div class="xresize" onmousedown="xStartResize(event,'${c.key}')" onclick="e=>{e.stopPropagation&&e.stopPropagation()}"></div>
+      h+=`<th data-k="${c.k}" class="${isFr?'xfrozen':''}"
+          style="width:${w}px;min-width:${w}px;${stickyLeft}position:relative"
+          onclick="xSort('${c.k}')">
+        ${c.lb}
+        <div class="xresize" onmousedown="event.stopPropagation();xResStart(event,'${c.k}')"></div>
       </th>`;
     }
   });
-  html+='</tr>';
-  document.getElementById('xHead').innerHTML=html;
+  h+='</tr>';
+  document.getElementById('xHead').innerHTML=h;
 }
 
 function xRenderBody(){
-  const vis=xGetVisCols();
-  const body=document.getElementById('xBody');
-  if(!xFiltered.length){
-    body.innerHTML=`<tr><td colspan="${vis.length}" style="padding:48px;text-align:center;color:var(--gray-400);font-size:.82rem"><i class="fas fa-inbox" style="font-size:2rem;display:block;margin-bottom:10px;opacity:.3"></i>Tidak ada data</td></tr>`;
+  const vis=xVisCols();
+  const tbody=document.getElementById('xBody');
+  if(!xRows.length){
+    tbody.innerHTML=`<tr><td colspan="${vis.length}" style="padding:50px;text-align:center;color:var(--gray-400);font-size:.8rem">
+      <i class="fas fa-inbox" style="font-size:2rem;opacity:.2;display:block;margin-bottom:10px"></i>
+      Tidak ada data</td></tr>`;
     return;
   }
+
   const frag=document.createDocumentFragment();
-  xFiltered.forEach((r,idx)=>{
-    const rid=r.id;
-    const dirty=xDirty[rid];
+  let frozenWidths=[];
+  if(xFreeze){
+    let acc=0;
+    vis.forEach(c=>{
+      if(c.fr||c.k==='_no'){frozenWidths.push({k:c.k,left:acc});acc+=xW[c.k]||c.w;}
+      else frozenWidths.push({k:c.k,left:null});
+    });
+  }
+
+  xRows.forEach((r,idx)=>{
+    const id=r.id;
+    const dirty=xDirty[id];
     const tr=document.createElement('tr');
-    tr.dataset.id=rid;
+    tr.dataset.id=id;
     if(dirty)tr.classList.add('xrow-dirty');
 
-    vis.forEach(c=>{
+    vis.forEach((c,ci)=>{
       const td=document.createElement('td');
-      if(c.key==='_no'){
-        td.className='xno';td.textContent=idx+1;
+      if(c.k==='_no'){
+        td.className='xno';
+        td.textContent=idx+1;
       }else{
-        const isFrozen=xFreezeOn&&c.frozen;
-        if(isFrozen)td.className='xfrozen';
-        td.dataset.id=rid;td.dataset.col=c.key;
-        td.style.width=(xColW[c.key]||c.width)+'px';
-        td.title='';
+        const isFr=xFreeze&&(c.fr||c.k==='_no');
+        if(isFr){
+          td.className='xfrozen';
+          const lw=frozenWidths[ci];
+          if(lw&&lw.left!==null)td.style.left=lw.left+'px';
+        }
+        td.dataset.id=id;
+        td.dataset.k=c.k;
+        td.style.width=(xW[c.k]||c.w)+'px';
 
-        const rawVal=dirty&&dirty[c.key]!==undefined?dirty[c.key]:r[c.key];
-        xSetCellContent(td,c,rawVal);
+        const val=dirty&&dirty[c.k]!==undefined?dirty[c.k]:r[c.k];
+        _xCellVal(td,c,val);
 
-        if(c.editable!==false){
-          td.onclick=()=>xStartEdit(td,rid,c.key);
+        if(c.ed!==false){
+          td.onclick=()=>xEdit(td,id,c.k);
         }
       }
       tr.appendChild(td);
     });
     frag.appendChild(tr);
   });
-  body.innerHTML='';
-  body.appendChild(frag);
+  tbody.innerHTML='';
+  tbody.appendChild(frag);
 }
 
-function xSetCellContent(td,col,val){
-  td.innerHTML='';td.style.color='';td.style.fontFamily='';td.title=String(val!=null?val:'');
-  if(col.key==='status_rtlh'){
-    if(!val)td.innerHTML='<span class="xbadge">—</span>';
-    else if(val==='RTLH')td.innerHTML='<span class="xbadge rtlh"><i class="fas fa-house-damage" style="font-size:.5rem"></i> RTLH</span>';
-    else if(val==='Layak Huni')td.innerHTML='<span class="xbadge layak"><i class="fas fa-home" style="font-size:.5rem"></i> Layak Huni</span>';
-    else if(val==='Keterangan Lain')td.innerHTML='<span class="xbadge lain"><i class="fas fa-question-circle" style="font-size:.5rem"></i> Ket. Lain</span>';
-    else td.innerHTML='<span class="xbadge">'+val+'</span>';
-  }else if(col.key==='updated_at'&&val){
-    td.textContent=new Date(val).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
-  }else if(col.sensitive&&!isSuperAdmin()){
-    td.textContent=val?String(val).substring(0,6)+'**********':'-';
+function _xCellVal(td,c,val){
+  td.innerHTML='';td.style.color='';td.style.fontFamily='';td.style.fontSize='';
+  if(c.k==='status_rtlh'){
+    if(!val||val==='-')
+      td.innerHTML='<span class="xbadge">—</span>';
+    else if(val==='RTLH')
+      td.innerHTML='<span class="xbadge rtlh"><i class="fas fa-house-damage" style="font-size:.5rem"></i> RTLH</span>';
+    else if(val==='Layak Huni')
+      td.innerHTML='<span class="xbadge layak"><i class="fas fa-home" style="font-size:.5rem"></i> Layak Huni</span>';
+    else if(val==='Keterangan Lain')
+      td.innerHTML='<span class="xbadge lain"><i class="fas fa-question-circle" style="font-size:.5rem"></i> Ket. Lain</span>';
+    else
+      td.innerHTML='<span class="xbadge">'+val+'</span>';
+  }else if(c.k==='updated_at'){
+    td.textContent=val?new Date(val).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'—';
+    td.style.color='var(--gray-400)';
+  }else if(c.sen&&!isSuperAdmin()){
+    td.textContent=val?String(val).slice(0,6)+'**********':'—';
     td.style.color='var(--gray-400)';td.style.fontFamily='monospace';td.style.fontSize='.68rem';
-  }else if(col.mono&&val){
+  }else if(c.mono&&val){
     td.style.fontFamily='monospace';td.style.fontSize='.7rem';td.style.letterSpacing='.3px';
-    td.textContent=val;
-  }else if(col.unit&&val!=null&&val!==''){
-    td.textContent=val+' '+col.unit;
+    td.textContent=String(val);
+  }else if(c.unit&&val!=null&&val!==''){
+    td.textContent=val+' '+c.unit;
   }else{
-    if(val!=null&&val!=='')td.textContent=String(val);
+    if(val!=null&&val!==''){td.textContent=String(val);}
     else{td.textContent='—';td.style.color='var(--gray-200)';}
   }
 }
 
-// ─── INLINE EDIT ─────────────────────────────────
-function xStartEdit(td,rowId,colKey){
+/* ── Edit inline ── */
+function xEdit(td,id,k){
   if(!canEdit()){toast('Tidak ada akses edit','error');return;}
-  const col=X_COLS.find(c=>c.key===colKey);
-  if(!col||col.editable===false)return;
-  if(col.sensitive&&!isSuperAdmin()){toast('Hanya Super Admin yang bisa edit NIK/KK','error');return;}
+  const c=XC.find(x=>x.k===k);
+  if(!c||c.ed===false)return;
+  if(c.sen&&!isSuperAdmin()){toast('Hanya Super Admin yang bisa edit NIK/KK','error');return;}
 
-  if(xEditing)xCommitEdit(true);
+  if(xEd)_xCommit(true); // commit sel sebelumnya diam-diam
 
   // Highlight row
   document.querySelectorAll('#xBody tr.xrow-selected').forEach(r=>r.classList.remove('xrow-selected'));
-  const tr=document.querySelector('#xBody tr[data-id="'+rowId+'"]');
+  const tr=document.querySelector('#xBody tr[data-id="'+id+'"]');
   if(tr)tr.classList.add('xrow-selected');
 
-  xFocused={rowId,colKey};
-  xUpdateStatusBar();
+  xFoc={id,k};
+  _xUpdSB();
 
-  const r=xFiltered.find(x=>x.id===rowId)||{};
-  const curVal=xDirty[rowId]&&xDirty[rowId][colKey]!==undefined?xDirty[rowId][colKey]:r[colKey];
+  const r=xRows.find(x=>x.id===id)||{};
+  const cur=xDirty[id]&&xDirty[id][k]!==undefined?xDirty[id][k]:r[k];
 
   td.classList.add('xediting');
   td.innerHTML='';
 
   let inp;
-  if(col.type==='select'&&col.opts){
+  if(c.sel){
     inp=document.createElement('select');
-    col.opts.forEach(o=>{const opt=document.createElement('option');opt.value=o||'';opt.textContent=o||'(kosong)';if(String(curVal||'')===(o||''))opt.selected=true;inp.appendChild(opt);});
+    c.sel.forEach(o=>{
+      const opt=document.createElement('option');
+      opt.value=o;opt.textContent=o||'(kosong)';
+      if(String(cur||'')===(o||''))opt.selected=true;
+      inp.appendChild(opt);
+    });
   }else{
     inp=document.createElement('input');
-    inp.type=col.type==='number'?'number':'text';
-    inp.value=curVal!=null?String(curVal):'';
+    inp.type=c.num?'number':'text';
+    inp.value=cur!=null?String(cur):'';
+    inp.step='any';
   }
 
-  inp.style.cssText='width:100%;height:30px;padding:0 7px;border:2px solid var(--blue);font-size:.73rem;font-family:var(--font);background:#fff;color:var(--gray-900);outline:none;box-shadow:0 0 0 3px rgba(27,108,168,.18);position:absolute;left:0;top:0;z-index:200;box-sizing:border-box;border-radius:0';
-
   inp.addEventListener('keydown',e=>{
-    if(e.key==='Escape'){xCancelEdit(td,rowId,colKey);return;}
-    if(e.key==='Enter'){e.preventDefault();xCommitEdit(false);xNavCell(1,'v');}
-    if(e.key==='Tab'){e.preventDefault();xCommitEdit(false);xNavCell(e.shiftKey?-1:1,'h');}
+    if(e.key==='Escape'){e.stopPropagation();_xCancel(td,id,k);return;}
+    if(e.key==='Enter'){e.preventDefault();_xCommit(false);xNavCell(1,'v');return;}
+    if(e.key==='Tab'){e.preventDefault();_xCommit(false);xNavCell(e.shiftKey?-1:1,'h');return;}
   });
-  inp.addEventListener('blur',()=>setTimeout(()=>{if(xEditing)xCommitEdit(false);},80));
+  inp.addEventListener('blur',()=>setTimeout(()=>{if(xEd)_xCommit(false);},100));
 
   td.appendChild(inp);
   inp.focus();
-  if(inp.select)inp.select();
-  xEditing={rowId,colKey,td,col};
+  try{if(inp.select)inp.select();}catch(e){}
 
-  document.getElementById('xSBMode').textContent='EDIT';
-  document.getElementById('xSBMode').className='es-mode editing';
+  xEd={id,k,td,c};
+  _xMode('EDIT');
 }
 
-function xCommitEdit(silent=false){
-  if(!xEditing)return;
-  const{rowId,colKey,td,col}=xEditing;
+function _xCommit(silent){
+  if(!xEd)return;
+  const{id,k,td,c}=xEd; xEd=null;
+
   const inp=td.querySelector('input,select');
-  if(!inp){xEditing=null;return;}
+  if(!inp){_xRefreshCell(td,id,k);_xMode('VIEW');return;}
 
   let val=inp.value;
-  if(col.type==='number'&&val!=='')val=parseFloat(val)||null;
+  if(c.num) val=val!==''?(parseFloat(val)||null):null;
   else val=val.trim()||null;
 
-  const r=xFiltered.find(x=>x.id===rowId)||{};
-  const orig=r[colKey];
-  if(String(val||'')!==String(orig||'')){
-    if(!xDirty[rowId])xDirty[rowId]={};
-    xDirty[rowId][colKey]=val;
-    const tr=document.querySelector('#xBody tr[data-id="'+rowId+'"]');
-    if(tr){tr.classList.add('xrow-dirty');}
-    if(!silent)toast('Diubah: '+col.label,'warning');
+  const r=xRows.find(x=>x.id===id)||{};
+  const orig=r[k];
+  if(String(val??'')!==String(orig??'')){
+    if(!xDirty[id])xDirty[id]={};
+    xDirty[id][k]=val;
+    const tr=document.querySelector('#xBody tr[data-id="'+id+'"]');
+    if(tr)tr.classList.add('xrow-dirty');
+    if(!silent)toast('✏ '+c.lb+' diubah','warning');
   }
 
-  xEditing=null;
-  xRefreshCell(td,rowId,colKey);
-  xUpdateDirtyUI();
-  document.getElementById('xSBMode').textContent='VIEW';
-  document.getElementById('xSBMode').className='es-mode';
+  _xRefreshCell(td,id,k);
+  xUpdDirty();
+  _xMode('VIEW');
 }
 
-function xCancelEdit(td,rowId,colKey){
-  xEditing=null;
-  xRefreshCell(td,rowId,colKey);
-  document.getElementById('xSBMode').textContent='VIEW';
-  document.getElementById('xSBMode').className='es-mode';
+function _xCancel(td,id,k){
+  xEd=null;_xRefreshCell(td,id,k);_xMode('VIEW');
 }
 
-function xRefreshCell(td,rowId,colKey){
-  const col=X_COLS.find(c=>c.key===colKey);
-  if(!col)return;
+function _xRefreshCell(td,id,k){
+  const c=XC.find(x=>x.k===k);if(!c)return;
   td.classList.remove('xediting');
-  const r=xFiltered.find(x=>x.id===rowId)||{};
-  const val=xDirty[rowId]&&xDirty[rowId][colKey]!==undefined?xDirty[rowId][colKey]:r[colKey];
-  xSetCellContent(td,col,val);
+  const r=xRows.find(x=>x.id===id)||{};
+  const val=xDirty[id]&&xDirty[id][k]!==undefined?xDirty[id][k]:r[k];
+  _xCellVal(td,c,val);
 }
 
-// ─── KEYBOARD ─────────────────────────────────────
-function xOnKeyDown(e){
-  if(document.getElementById('pgExcel').classList.contains('active')===false)return;
-  if(xEditing)return;
-  if(!xFocused)return;
-  const{rowId,colKey}=xFocused;
-  const vis=xGetVisCols().filter(c=>c.key!=='_no');
-  const ri=xFiltered.findIndex(r=>r.id===rowId);
-  const ci=vis.findIndex(c=>c.key===colKey);
-  if(e.key==='ArrowDown'){e.preventDefault();xNavFocus(ri+1,ci);}
-  else if(e.key==='ArrowUp'){e.preventDefault();xNavFocus(ri-1,ci);}
-  else if(e.key==='ArrowRight'){e.preventDefault();xNavFocus(ri,ci+1);}
-  else if(e.key==='ArrowLeft'){e.preventDefault();xNavFocus(ri,ci-1);}
-  else if(e.key==='Tab'){e.preventDefault();xNavFocus(ri,ci+(e.shiftKey?-1:1));}
-  else if(e.key==='Enter'||e.key==='F2'){
-    const td=document.querySelector('#xBody td[data-id="'+rowId+'"][data-col="'+colKey+'"]');
-    if(td)xStartEdit(td,rowId,colKey);
-  }else if((e.key==='Delete'||e.key==='Backspace')&&!e.target.tagName.match(/INPUT|SELECT/)){
-    const col=X_COLS.find(c=>c.key===colKey);
-    if(col&&col.editable!==false&&!col.sensitive){
-      if(!xDirty[rowId])xDirty[rowId]={};
-      xDirty[rowId][colKey]=null;
-      const td=document.querySelector('#xBody td[data-id="'+rowId+'"][data-col="'+colKey+'"]');
-      if(td)xRefreshCell(td,rowId,colKey);
-      xUpdateDirtyUI();
+function _xMode(m){
+  const el=document.getElementById('xSBMode');
+  if(!el)return;
+  el.textContent=m;
+  el.className='es-mode'+(m==='EDIT'?' editing':'');
+}
+
+/* ── Navigasi sel ── */
+function xNavCell(d,axis){
+  if(!xFoc)return;
+  const vis=xVisCols().filter(c=>c.k!=='_no'&&c.ed!==false);
+  const ri=xRows.findIndex(r=>r.id===xFoc.id);
+  const ci=vis.findIndex(c=>c.k===xFoc.k);
+  if(axis==='v')_xNavTo(ri+d,ci);
+  else _xNavTo(ri,ci+d);
+}
+
+function _xNavTo(ri,ci){
+  const vis=xVisCols().filter(c=>c.k!=='_no'&&c.ed!==false);
+  ri=Math.max(0,Math.min(xRows.length-1,ri));
+  ci=Math.max(0,Math.min(vis.length-1,ci));
+  const row=xRows[ri],col=vis[ci];
+  if(!row||!col)return;
+  xFoc={id:row.id,k:col.k};
+  document.querySelectorAll('#xBody td.xfocused').forEach(t=>t.classList.remove('xfocused'));
+  const td=document.querySelector('#xBody td[data-id="'+row.id+'"][data-k="'+col.k+'"]');
+  if(td){td.classList.add('xfocused');td.scrollIntoView({block:'nearest',inline:'nearest'});}
+  _xUpdSB();
+}
+
+/* ── Keyboard ── */
+function _xKey(e){
+  if(!document.getElementById('pgExcel')?.classList.contains('active'))return;
+  if(xEd)return; // input handles its own keys
+  if(!xFoc)return;
+  const{id,k}=xFoc;
+  const vis=xVisCols().filter(c=>c.k!=='_no'&&c.ed!==false);
+  const ri=xRows.findIndex(r=>r.id===id);
+  const ci=vis.findIndex(c=>c.k===k);
+  if(e.key==='ArrowDown'||e.key==='Enter'){e.preventDefault();_xNavTo(ri+1,ci);}
+  else if(e.key==='ArrowUp'){e.preventDefault();_xNavTo(ri-1,ci);}
+  else if(e.key==='ArrowRight'||e.key==='Tab'){e.preventDefault();_xNavTo(ri,ci+(e.shiftKey?-1:1));}
+  else if(e.key==='ArrowLeft'){e.preventDefault();_xNavTo(ri,ci-1);}
+  else if(e.key==='F2'){
+    const td=document.querySelector('#xBody td[data-id="'+id+'"][data-k="'+k+'"]');
+    if(td)xEdit(td,id,k);
+  }else if((e.key==='Delete'||e.key==='Backspace')){
+    const c=XC.find(x=>x.k===k);
+    if(c&&c.ed!==false&&!c.sen){
+      if(!xDirty[id])xDirty[id]={};
+      xDirty[id][k]=null;
+      const td=document.querySelector('#xBody td[data-id="'+id+'"][data-k="'+k+'"]');
+      if(td)_xRefreshCell(td,id,k);
+      const tr=document.querySelector('#xBody tr[data-id="'+id+'"]');
+      if(tr)tr.classList.add('xrow-dirty');
+      xUpdDirty();
     }
   }
 }
 
-function xNavCell(dir,axis){
-  if(!xFocused)return;
-  const vis=xGetVisCols().filter(c=>c.key!=='_no');
-  const ri=xFiltered.findIndex(r=>r.id===xFocused.rowId);
-  const ci=vis.findIndex(c=>c.key===xFocused.colKey);
-  if(axis==='v')xNavFocus(ri+dir,ci);
-  else xNavFocus(ri,ci+dir);
-}
-
-function xNavFocus(ri,ci){
-  const vis=xGetVisCols().filter(c=>c.key!=='_no');
-  ri=Math.max(0,Math.min(xFiltered.length-1,ri));
-  ci=Math.max(0,Math.min(vis.length-1,ci));
-  const row=xFiltered[ri],col=vis[ci];
-  if(!row||!col)return;
-  xFocused={rowId:row.id,colKey:col.key};
-  document.querySelectorAll('#xBody td.xfocused').forEach(t=>t.classList.remove('xfocused'));
-  const td=document.querySelector('#xBody td[data-id="'+row.id+'"][data-col="'+col.key+'"]');
-  if(td){td.classList.add('xfocused');td.scrollIntoView({block:'nearest',inline:'nearest'});}
-  xUpdateStatusBar();
-}
-
-function xUpdateStatusBar(){
-  if(!xFocused)return;
-  const col=X_COLS.find(c=>c.key===xFocused.colKey);
-  const ri=xFiltered.findIndex(r=>r.id===xFocused.rowId);
-  document.getElementById('xSBCell').textContent=(col?.label||xFocused.colKey)+' · baris '+(ri+1);
-}
-
-// ─── CONTEXT MENU ────────────────────────────────
-function xOnContextMenu(e){
-  const td=e.target.closest('td[data-id]');
-  if(!td){xCloseCtx();return;}
+/* ── Context menu ── */
+function _xCtxMenu(e){
+  const td=e.target.closest('td[data-id]');if(!td){_xCloseCtx();return;}
   e.preventDefault();
-  xCtxRowId=td.dataset.id;xCtxKey=td.dataset.col;
+  xCtxId=td.dataset.id;xCtxK=td.dataset.k;
   const m=document.getElementById('xCtxMenu');
   m.style.left=Math.min(e.clientX,window.innerWidth-210)+'px';
-  m.style.top=Math.min(e.clientY,window.innerHeight-160)+'px';
+  m.style.top=Math.min(e.clientY,window.innerHeight-170)+'px';
   m.classList.add('open');
 }
-function xCloseCtx(){document.getElementById('xCtxMenu').classList.remove('open');}
-document.addEventListener('click',e=>{if(!e.target.closest('#xCtxMenu'))xCloseCtx();});
+function _xCloseCtx(){document.getElementById('xCtxMenu')?.classList.remove('open');}
+function xCtxEditCell(){_xCloseCtx();const td=document.querySelector('#xBody td[data-id="'+xCtxId+'"][data-k="'+xCtxK+'"]');if(td)xEdit(td,xCtxId,xCtxK);}
+function xCtxEditRow(){_xCloseCtx();xOpenForm(xCtxId);}
+function xCtxDupe(){_xCloseCtx();const r=xRows.find(x=>String(x.id)===String(xCtxId));if(r)xOpenForm(null,{...r,nik:undefined,no_kk:undefined});}
+function xCtxDelete(){_xCloseCtx();xDeleteRow(xCtxId);}
 
-function xCtxEditCell(){xCloseCtx();const td=document.querySelector('#xBody td[data-id="'+xCtxRowId+'"][data-col="'+xCtxKey+'"]');if(td)xStartEdit(td,xCtxRowId,xCtxKey);}
-function xCtxEditRow(){xCloseCtx();xOpenEditModal(xCtxRowId);}
-function xCtxDupe(){xCloseCtx();const r=xFiltered.find(x=>String(x.id)===String(xCtxRowId));if(r)xOpenAddModal({...r,id:undefined,nik:undefined,no_kk:undefined});}
-function xCtxDelete(){xCloseCtx();xDeleteRow(xCtxRowId);}
+/* ── Form tambah/edit (mandiri) ── */
+function xOpenAddModal(){xOpenForm(null);}
 
-// ─── SAVE / DISCARD ──────────────────────────────
+function xOpenForm(editId,prefill=null){
+  if(!canEdit()){toast('Tidak ada akses','error');return;}
+  const r=editId?xRows.find(x=>String(x.id)===String(editId)):null;
+  const data=prefill?{...prefill}:(r?{...r}:{});
+
+  const sections=[
+    {lb:'Identitas',ic:'fas fa-id-card',cl:'var(--blue)',
+     keys:['kep_kk','nik','no_kk','kec','desa','alamat','jen_kel','umur']},
+    {lb:'Sosial Ekonomi',ic:'fas fa-briefcase',cl:'#7C3AED',
+     keys:['pend_ter','pekerjaan','pengh','jml_peng','status_kep','luas_rum','luas_tan']},
+    {lb:'Kondisi Bangunan',ic:'fas fa-home',cl:'#EA580C',
+     keys:['material_d','kondisi_di','material_a','kondisi_at','material_l','kondisi_la']},
+    {lb:'Status & Bantuan',ic:'fas fa-hand-holding-heart',cl:'var(--success)',
+     keys:['status_rtlh','status_batal','jenis_bantuan','tahun_bantuan','backlog','desil','keterangan']},
+    {lb:'Koordinat',ic:'fas fa-map-marker-alt',cl:'var(--danger)',
+     keys:['latitude','longitude']},
+  ];
+
+  const cmap=Object.fromEntries(XC.map(c=>[c.k,c]));
+  const su=isSuperAdmin();
+
+  let body='';
+  sections.forEach(sec=>{
+    const cols=sec.keys.map(k=>cmap[k]).filter(Boolean);
+    if(!cols.length)return;
+    body+=`<div style="margin-bottom:18px">
+      <div style="font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:${sec.cl};margin-bottom:9px;padding-bottom:5px;border-bottom:2px solid ${sec.cl}22;display:flex;align-items:center;gap:5px">
+        <i class="${sec.ic}"></i>${sec.lb}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">`;
+    cols.forEach(c=>{
+      const val=data[c.k]!=null?String(data[c.k]):'';
+      const locked=c.sen&&!su;
+      const full=(c.k==='keterangan'||c.k==='alamat')?'grid-column:1/-1':'';
+      body+=`<div style="display:flex;flex-direction:column;gap:3px;${full}">
+        <label style="font-size:.6rem;font-weight:800;color:var(--gray-500);text-transform:uppercase;letter-spacing:.06em">${c.lb}${c.req?' *':''}</label>`;
+      if(c.sel){
+        body+=`<select id="xfm_${c.k}" style="padding:7px 9px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.82rem;font-family:var(--font);outline:none;background:#fff;color:var(--gray-900)">`;
+        c.sel.forEach(o=>body+=`<option value="${o}" ${val===(o||'')||(!val&&!o)?'selected':''}>${o||'(kosong)'}</option>`);
+        body+=`</select>`;
+      }else if(locked){
+        body+=`<input type="text" id="xfm_${c.k}" value="${val.replace(/"/g,'&quot;')}" readonly
+          style="padding:7px 9px;border-radius:8px;border:1.5px solid var(--gray-100);font-size:.82rem;font-family:var(--font);background:var(--gray-50);color:var(--gray-400);cursor:not-allowed;box-sizing:border-box">`;
+      }else{
+        body+=`<input type="${c.num?'number':'text'}" id="xfm_${c.k}" value="${val.replace(/"/g,'&quot;')}" step="any"
+          style="padding:7px 9px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.82rem;font-family:var(--font);outline:none;background:#fff;color:var(--gray-900);box-sizing:border-box">`;
+      }
+      body+=`</div>`;
+    });
+    body+=`</div></div>`;
+  });
+
+  // Buat atau reuse modal
+  let ov=document.getElementById('xOvForm');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='xOvForm';ov.className='overlay';
+    ov.innerHTML=`<div class="modal" style="max-width:640px">
+      <div class="modal-head">
+        <h3 id="xFmTitle"><i class="fas fa-edit"></i> Form Data</h3>
+        <button class="modal-x" onclick="closeModal('xOvForm')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body" id="xFmBody" style="max-height:70vh;overflow-y:auto"></div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('xOvForm')">Batal</button>
+        <button class="btn btn-primary" id="xFmSaveBtn"><i class="fas fa-save"></i> Simpan</button>
+      </div>
+    </div>`;
+    document.body.appendChild(ov);
+  }
+
+  document.getElementById('xFmTitle').innerHTML='<i class="fas fa-'+(editId?'edit':'plus')+'"></i> '+(editId?'Edit':'Tambah')+' Data RTLH';
+  document.getElementById('xFmBody').innerHTML=body;
+  ov.classList.add('open');
+
+  document.getElementById('xFmSaveBtn').onclick=()=>xSaveForm(editId);
+}
+
+async function xSaveForm(editId){
+  const obj={};
+  XC.filter(c=>c.k!=='_no'&&c.k!=='updated_at').forEach(c=>{
+    const el=document.getElementById('xfm_'+c.k);
+    if(!el||el.readOnly)return;
+    let v=el.value.trim();
+    if(c.num)obj[c.k]=v!==''?(parseFloat(v)||null):null;
+    else obj[c.k]=v||null;
+  });
+
+  if(!obj.kep_kk)return toast('Nama KK wajib diisi','error');
+  if(!obj.status_rtlh)return toast('Status RTLH wajib diisi','error');
+  obj.updated_at=new Date().toISOString();
+
+  const saveBtn=document.getElementById('xFmSaveBtn');
+  saveBtn.disabled=true;saveBtn.textContent='Menyimpan...';
+
+  if(editId){
+    const{data,error}=await sb.from('rtlh').update(obj).eq('id',parseInt(editId)).select('*').single();
+    if(error){saveBtn.disabled=false;saveBtn.innerHTML='<i class="fas fa-save"></i> Simpan';return toast('Gagal: '+error.message,'error');}
+    const i=xAll.findIndex(x=>String(x.id)===String(editId));
+    if(i>=0)xAll[i]={...xAll[i],...data};
+    delete xDirty[editId];
+    // Sync ke brAll juga
+    const bi=brAll.findIndex(x=>String(x.id)===String(editId));
+    if(bi>=0)brAll[bi]={...brAll[bi],...data};
+    toast('Data diperbarui','success');
+  }else{
+    // Kecamatan wajib
+    if(!obj.kec)return(saveBtn.disabled=false,saveBtn.innerHTML='<i class="fas fa-save"></i> Simpan',toast('Kecamatan wajib diisi','error'));
+    const{data,error}=await sb.from('rtlh').insert(obj).select('*').single();
+    if(error){saveBtn.disabled=false;saveBtn.innerHTML='<i class="fas fa-save"></i> Simpan';return toast('Gagal: '+error.message,'error');}
+    xAll.unshift(data);
+    toast('Data ditambahkan','success');
+  }
+
+  closeModal('xOvForm');
+  xUpdDirty();
+  xFilter();
+}
+
+/* ── Hapus baris ── */
+async function xDeleteRow(id){
+  if(!isSuperAdmin()){toast('Hanya Super Admin yang bisa hapus','error');return;}
+  if(!confirm('Hapus baris ini dari database? Tidak bisa dibatalkan.'))return;
+  const{error}=await sb.from('rtlh').delete().eq('id',parseInt(id));
+  if(error)return toast('Gagal hapus: '+error.message,'error');
+  xAll=xAll.filter(x=>String(x.id)!==String(id));
+  brAll=brAll.filter(x=>String(x.id)!==String(id));
+  delete xDirty[id];
+  xFilter();xUpdDirty();
+  toast('Baris dihapus','success');
+}
+
+/* ── Simpan semua dirty ── */
 async function xSaveAll(){
   const ids=Object.keys(xDirty);
   if(!ids.length){toast('Tidak ada perubahan','info');return;}
@@ -5255,109 +5423,66 @@ async function xSaveAll(){
   for(const id of ids){
     const changes={...xDirty[id],updated_at:new Date().toISOString()};
     const{error}=await sb.from('rtlh').update(changes).eq('id',parseInt(id));
-    if(error){fail++;console.error(id,error);}
+    if(error){fail++;console.error('xSave fail',id,error);}
     else{
       ok++;
-      // Sync ke allData dan xAllData
-      const ai=xAllData.findIndex(x=>String(x.id)===id);
-      if(ai>=0)xAllData[ai]={...xAllData[ai],...changes};
-      const bi=allData.findIndex(x=>String(x.id)===id);
-      if(bi>=0)allData[bi]={...allData[bi],...changes};
+      const ai=xAll.findIndex(x=>String(x.id)===id);
+      if(ai>=0)xAll[ai]={...xAll[ai],...changes};
+      const bi=brAll.findIndex(x=>String(x.id)===id);
+      if(bi>=0)brAll[bi]={...brAll[bi],...changes};
       delete xDirty[id];
     }
   }
-  xApplyFilter();
-  xUpdateDirtyUI();
-  if(fail)toast(ok+' berhasil, '+fail+' gagal','warning');
-  else toast(ok+' perubahan disimpan!','success');
+  xFilter();xUpdDirty();
+  toast(fail?ok+' berhasil, '+fail+' gagal':ok+' perubahan disimpan!',fail?'warning':'success');
 }
 
 function xDiscardAll(){
   if(!Object.keys(xDirty).length)return;
   if(!confirm('Batalkan semua perubahan yang belum disimpan?'))return;
-  xDirty={};
-  xApplyFilter();
-  xUpdateDirtyUI();
+  xDirty={};xFilter();xUpdDirty();
   toast('Perubahan dibatalkan','info');
 }
 
-function xUpdateDirtyUI(){
+function xUpdDirty(){
   const n=Object.keys(xDirty).length;
-  const show=n>0;
-  document.getElementById('xBtnSave').style.display=show?'flex':'none';
-  document.getElementById('xBtnDiscard').style.display=show?'flex':'none';
-  document.getElementById('xDirtyCount').textContent=n;
-  document.getElementById('xUnsavedCount').textContent=n;
-  document.getElementById('xUnsavedBar').classList.toggle('show',show);
+  ['xBtnSave','xBtnDiscard'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=n?'flex':'none';});
+  const dc=document.getElementById('xDirtyCount');if(dc)dc.textContent=n;
+  const uc=document.getElementById('xUnsavedCount');if(uc)uc.textContent=n;
+  const ub=document.getElementById('xUnsavedBar');if(ub)ub.classList.toggle('show',n>0);
 }
 
-// ─── TAMBAH / EDIT ROW MODAL ─────────────────────
-function xOpenAddModal(prefill={}){
-  if(!canEdit()){toast('Tidak ada akses','error');return;}
-  xOpenRowModal(null,prefill);
-}
-function xOpenEditModal(rowId){
-  if(!canEdit()){toast('Tidak ada akses','error');return;}
-  const r=xFiltered.find(x=>String(x.id)===String(rowId));
-  if(!r)return;
-  xOpenRowModal(rowId,{...r,...(xDirty[rowId]||{})});
-}
-
-function xOpenRowModal(rowId,data={}){
-  // Gunakan modal form yang sudah ada di index.html
-  openForm(rowId?String(rowId):null);
-  if(rowId===null&&data&&Object.keys(data).length){
-    // Prefill fields
-    setTimeout(()=>{
-      Object.entries(data).forEach(([k,v])=>{
-        const el=document.getElementById('ff_'+k);
-        if(el&&v!=null)el.value=String(v);
-      });
-    },100);
-  }
-}
-
-async function xDeleteRow(rowId){
-  if(!isSuperAdmin()){toast('Hanya Super Admin yang bisa hapus','error');return;}
-  if(!confirm('Hapus baris ini dari database? Tidak bisa dibatalkan.'))return;
-  const{error}=await sb.from('rtlh').delete().eq('id',parseInt(rowId));
-  if(error)return toast('Gagal hapus: '+error.message,'error');
-  xAllData=xAllData.filter(x=>String(x.id)!==String(rowId));
-  allData=allData.filter(x=>String(x.id)!==String(rowId));
-  delete xDirty[rowId];
-  xApplyFilter();
-  xUpdateDirtyUI();
-  toast('Baris dihapus','success');
-}
-
-// ─── EKSPOR EXCEL ────────────────────────────────
+/* ── Ekspor Excel ── */
 function xExportExcel(){
-  if(!window.XLSX){toast('Library XLSX tidak tersedia','error');return;}
-  if(!xFiltered.length){toast('Tidak ada data','error');return;}
-  const vis=xGetVisCols().filter(c=>c.key!=='_no');
-  const header=vis.map(c=>c.label);
-  const rows=xFiltered.map((r,i)=>vis.map(c=>{
-    const val=xDirty[r.id]&&xDirty[r.id][c.key]!==undefined?xDirty[r.id][c.key]:r[c.key];
-    if(c.key==='updated_at'&&val)return new Date(val).toLocaleDateString('id-ID');
+  if(!window.XLSX){toast('XLSX tidak tersedia','error');return;}
+  if(!xRows.length){toast('Tidak ada data','error');return;}
+  const vis=xVisCols().filter(c=>c.k!=='_no');
+  const header=vis.map(c=>c.lb);
+  const rows=xRows.map(r=>vis.map(c=>{
+    const val=xDirty[r.id]&&xDirty[r.id][c.k]!==undefined?xDirty[r.id][c.k]:r[c.k];
+    if(c.k==='updated_at'&&val)return new Date(val).toLocaleDateString('id-ID');
     return val!=null?val:'';
   }));
   const ws=XLSX.utils.aoa_to_sheet([header,...rows]);
-  ws['!cols']=vis.map(c=>({wch:Math.max(10,Math.ceil((xColW[c.key]||c.width)/7))}));
+  ws['!cols']=vis.map(c=>({wch:Math.max(10,Math.round((xW[c.k]||c.w)/7))}));
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Data RTLH');
   const d=new Date();
-  XLSX.writeFile(wb,'eRTLH_'+d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'.xlsx');
-  toast('Ekspor '+xFiltered.length+' baris berhasil','success');
+  const fn='eRTLH_'+d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'.xlsx';
+  XLSX.writeFile(wb,fn);
+  toast('Ekspor '+xRows.length.toLocaleString('id')+' baris → '+fn,'success');
 }
 
-// ─── KOLOM VISIBILITY ────────────────────────────
+/* ── Kolom visibility ── */
 function xOpenColModal(){
   let html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">';
-  X_COLS.forEach(c=>{
-    if(c.key==='_no')return;
-    const checked=xColVis[c.key]!==false;
-    html+=`<label style="display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;border:1px solid ${checked?'var(--blue)':'var(--gray-200)'};cursor:pointer;font-size:.72rem;${checked?'background:var(--blue-bg)':''}">
-      <input type="checkbox" id="xcv_${c.key}" ${checked?'checked':''} style="accent-color:var(--blue)"> ${c.label}
+  XC.forEach(c=>{
+    if(c.k==='_no')return;
+    const chk=xVis[c.k]!==false;
+    html+=`<label style="display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;
+      border:1px solid ${chk?'var(--blue)':'var(--gray-200)'};cursor:pointer;font-size:.72rem;
+      ${chk?'background:var(--blue-bg);':''}">
+      <input type="checkbox" id="xcv_${c.k}" ${chk?'checked':''} style="accent-color:var(--blue)"> ${c.lb}
     </label>`;
   });
   html+='</div>';
@@ -5366,33 +5491,48 @@ function xOpenColModal(){
 }
 function xSelectAllCols(v){document.querySelectorAll('#xColModalBody input[type=checkbox]').forEach(cb=>cb.checked=v);}
 function xApplyColConfig(){
-  X_COLS.forEach(c=>{if(c.key==='_no')return;const cb=document.getElementById('xcv_'+c.key);if(cb)xColVis[c.key]=cb.checked;});
-  closeModal('xOvCols');xRenderGrid();
+  XC.forEach(c=>{if(c.k==='_no')return;const cb=document.getElementById('xcv_'+c.k);if(cb)xVis[c.k]=cb.checked;});
+  closeModal('xOvCols');xRender();
 }
 
-// ─── FREEZE ──────────────────────────────────────
+/* ── Freeze ── */
 function xToggleFreeze(){
-  xFreezeOn=!xFreezeOn;
-  document.getElementById('xBtnFreeze').innerHTML='<i class="fas fa-'+(xFreezeOn?'lock':'lock-open')+'"></i> Freeze: '+(xFreezeOn?'On':'Off');
-  xRenderGrid();
+  xFreeze=!xFreeze;
+  const btn=document.getElementById('xBtnFreeze');
+  if(btn)btn.innerHTML='<i class="fas fa-'+(xFreeze?'lock':'lock-open')+'"></i> Freeze: '+(xFreeze?'On':'Off');
+  xRender();
 }
 
-// ─── COLUMN RESIZE ───────────────────────────────
-let xResKey=null,xResX=0,xResW=0;
-function xStartResize(e,key){
-  e.stopPropagation();e.preventDefault();
-  xResKey=key;xResX=e.clientX;xResW=xColW[key]||120;
-  document.addEventListener('mousemove',xDoResize);
-  document.addEventListener('mouseup',xEndResize);
+/* ── Column resize ── */
+let _xRK=null,_xRX=0,_xRW=0;
+function xResStart(e,k){
+  _xRK=k;_xRX=e.clientX;_xRW=xW[k]||120;
+  document.addEventListener('mousemove',_xResMove);
+  document.addEventListener('mouseup',_xResEnd);
 }
-function xDoResize(e){
-  if(!xResKey)return;
-  const nw=Math.max(50,xResW+(e.clientX-xResX));
-  xColW[xResKey]=nw;
-  document.querySelectorAll('[data-col="'+xResKey+'"],th[data-key="'+xResKey+'"]').forEach(el=>{el.style.width=nw+'px';el.style.minWidth=nw+'px';});
+function _xResMove(e){
+  if(!_xRK)return;
+  const nw=Math.max(48,_xRW+(e.clientX-_xRX));
+  xW[_xRK]=nw;
+  document.querySelectorAll('[data-k="'+_xRK+'"],[data-key="'+_xRK+'"]').forEach(el=>{
+    el.style.width=nw+'px';el.style.minWidth=nw+'px';
+  });
 }
-function xEndResize(){xResKey=null;document.removeEventListener('mousemove',xDoResize);document.removeEventListener('mouseup',xEndResize);}
+function _xResEnd(){_xRK=null;document.removeEventListener('mousemove',_xResMove);document.removeEventListener('mouseup',_xResEnd);}
+
+/* ── Status bar ── */
+function _xUpdSB(){
+  const r=document.getElementById('xSBRow');if(r)r.textContent=xRows.length;
+  const c2=document.getElementById('xSBCol');if(c2)c2.textContent=xVisCols().length;
+  if(xFoc){
+    const col=XC.find(x=>x.k===xFoc.k);
+    const ri=xRows.findIndex(r=>r.id===xFoc.id);
+    const el=document.getElementById('xSBCell');
+    if(el)el.textContent=(col?.lb||xFoc.k)+' · baris '+(ri+1);
+  }
+}
 </script>
+
 
 
 <!-- ═══ MODAL LIBRARY DOKUMEN KABUPATEN ═══ -->
