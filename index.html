@@ -444,7 +444,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 .empty-state p{font-size:.82rem}
 
 /* ══ PAGE EXCEL ══ */
-#pgExcel{flex-direction:column;overflow:hidden;background:#fff}
+#pgExcel{display:flex!important;flex-direction:column;overflow:hidden;background:#fff;position:absolute;top:var(--header-h);left:0;right:0;bottom:0}
 .excel-toolbar{height:44px;background:#fff;border-bottom:1.5px solid var(--gray-200);display:flex;align-items:center;padding:0 10px;gap:4px;flex-shrink:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .excel-toolbar::-webkit-scrollbar{display:none}
 .excel-filterbar{background:var(--gray-50);border-bottom:1px solid var(--gray-200);padding:6px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0}
@@ -5003,12 +5003,141 @@ function xSort(k){
 /* ── Render grid ── */
 function xVisCols(){ return XC.filter(c=>xVis[c.k]!==false); }
 
-function xRender(){
-  xVirtStart=-1;xVirtEnd=-1; // force re-render
-  xRenderHead();
-  xRenderBody();
-  _xUpdSB();
+function xRender(){xPage=0;xRenderHead();xRenderBody();_xUpdSB();}
+
+function xRenderHead(){
+  const vis=xVisCols();
+  let h='<tr>';
+  let left=0;
+  vis.forEach(c=>{
+    const w=xW[c.k]||c.w;
+    const isNo=c.k==='_no';
+    const isFr=xFreeze&&(c.fr||isNo);
+    const stickyLeft=isFr?`left:${left}px;`:'';
+    if(isFr)left+=w;
+    const cls=[isNo?'xno':'', isFr&&!isNo?'xfrozen':''].filter(Boolean).join(' ');
+    if(isNo){
+      h+=`<th class="xno" style="width:${w}px;min-width:${w}px;max-width:${w}px;left:0">#</th>`;
+    }else{
+      h+=`<th data-k="${c.k}" class="${isFr?'xfrozen':''}"
+          style="width:${w}px;min-width:${w}px;${stickyLeft}position:relative"
+          onclick="xSort('${c.k}')">
+        ${c.lb}
+        <div class="xresize" onmousedown="event.stopPropagation();xResStart(event,'${c.k}')"></div>
+      </th>`;
+    }
+  });
+  h+='</tr>';
+  document.getElementById('xHead').innerHTML=h;
 }
+
+/* ── Pagination state ── */
+const X_PAGE_SIZE=100;
+let xPage=0;
+
+function xRenderBody(){
+  const vis=xVisCols();
+  const tbody=document.getElementById('xBody');
+
+  if(!xRows.length){
+    tbody.innerHTML=`<tr><td colspan="${vis.length}" style="padding:50px;text-align:center;color:var(--gray-400);font-size:.82rem">
+      <i class="fas fa-inbox" style="font-size:2rem;opacity:.25;display:block;margin-bottom:12px"></i>
+      Tidak ada data</td></tr>`;
+    _xRenderPager();
+    return;
+  }
+
+  // Hitung frozen left offsets
+  const frozenLeft={};
+  if(xFreeze){
+    let acc=0;
+    vis.forEach(c=>{
+      if(c.fr||c.k==='_no'){frozenLeft[c.k]=acc;acc+=xW[c.k]||c.w;}
+    });
+  }
+
+  const totalPages=Math.ceil(xRows.length/X_PAGE_SIZE);
+  xPage=Math.max(0,Math.min(xPage,totalPages-1));
+  const start=xPage*X_PAGE_SIZE;
+  const slice=xRows.slice(start,start+X_PAGE_SIZE);
+
+  const frag=document.createDocumentFragment();
+  slice.forEach((r,i)=>{
+    const idx=start+i;
+    const id=r.id;
+    const dirty=xDirty[id];
+    const tr=document.createElement('tr');
+    tr.dataset.id=id;
+    if(dirty)tr.classList.add('xrow-dirty');
+    if(idx%2===1)tr.style.background='#F8FAFC';
+
+    vis.forEach(c=>{
+      const td=document.createElement('td');
+      if(c.k==='_no'){
+        td.className='xno';
+        td.textContent=idx+1;
+      }else{
+        const isFr=xFreeze&&(c.fr||c.k==='_no');
+        if(isFr){
+          td.className='xfrozen';
+          if(frozenLeft[c.k]!==undefined)td.style.left=frozenLeft[c.k]+'px';
+        }
+        td.dataset.id=id;
+        td.dataset.k=c.k;
+        td.style.width=(xW[c.k]||c.w)+'px';
+        const val=dirty&&dirty[c.k]!==undefined?dirty[c.k]:r[c.k];
+        _xCellVal(td,c,val);
+        if(c.ed!==false) td.onclick=()=>xEdit(td,id,c.k);
+      }
+      tr.appendChild(td);
+    });
+    frag.appendChild(tr);
+  });
+
+  tbody.innerHTML='';
+  tbody.appendChild(frag);
+  _xRenderPager();
+}
+
+function _xRenderPager(){
+  let pager=document.getElementById('xPager');
+  if(!pager){
+    pager=document.createElement('div');
+    pager.id='xPager';
+    pager.style.cssText='display:flex;align-items:center;gap:6px;padding:7px 12px;background:#fff;border-top:1px solid var(--gray-200);flex-shrink:0;font-size:.72rem;color:var(--gray-600)';
+    const wrap=document.getElementById('xSheetWrap');
+    wrap.parentNode.insertBefore(pager,wrap.nextSibling);
+  }
+  const total=xRows.length;
+  const totalPages=Math.ceil(total/X_PAGE_SIZE)||1;
+  const start=xPage*X_PAGE_SIZE+1;
+  const end=Math.min((xPage+1)*X_PAGE_SIZE,total);
+
+  const btnStyle='padding:3px 10px;border-radius:5px;border:1px solid var(--gray-200);background:#fff;font-size:.7rem;cursor:pointer;font-family:inherit;color:var(--gray-700)';
+  const btnDis='padding:3px 10px;border-radius:5px;border:1px solid var(--gray-200);background:var(--gray-100);font-size:.7rem;cursor:default;font-family:inherit;color:var(--gray-400)';
+
+  pager.innerHTML=`
+    <button style="${xPage>0?btnStyle:btnDis}" onclick="xGoPage(0)" ${xPage===0?'disabled':''}>«</button>
+    <button style="${xPage>0?btnStyle:btnDis}" onclick="xGoPage(${xPage-1})" ${xPage===0?'disabled':''}>‹</button>
+    <span style="flex:1;text-align:center">
+      Halaman <strong>${xPage+1}</strong> dari <strong>${totalPages}</strong>
+      &nbsp;·&nbsp; Baris ${start}–${end} dari <strong>${total.toLocaleString('id')}</strong>
+    </span>
+    <button style="${xPage<totalPages-1?btnStyle:btnDis}" onclick="xGoPage(${xPage+1})" ${xPage>=totalPages-1?'disabled':''}>›</button>
+    <button style="${xPage<totalPages-1?btnStyle:btnDis}" onclick="xGoPage(${totalPages-1})" ${xPage>=totalPages-1?'disabled':''}>»</button>
+    <select onchange="xGoPage(parseInt(this.value))" style="padding:3px 6px;border-radius:5px;border:1px solid var(--gray-200);font-size:.7rem;font-family:inherit;margin-left:4px">
+      ${Array.from({length:totalPages},(_,i)=>`<option value="${i}" ${i===xPage?'selected':''}>Hal. ${i+1}</option>`).join('')}
+    </select>`;
+}
+
+function xGoPage(p){
+  xPage=p;
+  xRenderBody();
+  const wrap=document.getElementById('xSheetWrap');
+  if(wrap)wrap.scrollTop=0;
+}
+
+function xRender(){xPage=0;xRenderHead();xRenderBody();_xUpdSB();}
 
 function xRenderHead(){
   const vis=xVisCols();
@@ -5182,16 +5311,11 @@ function xEdit(td,id,k){
 
   if(xEd)_xCommit(true);
 
-  // Scroll row into view agar tidak hilang saat virtual re-render
-  const wrap=document.getElementById('xSheetWrap');
-  const idx=xRows.findIndex(r=>r.id===id);
-  if(idx>=0){
-    const rowTop=idx*X_ROW_H;
-    const rowBot=rowTop+X_ROW_H;
-    const st=wrap.scrollTop;
-    const viewH=wrap.clientHeight;
-    if(rowTop<st)wrap.scrollTop=rowTop;
-    else if(rowBot>st+viewH)wrap.scrollTop=rowBot-viewH;
+  // Pastikan baris ada di halaman yang benar
+  const _ri=xRows.findIndex(r=>r.id===id);
+  if(_ri>=0){
+    const targetPage=Math.floor(_ri/X_PAGE_SIZE);
+    if(targetPage!==xPage){xPage=targetPage;xRenderBody();}
   }
 
   document.querySelectorAll('#xBody tr.xrow-selected').forEach(r=>r.classList.remove('xrow-selected'));
