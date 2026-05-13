@@ -444,13 +444,13 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 .empty-state p{font-size:.82rem}
 
 /* ══ PAGE EXCEL ══ */
-#pgExcel{flex-direction:column;overflow:hidden}
+#pgExcel{flex-direction:column;overflow:hidden;background:#fff}
 .excel-toolbar{height:44px;background:#fff;border-bottom:1.5px solid var(--gray-200);display:flex;align-items:center;padding:0 10px;gap:4px;flex-shrink:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .excel-toolbar::-webkit-scrollbar{display:none}
 .excel-filterbar{background:var(--gray-50);border-bottom:1px solid var(--gray-200);padding:6px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0}
 .excel-filterbar select,.excel-filterbar input{padding:4px 8px;border-radius:6px;border:1.5px solid var(--gray-200);font-size:.72rem;font-family:var(--font);color:var(--gray-800);outline:none;background:#fff}
 .excel-filterbar select:focus,.excel-filterbar input:focus{border-color:var(--blue)}
-.excel-sheet-wrap{flex:1;overflow:auto;position:relative}
+.excel-sheet-wrap{flex:1;overflow:auto;position:relative;min-height:0}
 .excel-sheet-wrap::-webkit-scrollbar{width:10px;height:10px}
 .excel-sheet-wrap::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:5px;border:2px solid #fff}
 .excel-sheet-wrap::-webkit-scrollbar-track{background:var(--gray-100)}
@@ -832,7 +832,7 @@ table.xgrid td.xediting input{min-width:120px}
   </div>
 
   <!-- Unsaved bar -->
-  <div id="xUnsavedBar">
+  <div id="xUnsavedBar" style="display:none">
     <i class="fas fa-exclamation-triangle"></i>
     <span id="xUnsavedCount">0</span> perubahan belum disimpan —
     <button onclick="xSaveAll()" style="background:var(--navy);color:#fff;border:none;border-radius:6px;padding:3px 12px;font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit">Simpan Sekarang</button>
@@ -841,13 +841,13 @@ table.xgrid td.xediting input{min-width:120px}
   <!-- Filter bar -->
   <div class="excel-filterbar">
     <i class="fas fa-filter" style="color:var(--gray-400);font-size:.72rem"></i>
-    <select id="xFKec" onchange="xApplyFilter()" style="max-width:140px">
+    <select id="xFKec" onchange="xFilter()" style="max-width:140px">
       <option value="">Semua Kecamatan</option>
     </select>
-    <select id="xFDesa" onchange="xApplyFilter()" style="max-width:130px">
+    <select id="xFDesa" onchange="xFilter()" style="max-width:130px">
       <option value="">Semua Desa</option>
     </select>
-    <select id="xFStatus" onchange="xApplyFilter()">
+    <select id="xFStatus" onchange="xFilter()">
       <option value="">Semua Status</option>
       <option value="RTLH">RTLH</option>
       <option value="Layak Huni">Layak Huni</option>
@@ -855,7 +855,7 @@ table.xgrid td.xediting input{min-width:120px}
     </select>
     <div style="position:relative">
       <i class="fas fa-search" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--gray-400);font-size:.68rem;pointer-events:none"></i>
-      <input id="xFSearch" type="text" placeholder="Cari nama / NIK / desa..." oninput="xApplyFilter()" style="padding:4px 8px 4px 26px;width:200px">
+      <input id="xFSearch" type="text" placeholder="Cari nama / NIK / desa..." oninput="xFilter()" style="padding:4px 8px 4px 26px;width:200px">
     </div>
     <button onclick="xClearFilter()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--gray-200);background:#fff;font-size:.68rem;cursor:pointer;font-family:inherit;color:var(--gray-600)"><i class="fas fa-times"></i> Reset</button>
     <span style="font-size:.65rem;font-weight:600;color:var(--gray-500);margin-left:auto" id="xInfo">—</span>
@@ -865,16 +865,21 @@ table.xgrid td.xediting input{min-width:120px}
   <div class="excel-sheet-wrap" id="xSheetWrap">
     <table class="xgrid" id="xGrid">
       <thead id="xHead"></thead>
-      <tbody id="xBody"></tbody>
+      <tbody id="xBody">
+        <tr><td colspan="30" style="padding:48px;text-align:center;color:var(--gray-400)">
+          <i class="fas fa-circle-notch fa-spin" style="font-size:1.5rem;display:block;margin-bottom:12px;opacity:.4"></i>
+          Klik tab Excel untuk memuat data...
+        </td></tr>
+      </tbody>
     </table>
   </div>
 
   <!-- Status bar -->
   <div class="excel-statusbar">
     <span>Baris: <strong id="xSBRow">—</strong></span>
-    <div class="sep"></div>
+    <div style="width:1px;height:12px;background:rgba(255,255,255,.15)"></div>
     <span>Kolom: <strong id="xSBCol">—</strong></span>
-    <div class="sep"></div>
+    <div style="width:1px;height:12px;background:rgba(255,255,255,.15)"></div>
     <span>Sel aktif: <strong id="xSBCell">—</strong></span>
     <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
       <span class="es-mode" id="xSBMode">VIEW</span>
@@ -4934,7 +4939,9 @@ async function xLoad(){
 }
 
 /* ── Filter & sort ── */
+function xApplyFilter(){xFilter();}
 function xFilter(){
+  if(!xInited||!xAll.length){xRender();return;}
   const kec=(document.getElementById('xFKec').value||'').toLowerCase();
   const desa=(document.getElementById('xFDesa').value||'').toLowerCase();
   const st=document.getElementById('xFStatus').value||'';
