@@ -81,7 +81,8 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
 /* PAGES */
 .page{display:none;position:absolute;top:var(--header-h);left:0;right:0;bottom:0;overflow:hidden}
-.page.active{display:flex}.page.active#pgExcel{display:flex;flex-direction:column}
+.page.active{display:flex}
+#pgExcel.active{display:flex!important;flex-direction:column!important;overflow:hidden!important}
 .page-scroll{overflow-y:auto;flex:1}
 
 /* HERO */
@@ -874,6 +875,9 @@ table.xgrid td.xediting input{min-width:120px}
     </table>
   </div>
 
+  <!-- Pager -->
+  <div id="xPager" style="display:none;align-items:center;gap:6px;padding:6px 12px;background:#fff;border-top:1px solid var(--gray-200);flex-shrink:0;font-size:.72rem;color:var(--gray-600)"></div>
+
   <!-- Status bar -->
   <div class="excel-statusbar">
     <span>Baris: <strong id="xSBRow">—</strong></span>
@@ -1377,7 +1381,10 @@ function restoreSession(){
 // ══════════════════════════════════════════════════
 let _currentPage='beranda';
 function nav(pg){_currentPage=pg;
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>{
+    p.classList.remove('active');
+    if(p.id==='pgExcel')p.style.display=''; // reset inline style
+  });
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.mob-nav-btn').forEach(t=>t.classList.remove('active'));
 
@@ -1403,7 +1410,10 @@ function nav(pg){_currentPage=pg;
     setTimeout(()=>{ if(map) map.invalidateSize(); },150);
     loadKec();
   } else if(pg==='excel'){
-    document.getElementById('pgExcel').classList.add('active');
+    const pgEl=document.getElementById('pgExcel');
+    pgEl.classList.add('active');
+    pgEl.style.display='flex';
+    pgEl.style.flexDirection='column';
     document.getElementById('ntExcel')?.classList.add('active');
     document.getElementById('mnExcel')?.classList.add('active');
     setTimeout(()=>initExcel(),50);
@@ -5128,16 +5138,11 @@ function xRenderBody(){
 }
 
 function _xRenderPager(){
-  let pager=document.getElementById('xPager');
-  if(!pager){
-    pager=document.createElement('div');
-    pager.id='xPager';
-    pager.style.cssText='display:flex;align-items:center;gap:6px;padding:6px 12px;background:#fff;border-top:1px solid var(--gray-200);flex-shrink:0;font-size:.72rem;color:var(--gray-600)';
-    const wrap=document.getElementById('xSheetWrap');
-    if(wrap&&wrap.parentNode)wrap.parentNode.insertBefore(pager,wrap.nextSibling);
-  }
+  const pager=document.getElementById('xPager');
+  if(!pager)return;
   const total=xRows.length;
-  if(!total){pager.innerHTML='';return;}
+  if(!total){pager.style.display='none';pager.innerHTML='';return;}
+  pager.style.display='flex';
   const totalPages=Math.ceil(total/X_PAGE_SIZE)||1;
   const s=xPage*X_PAGE_SIZE+1, e=Math.min((xPage+1)*X_PAGE_SIZE,total);
   const bs='padding:3px 9px;border-radius:5px;border:1px solid var(--gray-200);background:#fff;font-size:.7rem;cursor:pointer;font-family:inherit;color:var(--gray-700)';
