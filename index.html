@@ -5076,8 +5076,17 @@ async function initExcel(){
   // Pertama kali
   xInited=true;
 
-  // Event listeners pada wrap (bukan xGrid yg bisa diganti)
+  // Event delegation - satu listener untuk semua klik sel & context menu
   const wrap=document.getElementById('xSheetWrap');
+
+  // Click: edit sel
+  wrap.addEventListener('click',e=>{
+    const td=e.target.closest('td[data-id][data-k]');
+    if(!td)return;
+    xEdit(td, td.dataset.id, td.dataset.k);
+  });
+
+  // Context menu
   wrap.addEventListener('contextmenu',e=>{
     const td=e.target.closest('td[data-id]');if(!td)return;
     e.preventDefault();
@@ -5087,6 +5096,7 @@ async function initExcel(){
     m.style.top=Math.min(e.clientY,window.innerHeight-170)+'px';
     m.classList.add('open');
   });
+
   document.addEventListener('keydown',_xKey);
   document.addEventListener('click',e=>{if(!e.target.closest('#xCtxMenu'))_xCloseCtx();});
 
@@ -5265,13 +5275,13 @@ function xRenderBody(){
         td.className='xno';
         td.textContent=idx+1;
       }else{
-        const isFr=xFreeze&&(c.fr||c.k==='_no');
-        if(isFr){td.className='xfrozen';if(frozenLeft[c.k]!==undefined)td.style.left=frozenLeft[c.k]+'px';}
-        td.dataset.id=String(id);td.dataset.k=c.k;
-        td.style.width=(xW[c.k]||c.w)+'px';
-        const val=dirty&&dirty[c.k]!==undefined?dirty[c.k]:r[c.k];
-        _xCellVal(td,c,val);
-        if(c.ed!==false) td.onclick=()=>xEdit(td,id,c.k);
+        const isFr=xFreeze&&(col.fr||col.k==='_no');
+        if(isFr){td.className='xfrozen';if(frozenLeft[col.k]!==undefined)td.style.left=frozenLeft[col.k]+'px';}
+        td.dataset.id=String(id);td.dataset.k=col.k;
+        td.style.width=(xW[col.k]||col.w)+'px';
+        const val=dirty&&dirty[col.k]!==undefined?dirty[col.k]:r[col.k];
+        _xCellVal(td,col,val);
+        // onclick handled via event delegation di xSheetWrap
       }
       tr.appendChild(td);
     });
