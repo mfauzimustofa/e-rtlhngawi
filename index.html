@@ -3209,7 +3209,36 @@ async function loadDokFileList(rtlhId){
   var data=res.data||[];
   _lightboxPhotos=data;
   if(!data.length){el.innerHTML='<div style="color:var(--gray-400);font-size:.72rem;text-align:center;padding:16px">Belum ada foto</div>';return;}
-
+  var wrap=document.createElement('div');
+  wrap.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px';
+  data.forEach(function(d,i){
+    var url=sb.storage.from('rtlh-dokumen').getPublicUrl(d.path).data.publicUrl;
+    var label=DOK_LABELS[d.jenis]||d.jenis;
+    var card=document.createElement('div');
+    card.style.cssText='position:relative;border-radius:8px;overflow:hidden;border:1.5px solid var(--gray-200);cursor:pointer';
+    card.onclick=function(){openLightboxDok(i);};
+    var img=document.createElement('img');
+    img.src=url;img.style.cssText='width:100%;height:90px;object-fit:cover;display:block';
+    var info=document.createElement('div');
+    info.style.cssText='padding:4px 6px;background:#fff';
+    info.innerHTML='<div style="font-size:.6rem;font-weight:700;color:var(--gray-500)">'+label+'</div>'+
+      '<div style="font-size:.6rem;color:var(--gray-400);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(d.keterangan||'')+'</div>';
+    var btnEdit=document.createElement('button');
+    btnEdit.innerHTML='<i class="fas fa-edit"></i>';
+    btnEdit.style.cssText='position:absolute;top:4px;right:4px;background:rgba(0,0,0,.5);border:none;color:#fff;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:.65rem;display:flex;align-items:center;justify-content:center';
+    btnEdit.onclick=function(e){e.stopPropagation();editDokKetById(d.id,d.jenis,d.keterangan||'');};
+    card.appendChild(img);card.appendChild(info);card.appendChild(btnEdit);
+    if(isSuperAdmin()){
+      var btnDel=document.createElement('button');
+      btnDel.innerHTML='<i class="fas fa-trash"></i>';
+      btnDel.style.cssText='position:absolute;top:4px;left:4px;background:rgba(220,38,38,.7);border:none;color:#fff;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:.65rem;display:flex;align-items:center;justify-content:center';
+      btnDel.onclick=function(e){e.stopPropagation();deleteDok(d.id,d.path);};
+      card.appendChild(btnDel);
+    }
+    wrap.appendChild(card);
+  });
+  el.innerHTML='';el.appendChild(wrap);
+}
 
 async function editDokKetById(id,jenis,cur){
   cur=cur||'';
@@ -3459,9 +3488,7 @@ async function doMaintenanceLogin(){
       if(typeof _fitMapToNgawi==='function')_fitMapToNgawi();
     }).catch(()=>{});
   }
-});
-
-}
+})();
 </script>
 <!-- ═══ CHATBOT AI ═══ -->
 <button id="chatBtn" onclick="toggleChat()" title="Tanya AI Asisten">
