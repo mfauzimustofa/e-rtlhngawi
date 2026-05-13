@@ -5253,9 +5253,9 @@ function xRenderBody(){
   slice.forEach((r,i)=>{
     const idx=start+i;
     const id=r.id;
-    const dirty=xDirty[id];
+    const dirty=xDirty[String(id)];
     const tr=document.createElement('tr');
-    tr.dataset.id=id;
+    tr.dataset.id=String(id);
     if(dirty)tr.classList.add('xrow-dirty');
     if(idx%2===1)tr.style.background='#F8FAFC';
 
@@ -5267,7 +5267,7 @@ function xRenderBody(){
       }else{
         const isFr=xFreeze&&(c.fr||c.k==='_no');
         if(isFr){td.className='xfrozen';if(frozenLeft[c.k]!==undefined)td.style.left=frozenLeft[c.k]+'px';}
-        td.dataset.id=id;td.dataset.k=c.k;
+        td.dataset.id=String(id);td.dataset.k=c.k;
         td.style.width=(xW[c.k]||c.w)+'px';
         const val=dirty&&dirty[c.k]!==undefined?dirty[c.k]:r[c.k];
         _xCellVal(td,c,val);
@@ -5355,6 +5355,7 @@ function _xCellVal(td,c,val){
 
 /* ── Edit inline ── */
 function xEdit(td,id,k){
+  id=String(id); // normalisasi ke string
   if(!canEdit()){toast('Tidak ada akses edit','error');return;}
   if(!xEditMode){toast('Aktifkan Mode Edit (klik tombol pensil) untuk mengedit','warning');return;}
   const c=XC.find(x=>x.k===k);
@@ -5377,7 +5378,7 @@ function xEdit(td,id,k){
   xFoc={id,k};
   _xUpdSB();
 
-  const r=xRows.find(x=>x.id===id)||{};
+  const r=xRows.find(x=>String(x.id)===String(id))||{};
   const cur=xDirty[id]&&xDirty[id][k]!==undefined?xDirty[id][k]:r[k];
 
   // Pastikan td masih ada di DOM (virtual scroll mungkin sudah re-render)
@@ -5421,20 +5422,21 @@ function xEdit(td,id,k){
 function _xCommit(silent){
   if(!xEd)return;
   const{id,k,td,c}=xEd; xEd=null;
+  const sid=String(id);
 
   const inp=td.querySelector('input,select');
-  if(!inp){_xRefreshCell(td,id,k);_xMode('VIEW');return;}
+  if(!inp){_xRefreshCell(td,sid,k);_xMode('VIEW');return;}
 
   let val=inp.value;
   if(c.num) val=val!==''?(parseFloat(val)||null):null;
   else val=val.trim()||null;
 
-  const r=xRows.find(x=>x.id===id)||{};
+  const r=xRows.find(x=>String(x.id)===sid)||{};
   const orig=r[k];
   if(String(val??'')!==String(orig??'')){
-    if(!xDirty[id])xDirty[id]={};
-    xDirty[id][k]=val;
-    const tr=document.querySelector('#xBody tr[data-id="'+id+'"]');
+    if(!xDirty[sid])xDirty[sid]={};
+    xDirty[sid][k]=val;
+    const tr=document.querySelector('#xBody tr[data-id="'+sid+'"]');
     if(tr)tr.classList.add('xrow-dirty');
     if(!silent)toast('✏ '+c.lb+' diubah','warning');
   }
@@ -5451,7 +5453,7 @@ function _xCancel(td,id,k){
 function _xRefreshCell(td,id,k){
   const c=XC.find(x=>x.k===k);if(!c)return;
   td.classList.remove('xediting');
-  const r=xRows.find(x=>x.id===id)||{};
+  const r=xRows.find(x=>String(x.id)===String(id))||{};
   const val=xDirty[id]&&xDirty[id][k]!==undefined?xDirty[id][k]:r[k];
   _xCellVal(td,c,val);
 }
@@ -5654,7 +5656,7 @@ async function xSaveForm(editId){
 }
 
 /* ── Hapus baris ── */
-async function xDeleteRow(id){
+async function xDeleteRow(id){id=String(id);
   if(!isSuperAdmin()){toast('Hanya Super Admin yang bisa hapus','error');return;}
   if(!confirm('Hapus baris ini dari database? Tidak bisa dibatalkan.'))return;
   const{error}=await sb.from('rtlh').delete().eq('id',parseInt(id));
@@ -5678,9 +5680,9 @@ async function xSaveAll(){
     if(error){fail++;console.error('xSave fail',id,error);}
     else{
       ok++;
-      const ai=xAll.findIndex(x=>String(x.id)===id);
+      const ai=xAll.findIndex(x=>String(x.id)===String(id));
       if(ai>=0)xAll[ai]={...xAll[ai],...changes};
-      const bi=brAll.findIndex(x=>String(x.id)===id);
+      const bi=brAll.findIndex(x=>String(x.id)===String(id));
       if(bi>=0)brAll[bi]={...brAll[bi],...changes};
       delete xDirty[id];
     }
