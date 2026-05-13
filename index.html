@@ -916,47 +916,55 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
 <!-- MODAL DOKUMEN & FOTO -->
 <div class="overlay" id="ovDok">
-  <div class="modal" style="max-width:520px">
+  <div class="modal" style="max-width:560px">
     <div class="modal-head">
       <div><h3><i class="fas fa-camera" style="color:var(--warning)"></i> Foto Rumah</h3>
         <div class="sub" id="dokSub">Upload foto kondisi rumah</div>
       </div>
       <button class="modal-x" onclick="closeModal('ovDok')"><i class="fas fa-times"></i></button>
     </div>
-    <div class="modal-body">
-      <div style="background:var(--gray-50);border-radius:10px;padding:14px;border:1px solid var(--gray-200);margin-bottom:14px">
-        <div style="font-size:.72rem;font-weight:700;color:var(--gray-700);margin-bottom:10px">Upload Dokumen Baru</div>
-        <div class="form-group" style="margin-bottom:10px">
-          <label>Jenis Foto</label>
-          <select id="dokJenis">
-            <option value="foto_rumah">📷 Foto Rumah (Tampak Depan)</option>
-            <option value="foto_dalam">📷 Foto Dalam Rumah</option>
-            <option value="foto_atap">📷 Foto Atap</option>
-            <option value="foto_lantai">📷 Foto Lantai</option>
-            <option value="foto_lokasi">🗺️ Foto Lokasi/Lingkungan</option>
-          </select>
+    <div class="modal-body" style="padding:14px 16px">
+      <!-- Drop zone -->
+      <div id="dokDropZone"
+        onclick="document.getElementById('dokFile').click()"
+        ondragover="event.preventDefault();this.style.borderColor='var(--blue)';this.style.background='var(--blue-bg)'"
+        ondragleave="this.style.borderColor='var(--gray-300)';this.style.background=''"
+        ondrop="event.preventDefault();this.style.borderColor='var(--gray-300)';this.style.background='';handleDokFiles(event.dataTransfer.files)"
+        style="border:2px dashed var(--gray-300);border-radius:12px;padding:20px;text-align:center;cursor:pointer;margin-bottom:12px;transition:all .2s">
+        <i class="fas fa-cloud-upload-alt" style="font-size:2rem;color:var(--gray-300);display:block;margin-bottom:8px"></i>
+        <div style="font-size:.8rem;font-weight:700;color:var(--gray-600)">Klik atau seret foto ke sini</div>
+        <div style="font-size:.65rem;color:var(--gray-400);margin-top:4px">Pilih banyak sekaligus · JPG, PNG · Maks 5 MB/foto</div>
+        <input type="file" id="dokFile" accept="image/*" multiple style="display:none" onchange="handleDokFiles(this.files)">
+      </div>
+      <!-- Antrian -->
+      <div id="dokQueue" style="display:none;margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:.72rem;font-weight:700;color:var(--gray-700)">Antrian (<span id="dokQueueCount">0</span> foto)</div>
+          <button onclick="uploadAllDok()" style="padding:5px 14px;border-radius:8px;background:var(--blue);color:#fff;border:none;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit"><i class="fas fa-upload"></i> Upload Semua</button>
         </div>
-        <div class="form-group" style="margin-bottom:10px">
-          <label>Keterangan (opsional)</label>
-          <input type="text" id="dokKet" placeholder="Contoh: BA 2025, Foto tampak depan">
-        </div>
-        <div class="form-group" style="margin-bottom:12px">
-          <label>File <span style="color:var(--danger)">*</span></label>
-          <input type="file" id="dokFile" accept="image/*" style="font-size:.8rem">
-          <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Format: JPG, PNG. Maks 5 MB.</div>
-        </div>
-        <button class="btn btn-primary" onclick="uploadDokumen()" style="width:100%;justify-content:center"><i class="fas fa-upload"></i> Upload</button>
+        <div id="dokQueueList" style="display:flex;gap:8px;flex-wrap:wrap"></div>
         <div id="dokUploadProgress" style="margin-top:8px;font-size:.72rem"></div>
       </div>
+      <!-- Galeri tersimpan -->
       <div>
-        <div style="font-size:.72rem;font-weight:700;color:var(--gray-700);margin-bottom:8px">Dokumen Tersimpan</div>
-        <div id="dokFileList" style="font-size:.72rem;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
+        <div style="font-size:.72rem;font-weight:700;color:var(--gray-700);margin-bottom:8px">Foto Tersimpan</div>
+        <div id="dokFileList" style="color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('ovDok')">Tutup</button>
     </div>
   </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div id="fotoLightbox" onclick="closeLightbox()" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.92);flex-direction:column;align-items:center;justify-content:center">
+  <button onclick="event.stopPropagation();closeLightbox()" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,.15);border:none;color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center"><i class="fas fa-times"></i></button>
+  <button id="lbPrev" onclick="event.stopPropagation();moveLightbox(-1)" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);border:none;color:#fff;width:44px;height:44px;border-radius:50%;cursor:pointer;font-size:1.2rem;display:none;align-items:center;justify-content:center"><i class="fas fa-chevron-left"></i></button>
+  <img id="lbImg" src="" onclick="event.stopPropagation()" style="max-width:90vw;max-height:78vh;object-fit:contain;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.5)">
+  <div id="lbCaption" style="color:rgba(255,255,255,.8);font-size:.82rem;margin-top:12px;text-align:center;max-width:480px;padding:0 20px"></div>
+  <div id="lbCounter" style="color:rgba(255,255,255,.4);font-size:.68rem;margin-top:4px"></div>
+  <button id="lbNext" onclick="event.stopPropagation();moveLightbox(1)" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);border:none;color:#fff;width:44px;height:44px;border-radius:50%;cursor:pointer;font-size:1.2rem;display:none;align-items:center;justify-content:center"><i class="fas fa-chevron-right"></i></button>
 </div>
 
 <!-- NIK/KK MODAL (Super Admin only - dedicated, never re-renders) -->
@@ -3643,10 +3651,16 @@ async function uploadExcelIndividu(input, rtlhId){
 let _dokRtlhId=null;
 
 const DOK_LABELS={
-  foto_rumah:'📷 Foto Rumah',berita_acara:'📄 Berita Acara',
-  surat_pernyataan:'📝 Surat Pernyataan',ktp:'🪪 KTP',
-  kk_doc:'👨‍👩‍👧 Kartu Keluarga',foto_lokasi:'🗺️ Foto Lokasi',lainnya:'📁 Lainnya'
+  foto_rumah:'Tampak Depan',foto_dalam:'Dalam Rumah',
+  foto_atap:'Atap',foto_lantai:'Lantai',foto_lokasi:'Lokasi',
+  berita_acara:'📄 Berita Acara',surat_pernyataan:'📝 Surat Pernyataan',
+  ktp:'🪪 KTP',kk_doc:'👨‍👩‍👧 Kartu Keluarga',lainnya:'📁 Lainnya'
 };
+
+// State foto
+let _dokQueue=[];
+let _lbPhotos=[];
+let _lbIdx=0;
 
 function openDokModal(rtlhId){
   if(!isAdmin)return toast('Hanya admin','error');
@@ -3654,46 +3668,197 @@ function openDokModal(rtlhId){
   const r=brAll.find(x=>String(x.id)===String(rtlhId));
   document.getElementById('dokSub').textContent=r?.kep_kk||rtlhId;
   document.getElementById('dokFile').value='';
-  document.getElementById('dokKet').value='';
   document.getElementById('dokUploadProgress').innerHTML='';
+  _dokQueue=[];
+  renderDokQueue();
   loadDokFileList(rtlhId);
   document.getElementById('ovDok').classList.add('open');
 }
 
+function handleDokFiles(files){
+  Array.from(files).filter(f=>f.type.startsWith('image/')).forEach(f=>{
+    const reader=new FileReader();
+    reader.onload=function(e){
+      _dokQueue.push({file:f,preview:e.target.result,jenis:'foto_rumah',ket:''});
+      renderDokQueue();
+    };
+    reader.readAsDataURL(f);
+  });
+}
+
+function renderDokQueue(){
+  const wrap=document.getElementById('dokQueue');
+  const list=document.getElementById('dokQueueList');
+  const cnt=document.getElementById('dokQueueCount');
+  if(!_dokQueue.length){if(wrap)wrap.style.display='none';return;}
+  if(wrap)wrap.style.display='block';
+  if(cnt)cnt.textContent=_dokQueue.length;
+  if(!list)return;
+  list.innerHTML=_dokQueue.map(function(item,i){
+    return'<div style="width:100px;flex-shrink:0;position:relative">'+
+      '<img src="'+item.preview+'" style="width:100px;height:80px;object-fit:cover;border-radius:8px;border:2px solid var(--gray-200)">'+
+      '<button onclick="_dokQueue.splice('+i+',1);renderDokQueue()" '+
+        'style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);border:none;color:#fff;'+
+        'width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:.65rem;display:flex;align-items:center;justify-content:center">'+
+        '<i class="fas fa-times"></i></button>'+
+      '<select onchange="_dokQueue['+i+'].jenis=this.value" '+
+        'style="width:100%;font-size:.58rem;margin-top:3px;border-radius:4px;border:1px solid var(--gray-200);padding:2px;font-family:inherit">'+
+        '<option value="foto_rumah">Tampak Depan</option>'+
+        '<option value="foto_dalam">Dalam Rumah</option>'+
+        '<option value="foto_atap">Atap</option>'+
+        '<option value="foto_lantai">Lantai</option>'+
+        '<option value="foto_lokasi">Lokasi</option>'+
+      '</select>'+
+      '<input type="text" placeholder="Keterangan..." onchange="_dokQueue['+i+'].ket=this.value" '+
+        'style="width:100%;font-size:.6rem;margin-top:3px;border-radius:4px;border:1px solid var(--gray-200);padding:2px 4px;font-family:inherit;box-sizing:border-box">'+
+    '</div>';
+  }).join('');
+}
+
+async function uploadAllDok(){
+  if(!_dokRtlhId||!_dokQueue.length)return;
+  const prog=document.getElementById('dokUploadProgress');
+  var ok=0,fail=0;
+  for(var i=0;i<_dokQueue.length;i++){
+    var item=_dokQueue[i];
+    prog.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Upload '+(i+1)+'/'+_dokQueue.length+'...';
+    var ext=item.file.name.split('.').pop().toLowerCase();
+    var path=_dokRtlhId+'/'+item.jenis+'_'+Date.now()+'_'+i+'.'+ext;
+    var upRes=await sb.storage.from('rtlh-dokumen').upload(path,item.file,{upsert:false});
+    if(upRes.error){fail++;continue;}
+    var dbRes=await sb.from('rtlh_dokumen').insert({
+      rtlh_id:parseInt(_dokRtlhId),jenis:item.jenis,
+      keterangan:item.ket||null,path:path,uploaded_by:user?.email
+    });
+    if(dbRes.error)fail++; else ok++;
+  }
+  _dokQueue=[];renderDokQueue();
+  prog.innerHTML='<span style="color:var(--success)"><i class="fas fa-check-circle"></i> '+ok+' foto berhasil'+(fail?' · '+fail+' gagal':'')+'</span>';
+  toast(ok+' foto diupload','success');
+  loadDokFileList(_dokRtlhId);
+  loadDokList(_dokRtlhId);
+}
+
+// Alias fungsi lama agar tidak break
+async function uploadDokumen(){await uploadAllDok();}
+
 async function loadDokList(rtlhId){
-  const el=document.getElementById('dpDokList');
+  var el=document.getElementById('dpDokList');
   if(!el)return;
-  const{data}=await sb.from('rtlh_dokumen').select('*').eq('rtlh_id',parseInt(rtlhId)).order('created_at',{ascending:false});
-  if(!data||!data.length){el.innerHTML='<span style="color:var(--gray-400)">Belum ada dokumen tersimpan</span>';return;}
-  el.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:6px">`+data.map(d=>{
-    const url=sb.storage.from('rtlh-dokumen').getPublicUrl(d.path).data.publicUrl;
-    const isImg=d.path.match(/\.(jpg|jpeg|png|webp|gif)$/i);
-    return`<a href="${url}" target="_blank" style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;border:1px solid var(--gray-200);background:#fff;text-decoration:none;color:var(--gray-700);font-size:.68rem;font-weight:600">
-      ${isImg?`<img src="${url}" style="width:24px;height:24px;object-fit:cover;border-radius:4px">`:'<i class="fas fa-file-alt" style="color:var(--blue)"></i>'}
-      ${DOK_LABELS[d.jenis]||d.jenis}${d.keterangan?' · '+d.keterangan:''}
-    </a>`;
-  }).join('')+'</div>';
+  var res=await sb.from('rtlh_dokumen').select('*').eq('rtlh_id',parseInt(rtlhId)).order('created_at',{ascending:false});
+  var data=res.data||[];
+  if(!data.length){el.innerHTML='<span style="color:var(--gray-400)">Belum ada foto tersimpan</span>';return;}
+  var imgs=data.filter(function(d){return d.path.match(/\.(jpg|jpeg|png|webp|gif)$/i);});
+  _lbPhotos=imgs;
+  if(!imgs.length){el.innerHTML='<span style="color:var(--gray-400)">Belum ada foto</span>';return;}
+  var html='<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch">';
+  imgs.forEach(function(d,i){
+    var url=sb.storage.from('rtlh-dokumen').getPublicUrl(d.path).data.publicUrl;
+    html+='<div style="flex-shrink:0;cursor:pointer;position:relative" onclick="openLightboxDok('+i+')">'+
+      '<img src="'+url+'" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:2px solid var(--gray-200)">'+
+      '<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.5);border-radius:0 0 6px 6px;padding:2px 3px;font-size:.5rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+
+        (DOK_LABELS[d.jenis]||d.jenis)+
+      '</div></div>';
+  });
+  html+='</div>';
+  el.innerHTML=html;
 }
 
 async function loadDokFileList(rtlhId){
-  const el=document.getElementById('dokFileList');
+  var el=document.getElementById('dokFileList');
   if(!el)return;
   el.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Memuat...';
-  const{data}=await sb.from('rtlh_dokumen').select('*').eq('rtlh_id',parseInt(rtlhId)).order('created_at',{ascending:false});
-  if(!data||!data.length){el.innerHTML='<span style="color:var(--gray-400)">Belum ada dokumen</span>';return;}
-  el.innerHTML=data.map(d=>{
-    const url=sb.storage.from('rtlh-dokumen').getPublicUrl(d.path).data.publicUrl;
-    const isImg=d.path.match(/\.(jpg|jpeg|png|webp|gif)$/i);
-    return`<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid var(--gray-200);margin-bottom:6px;background:#fff">
-      ${isImg?`<img src="${url}" style="width:36px;height:36px;object-fit:cover;border-radius:6px;cursor:pointer" onclick="window.open('${url}','_blank')">`:'<div style="width:36px;height:36px;border-radius:6px;background:var(--blue-bg);display:flex;align-items:center;justify-content:center;color:var(--blue)"><i class="fas fa-file-alt"></i></div>'}
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:700;font-size:.72rem">${DOK_LABELS[d.jenis]||d.jenis}</div>
-        <div style="font-size:.65rem;color:var(--gray-400)">${d.keterangan||''} · ${new Date(d.created_at).toLocaleDateString('id-ID')}</div>
-      </div>
-      <a href="${url}" target="_blank" style="color:var(--blue);font-size:.7rem;padding:4px 8px;border-radius:6px;background:var(--blue-bg);text-decoration:none"><i class="fas fa-external-link-alt"></i></a>
-      ${isSuperAdmin()?`<button onclick="deleteDok('${d.id}','${d.path}')" style="background:none;border:none;color:var(--gray-300);cursor:pointer;font-size:.7rem;padding:4px" title="Hapus"><i class="fas fa-trash"></i></button>`:''}
-    </div>`;
-  }).join('');
+  var res=await sb.from('rtlh_dokumen').select('*').eq('rtlh_id',parseInt(rtlhId)).order('created_at',{ascending:false});
+  var data=res.data||[];
+  _lbPhotos=data;
+  if(!data.length){el.innerHTML='<div style="color:var(--gray-400);font-size:.72rem;text-align:center;padding:20px">Belum ada foto</div>';return;}
+  var wrap=document.createElement('div');
+  wrap.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px';
+  data.forEach(function(d,i){
+    var url=sb.storage.from('rtlh-dokumen').getPublicUrl(d.path).data.publicUrl;
+    var label=DOK_LABELS[d.jenis]||d.jenis;
+    var isImg=d.path.match(/\.(jpg|jpeg|png|webp|gif)$/i);
+    var card=document.createElement('div');
+    card.style.cssText='position:relative;border-radius:8px;overflow:hidden;border:1.5px solid var(--gray-200);cursor:pointer';
+    card.onclick=function(){openLightboxDok(i);};
+    if(isImg){
+      var img=document.createElement('img');
+      img.src=url;img.style.cssText='width:100%;height:90px;object-fit:cover;display:block';
+      card.appendChild(img);
+    }else{
+      var ph=document.createElement('div');
+      ph.style.cssText='width:100%;height:90px;background:var(--gray-100);display:flex;align-items:center;justify-content:center;color:var(--blue);font-size:1.5rem';
+      ph.innerHTML='<i class="fas fa-file-alt"></i>';
+      card.appendChild(ph);
+    }
+    var info=document.createElement('div');
+    info.style.cssText='padding:4px 6px;background:#fff';
+    info.innerHTML='<div style="font-size:.6rem;font-weight:700;color:var(--gray-500);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+label+'</div>'+
+      '<div style="font-size:.58rem;color:var(--gray-400);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(d.keterangan||'')+'</div>';
+    card.appendChild(info);
+    // Tombol edit keterangan
+    var btnEdit=document.createElement('button');
+    btnEdit.innerHTML='<i class="fas fa-edit"></i>';
+    btnEdit.title='Edit keterangan';
+    btnEdit.style.cssText='position:absolute;top:4px;right:4px;background:rgba(0,0,0,.5);border:none;color:#fff;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:.65rem;display:flex;align-items:center;justify-content:center';
+    btnEdit.onclick=function(e){e.stopPropagation();editDokKet(d.id,d.keterangan||'');};
+    card.appendChild(btnEdit);
+    // Tombol hapus (super admin)
+    if(isSuperAdmin()){
+      var btnDel=document.createElement('button');
+      btnDel.innerHTML='<i class="fas fa-trash"></i>';
+      btnDel.title='Hapus foto';
+      btnDel.style.cssText='position:absolute;top:4px;left:4px;background:rgba(220,38,38,.7);border:none;color:#fff;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:.65rem;display:flex;align-items:center;justify-content:center';
+      btnDel.onclick=function(e){e.stopPropagation();deleteDok(d.id,d.path);};
+      card.appendChild(btnDel);
+    }
+    wrap.appendChild(card);
+  });
+  el.innerHTML='';el.appendChild(wrap);
+}
+
+async function editDokKet(id, curKet){
+  var newKet=prompt('Edit keterangan foto:',curKet);
+  if(newKet===null)return;
+  await sb.from('rtlh_dokumen').update({keterangan:newKet||null}).eq('id',id);
+  toast('Keterangan diperbarui','success');
+  loadDokFileList(_dokRtlhId);
+  loadDokList(_dokRtlhId);
+}
+
+function openLightboxDok(idx){
+  if(!_lbPhotos.length)return;
+  _lbIdx=idx;
+  var d=_lbPhotos[idx];
+  if(!d)return;
+  var url=sb.storage.from('rtlh-dokumen').getPublicUrl(d.path).data.publicUrl;
+  document.getElementById('lbImg').src=url;
+  document.getElementById('lbCaption').textContent=(DOK_LABELS[d.jenis]||d.jenis)+(d.keterangan?' · '+d.keterangan:'');
+  document.getElementById('lbCounter').textContent=(idx+1)+' / '+_lbPhotos.length;
+  var prev=document.getElementById('lbPrev');
+  var next=document.getElementById('lbNext');
+  if(prev)prev.style.display=idx>0?'flex':'none';
+  if(next)next.style.display=idx<_lbPhotos.length-1?'flex':'none';
+  var lb=document.getElementById('fotoLightbox');
+  lb.style.display='flex';
+  document.body.style.overflow='hidden';
+  document.onkeydown=function(e){
+    if(e.key==='ArrowLeft')moveLightbox(-1);
+    else if(e.key==='ArrowRight')moveLightbox(1);
+    else if(e.key==='Escape')closeLightbox();
+  };
+}
+
+function moveLightbox(dir){
+  var n=_lbIdx+dir;
+  if(n>=0&&n<_lbPhotos.length)openLightboxDok(n);
+}
+
+function closeLightbox(){
+  var lb=document.getElementById('fotoLightbox');
+  if(lb)lb.style.display='none';
+  document.body.style.overflow='';
+  document.onkeydown=null;
 }
 
 async function uploadDokumen(){
