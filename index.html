@@ -531,9 +531,9 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
     <div class="section" style="margin-bottom:0;padding-bottom:6px;padding-top:12px">
       <div id="gsStatGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
         <div class="mini-stat" onclick="navWithFilter('')" title="Lihat semua data"><div class="ms-icon" style="background:linear-gradient(135deg,var(--blue),var(--blue-light))"><i class="fas fa-database"></i></div><div class="ms-texts"><div class="ms-val" id="gs-total">-</div><div class="ms-label">Total Data</div></div></div>
-        <div class="mini-stat" onclick="navWithFilter('Layak Huni')" title="Lihat semua Layak Huni"><div class="ms-icon" style="background:linear-gradient(135deg,#16A34A,#22C55E)"><i class="fas fa-home"></i></div><div class="ms-texts"><div class="ms-val" id="gs-layak">-</div><div class="ms-label">Layak Huni</div></div></div>
         <div class="mini-stat" onclick="navWithFilter('RTLH')" title="Lihat semua RTLH"><div class="ms-icon" style="background:linear-gradient(135deg,var(--danger),#F87171)"><i class="fas fa-house-damage"></i></div><div class="ms-texts"><div class="ms-val" id="gs-belum">-</div><div class="ms-label">RTLH</div></div></div>
-        <div class="mini-stat" onclick="navWithFilter('_lain')" title="Lihat Keterangan Lain"><div class="ms-icon" style="background:linear-gradient(135deg,#7C3AED,#A78BFA)"><i class="fas fa-question-circle"></i></div><div class="ms-texts"><div class="ms-val" id="gs-lain">-</div><div class="ms-label">Ket. Lain</div></div></div>
+        <div class="mini-stat" onclick="navWithFilter('Layak Huni')" title="Lihat semua Layak Huni"><div class="ms-icon" style="background:linear-gradient(135deg,#16A34A,#22C55E)"><i class="fas fa-home"></i></div><div class="ms-texts"><div class="ms-val" id="gs-layak">-</div><div class="ms-label">Layak Huni</div></div></div>
+        <div class="mini-stat" onclick="navWithFilter('Keterangan Lain')" title="Lihat Keterangan Lain"><div class="ms-icon" style="background:linear-gradient(135deg,#7C3AED,#A78BFA)"><i class="fas fa-question-circle"></i></div><div class="ms-texts"><div class="ms-val" id="gs-lain">-</div><div class="ms-label">Ket. Lain</div></div></div>
       </div>
     </div>
 
@@ -720,7 +720,10 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 <!-- DETAIL PANEL (floating card di atas peta) -->
 <div class="detail-panel" id="detailPanel">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px 0">
-    <div id="dpTitle" style="font-size:.9rem;font-weight:800;color:var(--navy)"></div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button id="dpBackBtn" onclick="goBackFromDetail()" style="display:none;background:none;border:1px solid var(--gray-200);border-radius:8px;cursor:pointer;color:var(--gray-600);font-size:.72rem;font-weight:700;padding:4px 10px;font-family:inherit;align-items:center;gap:5px"><i class="fas fa-arrow-left"></i> Kembali</button>
+      <div id="dpTitle" style="font-size:.9rem;font-weight:800;color:var(--navy)"></div>
+    </div>
     <button onclick="closeDetail()" style="background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:1rem"><i class="fas fa-times"></i></button>
   </div>
   <div id="dpBody" style="padding:10px 14px"></div>
@@ -1171,7 +1174,8 @@ function restoreSession(){
 // ══════════════════════════════════════════════════
 // NAVIGATION
 // ══════════════════════════════════════════════════
-function nav(pg){
+let _currentPage='beranda';
+function nav(pg){_currentPage=pg;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.mob-nav-btn').forEach(t=>t.classList.remove('active'));
@@ -1398,12 +1402,12 @@ async function loadGlobalStats(){
     const layak=data.filter(r=>r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses').length;
     const belum=data.filter(r=>r.status_rtlh==='RTLH'||r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
     const batal=data.filter(r=>r.status_rtlh==='SK Dibatalkan').length;
-    const lain=Math.max(0,total-layak-belum-batal);
+    const lain=data.filter(r=>r.status_rtlh==='Keterangan Lain').length;
     const sudah=layak; const proses=0;
 
     document.getElementById('gs-total').textContent=total.toLocaleString('id');
-    document.getElementById('gs-layak').textContent=layak.toLocaleString('id');
     document.getElementById('gs-belum').textContent=belum.toLocaleString('id');
+    document.getElementById('gs-layak').textContent=layak.toLocaleString('id');
     const elLain=document.getElementById('gs-lain');
     if(elLain)elLain.textContent=lain.toLocaleString('id');
 
@@ -1886,7 +1890,7 @@ async function searchNIK(){
         const isBatal=r.status_batal&&r.status_batal!=='-';
         const statusColor=isLayak?'var(--success)':isBatal?'var(--gray-400)':'var(--danger)';
         const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
-        return`<div onclick="bukaDetailDariSearch('${r.id}','${kecKey}')"
+        return`<div onclick="bukaDetailDariSearch('${r.id}','${kecKey}','beranda')"
           style="padding:12px 14px;border-bottom:1px solid var(--gray-100);cursor:pointer;display:flex;align-items:center;gap:12px;transition:background .15s;active:background:var(--gray-50)"
           onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
           <div style="width:36px;height:36px;border-radius:50%;background:${statusColor}20;display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -1906,8 +1910,9 @@ async function searchNIK(){
   `).join('');
 }
 
-async function bukaDetailDariSearch(id, kecKey){
+async function bukaDetailDariSearch(id, kecKey, fromPage=''){
   if(!kecKey)return toast('Kecamatan tidak ditemukan','error');
+  _prevPageBeforeDetail=fromPage||_currentPage||'';
   // Fetch data lengkap langsung dari Supabase — tidak perlu tunggu loadKec
   const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,backlog,desil,nik,no_kk,updated_at,keterangan';
   const{data,error}=await sb.from('rtlh').select(cols).eq('id',parseInt(id)).single();
@@ -1973,7 +1978,7 @@ async function applyGlobalFilter(){
     document.getElementById('keclistResultWrap').style.display='none';
     return;
   }
-  const isLain=_globalStatusFilter==='_lain';
+  const isLain=_globalStatusFilter==='_lain'||_globalStatusFilter==='Keterangan Lain';
   const wrap=document.getElementById('keclistResultWrap');
   const cnt=document.getElementById('keclistResultCount');
   const res=document.getElementById('keclistResult');
@@ -1985,15 +1990,13 @@ async function applyGlobalFilter(){
   let data=[];
   if(isLain){
     const {count:totalCnt}=await sb.from('rtlh').select('*',{count:'exact',head:true})
-      .not('status_rtlh','in','(RTLH,Layak Huni,SK Dibatalkan,Belum Ditangani,Sudah Ditangani,Dalam Proses)')
-      .not('status_rtlh','is',null);
+      .eq('status_rtlh','Keterangan Lain');
     const pages=Math.ceil((totalCnt||0)/1000);
     cnt.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memuat ${totalCnt||0} data...`;
     if(!pages){res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:.78rem">Tidak ada data Keterangan Lain</div>';return;}
     const results=await Promise.all(Array.from({length:pages},(_,p)=>
       sb.from('rtlh').select('id,kec,desa,kep_kk,nik,status_rtlh,status_batal,desil')
-        .not('status_rtlh','in','(RTLH,Layak Huni,SK Dibatalkan,Belum Ditangani,Sudah Ditangani,Dalam Proses)')
-        .not('status_rtlh','is',null)
+        .eq('status_rtlh','Keterangan Lain')
         .order('kec').order('desa').range(p*1000,(p+1)*1000-1).limit(1000)
     ));
     data=results.flatMap(r=>r.data||[]);
@@ -2030,7 +2033,7 @@ async function applyGlobalFilter(){
       ${g.items.map(r=>{
         const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
         const hasBatal=r.status_batal&&r.status_batal!=='-';
-        return`<div onclick="clearKeclistSearch();_globalStatusFilter='';bukaDetailDariSearch('${r.id}','${kecKey}')"
+        return`<div onclick="clearKeclistSearch();_globalStatusFilter='';bukaDetailDariSearch('${r.id}','${kecKey}','keclist')"
           style="padding:10px 12px;border-bottom:1px solid var(--gray-100);cursor:pointer;display:flex;align-items:center;gap:10px"
           onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
           <div style="width:32px;height:32px;border-radius:50%;background:${sc}18;display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -2108,7 +2111,7 @@ async function searchKeclist(){
         const isLayak=r.status_rtlh==='Layak Huni';
         const sc=isLayak?'var(--success)':'var(--danger)';
         const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
-        return`<div onclick="clearKeclistSearch();bukaDetailDariSearch('${r.id}','${kecKey}')"
+        return`<div onclick="clearKeclistSearch();bukaDetailDariSearch('${r.id}','${kecKey}','keclist')"
           style="padding:10px 12px;border-bottom:1px solid var(--gray-100);cursor:pointer;display:flex;align-items:center;gap:10px"
           onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
           <div style="width:32px;height:32px;border-radius:50%;background:${sc}18;display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -2282,6 +2285,7 @@ function renderSidebar(){
       <button class="filter-chip" data-status-chip="RTLH" onclick="setFilterStatus('RTLH')" style="border-color:#DC2626;color:#DC2626">RTLH</button>
       <button class="filter-chip" data-status-chip="Layak Huni" onclick="setFilterStatus('Layak Huni')" style="border-color:#16A34A;color:#16A34A">Layak Huni</button>
       <button class="filter-chip" data-status-chip="Batal" onclick="setFilterStatus('Batal')" style="border-color:#9CA3AF;color:#6B7280"><i class="fas fa-ban" style="font-size:.6rem"></i> Ada SK Batal</button>
+      <button class="filter-chip" data-status-chip="Keterangan Lain" onclick="setFilterStatus('Keterangan Lain')" style="border-color:#7C3AED;color:#7C3AED">Ket. Lain</button>
       <span style="font-size:.68rem;font-weight:700;color:var(--gray-500);margin-left:6px">Desil:</span>
       <button class="filter-chip active" data-desil-chip="all" onclick="setFilterDesil('all')">Semua</button>
       <button class="filter-chip" data-desil-chip="1" onclick="setFilterDesil('1')" style="color:#BE123C">D1</button>
@@ -2452,7 +2456,7 @@ function renderSidebarList(){
         ${items.map((r,i)=>{
           const desilNum=String(r.desil||'').match(/\d+/)?.[0]||'';
           const color=desilNum?getDesilColor(desilNum):'#94A3B8';
-          const statusCls=r.status_rtlh==='Layak Huni'?'sudah':'belum';
+          const statusCls=r.status_rtlh==='Layak Huni'?'sudah':r.status_rtlh==='Keterangan Lain'?'batal':'belum';
           const hasBatal=r.status_batal&&r.status_batal!=='-';
           return`<div class="rtlh-item" id="ri_${r.id}" onclick="selectItem(${r.id})">
             <div style="display:flex;align-items:center;gap:8px">
@@ -2601,7 +2605,7 @@ function showDetail(r){
     </div>
     <div style="margin-top:14px" id="dpVerifSection">
       <div style="font-size:.72rem;font-weight:800;color:var(--gray-600);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px;justify-content:space-between">
-        <span><i class="fas fa-clipboard-check" style="color:#10B981"></i> Riwayat Verifikasi Lapangan</span>
+        <span><i class="fas fa-clipboard-check" style="color:#10B981"></i> Keterangan Verifikasi Lapangan</span>
         ${canEdit()?`<button onclick="openVerifModal('${r.id}')" style="font-size:.65rem;padding:3px 10px;border-radius:6px;background:#10B981;color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:700"><i class="fas fa-plus"></i> Tambah</button>`:''}
       </div>
       <div id="dpVerifList" style="font-size:.72rem;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
@@ -2664,6 +2668,9 @@ function showDetail(r){
     dpActionsEl.parentNode.appendChild(uploadArea);
   }
   p.classList.add('open');
+  // Tampilkan tombol Kembali jika ada halaman sebelumnya
+  const dpBackBtn=document.getElementById('dpBackBtn');
+  if(dpBackBtn)dpBackBtn.style.display=_prevPageBeforeDetail?'flex':'none';
   // Simpan ke session supaya tidak hilang saat refresh
   saveDetailSession(r);
   // Load riwayat verifikasi & dokumen
@@ -2674,6 +2681,18 @@ function showDetail(r){
 }
 
 function closeDetail(){document.getElementById('detailPanel').classList.remove('open');clearDetailSession();}
+
+// Kembali ke halaman sebelum detail dibuka
+let _prevPageBeforeDetail='';
+let _prevKecBeforeDetail='';
+function goBackFromDetail(){
+  closeDetail();
+  if(_prevPageBeforeDetail==='beranda'){nav('beranda');}
+  else if(_prevPageBeforeDetail==='keclist'){nav('keclist');}
+  else{// tetap di webgis, cukup tutup panel
+  }
+  _prevPageBeforeDetail='';
+}
 
 // ── NIK / KK MODAL (Super Admin only) ──
 let nikEditId=null;
@@ -2741,7 +2760,7 @@ const FIELDS=[
   {key:'kondisi_at',label:'Kondisi Atap',type:'text'},
   {key:'material_l',label:'Material Lantai',type:'text'},
   {key:'kondisi_la',label:'Kondisi Lantai',type:'text'},
-  {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['RTLH','Layak Huni']},
+  {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['RTLH','Layak Huni','Keterangan Lain']},
   {key:'status_batal',label:'Alasan SK Dibatalkan',type:'select',opts:['','-','Meninggal Dunia','Tidak Bersedia Dibantu','Tidak Ada Biaya','Pindah Tempat Tinggal','Sudah Mampu Mandiri','Tidak Memenuhi Syarat','Lainnya'],onChange:'handleAlasanBatal(this)'},
 
   {key:'jenis_bantuan',label:'Jenis Bantuan',type:'select',opts:['','RTLH','BSPS','DD','CSR','Lainnya']},
