@@ -1384,6 +1384,14 @@ function restoreSession(){
   const kec=sessionStorage.getItem('ertlh_kec');
   const detailStr=sessionStorage.getItem('ertlh_detail');
   if(kec)currentKec=kec;
+
+  // Set initial hash state agar ada baseline di history
+  // Ini berarti Back pertama tidak langsung keluar
+  const startHash=window.location.hash;
+  if(!startHash||startHash==='#'){
+    history.replaceState({page:'beranda'},document.title,'#beranda');
+  }
+
   if(pg==='pgWebgis'&&kec){
     document.getElementById('wgSearchBar').style.display='block';
     nav('webgis');
@@ -1408,9 +1416,24 @@ function restoreSession(){
 }
 
 // ══════════════════════════════════════════════════
-// NAVIGATION
+// NAVIGATION + BROWSER HISTORY
 // ══════════════════════════════════════════════════
 let _currentPage='beranda';
+let _navFromPop=false; // flag agar popstate tidak push history lagi
+
+// Map page name → hash
+const PAGE_HASH={beranda:'#beranda',keclist:'#webgis',webgis:'#webgis',excel:'#excel'};
+const HASH_PAGE={'#beranda':'beranda','#webgis':'keclist','#excel':'excel'};
+
+// Tangkap tombol Back/Forward browser
+window.addEventListener('popstate',e=>{
+  const hash=window.location.hash||'#beranda';
+  const pg=HASH_PAGE[hash]||'beranda';
+  _navFromPop=true;
+  nav(pg);
+  _navFromPop=false;
+});
+
 function nav(pg){_currentPage=pg;
   document.querySelectorAll('.page').forEach(p=>{
     p.classList.remove('active');
@@ -1450,6 +1473,15 @@ function nav(pg){_currentPage=pg;
     setTimeout(()=>initExcel(),50);
   }
   saveSession();
+
+  // Push ke browser history agar tombol Back berfungsi
+  if(!_navFromPop){
+    const hash=PAGE_HASH[pg]||'#beranda';
+    const curHash=window.location.hash||'#beranda';
+    if(hash!==curHash){
+      history.pushState({page:pg},document.title,hash);
+    }
+  }
 }
 
 // ══════════════════════════════════════════════════
