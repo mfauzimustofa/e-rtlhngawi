@@ -5083,7 +5083,11 @@ async function initExcel(){
   wrap.addEventListener('click',e=>{
     const td=e.target.closest('td[data-id][data-k]');
     if(!td)return;
-    xEdit(td, td.dataset.id, td.dataset.k);
+    // Jangan propagate ke document listener (context menu close)
+    e.stopPropagation();
+    const rowId=td.dataset.id;
+    const colK=td.dataset.k;
+    xEdit(td, rowId, colK);
   });
 
   // Context menu
@@ -5345,8 +5349,9 @@ function xEdit(td,id,k){
   if(col.sen&&!isSuperAdmin()){toast('Hanya Super Admin yang bisa edit NIK/KK','error');return;}
 
   if(xEd){
-    if(xEd.id===sid&&xEd.k===k)return;
-    _xCommit(true);
+    if(xEd.id===sid&&xEd.k===k)return; // klik sel yang sama, skip
+    _xCommit(true); // commit sel lama diam-diam
+    // xEd sekarang null setelah commit
   }
 
   document.querySelectorAll('#xBody tr.xrow-selected').forEach(r=>r.classList.remove('xrow-selected'));
@@ -5382,7 +5387,13 @@ function xEdit(td,id,k){
     if(e.key==='Enter'){e.preventDefault();_xCommit(false);xNavCell(1,'v');return;}
     if(e.key==='Tab'){e.preventDefault();_xCommit(false);xNavCell(e.shiftKey?-1:1,'h');return;}
   });
-  inp.addEventListener('blur',()=>setTimeout(()=>{if(xEd&&xEd.id===sid&&xEd.k===k)_xCommit(false);},150));
+  // Blur hanya commit jika tidak ada sel lain yang langsung diklik
+  // (klik sel lain akan commit via xEdit > _xCommit(true) lebih dulu)
+  inp.addEventListener('blur',()=>{
+    requestAnimationFrame(()=>{
+      if(xEd&&xEd.id===sid&&xEd.k===k)_xCommit(false);
+    });
+  });
 
   liveTd.appendChild(inp);
   inp.focus();
