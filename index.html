@@ -4950,21 +4950,27 @@ async function initExcel(){
 /* ── Load semua data dari Supabase ── */
 async function xLoad(){
   const info=document.getElementById('xInfo');
-  info.textContent='⏳ Memuat...';
+  if(info)info.textContent='⏳ Memuat...';
   xDirty={}; xUpdDirty();
   try{
+    console.log('[Excel] xLoad start, sb=',!!sb);
     const cols=XC.filter(c=>c.k!=='_no').map(c=>c.k).join(',');
     const {count}=await sb.from('rtlh').select('*',{count:'exact',head:true});
+    console.log('[Excel] count=',count);
     const pages=Math.ceil((count||0)/1000);
     const res=await Promise.all(Array.from({length:pages},(_,p)=>
       sb.from('rtlh').select(cols).order('kec').order('desa').order('kep_kk')
         .range(p*1000,(p+1)*1000-1)
     ));
     xAll=res.flatMap(r=>r.data||[]);
+    console.log('[Excel] xAll loaded:', xAll.length);
     xUpdDesa();
     xFilter();
     toast(xAll.length.toLocaleString('id')+' data dimuat','info');
-  }catch(e){ toast('Gagal muat: '+e.message,'error'); }
+  }catch(e){ 
+    console.error('[Excel] xLoad ERROR:', e);
+    toast('Gagal muat: '+e.message,'error'); 
+  }
 }
 
 /* ── Filter & sort ── */
@@ -5036,6 +5042,7 @@ function xRender(){xPage=0;xRenderHead();xRenderBody();_xUpdSB();}
 
 function xRenderHead(){
   const thead=document.getElementById('xHead');
+  console.log('[Excel] xRenderHead, thead=',!!thead);
   if(!thead)return;
   const vis=xVisCols();
   let h='<tr>';
@@ -5065,6 +5072,7 @@ let xPage=0;
 function xRenderBody(){
   const vis=xVisCols();
   const tbody=document.getElementById('xBody');
+  console.log('[Excel] xRenderBody, tbody=',!!tbody, 'xRows=',xRows.length, 'vis cols=',vis.length);
   if(!tbody){console.error('[Excel] tbody#xBody not found');return;}
 
   if(!xRows.length){
