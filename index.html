@@ -387,6 +387,8 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 @media(max-width:480px){
   #gsStatGrid{grid-template-columns:repeat(2,1fr)!important}
 }
+/* Loading skeleton */
+.skeleton{background:linear-gradient(90deg,var(--gray-100) 25%,var(--gray-200) 50%,var(--gray-100) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
 
@@ -531,7 +533,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
         <div class="mini-stat" onclick="navWithFilter('')" title="Lihat semua data"><div class="ms-icon" style="background:linear-gradient(135deg,var(--blue),var(--blue-light))"><i class="fas fa-database"></i></div><div class="ms-texts"><div class="ms-val" id="gs-total">-</div><div class="ms-label">Total Data</div></div></div>
         <div class="mini-stat" onclick="navWithFilter('Layak Huni')" title="Lihat semua Layak Huni"><div class="ms-icon" style="background:linear-gradient(135deg,#16A34A,#22C55E)"><i class="fas fa-home"></i></div><div class="ms-texts"><div class="ms-val" id="gs-layak">-</div><div class="ms-label">Layak Huni</div></div></div>
         <div class="mini-stat" onclick="navWithFilter('RTLH')" title="Lihat semua RTLH"><div class="ms-icon" style="background:linear-gradient(135deg,var(--danger),#F87171)"><i class="fas fa-house-damage"></i></div><div class="ms-texts"><div class="ms-val" id="gs-belum">-</div><div class="ms-label">RTLH</div></div></div>
-        <div class="mini-stat" onclick="navWithFilter('_lain')" title="Lihat data Keterangan Lain"><div class="ms-icon" style="background:linear-gradient(135deg,#7C3AED,#A78BFA)"><i class="fas fa-question-circle"></i></div><div class="ms-texts"><div class="ms-val" id="gs-lain">-</div><div class="ms-label">Ket. Lain</div></div></div>
+        <div class="mini-stat" onclick="navWithFilter('_lain')" title="Lihat Keterangan Lain"><div class="ms-icon" style="background:linear-gradient(135deg,#7C3AED,#A78BFA)"><i class="fas fa-question-circle"></i></div><div class="ms-texts"><div class="ms-val" id="gs-lain">-</div><div class="ms-label">Ket. Lain</div></div></div>
       </div>
     </div>
 
@@ -562,7 +564,6 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
             <option value="">Semua Status</option>
             <option value="RTLH">RTLH</option>
             <option value="Layak Huni">Layak Huni</option>
-            <option value="SK Dibatalkan">SK Dibatalkan</option>
           </select>
           <button onclick="clearSearch()" style="background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:.78rem;padding:4px"><i class="fas fa-times"></i></button>
         </div>
@@ -772,7 +773,6 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
             <option value="">Semua Status</option>
             <option value="RTLH">RTLH</option>
             <option value="Layak Huni">Layak Huni</option>
-            <option value="SK Dibatalkan">SK Dibatalkan</option>
           </select>
         </div>
         <div class="form-group" style="margin:0">
@@ -1398,14 +1398,14 @@ async function loadGlobalStats(){
     const layak=data.filter(r=>r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses').length;
     const belum=data.filter(r=>r.status_rtlh==='RTLH'||r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
     const batal=data.filter(r=>r.status_rtlh==='SK Dibatalkan').length;
+    const lain=Math.max(0,total-layak-belum-batal);
     const sudah=layak; const proses=0;
 
-    const lain=total-layak-belum-batal;
     document.getElementById('gs-total').textContent=total.toLocaleString('id');
     document.getElementById('gs-layak').textContent=layak.toLocaleString('id');
     document.getElementById('gs-belum').textContent=belum.toLocaleString('id');
     const elLain=document.getElementById('gs-lain');
-    if(elLain)elLain.textContent=(lain>0?lain:0).toLocaleString('id');
+    if(elLain)elLain.textContent=lain.toLocaleString('id');
 
     const playak=pct(layak,total),pb=pct(belum,total);
     document.getElementById('pbSudah').style.width=playak+'%';
@@ -1420,7 +1420,7 @@ async function loadGlobalStats(){
       if(!kecCounts[k])kecCounts[k]={total:0,sudah:0,proses:0,belum:0};
       kecCounts[k].total++;
       if(r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')kecCounts[k].sudah++;
-      else if(r.status_rtlh!=='SK Dibatalkan')kecCounts[k].belum++;
+      else kecCounts[k].belum++;
     });
 
     // Desil counts
@@ -1754,12 +1754,12 @@ function renderChartStatus(data){
   const existing=Chart.getChart(ctx);if(existing)existing.destroy();
   const layak=data.filter(r=>r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses').length;
   const belum=data.filter(r=>r.status_rtlh==='RTLH'||r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
-  const batal=data.filter(r=>r.status_rtlh==='SK Dibatalkan').length;
+  const batal=data.filter(r=>r.status_batal&&r.status_batal!=='-').length;
   const tot=layak+belum+batal;
   chartStatus=new Chart(ctx,{
     type:'doughnut',
     data:{
-      labels:['Layak Huni','RTLH','SK Dibatalkan'],
+      labels:['Layak Huni','RTLH','Ada SK Batal'],
       datasets:[{data:[layak,belum,batal],backgroundColor:['#16A34A','#DC2626','#94A3B8'],borderWidth:3,borderColor:'#fff',hoverOffset:8}]
     },
     options:{
@@ -1883,7 +1883,7 @@ async function searchNIK(){
       </div>
       ${group.items.map(r=>{
         const isLayak=r.status_rtlh==='Layak Huni';
-        const isBatal=r.status_rtlh==='SK Dibatalkan';
+        const isBatal=r.status_batal&&r.status_batal!=='-';
         const statusColor=isLayak?'var(--success)':isBatal?'var(--gray-400)':'var(--danger)';
         const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
         return`<div onclick="bukaDetailDariSearch('${r.id}','${kecKey}')"
@@ -1950,7 +1950,7 @@ async function ensureKecCounts(force=false){
       if(!kecCounts[k])kecCounts[k]={total:0,sudah:0,proses:0,belum:0};
       kecCounts[k].total++;
       if(r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')kecCounts[k].sudah++;
-      else if(r.status_rtlh!=='SK Dibatalkan')kecCounts[k].belum++;
+      else kecCounts[k].belum++;
     });
   }catch(e){console.error(e);}
 }
@@ -1969,116 +1969,81 @@ async function navWithFilter(status){
 
 async function applyGlobalFilter(){
   if(!_globalStatusFilter){
-    // Semua data — hapus filter
     document.getElementById('keclistResult').innerHTML='';
     document.getElementById('keclistResultWrap').style.display='none';
     return;
   }
   const isLain=_globalStatusFilter==='_lain';
-  // Tampilkan result wrap dengan filter status
   const wrap=document.getElementById('keclistResultWrap');
   const cnt=document.getElementById('keclistResultCount');
   const res=document.getElementById('keclistResult');
   wrap.style.display='block';
-  const badgeColor=_globalStatusFilter==='Layak Huni'?{bg:'#F0FDF4',fg:'#16A34A'}:_globalStatusFilter==='RTLH'?{bg:'#FEF2F2',fg:'#DC2626'}:{bg:'#F3E8FF',fg:'#7C3AED'};
-  cnt.innerHTML=`<span style="background:${badgeColor.bg};color:${badgeColor.fg};padding:2px 10px;border-radius:99px;font-weight:700;font-size:.72rem">${isLain?'Keterangan Lain':_globalStatusFilter}</span>`;
+  const badgeStyle=isLain?'background:#F3E8FF;color:#7C3AED':_globalStatusFilter==='Layak Huni'?'background:#F0FDF4;color:#16A34A':'background:#FEF2F2;color:#DC2626';
+  const badgeLabel=isLain?'Keterangan Lain':_globalStatusFilter;
+  cnt.innerHTML=`<span style="${badgeStyle};padding:2px 10px;border-radius:99px;font-weight:700;font-size:.72rem">${badgeLabel}</span>`;
   res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>';
-  // Fetch data berdasarkan status
-  let queryBuilder;
+  let data=[];
   if(isLain){
-    // Data yang bukan Layak Huni, bukan RTLH, bukan SK Dibatalkan, bukan kosong
-    const{count:totalCnt}=await sb.from('rtlh').select('*',{count:'exact',head:true})
+    const {count:totalCnt}=await sb.from('rtlh').select('*',{count:'exact',head:true})
       .not('status_rtlh','in','(RTLH,Layak Huni,SK Dibatalkan,Belum Ditangani,Sudah Ditangani,Dalam Proses)')
       .not('status_rtlh','is',null);
     const pages=Math.ceil((totalCnt||0)/1000);
     cnt.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memuat ${totalCnt||0} data...`;
-    const results=await Promise.all(Array.from({length:Math.max(pages,1)},(_,p)=>
-      sb.from('rtlh').select('id,kec,desa,kep_kk,nik,status_rtlh,desil')
+    if(!pages){res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:.78rem">Tidak ada data Keterangan Lain</div>';return;}
+    const results=await Promise.all(Array.from({length:pages},(_,p)=>
+      sb.from('rtlh').select('id,kec,desa,kep_kk,nik,status_rtlh,status_batal,desil')
         .not('status_rtlh','in','(RTLH,Layak Huni,SK Dibatalkan,Belum Ditangani,Sudah Ditangani,Dalam Proses)')
         .not('status_rtlh','is',null)
         .order('kec').order('desa').range(p*1000,(p+1)*1000-1).limit(1000)
     ));
-    const data=results.flatMap(r=>r.data||[]);
-    if(!data.length){res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:.78rem">Tidak ada data Keterangan Lain</div>';return;}
-    cnt.innerHTML=`<span style="font-weight:700">${data.length}</span> data Keterangan Lain`;
-    const byDesa={};
-    data.forEach(r=>{
-      const key=((r.desa||'-')+'|'+(r.kec||'-')).toUpperCase();
-      if(!byDesa[key])byDesa[key]={desa:normCase(r.desa)||'-',kec:normCase(r.kec)||'-',items:[]};
-      byDesa[key].items.push(r);
-    });
-    const sc='var(--purple,#7C3AED)';
-    res.innerHTML=Object.values(byDesa).map(g=>`
-      <div style="border-bottom:2px solid var(--blue-bg)">
-        <div style="padding:7px 12px;background:var(--blue-bg);display:flex;align-items:center;gap:6px">
-          <i class="fas fa-map-marker-alt" style="color:var(--blue);font-size:.72rem"></i>
-          <span style="font-size:.72rem;font-weight:800;color:var(--blue)">${g.desa}</span>
-          <span style="font-size:.65rem;color:var(--gray-500)">· ${g.kec}</span>
-          <span style="margin-left:auto;font-size:.62rem;background:var(--blue);color:#fff;border-radius:99px;padding:1px 7px">${g.items.length}</span>
-        </div>
-        ${g.items.map(r=>{
-          const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
-          return`<div onclick="clearKeclistSearch();_globalStatusFilter='';bukaDetailDariSearch('${r.id}','${kecKey}')"
-            style="padding:10px 12px;border-bottom:1px solid var(--gray-100);cursor:pointer;display:flex;align-items:center;gap:10px"
-            onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
-            <div style="flex:1;min-width:0">
-              <div style="font-size:.8rem;font-weight:700;color:var(--gray-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.kep_kk||'-'}</div>
-              <div style="font-size:.65rem;color:var(--gray-500)">${r.nik||'-'}</div>
-            </div>
-            <span style="font-size:.62rem;font-weight:700;background:#F3E8FF;color:#7C3AED;border-radius:99px;padding:2px 8px;flex-shrink:0">${r.status_rtlh||'-'}</span>
-          </div>`;
-        }).join('')}
-      </div>`).join('');
-    return;
+    data=results.flatMap(r=>r.data||[]);
+  } else {
+    const{count:totalCnt}=await sb.from('rtlh').select('*',{count:'exact',head:true}).eq('status_rtlh',_globalStatusFilter);
+    const pages=Math.ceil((totalCnt||0)/1000);
+    cnt.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memuat ${totalCnt} data...`;
+    const results=await Promise.all(Array.from({length:pages},(_,p)=>
+      sb.from('rtlh').select('id,kec,desa,kep_kk,nik,status_rtlh,status_batal,desil')
+        .eq('status_rtlh',_globalStatusFilter).order('kec').order('desa')
+        .range(p*1000,(p+1)*1000-1).limit(1000)
+    ));
+    data=results.flatMap(r=>r.data||[]);
   }
-  // Filter status normal (Layak Huni / RTLH / dll)
-  const{count:totalCnt}=await sb.from('rtlh').select('*',{count:'exact',head:true}).eq('status_rtlh',_globalStatusFilter);
-  const pages=Math.ceil((totalCnt||0)/1000);
-  cnt.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memuat ${totalCnt} data...`;
-  const results=await Promise.all(Array.from({length:pages},(_,p)=>
-    sb.from('rtlh').select('id,kec,desa,kep_kk,nik,status_rtlh,desil')
-      .eq('status_rtlh',_globalStatusFilter).order('kec').order('desa')
-      .range(p*1000,(p+1)*1000-1).limit(1000)
-  ));
-  const data=results.flatMap(r=>r.data||[]);
-  const error=results.find(r=>r.error)?.error;
-  if(error||!data?.length){
-        res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:.78rem">Tidak ada data</div>';
-        return;
-      }
-      cnt.innerHTML=`<span style="font-weight:700">${data.length}</span> data ${_globalStatusFilter}`;
-      const byDesa={};
-      data.forEach(r=>{
-        const key=((r.desa||'-')+'|'+(r.kec||'-')).toUpperCase();
-        if(!byDesa[key])byDesa[key]={desa:normCase(r.desa)||'-',kec:normCase(r.kec)||'-',items:[]};
-        byDesa[key].items.push(r);
-      });
-      const isLayakFilter=_globalStatusFilter==='Layak Huni';
-      const sc=isLayakFilter?'var(--success)':'var(--danger)';
-      res.innerHTML=Object.values(byDesa).map(g=>`
-        <div style="border-bottom:2px solid var(--blue-bg)">
-          <div style="padding:7px 12px;background:var(--blue-bg);display:flex;align-items:center;gap:6px">
-            <i class="fas fa-map-marker-alt" style="color:var(--blue);font-size:.72rem"></i>
-            <span style="font-size:.72rem;font-weight:800;color:var(--blue)">${g.desa}</span>
-            <span style="font-size:.65rem;color:var(--gray-500)">· ${g.kec}</span>
-            <span style="margin-left:auto;font-size:.62rem;background:var(--blue);color:#fff;border-radius:99px;padding:1px 7px">${g.items.length}</span>
+  if(!data.length){res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:.78rem">Tidak ada data</div>';return;}
+  cnt.innerHTML=`<span style="font-weight:700">${data.length}</span> data ${badgeLabel}`;
+  const byDesa={};
+  data.forEach(r=>{
+    const key=((r.desa||'-')+'|'+(r.kec||'-')).toUpperCase();
+    if(!byDesa[key])byDesa[key]={desa:normCase(r.desa)||'-',kec:normCase(r.kec)||'-',items:[]};
+    byDesa[key].items.push(r);
+  });
+  const isLayakFilter=_globalStatusFilter==='Layak Huni';
+  const sc=isLain?'#7C3AED':isLayakFilter?'var(--success)':'var(--danger)';
+  const icon=isLain?'question-circle':isLayakFilter?'home':'house-damage';
+  res.innerHTML=Object.values(byDesa).map(g=>`
+    <div style="border-bottom:2px solid var(--blue-bg)">
+      <div style="padding:7px 12px;background:var(--blue-bg);display:flex;align-items:center;gap:6px">
+        <i class="fas fa-map-marker-alt" style="color:var(--blue);font-size:.72rem"></i>
+        <span style="font-size:.72rem;font-weight:800;color:var(--blue)">${g.desa}</span>
+        <span style="font-size:.65rem;color:var(--gray-500)">· ${g.kec}</span>
+        <span style="margin-left:auto;font-size:.62rem;background:var(--blue);color:#fff;border-radius:99px;padding:1px 7px">${g.items.length}</span>
+      </div>
+      ${g.items.map(r=>{
+        const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
+        const hasBatal=r.status_batal&&r.status_batal!=='-';
+        return`<div onclick="clearKeclistSearch();_globalStatusFilter='';bukaDetailDariSearch('${r.id}','${kecKey}')"
+          style="padding:10px 12px;border-bottom:1px solid var(--gray-100);cursor:pointer;display:flex;align-items:center;gap:10px"
+          onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
+          <div style="width:32px;height:32px;border-radius:50%;background:${sc}18;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <i class="fas fa-${icon}" style="color:${sc};font-size:.78rem"></i>
           </div>
-          ${g.items.map(r=>{
-            const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
-            return`<div onclick="clearKeclistSearch();_globalStatusFilter='';bukaDetailDariSearch('${r.id}','${kecKey}')"
-              style="padding:10px 12px;border-bottom:1px solid var(--gray-100);cursor:pointer;display:flex;align-items:center;gap:10px"
-              onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
-              <div style="width:32px;height:32px;border-radius:50%;background:${sc}18;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                <i class="fas fa-${isLayakFilter?'home':'house-damage'}" style="color:${sc};font-size:.78rem"></i>
-              </div>
-              <div style="flex:1;min-width:0">
-                <div style="font-weight:700;font-size:.8rem;color:var(--gray-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${showNama(r.kep_kk)}</div>
-                <div style="font-size:.65rem;color:var(--gray-500)">${r.nik||'-'} ${r.desil?'· '+r.desil:''}</div>
-              </div>
-              <span style="font-size:.62rem;font-weight:700;color:${sc};background:${sc}15;padding:2px 7px;border-radius:99px;flex-shrink:0">${r.status_rtlh||'RTLH'}</span>
-            </div>`;
-          }).join('')}
-        </div>`).join('');
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:.8rem;color:var(--gray-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${showNama(r.kep_kk)}</div>
+            <div style="font-size:.65rem;color:var(--gray-500)">${r.nik||'-'} ${r.desil?'· '+r.desil:''}${hasBatal?' · <span style=\"color:#6B7280\">SK Batal: '+r.status_batal+'</span>':''}</div>
+          </div>
+          <span style="font-size:.62rem;font-weight:700;color:${sc};background:${sc}15;padding:2px 7px;border-radius:99px;flex-shrink:0">${r.status_rtlh||'RTLH'}</span>
+        </div>`;
+      }).join('')}
+    </div>`).join('');
 }
 
 function clearKeclistSearch(){
@@ -2316,7 +2281,7 @@ function renderSidebar(){
       <button class="filter-chip active" data-status-chip="all" onclick="setFilterStatus('all')">Semua</button>
       <button class="filter-chip" data-status-chip="RTLH" onclick="setFilterStatus('RTLH')" style="border-color:#DC2626;color:#DC2626">RTLH</button>
       <button class="filter-chip" data-status-chip="Layak Huni" onclick="setFilterStatus('Layak Huni')" style="border-color:#16A34A;color:#16A34A">Layak Huni</button>
-      <button class="filter-chip" data-status-chip="Dibatalkan" onclick="setFilterStatus('SK Dibatalkan')" style="border-color:#9CA3AF;color:#6B7280">SK Dibatalkan</button>
+      <button class="filter-chip" data-status-chip="Batal" onclick="setFilterStatus('Batal')" style="border-color:#9CA3AF;color:#6B7280"><i class="fas fa-ban" style="font-size:.6rem"></i> Ada SK Batal</button>
       <span style="font-size:.68rem;font-weight:700;color:var(--gray-500);margin-left:6px">Desil:</span>
       <button class="filter-chip active" data-desil-chip="all" onclick="setFilterDesil('all')">Semua</button>
       <button class="filter-chip" data-desil-chip="1" onclick="setFilterDesil('1')" style="color:#BE123C">D1</button>
@@ -2343,13 +2308,13 @@ function renderKecDashboard(){
   const total=brAll.length;
   const layak=brAll.filter(r=>r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses').length;
   const rtlh=brAll.filter(r=>r.status_rtlh==='RTLH'||r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
-  const batal=brAll.filter(r=>r.status_rtlh==='SK Dibatalkan').length;
+  const batal=brAll.filter(r=>r.status_batal&&r.status_batal!=='-').length;
   const desil14=brAll.filter(r=>{const m=String(r.desil||'').match(/\d+/);return m&&parseInt(m[0])<=4;}).length;
   d.innerHTML=`
     <div class="kd-stat">
       <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--success)">${layak}</div><div class="kdsi-lbl">Layak Huni</div></div>
       <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--danger)">${rtlh}</div><div class="kdsi-lbl">RTLH</div></div>
-      <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--gray-500)">${batal}</div><div class="kdsi-lbl">SK Dibatalkan</div></div>
+      <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--gray-500)">${batal}</div><div class="kdsi-lbl">Ada SK Batal</div></div>
     </div>
     <div class="canvas-wrap"><canvas id="chartKecStatus"></canvas></div>`;
   setTimeout(()=>{
@@ -2358,7 +2323,7 @@ function renderKecDashboard(){
     const existing=Chart.getChart(ctx);
     if(existing)existing.destroy();
     new Chart(ctx,{type:'doughnut',
-      data:{labels:['Layak Huni','RTLH','SK Dibatalkan'],datasets:[{data:[layak,rtlh,batal],backgroundColor:['#16A34A','#DC2626','#94A3B8'],borderWidth:2,cutout:'65%'}]},
+      data:{labels:['Layak Huni','RTLH','Ada SK Batal'],datasets:[{data:[layak,rtlh,batal],backgroundColor:['#16A34A','#DC2626','#94A3B8'],borderWidth:2,cutout:'65%'}]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:9},boxWidth:10,padding:6}}}}
     });
   },50);
@@ -2381,7 +2346,9 @@ function setFilterDesil(d){
 }
 function applyFilters(){
   brFeatures=brAll.filter(r=>{
-    if(filterStatus!=='all'&&r.status_rtlh!==filterStatus)return false;
+    if(filterStatus==='Batal'){
+      if(!r.status_batal||r.status_batal==='-')return false;
+    } else if(filterStatus!=='all'&&r.status_rtlh!==filterStatus)return false;
     if(filterDesil!=='all'){
       const m=String(r.desil||'').match(/\d+/);
       if(filterDesil==='5+'){if(!m||parseInt(m[0])<5)return false;}
@@ -2471,7 +2438,7 @@ function renderSidebarList(){
     const desa=group.desa;
     const items=group.items;
     const layak=items.filter(r=>r.status_rtlh==='Layak Huni').length;
-    const rtlh=items.filter(r=>r.status_rtlh!=='Layak Huni'&&r.status_rtlh!=='SK Dibatalkan').length;
+    const rtlh=items.filter(r=>r.status_rtlh!=='Layak Huni').length;
     return`<div class="desa-group">
       <div class="desa-header" onclick="toggleDesaGroup('dg_${desa.replace(/\s/g,'_')}')" style="padding:8px 14px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);border-top:2px solid var(--blue-bg);display:flex;align-items:center;gap:8px;cursor:pointer;position:sticky;top:0;z-index:5">
         <i class="fas fa-map-marker-alt" style="color:var(--blue);font-size:.72rem;flex-shrink:0"></i>
@@ -2485,7 +2452,8 @@ function renderSidebarList(){
         ${items.map((r,i)=>{
           const desilNum=String(r.desil||'').match(/\d+/)?.[0]||'';
           const color=desilNum?getDesilColor(desilNum):'#94A3B8';
-          const statusCls=r.status_rtlh==='Layak Huni'?'sudah':r.status_rtlh==='SK Dibatalkan'?'batal':'belum';
+          const statusCls=r.status_rtlh==='Layak Huni'?'sudah':'belum';
+          const hasBatal=r.status_batal&&r.status_batal!=='-';
           return`<div class="rtlh-item" id="ri_${r.id}" onclick="selectItem(${r.id})">
             <div style="display:flex;align-items:center;gap:8px">
               <div style="width:22px;height:22px;border-radius:6px;background:${color}18;color:${color};font-size:.6rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div>
@@ -2498,7 +2466,7 @@ function renderSidebarList(){
             <div class="ri-badges">
               <span class="badge ${statusCls}">${r.status_rtlh||'RTLH'}</span>
               ${desilNum?`<span class="badge desil" style="background:${getDesilColor(desilNum)}22;color:${getDesilColor(desilNum)}">Desil ${desilNum}</span>`:''}
-              
+              ${hasBatal?`<span class="badge batal" title="Ada di BNBA/SK namun dibatalkan: ${r.status_batal}"><i class="fas fa-ban" style="font-size:.55rem"></i> SK Batal</span>`:''}
             </div>
             <div class="ri-detail" id="det_${r.id}">
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
@@ -2545,7 +2513,7 @@ function updateMap(){
   brFeatures.forEach(r=>{
     if(!r.latitude||!r.longitude)return;
     const isLayak=r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses';
-    const isBatal=r.status_rtlh==='SK Dibatalkan';
+    const isBatal=r.status_batal&&r.status_batal!=='-';
     const markerColor=isLayak?'#16A34A':isBatal?'#94A3B8':'#DC2626';
     const mk=L.circleMarker([r.latitude,r.longitude],{radius:7,fillColor:markerColor,color:'#fff',weight:1.5,fillOpacity:.85});
     mk.on('click',()=>selectItem(r.id));
@@ -2608,11 +2576,11 @@ function showDetail(r){
       </div>
     </div>
     <div class="detail-grid">
-      <div class="detail-item"><div class="dl">Status RTLH</div><div class="dv">${r.status_rtlh?`<span class="badge ${(r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')?'sudah':r.status_rtlh==='SK Dibatalkan'?'batal':'belum'}">${r.status_rtlh}</span>`:'-'}</div></div>
+      <div class="detail-item"><div class="dl">Status RTLH</div><div class="dv">${r.status_rtlh?`<span class="badge ${(r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')?'sudah':'belum'}">${r.status_rtlh}</span>`:'-'}</div></div>
       <div class="detail-item"><div class="dl">Desil</div><div class="dv" style="color:${desilNum?getDesilColor(desilNum):'inherit'};font-weight:700">${dn(r.desil)||'-'}</div></div>
       
       <div class="detail-item"><div class="dl">Backlog</div><div class="dv">${dn(r.backlog)||'-'}</div></div>
-      ${r.status_rtlh==='SK Dibatalkan'&&r.status_batal?`<div class="detail-item full"><div class="dl">Alasan Batal</div><div class="dv" style="color:var(--danger);font-weight:600">${r.status_batal}</div></div>`:''}
+      ${r.status_batal&&r.status_batal!=='-'?`<div class="detail-item full" style="grid-column:1/-1"><div class="dl" style="color:var(--gray-500)">Ada di BNBA / SK namun Dibatalkan</div><div class="dv" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="background:#F3F4F6;color:#6B7280;border:1px solid #D1D5DB;border-radius:99px;padding:2px 10px;font-size:.72rem;font-weight:700"><i class="fas fa-ban" style="margin-right:3px"></i>SK Dibatalkan</span><span style="font-size:.78rem;color:var(--danger);font-weight:600">Alasan: ${r.status_batal}</span></div></div>`:''}
       ${r.jenis_bantuan?`<div class="detail-item"><div class="dl">Jenis Bantuan</div><div class="dv">${r.jenis_bantuan}</div></div>`:''}      ${r.keterangan?`<div class="detail-item full"><div class="dl">Keterangan</div><div class="dv" style="font-style:italic;color:var(--gray-700)">${r.keterangan}</div></div>`:''}
       ${r.tahun_bantuan?`<div class="detail-item"><div class="dl">Tahun Bantuan</div><div class="dv">${r.tahun_bantuan}</div></div>`:''}
     </div>
@@ -2773,7 +2741,7 @@ const FIELDS=[
   {key:'kondisi_at',label:'Kondisi Atap',type:'text'},
   {key:'material_l',label:'Material Lantai',type:'text'},
   {key:'kondisi_la',label:'Kondisi Lantai',type:'text'},
-  {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['RTLH','Layak Huni','SK Dibatalkan']},
+  {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['RTLH','Layak Huni']},
   {key:'status_batal',label:'Alasan SK Dibatalkan',type:'select',opts:['','-','Meninggal Dunia','Tidak Bersedia Dibantu','Tidak Ada Biaya','Pindah Tempat Tinggal','Sudah Mampu Mandiri','Tidak Memenuhi Syarat','Lainnya'],onChange:'handleAlasanBatal(this)'},
 
   {key:'jenis_bantuan',label:'Jenis Bantuan',type:'select',opts:['','RTLH','BSPS','DD','CSR','Lainnya']},
@@ -2792,16 +2760,8 @@ function getDesaList(){
 }
 
 function handleAlasanBatal(sel){
-  const statusEl=document.getElementById('ff_status_rtlh');
-  if(!statusEl)return;
-  if(sel.value&&sel.value!=='-'){
-    statusEl.value='SK Dibatalkan';
-  } else {
-    const jbEl=document.getElementById('ff_jenis_bantuan');
-    if(jbEl&&jbEl.value)statusEl.value='Layak Huni';
-    else statusEl.value='RTLH';
-    sel.value='';
-  }
+  // status_batal adalah kolom terpisah, tidak mengubah status_rtlh
+  // Jika alasan dikosongkan, biarkan status_rtlh tetap
 }
 
 function openForm(id){
@@ -2839,7 +2799,7 @@ function openForm(id){
         }
       } else if(f.type==='select'){
         const onChange=f.onChange?f.onChange:'';
-        const extraChange=f.key==='jenis_bantuan'?"if(this.value){const s=document.getElementById('ff_status_rtlh');if(s&&s.value!=='SK Dibatalkan')s.value='Layak Huni';}":'';
+        const extraChange=f.key==='jenis_bantuan'?"if(this.value){const s=document.getElementById('ff_status_rtlh');if(s&&!s.value)s.value='Layak Huni';}":'';
         inputHtml=`<select id="ff_${f.key}" ${locked?'disabled':''} onchange="${extraChange}${onChange}" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.85rem;color:var(--gray-900);outline:none;background:#fff">${f.opts.map(o=>`<option value="${o==='-'?'':o}" ${(val===o||(o==='-'&&!val))?'selected':''}>${o||'(kosong)'}</option>`).join('')}</select>`;
       } else if(f.sensitive){
         if(locked){
@@ -3293,7 +3253,7 @@ async function importExcelKab(input){
           const v=xlVal(getCol(row,'Jenis Bantuan','jenis_bantuan'));
           if(v){const u=v.toUpperCase().trim();
             obj.jenis_bantuan=u==='RTLH'?'RTLH':u==='BSPS'?'BSPS':u==='DD'||u==='DANA DESA'?'Dana Desa':u==='CSR'?'CSR':v;
-            if(!obj.status_rtlh||obj.status_rtlh!=='SK Dibatalkan')obj.status_rtlh='Layak Huni';
+            if(!obj.status_rtlh||obj.status_rtlh==='RTLH')obj.status_rtlh='Layak Huni';
           }
         }
         if(hasCol(['Tahun Bantuan','tahun_bantuan']))obj.tahun_bantuan=xlVal(String(getCol(row,'Tahun Bantuan','tahun_bantuan')||'').replace(/[^0-9]/g,''));
@@ -3566,7 +3526,7 @@ async function saveVerif(){
   // Jika hasil verifikasi Layak → update status RTLH jadi Layak Huni
   if(hasil==='Layak'){
     const r=brAll.find(x=>String(x.id)===String(_verifRtlhId));
-    if(r&&r.status_rtlh!=='Layak Huni'&&r.status_rtlh!=='SK Dibatalkan'){
+    if(r&&r.status_rtlh!=='Layak Huni'){
       await sb.from('rtlh').update({status_rtlh:'Layak Huni',updated_at:new Date().toISOString()}).eq('id',parseInt(_verifRtlhId));
       // Catat riwayat
       await sb.from('rtlh_riwayat').insert({nik:r.nik,rtlh_id:parseInt(_verifRtlhId),field_name:'Status RTLH',nilai_lama:r.status_rtlh||null,nilai_baru:'Layak Huni',diubah_oleh:user?.email});
@@ -3872,70 +3832,12 @@ async function loadDokFileList(rtlhId){
 }
 
 async function editDokKet(id, curKet){
-  // Tampilkan modal edit keterangan foto
-  let modalEl=document.getElementById('ovEditFotoKet');
-  if(!modalEl){
-    modalEl=document.createElement('div');
-    modalEl.id='ovEditFotoKet';
-    modalEl.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20000;display:flex;align-items:center;justify-content:center;padding:16px';
-    modalEl.innerHTML=`
-      <div style="background:#fff;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.18);width:100%;max-width:400px;overflow:hidden">
-        <div style="padding:16px 18px;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;justify-content:space-between">
-          <div style="font-size:.9rem;font-weight:800;color:var(--gray-900);display:flex;align-items:center;gap:7px">
-            <i class="fas fa-tag" style="color:var(--warning)"></i> Edit Keterangan Foto
-          </div>
-          <button onclick="document.getElementById('ovEditFotoKet').style.display='none'"
-            style="width:28px;height:28px;border-radius:7px;background:var(--gray-100);border:none;cursor:pointer;font-size:.85rem;color:var(--gray-600);display:flex;align-items:center;justify-content:center">
-            <i class="fas fa-times"></i></button>
-        </div>
-        <div style="padding:16px 18px">
-          <div style="font-size:.72rem;font-weight:700;color:var(--gray-600);margin-bottom:8px">Pilih kategori atau isi sendiri:</div>
-          <div id="efkPresets" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
-            ${['Atap','Lantai','Dinding','Tampak Depan','Dalam Rumah','Lokasi'].map(p=>
-              `<button onclick="document.getElementById('efkInput').value='${p}';document.querySelectorAll('#efkPresets button').forEach(b=>b.style.background='');this.style.background='var(--blue)';this.style.color='#fff'"
-                style="padding:5px 12px;border-radius:99px;border:1.5px solid var(--gray-200);font-size:.72rem;font-weight:600;cursor:pointer;font-family:inherit;background:#fff;color:var(--gray-700);transition:all .15s">
-                ${p}</button>`
-            ).join('')}
-          </div>
-          <input type="text" id="efkInput" placeholder="Atau ketik keterangan sendiri..."
-            style="width:100%;padding:9px 12px;border-radius:9px;border:1.5px solid var(--gray-200);font-size:.85rem;font-family:inherit;outline:none;box-sizing:border-box"
-            onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--gray-200)'">
-        </div>
-        <div style="padding:12px 18px;border-top:1px solid var(--gray-200);display:flex;gap:8px;justify-content:flex-end">
-          <button onclick="document.getElementById('ovEditFotoKet').style.display='none'"
-            style="padding:7px 16px;border-radius:8px;background:var(--gray-100);color:var(--gray-700);border:none;font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit">Batal</button>
-          <button id="efkSaveBtn"
-            style="padding:7px 16px;border-radius:8px;background:var(--blue);color:#fff;border:none;font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px">
-            <i class="fas fa-save"></i> Simpan</button>
-        </div>
-      </div>`;
-    document.body.appendChild(modalEl);
-  }
-  // Set nilai awal
-  const input=document.getElementById('efkInput');
-  input.value=curKet||'';
-  // Highlight preset jika cocok
-  document.querySelectorAll('#efkPresets button').forEach(b=>{
-    const match=b.textContent.trim()===curKet;
-    b.style.background=match?'var(--blue)':'';
-    b.style.color=match?'#fff':'var(--gray-700)';
-  });
-  modalEl.style.display='flex';
-  input.focus();
-  // Save handler
-  const saveBtn=document.getElementById('efkSaveBtn');
-  saveBtn.onclick=async function(){
-    const newKet=input.value.trim();
-    await sb.from('rtlh_dokumen').update({keterangan:newKet||null}).eq('id',id);
-    modalEl.style.display='none';
-    toast('Keterangan diperbarui','success');
-    loadDokFileList(_dokRtlhId);
-    loadDokList(_dokRtlhId);
-  };
-  // Enter key
-  input.onkeydown=function(e){if(e.key==='Enter')saveBtn.click();};
-  // Click backdrop
-  modalEl.onclick=function(e){if(e.target===modalEl)modalEl.style.display='none';};
+  var newKet=prompt('Edit keterangan foto:',curKet);
+  if(newKet===null)return;
+  await sb.from('rtlh_dokumen').update({keterangan:newKet||null}).eq('id',id);
+  toast('Keterangan diperbarui','success');
+  loadDokFileList(_dokRtlhId);
+  loadDokList(_dokRtlhId);
 }
 
 function openLightboxDok(idx){
@@ -4235,7 +4137,7 @@ function renderPenerimaDok(list){
   el.innerHTML=Object.values(byDesa).map(g=>{
     const itemsHtml=g.items.map(r=>{
       const isLayak=r.status_rtlh==='Layak Huni';
-      const sc=isLayak?'var(--success)':r.status_rtlh==='SK Dibatalkan'?'var(--gray-400)':'var(--danger)';
+      const sc=isLayak?'var(--success)':'var(--danger)';
       const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
       return '<div onclick="closeModal(&quot;ovPenerimaDok&quot;);closeModal(&quot;ovDokLib&quot;);bukaDetailDariSearch(&quot;'+r.id+'&quot;,&quot;'+kecKey+'&quot;)"'+
         ' style="padding:8px 10px;border-radius:8px;border:1px solid var(--gray-100);margin-bottom:4px;cursor:pointer;display:flex;align-items:center;gap:8px;background:#fff"'+
