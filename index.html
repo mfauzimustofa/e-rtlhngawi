@@ -1368,6 +1368,7 @@ function restoreSession(){
     }
   }
   else if(pg==='pgKecList'){nav('keclist');}
+  else if(pg==='pgExcel'){nav('excel');}
   else nav('beranda');
 }
 
@@ -4891,27 +4892,19 @@ let xInited=false;
 
 /* ── Init ── */
 async function initExcel(){
-  console.log('[Excel] initExcel called, isAdmin='+isAdmin+', user='+user?.email);
-
-  // Test: pastikan container terlihat
-  const wrap=document.getElementById('xSheetWrap');
-  const pg=document.getElementById('pgExcel');
-  if(!wrap||!pg){console.error('[Excel] Container tidak ditemukan!');return;}
-
-  // Tampilkan loading dulu
-  wrap.innerHTML='<div style="padding:60px;text-align:center;color:#64748b"><i class="fas fa-circle-notch fa-spin" style="font-size:2rem;display:block;margin-bottom:14px"></i>Memuat data Excel...</div>';
-
+  // Cek admin
   if(!isAdmin){
-    wrap.innerHTML='<div style="padding:60px;text-align:center;color:#64748b"><i class="fas fa-lock" style="font-size:2.5rem;opacity:.3;display:block;margin-bottom:14px"></i>Fitur hanya untuk Admin</div>';
+    document.getElementById('xBody').innerHTML=
+      '<tr><td colspan="35" style="padding:60px;text-align:center;color:#64748b">'
+      +'<i class="fas fa-lock" style="font-size:2rem;display:block;margin-bottom:14px;opacity:.3"></i>'
+      +'Fitur hanya untuk Admin</td></tr>';
     return;
   }
 
+  // Init col config sekali
   XC.forEach(c=>{if(xVis[c.k]===undefined)xVis[c.k]=true;if(!xW[c.k])xW[c.k]=c.w;});
 
-  // Rebuild table structure (karena innerHTML dipakai untuk loading)
-  wrap.innerHTML='<table class="xgrid" id="xGrid"><thead id="xHead"></thead><tbody id="xBody"><tr><td style="padding:20px;text-align:center;color:#94a3b8">Memuat...</td></tr></tbody></table>';
-
-  // Isi select kecamatan
+  // Isi select kecamatan sekali
   const kSel=document.getElementById('xFKec');
   if(kSel&&kSel.options.length<2){
     Object.keys(KEC_CONFIG).sort().forEach(k=>{
@@ -4919,17 +4912,39 @@ async function initExcel(){
     });
   }
 
-  // Pasang event sekali
-  if(!xInited){
-    xInited=true;
-    document.getElementById('xGrid')?.addEventListener('contextmenu',_xCtxMenu);
-    document.addEventListener('keydown',_xKey);
-    document.addEventListener('click',e=>{if(!e.target.closest('#xCtxMenu'))_xCloseCtx();});
-    await xLoad();
-  }else{
-    xPage=0;
-    xFilter();
+  if(xInited){
+    // Sudah pernah load — langsung render ulang
+    xPage=0; xFilter();
+    return;
   }
+
+  // Pertama kali
+  xInited=true;
+
+  // Event listeners pada wrap (bukan xGrid yg bisa diganti)
+  const wrap=document.getElementById('xSheetWrap');
+  wrap.addEventListener('contextmenu',e=>{
+    const td=e.target.closest('td[data-id]');if(!td)return;
+    e.preventDefault();
+    xCtxId=td.dataset.id; xCtxK=td.dataset.k;
+    const m=document.getElementById('xCtxMenu');
+    m.style.left=Math.min(e.clientX,window.innerWidth-210)+'px';
+    m.style.top=Math.min(e.clientY,window.innerHeight-170)+'px';
+    m.classList.add('open');
+  });
+  document.addEventListener('keydown',_xKey);
+  document.addEventListener('click',e=>{if(!e.target.closest('#xCtxMenu'))_xCloseCtx();});
+
+  // Render header dulu (bisa dilakukan tanpa data)
+  xRenderHead();
+
+  // Loading indicator di tbody
+  document.getElementById('xBody').innerHTML=
+    '<tr><td colspan="35" style="padding:40px;text-align:center;color:#94a3b8">'
+    +'<i class="fas fa-circle-notch fa-spin" style="font-size:1.5rem;display:block;margin-bottom:12px"></i>'
+    +'Memuat data...</td></tr>';
+
+  await xLoad();
 }
 
 /* ── Load semua data dari Supabase ── */
