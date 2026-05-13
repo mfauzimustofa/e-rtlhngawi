@@ -14,6 +14,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="data/favicon-192.png">
 <!-- Security headers via meta -->
 <meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
 <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(self)">
 <meta name="rating" content="general">
@@ -231,7 +232,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 .modal-footer{padding:14px 20px;padding-bottom:max(14px,calc(env(safe-area-inset-bottom) + 8px));border-top:1px solid var(--gray-200);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0;background:#fff;position:sticky;bottom:0}
 
 /* FORM */
-.form-grid{display:block}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .form-group{display:flex;flex-direction:column;gap:5px}
 .form-group.full{grid-column:1/-1}
 .form-group label{font-size:.68rem;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.04em}
@@ -388,17 +389,35 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 .skeleton{background:linear-gradient(90deg,var(--gray-100) 25%,var(--gray-200) 50%,var(--gray-100) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
-
-/* ══ LIBRARY DOKUMEN ══ */
-.dok-lib-card{background:#fff;border-radius:10px;border:1.5px solid var(--gray-200);padding:12px 14px;cursor:pointer;transition:var(--transition);display:flex;align-items:center;gap:12px}
-.dok-lib-card:hover{border-color:var(--blue);background:var(--blue-bg)}
-.dok-lib-icon{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
-.dok-lib-info{flex:1;min-width:0}
-.dok-lib-title{font-size:.82rem;font-weight:700;color:var(--gray-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dok-lib-meta{font-size:.65rem;color:var(--gray-400);margin-top:2px}
-.dok-jenis-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;font-size:.65rem;font-weight:700;cursor:pointer;border:1.5px solid transparent;transition:var(--transition)}
-.dok-jenis-chip.active{color:#fff}
-.dok-link-item{padding:8px 10px;border-radius:8px;border:1px solid var(--gray-200);background:#fff;display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:.72rem}
+/* ══ CHATBOT AI ══ */
+#chatBtn{position:fixed;bottom:70px;right:16px;z-index:9000;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#7C3AED,#4F46E5);color:#fff;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(124,58,237,.4);display:flex;align-items:center;justify-content:center;font-size:1.2rem;transition:transform .2s,box-shadow .2s}
+#chatBtn:hover{transform:scale(1.1);box-shadow:0 6px 20px rgba(124,58,237,.5)}
+#chatBtn .chat-badge{position:absolute;top:-3px;right:-3px;background:#EF4444;color:#fff;border-radius:99px;font-size:.55rem;font-weight:800;padding:1px 5px;display:none}
+#chatBox{position:fixed;bottom:134px;right:16px;z-index:9000;width:340px;max-width:calc(100vw - 32px);background:#fff;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.18);display:none;flex-direction:column;overflow:hidden;max-height:70vh}
+#chatBox.open{display:flex}
+.chat-head{background:linear-gradient(135deg,#7C3AED,#4F46E5);padding:14px 16px;display:flex;align-items:center;gap:10px}
+.chat-head .ch-avatar{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.chat-head .ch-info .ch-name{font-size:.85rem;font-weight:800;color:#fff}
+.chat-head .ch-info .ch-status{font-size:.65rem;color:rgba(255,255,255,.75)}
+.chat-head .ch-close{margin-left:auto;background:none;border:none;color:rgba(255,255,255,.8);cursor:pointer;font-size:.9rem;padding:4px}
+.chat-messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:200px}
+.chat-msg{max-width:85%;font-size:.8rem;line-height:1.5;padding:10px 12px;border-radius:12px}
+.chat-msg.bot{background:var(--gray-100);color:var(--gray-800);align-self:flex-start;border-bottom-left-radius:4px}
+.chat-msg.user{background:linear-gradient(135deg,#7C3AED,#4F46E5);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.chat-msg.typing{background:var(--gray-100);align-self:flex-start;padding:12px 16px}
+.typing-dots span{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gray-400);animation:typingDot 1.2s infinite}
+.typing-dots span:nth-child(2){animation-delay:.2s}
+.typing-dots span:nth-child(3){animation-delay:.4s}
+@keyframes typingDot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+.chat-input-wrap{padding:10px 12px;border-top:1px solid var(--gray-200);display:flex;gap:8px}
+.chat-input{flex:1;padding:9px 12px;border-radius:10px;border:1.5px solid var(--gray-200);font-size:.82rem;font-family:inherit;outline:none;resize:none;max-height:80px;transition:border .2s}
+.chat-input:focus{border-color:#7C3AED}
+.chat-send{padding:9px 14px;border-radius:10px;background:linear-gradient(135deg,#7C3AED,#4F46E5);color:#fff;border:none;cursor:pointer;font-size:.82rem;font-family:inherit;font-weight:700;flex-shrink:0;transition:opacity .2s}
+.chat-send:disabled{opacity:.5;cursor:default}
+@media(max-width:768px){
+  #chatBox{width:calc(100vw - 24px);right:12px;bottom:72px;max-height:75vh}
+  #chatBtn{bottom:64px;right:12px}
+}
 
 /* TABLE EDITOR */
 .te-th{background:var(--navy);color:#fff;padding:8px 10px;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;position:sticky;top:0;border-right:1px solid rgba(255,255,255,.1);user-select:none;cursor:pointer}
@@ -463,13 +482,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
       <input class="mo-input" type="text" id="moEmail" placeholder="Username" autocomplete="username" autocorrect="off" autocapitalize="off" spellcheck="false" onkeydown="if(event.key==='Enter')document.getElementById('moPass').focus()">
     </div>
     <div class="mo-inp-wrap">
-      <div style="position:relative">
-        <input class="mo-input" type="password" id="moPass" placeholder="Password" onkeydown="if(event.key==='Enter')doMaintenanceLogin()" style="padding-right:40px">
-        <button type="button" onclick="togglePass('moPass',this)" tabindex="-1"
-          style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#64748b;font-size:.9rem;padding:4px;display:flex;align-items:center">
-          <i class="fas fa-eye"></i>
-        </button>
-      </div>
+      <input class="mo-input" type="password" id="moPass" placeholder="Password" onkeydown="if(event.key==='Enter')doMaintenanceLogin()">
     </div>
     <button class="mo-btn" onclick="doMaintenanceLogin()"><i class="fas fa-sign-in-alt"></i> Masuk</button>
     <div class="mo-err" id="moErr"></div>
@@ -484,7 +497,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
 <!-- HEADER -->
 <header class="app-header">
-  <div class="brand" onclick="nav('beranda');document.getElementById('wgSearchBar').style.display='none'">
+  <div class="brand" onclick="nav('beranda')">
     <img src="data/logo-dprkp.png" alt="Logo" onerror="this.style.display='none'">
     <div class="brand-text">
       <span class="brand-sub">DPRKP Kab. Ngawi</span>
@@ -496,7 +509,6 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
     <button class="nav-tab" id="ntWebgis" onclick="nav('keclist')"><i class="fas fa-map-marked-alt"></i> WebGIS</button>
   </nav>
   <div class="header-right">
-    <button class="btn-icon-sm" id="btnDokLib" onclick="openDokLib()" title="Library Dokumen Kabupaten" style="display:none"><i class="fas fa-folder-open"></i></button>
     <button class="btn-icon-sm" id="btnExcelKab" onclick="openExcelKab()" title="Unduh / Unggah Excel Kabupaten" style="display:none"><i class="fas fa-file-excel"></i></button>
     <div id="authArea"></div>
   </div>
@@ -527,9 +539,9 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
     <!-- STAT CARDS -->
     <div class="section" style="margin-bottom:0;padding-bottom:6px;padding-top:12px">
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
-        <div class="mini-stat" onclick="navWithFilter('')" title="Lihat semua data"><div class="ms-icon" style="background:linear-gradient(135deg,var(--blue),var(--blue-light))"><i class="fas fa-database"></i></div><div class="ms-texts"><div class="ms-val" id="gs-total">-</div><div class="ms-label">Total Data</div></div></div>
-        <div class="mini-stat" onclick="navWithFilter('Layak Huni')" title="Lihat semua Layak Huni"><div class="ms-icon" style="background:linear-gradient(135deg,#16A34A,#22C55E)"><i class="fas fa-home"></i></div><div class="ms-texts"><div class="ms-val" id="gs-layak">-</div><div class="ms-label">Layak Huni</div></div></div>
-        <div class="mini-stat" onclick="navWithFilter('RTLH')" title="Lihat semua RTLH"><div class="ms-icon" style="background:linear-gradient(135deg,var(--danger),#F87171)"><i class="fas fa-house-damage"></i></div><div class="ms-texts"><div class="ms-val" id="gs-belum">-</div><div class="ms-label">RTLH</div></div></div>
+        <div class="mini-stat" onclick="nav('keclist')"><div class="ms-icon" style="background:linear-gradient(135deg,var(--blue),var(--blue-light))"><i class="fas fa-database"></i></div><div class="ms-texts"><div class="ms-val" id="gs-total">-</div><div class="ms-label">Total Data</div></div></div>
+        <div class="mini-stat" onclick="nav('keclist')"><div class="ms-icon" style="background:linear-gradient(135deg,#16A34A,#22C55E)"><i class="fas fa-home"></i></div><div class="ms-texts"><div class="ms-val" id="gs-layak">-</div><div class="ms-label">Layak Huni</div></div></div>
+        <div class="mini-stat" onclick="nav('keclist')"><div class="ms-icon" style="background:linear-gradient(135deg,var(--danger),#F87171)"><i class="fas fa-house-damage"></i></div><div class="ms-texts"><div class="ms-val" id="gs-belum">-</div><div class="ms-label">RTLH</div></div></div>
       </div>
     </div>
 
@@ -560,7 +572,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
             <option value="">Semua Status</option>
             <option value="RTLH">RTLH</option>
             <option value="Layak Huni">Layak Huni</option>
-            <option value="SK Dibatalkan">SK Dibatalkan</option>
+            <option value="Dibatalkan">Dibatalkan</option>
           </select>
           <button onclick="clearSearch()" style="background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:.78rem;padding:4px"><i class="fas fa-times"></i></button>
         </div>
@@ -645,26 +657,9 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
   <div class="keclist-header">
     <h2><i class="fas fa-map-marked-alt" style="color:var(--gold)"></i> Pilih Kecamatan</h2>
     <p>WebGIS RTLH — Data BNBA per kecamatan</p>
-    <div style="display:flex;gap:8px;margin-bottom:4px">
-      <div style="flex:1;position:relative">
-        <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.4);font-size:.8rem;pointer-events:none"></i>
-        <input type="text" id="kecSearchList"
-          placeholder="Cari nama, NIK, desa, BSPS 2024, kecamatan..."
-          maxlength="80" autocomplete="off" spellcheck="false" inputmode="search"
-          style="width:100%;padding:11px 14px 11px 36px;border-radius:10px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.12);color:#fff;font-size:.85rem;font-family:inherit;outline:none;box-sizing:border-box;transition:all .2s"
-          onfocus="this.style.background='rgba(255,255,255,.18)';this.style.borderColor='rgba(255,255,255,.5)'"
-          onblur="this.style.background='rgba(255,255,255,.12)';this.style.borderColor='rgba(255,255,255,.2)'"
-          onkeydown="if(event.key==='Enter')searchKeclist()"
-          oninput="clearTimeout(this._kt);const v=this.value.trim();if(v.length>=3){this._kt=setTimeout(()=>searchKeclist(),400)}else if(!v){clearKeclistSearch()}else{renderKecList()}">
-      </div>
-      <button onclick="searchKeclist()" style="padding:11px 16px;border-radius:10px;background:var(--gold);color:var(--navy);border:none;font-size:.85rem;font-weight:700;cursor:pointer;flex-shrink:0"><i class="fas fa-search"></i></button>
-    </div>
-    <div id="keclistResultWrap" style="display:none;max-height:55vh;overflow-y:auto;background:#fff;border-radius:10px;margin-top:6px;box-shadow:0 8px 24px rgba(0,0,0,.3)">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px 4px;border-bottom:1px solid var(--gray-100)">
-        <div id="keclistResultCount" style="font-size:.72rem;color:var(--gray-500)"></div>
-        <button onclick="clearKeclistSearch()" style="background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:.78rem"><i class="fas fa-times"></i></button>
-      </div>
-      <div id="keclistResult"></div>
+    <div class="keclist-search">
+      <i class="fas fa-search"></i>
+      <input type="text" id="kecSearchList" placeholder="Cari kecamatan..." oninput="renderKecList()">
     </div>
   </div>
   <div class="keclist-grid" id="kecListGrid"></div>
@@ -673,7 +668,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 <!-- ═══════════════════════════════ PAGE: WEBGIS ═══════════════════════════════ -->
 <div class="page" id="pgWebgis">
   <div class="webgis-toolbar">
-    <button class="tb-btn" onclick="nav('beranda');document.getElementById('wgSearchBar').style.display='none'" title="Kembali ke Beranda"><i class="fas fa-home"></i> <span class="tb-label">Beranda</span></button>
+    <button class="tb-btn" onclick="nav('beranda')" title="Kembali ke Beranda"><i class="fas fa-home"></i> <span class="tb-label">Beranda</span></button>
     <div class="tb-sep"></div>
     <span class="tb-title" id="tbTitle">WebGIS RTLH</span>
     <div class="tb-sep"></div>
@@ -688,25 +683,8 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
       <div style="display:flex;flex-direction:column;gap:5px">
         <div style="display:flex;align-items:center;gap:6px;font-size:.72rem"><div style="width:12px;height:12px;border-radius:50%;background:#16A34A;flex-shrink:0"></div>Layak Huni</div>
         <div style="display:flex;align-items:center;gap:6px;font-size:.72rem"><div style="width:12px;height:12px;border-radius:50%;background:#DC2626;flex-shrink:0"></div>RTLH</div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:.72rem"><div style="width:12px;height:12px;border-radius:50%;background:#94A3B8;flex-shrink:0"></div>SK Dibatalkan</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:.72rem"><div style="width:12px;height:12px;border-radius:50%;background:#94A3B8;flex-shrink:0"></div>Dibatalkan</div>
       </div>
-    </div>
-  </div>
-  <!-- Search bar WebGIS - STATIS, tidak ikut re-render -->
-  <div id="wgSearchBar" style="display:none;padding:8px 14px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);position:sticky;top:0;z-index:50">
-    <div style="display:flex;gap:8px;align-items:center">
-      <div style="flex:1;position:relative">
-        <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--gray-400);font-size:.8rem;pointer-events:none"></i>
-        <input id="sidebarSearchInput" type="text"
-          placeholder="Cari nama, NIK, desa, BSPS 2024..."
-          maxlength="80" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="search"
-          style="width:100%;padding:10px 12px 10px 34px;border-radius:10px;border:2px solid var(--gray-200);font-size:14px;font-family:inherit;background:#fff;color:var(--gray-900);outline:none;box-sizing:border-box;transition:all .25s;box-shadow:0 0 0 3px rgba(59,130,246,.1);animation:searchPulse 2.5s ease-in-out infinite"
-          onfocus="this.style.borderColor='#3B82F6';this.style.boxShadow='0 0 0 4px rgba(59,130,246,.2)';this.style.animation='none'"
-          onblur="this.style.borderColor='var(--gray-200)';this.style.boxShadow='0 0 0 3px rgba(59,130,246,.1)';this.style.animation='searchPulse 2.5s ease-in-out infinite'"
-          onkeydown="if(event.key==='Enter')searchSidebar()"
-          oninput="clearTimeout(this._t);if(this.value.trim().length>=2){this._t=setTimeout(()=>searchSidebar(),400)}else if(!this.value.trim()){resetSidebarSearch()}">
-      </div>
-      <button onclick="searchSidebar()" style="padding:10px 14px;border-radius:10px;background:var(--blue);color:#fff;border:none;font-size:.82rem;cursor:pointer;flex-shrink:0"><i class="fas fa-search"></i></button>
     </div>
   </div>
   <div class="wg-body" id="wgBody"></div>
@@ -770,7 +748,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
             <option value="">Semua Status</option>
             <option value="RTLH">RTLH</option>
             <option value="Layak Huni">Layak Huni</option>
-            <option value="SK Dibatalkan">SK Dibatalkan</option>
+            <option value="Dibatalkan">Dibatalkan</option>
           </select>
         </div>
         <div class="form-group" style="margin:0">
@@ -827,13 +805,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
       </div>
       <div class="form-group" style="margin-bottom:16px">
         <label>Password</label>
-        <div style="position:relative">
-          <input type="password" id="liPass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" style="padding-right:38px">
-          <button type="button" onclick="togglePass('liPass',this)" tabindex="-1"
-            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:.85rem;padding:4px;display:flex;align-items:center">
-            <i class="fas fa-eye"></i>
-          </button>
-        </div>
+        <input type="password" id="liPass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
       </div>
       <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> Masuk</button>
       <div style="margin-top:12px;font-size:.65rem;color:var(--gray-400);text-align:center"><i class="fas fa-shield-alt"></i> Akses khusus staf DPRKP Kab. Ngawi</div>
@@ -916,41 +888,35 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
 <!-- MODAL DOKUMEN & FOTO -->
 <div class="overlay" id="ovDok">
-  <div class="modal" style="max-width:520px">
+  <div class="modal" style="max-width:560px">
     <div class="modal-head">
       <div><h3><i class="fas fa-camera" style="color:var(--warning)"></i> Foto Rumah</h3>
         <div class="sub" id="dokSub">Upload foto kondisi rumah</div>
       </div>
       <button class="modal-x" onclick="closeModal('ovDok')"><i class="fas fa-times"></i></button>
     </div>
-    <div class="modal-body">
-      <div style="background:var(--gray-50);border-radius:10px;padding:14px;border:1px solid var(--gray-200);margin-bottom:14px">
-        <div style="font-size:.72rem;font-weight:700;color:var(--gray-700);margin-bottom:10px">Upload Dokumen Baru</div>
-        <div class="form-group" style="margin-bottom:10px">
-          <label>Jenis Foto</label>
-          <select id="dokJenis">
-            <option value="foto_rumah">📷 Foto Rumah (Tampak Depan)</option>
-            <option value="foto_dalam">📷 Foto Dalam Rumah</option>
-            <option value="foto_atap">📷 Foto Atap</option>
-            <option value="foto_lantai">📷 Foto Lantai</option>
-            <option value="foto_lokasi">🗺️ Foto Lokasi/Lingkungan</option>
-          </select>
+    <div class="modal-body" style="padding:14px 16px">
+      <div id="dokDropZone" onclick="document.getElementById('dokFile').click()"
+        ondragover="event.preventDefault();this.style.borderColor='var(--blue)';this.style.background='var(--blue-bg)'"
+        ondragleave="this.style.borderColor='var(--gray-300)';this.style.background=''"
+        ondrop="event.preventDefault();this.style.borderColor='var(--gray-300)';this.style.background='';handleDokFiles(event.dataTransfer.files)"
+        style="border:2px dashed var(--gray-300);border-radius:12px;padding:18px;text-align:center;cursor:pointer;margin-bottom:14px">
+        <i class="fas fa-cloud-upload-alt" style="font-size:1.8rem;color:var(--gray-300);display:block;margin-bottom:6px"></i>
+        <div style="font-size:.78rem;font-weight:700;color:var(--gray-600)">Klik atau seret foto ke sini</div>
+        <div style="font-size:.65rem;color:var(--gray-400);margin-top:3px">Pilih banyak foto sekaligus · JPG, PNG · Maks 5 MB/foto</div>
+        <input type="file" id="dokFile" accept="image/*" multiple style="display:none" onchange="handleDokFiles(this.files)">
+      </div>
+      <div id="dokQueue" style="display:none;margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:.72rem;font-weight:700;color:var(--gray-700)">Antrian (<span id="dokQueueCount">0</span> foto)</div>
+          <button onclick="uploadAllDok()" style="padding:5px 14px;border-radius:8px;background:var(--blue);color:#fff;border:none;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit"><i class="fas fa-upload"></i> Upload Semua</button>
         </div>
-        <div class="form-group" style="margin-bottom:10px">
-          <label>Keterangan (opsional)</label>
-          <input type="text" id="dokKet" placeholder="Contoh: BA 2025, Foto tampak depan">
-        </div>
-        <div class="form-group" style="margin-bottom:12px">
-          <label>File <span style="color:var(--danger)">*</span></label>
-          <input type="file" id="dokFile" accept="image/*" style="font-size:.8rem">
-          <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Format: JPG, PNG. Maks 5 MB.</div>
-        </div>
-        <button class="btn btn-primary" onclick="uploadDokumen()" style="width:100%;justify-content:center"><i class="fas fa-upload"></i> Upload</button>
+        <div id="dokQueueList" style="display:flex;gap:8px;flex-wrap:wrap"></div>
         <div id="dokUploadProgress" style="margin-top:8px;font-size:.72rem"></div>
       </div>
       <div>
-        <div style="font-size:.72rem;font-weight:700;color:var(--gray-700);margin-bottom:8px">Dokumen Tersimpan</div>
-        <div id="dokFileList" style="font-size:.72rem;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
+        <div style="font-size:.72rem;font-weight:700;color:var(--gray-700);margin-bottom:8px">Foto Tersimpan</div>
+        <div id="dokFileList" style="color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
       </div>
     </div>
     <div class="modal-footer">
@@ -959,43 +925,23 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
   </div>
 </div>
 
-<!-- NIK/KK MODAL (Super Admin only - dedicated, never re-renders) -->
-<div class="overlay" id="ovNIK">
-  <div class="modal" style="max-width:420px">
-    <div class="modal-head">
-      <div><h3><i class="fas fa-id-card" style="color:var(--gold)"></i> Edit NIK & No. KK</h3>
-        <div class="sub" id="nikModalSub">Data identitas penduduk</div>
-      </div>
-      <button class="modal-x" onclick="closeModal('ovNIK')"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body">
-      <div style="background:var(--warning-bg);border:1px solid var(--warning);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:.72rem;color:#92400E">
-        <i class="fas fa-shield-alt"></i> NIK digunakan sebagai identitas unik. Pastikan data benar sebelum menyimpan.
-      </div>
-      <div style="display:grid;gap:14px">
-        <div class="form-group" style="margin:0">
-          <label>NIK <span style="color:var(--danger)">*</span> <span style="font-weight:400;color:var(--gray-400)">(16 digit)</span></label>
-          <input type="text" id="nikInput" inputmode="numeric" maxlength="16" placeholder="Masukkan 16 digit NIK"
-            style="font-size:.95rem;letter-spacing:2px;font-weight:700;border-color:var(--blue)"
-            oninput="this.value=this.value.replace(/\D/g,'');document.getElementById('nikCount').textContent=this.value.length+'/16'">
-          <span id="nikCount" style="font-size:.65rem;color:var(--gray-400);margin-top:3px">0/16</span>
-        </div>
-        <div class="form-group" style="margin:0">
-          <label>No. Kartu Keluarga <span style="font-weight:400;color:var(--gray-400)">(16 digit)</span></label>
-          <input type="text" id="noKkInput" inputmode="numeric" maxlength="16" placeholder="Masukkan No. KK"
-            style="font-size:.95rem;letter-spacing:2px;font-weight:700;border-color:var(--blue)"
-            oninput="this.value=this.value.replace(/\D/g,'');document.getElementById('kkCount').textContent=this.value.length+'/16'">
-          <span id="kkCount" style="font-size:.65rem;color:var(--gray-400);margin-top:3px">0/16</span>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('ovNIK')">Batal</button>
-      <button class="btn btn-primary" onclick="saveNIK()"><i class="fas fa-save"></i> Simpan</button>
-    </div>
-  </div>
+<!-- LIGHTBOX -->
+<div id="fotoLightbox" onclick="closeLightbox()" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.92);flex-direction:column;align-items:center;justify-content:center">
+  <button onclick="closeLightbox()" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,.15);border:none;color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:1rem"><i class="fas fa-times"></i></button>
+  <button id="lbPrev" onclick="event.stopPropagation();moveLightbox(-1)" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);border:none;color:#fff;width:40px;height:40px;border-radius:50%;cursor:pointer;font-size:1.1rem;display:none"><i class="fas fa-chevron-left"></i></button>
+  <img id="lbImg" src="" onclick="event.stopPropagation()" style="max-width:90vw;max-height:80vh;object-fit:contain;border-radius:8px">
+  <div id="lbCaption" style="color:rgba(255,255,255,.8);font-size:.82rem;margin-top:10px;text-align:center"></div>
+  <div id="lbCounter" style="color:rgba(255,255,255,.4);font-size:.68rem;margin-top:4px"></div>
+  <button id="lbNext" onclick="event.stopPropagation();moveLightbox(1)" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);border:none;color:#fff;width:40px;height:40px;border-radius:50%;cursor:pointer;font-size:1.1rem;display:none"><i class="fas fa-chevron-right"></i></button>
 </div>
 
+<!-- MODAL VERIFIKASI LAPANGAN --><!-- MODAL VERIFIKASI LAPANGAN -->
+
+<!-- MODAL DOKUMEN & FOTO -->
+
+<!-- NIK/KK MODAL (Super Admin only - dedicated, never re-renders) -->
+
+<!-- NIK/KK MODAL (Super Admin only - dedicated, never re-renders) -->
 
 <!-- MODAL VERIFIKASI LAPANGAN -->
 
@@ -1003,17 +949,9 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
 <!-- NIK/KK MODAL (Super Admin only - dedicated, never re-renders) -->
 
-<!-- NIK/KK MODAL (Super Admin only - dedicated, never re-renders) -->
-
-<!-- MODAL VERIFIKASI LAPANGAN -->
-
-<!-- MODAL DOKUMEN & FOTO -->
-
-<!-- NIK/KK MODAL (Super Admin only - dedicated, never re-renders) -->
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
 
 <script>
 // ══════════════════════════════════════════════════
@@ -1037,10 +975,6 @@ const KEC_CONFIG={
   "Widodaren":{lat:-7.4065,lng:111.2304}
 };
 
-// Normalize helpers (diperlukan sebelum FIELDS)
-function normCase(v){if(!v)return v;return String(v).trim().toLowerCase().replace(/(?:^|\s|\/)\S/g,c=>c.toUpperCase());}
-function normUpper(v){return v?String(v).trim().toUpperCase():v;}
-
 const DESIL_COLORS=['','#BE123C','#DC2626','#EA580C','#D97706','#65A30D','#16A34A','#0891B2','#7C3AED'];
 
 // State
@@ -1057,7 +991,6 @@ let kecCounts={};
 let mobSidebarOpen=false;
 let loginTab='username';
 let _adminUsername=null;
-let adminKecamatan="";
 
 // ══════════════════════════════════════════════════
 // HELPERS
@@ -1137,7 +1070,6 @@ function restoreSession(){
   const detailStr=sessionStorage.getItem('ertlh_detail');
   if(kec)currentKec=kec;
   if(pg==='pgWebgis'&&kec){
-    document.getElementById('wgSearchBar').style.display='block';
     nav('webgis');
     // Restore detail panel setelah data dimuat
     if(detailStr){
@@ -1173,7 +1105,7 @@ function nav(pg){
     // Tutup detail panel saat kembali ke beranda
     document.getElementById('detailPanel')?.classList.remove('open');
     clearDetailSession();
-    if(sb&&user)loadGlobalStats();
+    if(sb) loadGlobalStats();
   } else if(pg==='keclist'){
     document.getElementById('pgKecList').classList.add('active');
     document.getElementById('ntWebgis')?.classList.add('active');
@@ -1181,7 +1113,6 @@ function nav(pg){
     ensureKecCounts().then(()=>renderKecList());
   } else if(pg==='webgis'){
     document.getElementById('pgWebgis').classList.add('active');
-  document.getElementById('wgSearchBar').style.display='block';
     document.getElementById('ntWebgis')?.classList.add('active');
     document.getElementById('mnWebgis')?.classList.add('active');
     initMap();
@@ -1279,7 +1210,6 @@ function updAuth(){
   // Update toolbar buttons
   document.getElementById('btnAddRtlh').style.display=canEdit()?'flex':'none';
   document.getElementById('btnDelAll').style.display=(isSuperAdmin()&&currentKec)?'flex':'none';
-  document.getElementById('btnDokLib').style.display=isAdmin?'flex':'none';
   document.getElementById('btnExcelKab').style.display=isAdmin?'flex':'none';
   const exSec=document.getElementById('btnExcelKabSection');
   if(exSec)exSec.style.display=isAdmin?'flex':'none';
@@ -1355,15 +1285,6 @@ function startAutoRefresh(){
 
 function closeModal(id){document.getElementById(id).classList.remove('open')}
 
-function togglePass(inputId,btn){
-  const inp=document.getElementById(inputId);
-  if(!inp)return;
-  const isPass=inp.type==='password';
-  inp.type=isPass?'text':'password';
-  const ico=btn.querySelector('i');
-  if(ico){ico.className=isPass?'fas fa-eye-slash':'fas fa-eye';}
-}
-
 // ══════════════════════════════════════════════════
 // GLOBAL STATS (BERANDA)
 // ══════════════════════════════════════════════════
@@ -1387,7 +1308,7 @@ async function loadGlobalStats(){
     const total=data.length;
     const layak=data.filter(r=>r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses').length;
     const belum=data.filter(r=>r.status_rtlh==='RTLH'||r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
-    const batal=data.filter(r=>r.status_rtlh==='SK Dibatalkan').length;
+    const batal=data.filter(r=>r.status_rtlh==='Dibatalkan').length;
     const sudah=layak; const proses=0;
 
     document.getElementById('gs-total').textContent=total.toLocaleString('id');
@@ -1403,11 +1324,11 @@ async function loadGlobalStats(){
     // Per kec counts
     kecCounts={};
     data.forEach(r=>{
-      const k=(r.kec||'').toUpperCase().trim();
+      const k=(r.kec||'').toUpperCase();
       if(!kecCounts[k])kecCounts[k]={total:0,sudah:0,proses:0,belum:0};
       kecCounts[k].total++;
       if(r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')kecCounts[k].sudah++;
-      else if(r.status_rtlh!=='SK Dibatalkan')kecCounts[k].belum++;
+      else if(r.status_rtlh!=='Dibatalkan')kecCounts[k].belum++;
     });
 
     // Desil counts
@@ -1475,7 +1396,8 @@ function renderKecGrid(){
 }
 
 function renderKecTable(){
-  return; // tabel dihapus dari UI
+  const tb=document.getElementById('kecTableBody');
+  if(!tb)return;
   const names=Object.keys(KEC_CONFIG).sort();
   let grandTotal=0,grandSudah=0,grandProses=0,grandBelum=0;
   const rows=names.map((k,i)=>{
@@ -1529,7 +1451,6 @@ function renderKecTable(){
 let mapBeranda=null,tileLayerBeranda=null,kecBoundaryLayer=null,isSatellite=false,showKecBoundary=true;
 
 function initMapBeranda(){
-  if(!window.L)return;
   if(!mapBeranda){
     mapBeranda=L.map('mapBeranda',{zoomControl:true,scrollWheelZoom:true}).setView([-7.42,111.42],10);
     tileLayerBeranda=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
@@ -1741,12 +1662,12 @@ function renderChartStatus(data){
   const existing=Chart.getChart(ctx);if(existing)existing.destroy();
   const layak=data.filter(r=>r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses').length;
   const belum=data.filter(r=>r.status_rtlh==='RTLH'||r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
-  const batal=data.filter(r=>r.status_rtlh==='SK Dibatalkan').length;
+  const batal=data.filter(r=>r.status_rtlh==='Dibatalkan').length;
   const tot=layak+belum+batal;
   chartStatus=new Chart(ctx,{
     type:'doughnut',
     data:{
-      labels:['Layak Huni','RTLH','SK Dibatalkan'],
+      labels:['Layak Huni','RTLH','Dibatalkan'],
       datasets:[{data:[layak,belum,batal],backgroundColor:['#16A34A','#DC2626','#94A3B8'],borderWidth:3,borderColor:'#fff',hoverOffset:8}]
     },
     options:{
@@ -1833,16 +1754,13 @@ async function searchNIK(){
     query = query.or(`kep_kk.ilike.%${q}%,desa.ilike.%${q}%,kec.ilike.%${q}%`);
   }
   if(statusFilter) query = query.eq('status_rtlh', statusFilter);
-  // Fetch semua hasil tanpa batas
-  const{count:searchTotal}=await query.select('*',{count:'exact',head:true}).then?.(r=>r)||{count:0};
-  const{data:firstPage,error}=await query.limit(1000);
+  const{data,error}=await query.limit(50);
   if(error){
     console.error('Search error:', error);
     res.innerHTML=`<div style="color:rgba(255,100,100,.9);font-size:.78rem;margin-top:12px"><i class="fas fa-exclamation-circle"></i> Error: ${error.message}</div>`;
     return;
   }
-  const data=firstPage||[];
-  if(!data.length){
+  if(!data||!data.length){
     const wrap2=document.getElementById('searchResultsWrap');if(wrap2)wrap2.style.display='block';
     const cnt=document.getElementById('searchResultCount');if(cnt)cnt.innerHTML='<i class="fas fa-times-circle"></i> Data tidak ditemukan';
     res.innerHTML='';return;
@@ -1851,13 +1769,13 @@ async function searchNIK(){
   const wrap=document.getElementById('searchResultsWrap');
   if(wrap)wrap.style.display='block';
   const countEl=document.getElementById('searchResultCount');
-  if(countEl)countEl.innerHTML=`<i class="fas fa-search"></i> <strong>${data.length}</strong> hasil ditemukan`;
+  if(countEl)countEl.innerHTML=`<i class="fas fa-search"></i> <strong>${data.length}</strong> hasil ditemukan${data.length>=50?' · coba lebih spesifik':''}`;
   const infoHtml='';
   // Kelompokkan per desa
   const byDesa={};
   data.forEach(r=>{
-    const key=((r.desa||'-')+' | '+(r.kec||'-')).toUpperCase();
-    if(!byDesa[key])byDesa[key]={desa:normCase(r.desa)||'-',kec:normCase(r.kec)||'-',items:[]};
+    const key=(r.desa||'-')+' | '+(r.kec||'-');
+    if(!byDesa[key])byDesa[key]={desa:r.desa,kec:r.kec,items:[]};
     byDesa[key].items.push(r);
   });
   res.innerHTML=Object.values(byDesa).map(group=>`
@@ -1870,7 +1788,7 @@ async function searchNIK(){
       </div>
       ${group.items.map(r=>{
         const isLayak=r.status_rtlh==='Layak Huni';
-        const isBatal=r.status_rtlh==='SK Dibatalkan';
+        const isBatal=r.status_rtlh==='Dibatalkan';
         const statusColor=isLayak?'var(--success)':isBatal?'var(--gray-400)':'var(--danger)';
         const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
         return`<div onclick="bukaDetailDariSearch('${r.id}','${kecKey}')"
@@ -1896,7 +1814,7 @@ async function searchNIK(){
 async function bukaDetailDariSearch(id, kecKey){
   if(!kecKey)return toast('Kecamatan tidak ditemukan','error');
   // Fetch data lengkap langsung dari Supabase — tidak perlu tunggu loadKec
-  const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,backlog,desil,nik,no_kk,updated_at,keterangan';
+  const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,dtsen,backlog,desil,nik,no_kk,updated_at';
   const{data,error}=await sb.from('rtlh').select(cols).eq('id',parseInt(id)).single();
   if(error||!data)return toast('Data tidak ditemukan','error');
   // Hitung skor
@@ -1933,168 +1851,13 @@ async function ensureKecCounts(force=false){
     const all=ps.flatMap(r=>r.data||[]);
     kecCounts={};
     all.forEach(r=>{
-      const k=(r.kec||'').toUpperCase().trim();
+      const k=(r.kec||'').toUpperCase();
       if(!kecCounts[k])kecCounts[k]={total:0,sudah:0,proses:0,belum:0};
       kecCounts[k].total++;
       if(r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')kecCounts[k].sudah++;
-      else if(r.status_rtlh!=='SK Dibatalkan')kecCounts[k].belum++;
+      else if(r.status_rtlh!=='Dibatalkan')kecCounts[k].belum++;
     });
   }catch(e){console.error(e);}
-}
-
-// ══ Navigate ke keclist dengan pre-filter status ══
-let _globalStatusFilter='';
-
-async function navWithFilter(status){
-  _globalStatusFilter=status;
-  nav('keclist');
-  // Tunggu keclist render lalu terapkan filter
-  setTimeout(()=>{
-    applyGlobalFilter();
-  },300);
-}
-
-async function applyGlobalFilter(){
-  if(!_globalStatusFilter){
-    // Semua data — hapus filter
-    document.getElementById('keclistResult').innerHTML='';
-    document.getElementById('keclistResultWrap').style.display='none';
-    return;
-  }
-  // Tampilkan result wrap dengan filter status
-  const wrap=document.getElementById('keclistResultWrap');
-  const cnt=document.getElementById('keclistResultCount');
-  const res=document.getElementById('keclistResult');
-  wrap.style.display='block';
-  cnt.innerHTML=`<span style="background:${_globalStatusFilter==='Layak Huni'?'#F0FDF4':'#FEF2F2'};color:${_globalStatusFilter==='Layak Huni'?'#16A34A':'#DC2626'};padding:2px 10px;border-radius:99px;font-weight:700;font-size:.72rem">${_globalStatusFilter}</span>`;
-  res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>';
-  // Fetch data berdasarkan status
-  // Fetch semua data dengan parallel pagination
-  const{count:totalCnt}=await sb.from('rtlh').select('*',{count:'exact',head:true}).eq('status_rtlh',_globalStatusFilter);
-  const pages=Math.ceil((totalCnt||0)/1000);
-  cnt.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memuat ${totalCnt} data...`;
-  const results=await Promise.all(Array.from({length:pages},(_,p)=>
-    sb.from('rtlh').select('id,kec,desa,kep_kk,nik,status_rtlh,desil')
-      .eq('status_rtlh',_globalStatusFilter).order('kec').order('desa')
-      .range(p*1000,(p+1)*1000-1).limit(1000)
-  ));
-  const data=results.flatMap(r=>r.data||[]);
-  const error=results.find(r=>r.error)?.error;
-  if(error||!data?.length){
-        res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:.78rem">Tidak ada data</div>';
-        return;
-      }
-      cnt.innerHTML=`<span style="font-weight:700">${data.length}</span> data ${_globalStatusFilter}`;
-      const byDesa={};
-      data.forEach(r=>{
-        const key=((r.desa||'-')+'|'+(r.kec||'-')).toUpperCase();
-        if(!byDesa[key])byDesa[key]={desa:normCase(r.desa)||'-',kec:normCase(r.kec)||'-',items:[]};
-        byDesa[key].items.push(r);
-      });
-      const isLayakFilter=_globalStatusFilter==='Layak Huni';
-      const sc=isLayakFilter?'var(--success)':'var(--danger)';
-      res.innerHTML=Object.values(byDesa).map(g=>`
-        <div style="border-bottom:2px solid var(--blue-bg)">
-          <div style="padding:7px 12px;background:var(--blue-bg);display:flex;align-items:center;gap:6px">
-            <i class="fas fa-map-marker-alt" style="color:var(--blue);font-size:.72rem"></i>
-            <span style="font-size:.72rem;font-weight:800;color:var(--blue)">${g.desa}</span>
-            <span style="font-size:.65rem;color:var(--gray-500)">· ${g.kec}</span>
-            <span style="margin-left:auto;font-size:.62rem;background:var(--blue);color:#fff;border-radius:99px;padding:1px 7px">${g.items.length}</span>
-          </div>
-          ${g.items.map(r=>{
-            const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
-            return`<div onclick="clearKeclistSearch();_globalStatusFilter='';bukaDetailDariSearch('${r.id}','${kecKey}')"
-              style="padding:10px 12px;border-bottom:1px solid var(--gray-100);cursor:pointer;display:flex;align-items:center;gap:10px"
-              onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
-              <div style="width:32px;height:32px;border-radius:50%;background:${sc}18;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                <i class="fas fa-${isLayakFilter?'home':'house-damage'}" style="color:${sc};font-size:.78rem"></i>
-              </div>
-              <div style="flex:1;min-width:0">
-                <div style="font-weight:700;font-size:.8rem;color:var(--gray-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${showNama(r.kep_kk)}</div>
-                <div style="font-size:.65rem;color:var(--gray-500)">${r.nik||'-'} ${r.desil?'· '+r.desil:''}</div>
-              </div>
-              <span style="font-size:.62rem;font-weight:700;color:${sc};background:${sc}15;padding:2px 7px;border-radius:99px;flex-shrink:0">${r.status_rtlh||'RTLH'}</span>
-            </div>`;
-          }).join('')}
-        </div>`).join('');
-}
-
-function clearKeclistSearch(){
-  const inp=document.getElementById('kecSearchList');
-  if(inp)inp.value='';
-  document.getElementById('keclistResultWrap').style.display='none';
-  document.getElementById('keclistResult').innerHTML='';
-  renderKecList();
-}
-
-async function searchKeclist(){
-  const q=(document.getElementById('kecSearchList')?.value||'').trim();
-  if(!q){clearKeclistSearch();return;}
-  const ql=q.toLowerCase();
-  const wrap=document.getElementById('keclistResultWrap');
-  const res=document.getElementById('keclistResult');
-  const cnt=document.getElementById('keclistResultCount');
-  wrap.style.display='block';
-  res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Mencari...</div>';
-
-  // Cek apakah search kecamatan dulu
-  const kecMatch=Object.keys(KEC_CONFIG).filter(k=>k.toLowerCase().includes(ql));
-  if(kecMatch.length&&!['bsps','rtlh','dd','dana desa','csr'].some(b=>ql.startsWith(b))){
-    res.innerHTML='';cnt.innerHTML='Kecamatan ditemukan';
-    kecMatch.forEach(k=>{
-      const d=document.createElement('div');
-      d.onclick=()=>{clearKeclistSearch();selectKec(k);};
-      d.style.cssText='padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--gray-100)';
-      d.onmouseover=()=>d.style.background='var(--gray-50)';d.onmouseout=()=>d.style.background='';
-      d.innerHTML=`<i class="fas fa-map-marker-alt" style="color:var(--blue);font-size:.85rem"></i><span style="font-weight:700;font-size:.85rem">${k}</span><i class="fas fa-chevron-right" style="color:var(--gray-400);margin-left:auto;font-size:.75rem"></i>`;
-      res.appendChild(d);
-    });
-    return;
-  }
-
-  // Search data RTLH
-  const bantuanMap={'rtlh':'RTLH','bsps':'BSPS','dd':'Dana Desa','dana desa':'Dana Desa','csr':'CSR'};
-  let jenisBantuan=null,tahunBantuan=null;
-  for(const[key,val] of Object.entries(bantuanMap)){
-    if(ql.startsWith(key)){jenisBantuan=val;const rest=q.slice(key.length).trim();if(/^\d{4}$/.test(rest))tahunBantuan=rest;break;}
-  }
-  const isNumeric=/^\d+$/.test(q);
-  let query=sb.from('rtlh').select('id,kec,desa,kep_kk,nik,status_rtlh,desil,jenis_bantuan,tahun_bantuan');
-  if(jenisBantuan){query=query.ilike('jenis_bantuan',`%${jenisBantuan}%`);if(tahunBantuan)query=query.eq('tahun_bantuan',tahunBantuan);}
-  else if(isNumeric&&q.length>=10){query=query.eq('nik',q);}
-  else{query=query.or(`kep_kk.ilike.%${q}%,desa.ilike.%${q}%`);}
-  const{data,error}=await query.limit(5000);
-  if(error||!data?.length){res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:.78rem">Tidak ada hasil ditemukan</div>';cnt.innerHTML='0 hasil';return;}
-
-  cnt.innerHTML=`<strong>${data.length}</strong> hasil`;
-  const byDesa={};
-  data.forEach(r=>{const key=((r.desa||'-')+'|'+(r.kec||'-')).toUpperCase();if(!byDesa[key])byDesa[key]={desa:normCase(r.desa)||'-',kec:normCase(r.kec)||'-',items:[]};byDesa[key].items.push(r);});
-  res.innerHTML=Object.values(byDesa).map(g=>`
-    <div style="border-bottom:2px solid var(--blue-bg)">
-      <div style="padding:7px 12px;background:var(--blue-bg);display:flex;align-items:center;gap:6px">
-        <i class="fas fa-map-marker-alt" style="color:var(--blue);font-size:.72rem"></i>
-        <span style="font-size:.72rem;font-weight:800;color:var(--blue)">${g.desa}</span>
-        <span style="font-size:.65rem;color:var(--gray-500)">· ${g.kec}</span>
-        <span style="margin-left:auto;font-size:.62rem;background:var(--blue);color:#fff;border-radius:99px;padding:1px 7px">${g.items.length}</span>
-      </div>
-      ${g.items.map(r=>{
-        const isLayak=r.status_rtlh==='Layak Huni';
-        const sc=isLayak?'var(--success)':'var(--danger)';
-        const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
-        return`<div onclick="clearKeclistSearch();bukaDetailDariSearch('${r.id}','${kecKey}')"
-          style="padding:10px 12px;border-bottom:1px solid var(--gray-100);cursor:pointer;display:flex;align-items:center;gap:10px"
-          onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
-          <div style="width:32px;height:32px;border-radius:50%;background:${sc}18;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <i class="fas fa-${isLayak?'home':'house-damage'}" style="color:${sc};font-size:.78rem"></i>
-          </div>
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:700;font-size:.8rem;color:var(--gray-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${showNama(r.kep_kk)}</div>
-            <div style="font-size:.65rem;color:var(--gray-500)">${r.nik||'-'} ${r.desil?'· '+r.desil:''}</div>
-          </div>
-          <span style="font-size:.62rem;font-weight:700;color:${sc};background:${sc}15;padding:2px 7px;border-radius:99px;flex-shrink:0">${r.status_rtlh||'RTLH'}</span>
-        </div>`;
-      }).join('')}
-    </div>`).join('');
 }
 
 function renderKecList(){
@@ -2132,7 +1895,6 @@ function renderKecList(){
 // ══════════════════════════════════════════════════
 function initMap(){
   if(map)return;
-  if(!window.L){console.warn("Leaflet not ready");return;}
   map=L.map('map',{zoomControl:true}).setView([-7.4,111.4],11);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:19}).addTo(map);
   mcg=L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:40}).addTo(map);
@@ -2169,12 +1931,12 @@ async function loadKec(){
 
   if(brCache[currentKec]){brAll=brCache[currentKec];brFeatures=[...brAll];renderSidebar();renderKecDashboard();updateMap();return;}
 
-  const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,backlog,desil,nik,no_kk,updated_at,keterangan';
+  const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,dtsen,backlog,desil,nik,no_kk,updated_at';
   // Fetch dengan pagination (antisipasi lebih dari 1000 data per kecamatan)
   let allRows=[], pg=0, pgSize=1000, isDone=false;
   while(!isDone){
     let q=sb.from('rtlh').select(cols).order('id').range(pg*pgSize,(pg+1)*pgSize-1).limit(pgSize);
-    if(currentKec)q=q.ilike('kec',currentKec);
+    if(currentKec)q=q.eq('kec',currentKec);
     const{data,error}=await q;
     if(error){toast('Gagal memuat data. Coba refresh halaman.','error');return;}
     allRows=[...allRows,...(data||[])];
@@ -2238,40 +2000,33 @@ function renderSidebar(){
   const sc=document.getElementById('wgBody');
   if(!sc)return;
   const kecName=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===currentKec)||currentKec;
-  // Hanya rebuild HTML jika kecamatan berubah atau belum ada shell
-  if(sc.dataset.kec!==currentKec){
-    sc.dataset.kec=currentKec;
-    sc.innerHTML=`
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px">
+  sc.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <div>
         <div style="font-size:.88rem;font-weight:800;color:var(--gray-900)">${kecName} — BNBA RTLH</div>
-        <div style="font-size:.65rem;color:var(--gray-500);margin-top:2px" id="sidebarCount">${brAll.length} data terdaftar</div>
+        <div style="font-size:.65rem;color:var(--gray-500);margin-top:2px">${brAll.length} jiwa terdaftar</div>
       </div>
     </div>
     <div class="kec-dashboard" id="kecDashboard"></div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
       <span style="font-size:.68rem;font-weight:700;color:var(--gray-500)">Status:</span>
-      <button class="filter-chip active" data-status-chip="all" onclick="setFilterStatus('all')">Semua</button>
-      <button class="filter-chip" data-status-chip="RTLH" onclick="setFilterStatus('RTLH')" style="border-color:#DC2626;color:#DC2626">RTLH</button>
-      <button class="filter-chip" data-status-chip="Layak Huni" onclick="setFilterStatus('Layak Huni')" style="border-color:#16A34A;color:#16A34A">Layak Huni</button>
-      <button class="filter-chip" data-status-chip="Dibatalkan" onclick="setFilterStatus('SK Dibatalkan')" style="border-color:#9CA3AF;color:#6B7280">SK Dibatalkan</button>
+      <button class="filter-chip ${filterStatus==='all'?'active':''}" onclick="setFilterStatus('all')">Semua</button>
+      <button class="filter-chip ${filterStatus==='RTLH'?'active':''}" onclick="setFilterStatus('RTLH')" style="${filterStatus==='RTLH'?'':'border-color:#DC2626;color:#DC2626'}">RTLH</button>
+      <button class="filter-chip ${filterStatus==='Layak Huni'?'active':''}" onclick="setFilterStatus('Layak Huni')" style="${filterStatus==='Layak Huni'?'':'border-color:#16A34A;color:#16A34A'}">Layak Huni</button>
+      <button class="filter-chip ${filterStatus==='Dibatalkan'?'active':''}" onclick="setFilterStatus('Dibatalkan')" style="${filterStatus==='Dibatalkan'?'':'border-color:#9CA3AF;color:#6B7280'}">Batal</button>
       <span style="font-size:.68rem;font-weight:700;color:var(--gray-500);margin-left:6px">Desil:</span>
-      <button class="filter-chip active" data-desil-chip="all" onclick="setFilterDesil('all')">Semua</button>
-      <button class="filter-chip" data-desil-chip="1" onclick="setFilterDesil('1')" style="color:#BE123C">D1</button>
-      <button class="filter-chip" data-desil-chip="2" onclick="setFilterDesil('2')" style="color:#DC2626">D2</button>
-      <button class="filter-chip" data-desil-chip="3" onclick="setFilterDesil('3')" style="color:#EA580C">D3</button>
-      <button class="filter-chip" data-desil-chip="4" onclick="setFilterDesil('4')" style="color:#D97706">D4</button>
-      <button class="filter-chip" data-desil-chip="5" onclick="setFilterDesil('5')" style="color:#84CC16">D5</button>
-      <button class="filter-chip" data-desil-chip="6" onclick="setFilterDesil('6')" style="color:#16A34A">D6</button>
-      <button class="filter-chip" data-desil-chip="7" onclick="setFilterDesil('7')" style="color:#0891B2">D7</button>
-      <button class="filter-chip" data-desil-chip="8" onclick="setFilterDesil('8')" style="color:#7C3AED">D8</button>
+      <button class="filter-chip ${filterDesil==='all'?'active':''}" onclick="setFilterDesil('all')">Semua</button>
+      <button class="filter-chip ${filterDesil==='1'?'active':''}" onclick="setFilterDesil('1')" style="${filterDesil==='1'?'':'color:#BE123C'}">D1</button>
+      <button class="filter-chip ${filterDesil==='2'?'active':''}" onclick="setFilterDesil('2')" style="${filterDesil==='2'?'':'color:#DC2626'}">D2</button>
+      <button class="filter-chip ${filterDesil==='3'?'active':''}" onclick="setFilterDesil('3')" style="${filterDesil==='3'?'':'color:#EA580C'}">D3</button>
+      <button class="filter-chip ${filterDesil==='4'?'active':''}" onclick="setFilterDesil('4')" style="${filterDesil==='4'?'':'color:#D97706'}">D4</button>
+      <button class="filter-chip ${filterDesil==='5'?'active':''}" onclick="setFilterDesil('5')" style="${filterDesil==='5'?'':'color:#84CC16'}">D5</button>
+      <button class="filter-chip ${filterDesil==='6'?'active':''}" onclick="setFilterDesil('6')" style="${filterDesil==='6'?'':'color:#16A34A'}">D6</button>
+      <button class="filter-chip ${filterDesil==='7'?'active':''}" onclick="setFilterDesil('7')" style="${filterDesil==='7'?'':'color:#0891B2'}">D7</button>
+      <button class="filter-chip ${filterDesil==='8'?'active':''}" onclick="setFilterDesil('8')" style="${filterDesil==='8'?'':'color:#7C3AED'}">D8</button>
     </div>
     <div class="sidebar-list" id="sidebarList"></div>`;
-    renderKecDashboard();
-  } else {
-    const cnt=document.getElementById('sidebarCount');
-    if(cnt)cnt.textContent=brAll.length+' data terdaftar';
-  }
+  renderKecDashboard();
   renderSidebarList();
 }
 
@@ -2281,13 +2036,13 @@ function renderKecDashboard(){
   const total=brAll.length;
   const layak=brAll.filter(r=>r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses').length;
   const rtlh=brAll.filter(r=>r.status_rtlh==='RTLH'||r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
-  const batal=brAll.filter(r=>r.status_rtlh==='SK Dibatalkan').length;
+  const batal=brAll.filter(r=>r.status_rtlh==='Dibatalkan').length;
   const desil14=brAll.filter(r=>{const m=String(r.desil||'').match(/\d+/);return m&&parseInt(m[0])<=4;}).length;
   d.innerHTML=`
     <div class="kd-stat">
       <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--success)">${layak}</div><div class="kdsi-lbl">Layak Huni</div></div>
       <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--danger)">${rtlh}</div><div class="kdsi-lbl">RTLH</div></div>
-      <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--gray-500)">${batal}</div><div class="kdsi-lbl">SK Dibatalkan</div></div>
+      <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--gray-500)">${batal}</div><div class="kdsi-lbl">Dibatalkan</div></div>
     </div>
     <div class="canvas-wrap"><canvas id="chartKecStatus"></canvas></div>`;
   setTimeout(()=>{
@@ -2296,27 +2051,14 @@ function renderKecDashboard(){
     const existing=Chart.getChart(ctx);
     if(existing)existing.destroy();
     new Chart(ctx,{type:'doughnut',
-      data:{labels:['Layak Huni','RTLH','SK Dibatalkan'],datasets:[{data:[layak,rtlh,batal],backgroundColor:['#16A34A','#DC2626','#94A3B8'],borderWidth:2,cutout:'65%'}]},
+      data:{labels:['Layak Huni','RTLH','Dibatalkan'],datasets:[{data:[layak,rtlh,batal],backgroundColor:['#16A34A','#DC2626','#94A3B8'],borderWidth:2,cutout:'65%'}]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:9},boxWidth:10,padding:6}}}}
     });
   },50);
 }
 
-function setFilterStatus(s){
-  filterStatus=s;
-  // Update chip UI tanpa rebuild — langsung toggle class
-  document.querySelectorAll('[data-status-chip]').forEach(btn=>{
-    btn.classList.toggle('active', btn.dataset.statusChip===s);
-  });
-  applyFilters();
-}
-function setFilterDesil(d){
-  filterDesil=d;
-  document.querySelectorAll('[data-desil-chip]').forEach(btn=>{
-    btn.classList.toggle('active', btn.dataset.desilChip===d);
-  });
-  applyFilters();
-}
+function setFilterStatus(s){filterStatus=s;applyFilters();}
+function setFilterDesil(d){filterDesil=d;applyFilters();}
 function applyFilters(){
   brFeatures=brAll.filter(r=>{
     if(filterStatus!=='all'&&r.status_rtlh!==filterStatus)return false;
@@ -2331,67 +2073,12 @@ function applyFilters(){
   updateMap();
 }
 
-function resetSidebarSearch(){
-  brFeatures=[...brAll];
-  applyFilters();
-}
-
-async function searchSidebar(){
-  const input=document.getElementById('sidebarSearchInput');
-  const q=(input?.value||'').trim();
-  if(!q){resetSidebarSearch();return;}
-
-  const ql=q.toLowerCase();
-  const isNumeric=/^\d+$/.test(q);
-
-  // Deteksi jenis bantuan
-  const bantuanMap={'rtlh':'RTLH','bsps':'BSPS','dd':'Dana Desa','dana desa':'Dana Desa','csr':'CSR','lainnya':'Lainnya'};
-  let jenisBantuan=null, tahunBantuan=null;
-  for(const[key,val] of Object.entries(bantuanMap)){
-    if(ql.startsWith(key)){
-      jenisBantuan=val;
-      const rest=q.slice(key.length).trim();
-      if(/^\d{4}$/.test(rest))tahunBantuan=rest;
-      break;
-    }
-  }
-
-  if(jenisBantuan){
-    // Filter dari brAll by jenis bantuan
-    brFeatures=brAll.filter(r=>{
-      const jb=(r.jenis_bantuan||'').toLowerCase();
-      const match=jb.includes(jenisBantuan.toLowerCase());
-      return match&&(!tahunBantuan||String(r.tahun_bantuan||''===tahunBantuan));
-    });
-  } else if(isNumeric&&q.length>=10){
-    // Search by NIK dari DB langsung
-    const{data}=await sb.from('rtlh').select('*').eq('nik',q).eq('kec',currentKec).single();
-    if(data){data._score=calcScore(data);brFeatures=[data];const idx=brAll.findIndex(x=>String(x.id)===String(data.id));if(idx>=0)brAll[idx]=data;else brAll.push(data);}
-    else brFeatures=[];
-  } else {
-    // Filter lokal dari brAll
-    brFeatures=brAll.filter(r=>{
-      return (r.kep_kk||'').toLowerCase().includes(ql)||
-             (r.desa||'').toLowerCase().includes(ql)||
-             (r.alamat||'').toLowerCase().includes(ql)||
-             (r.nik||'').includes(q);
-    });
-  }
-  renderSidebarList();
-  updateMap();
-  // Tampilkan info hasil
-  const l=document.getElementById('sidebarList');
-  if(l&&brFeatures.length===0){
-    l.innerHTML=`<div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fas fa-search" style="font-size:1.5rem;display:block;margin-bottom:8px"></i><div style="font-size:.78rem">Tidak ada hasil untuk "<strong>${q}</strong>"</div></div>`;
-  }
-}
-
 function renderSidebarList(){
   const l=document.getElementById('sidebarList');
   if(!l)return;
   if(!brFeatures.length){l.innerHTML='<div style="padding:24px;text-align:center;color:var(--gray-400);font-size:.78rem"><i class="fas fa-inbox" style="font-size:1.5rem;display:block;margin-bottom:8px"></i>Tidak ada data sesuai filter</div>';return;}
   const sorted=[...brFeatures].sort((a,b)=>{
-    const da=(a.desa||'').toUpperCase().localeCompare((b.desa||'').toUpperCase());
+    const da=(a.desa||'').localeCompare(b.desa||'');
     if(da!==0)return da;
     const sa=parseInt(String(a.desil||'99').match(/\d+/)?.[0]||'99');
     const sb=parseInt(String(b.desil||'99').match(/\d+/)?.[0]||'99');
@@ -2400,16 +2087,13 @@ function renderSidebarList(){
   // Kelompokkan per desa
   const byDesa={};
   sorted.forEach(r=>{
-    const desaKey=(r.desa||'Tanpa Desa').toUpperCase();
-    const desaLabel=normCase(r.desa)||'Tanpa Desa';
-    if(!byDesa[desaKey]){byDesa[desaKey]={desa:desaLabel,items:[]};}
-    byDesa[desaKey].items.push(r);
+    const key=r.desa||'Tanpa Desa';
+    if(!byDesa[key])byDesa[key]=[];
+    byDesa[key].push(r);
   });
-  l.innerHTML=Object.values(byDesa).map(group=>{
-    const desa=group.desa;
-    const items=group.items;
+  l.innerHTML=Object.entries(byDesa).map(([desa,items])=>{
     const layak=items.filter(r=>r.status_rtlh==='Layak Huni').length;
-    const rtlh=items.filter(r=>r.status_rtlh!=='Layak Huni'&&r.status_rtlh!=='SK Dibatalkan').length;
+    const rtlh=items.filter(r=>r.status_rtlh!=='Layak Huni'&&r.status_rtlh!=='Dibatalkan').length;
     return`<div class="desa-group">
       <div class="desa-header" onclick="toggleDesaGroup('dg_${desa.replace(/\s/g,'_')}')" style="padding:8px 14px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);border-top:2px solid var(--blue-bg);display:flex;align-items:center;gap:8px;cursor:pointer;position:sticky;top:0;z-index:5">
         <i class="fas fa-map-marker-alt" style="color:var(--blue);font-size:.72rem;flex-shrink:0"></i>
@@ -2423,7 +2107,7 @@ function renderSidebarList(){
         ${items.map((r,i)=>{
           const desilNum=String(r.desil||'').match(/\d+/)?.[0]||'';
           const color=desilNum?getDesilColor(desilNum):'#94A3B8';
-          const statusCls=r.status_rtlh==='Layak Huni'?'sudah':r.status_rtlh==='SK Dibatalkan'?'batal':'belum';
+          const statusCls=r.status_rtlh==='Layak Huni'?'sudah':r.status_rtlh==='Dibatalkan'?'batal':'belum';
           return`<div class="rtlh-item" id="ri_${r.id}" onclick="selectItem(${r.id})">
             <div style="display:flex;align-items:center;gap:8px">
               <div style="width:22px;height:22px;border-radius:6px;background:${color}18;color:${color};font-size:.6rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div>
@@ -2436,7 +2120,7 @@ function renderSidebarList(){
             <div class="ri-badges">
               <span class="badge ${statusCls}">${r.status_rtlh||'RTLH'}</span>
               ${desilNum?`<span class="badge desil" style="background:${getDesilColor(desilNum)}22;color:${getDesilColor(desilNum)}">Desil ${desilNum}</span>`:''}
-              
+              ${r.dtsen?`<span class="badge" style="background:#EFF6FF;color:#1D4ED8">MyPKP:${r.dtsen}</span>`:''}
             </div>
             <div class="ri-detail" id="det_${r.id}">
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
@@ -2447,7 +2131,7 @@ function renderSidebarList(){
                   ['Penghasilan',dn(r.pengh)],['Jml Penghuni',dn(r.jml_peng)],
                   ['Luas Rumah',dn(r.luas_rum)+' m²'],['Desil',dn(r.desil)],
                   ['Jenis Bantuan',dn(r.jenis_bantuan)],['Tahun Bantuan',dn(r.tahun_bantuan)],
-                  ['Material Dinding',dn(r.material_d)],
+                  ['Status MyPKP',dn(r.dtsen)],['Material Dinding',dn(r.material_d)],
                   ['Kondisi Dinding',dn(r.kondisi_di)],['Material Atap',dn(r.material_a)],
                   ['Kondisi Atap',dn(r.kondisi_at)],['Material Lantai',dn(r.material_l)],
                   ['Kondisi Lantai',dn(r.kondisi_la)],
@@ -2483,7 +2167,7 @@ function updateMap(){
   brFeatures.forEach(r=>{
     if(!r.latitude||!r.longitude)return;
     const isLayak=r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses';
-    const isBatal=r.status_rtlh==='SK Dibatalkan';
+    const isBatal=r.status_rtlh==='Dibatalkan';
     const markerColor=isLayak?'#16A34A':isBatal?'#94A3B8':'#DC2626';
     const mk=L.circleMarker([r.latitude,r.longitude],{radius:7,fillColor:markerColor,color:'#fff',weight:1.5,fillOpacity:.85});
     mk.on('click',()=>selectItem(r.id));
@@ -2546,12 +2230,12 @@ function showDetail(r){
       </div>
     </div>
     <div class="detail-grid">
-      <div class="detail-item"><div class="dl">Status RTLH</div><div class="dv">${r.status_rtlh?`<span class="badge ${(r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')?'sudah':r.status_rtlh==='SK Dibatalkan'?'batal':'belum'}">${r.status_rtlh}</span>`:'-'}</div></div>
+      <div class="detail-item"><div class="dl">Status RTLH</div><div class="dv">${r.status_rtlh?`<span class="badge ${(r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')?'sudah':r.status_rtlh==='Dibatalkan'?'batal':'belum'}">${r.status_rtlh}</span>`:'-'}</div></div>
       <div class="detail-item"><div class="dl">Desil</div><div class="dv" style="color:${desilNum?getDesilColor(desilNum):'inherit'};font-weight:700">${dn(r.desil)||'-'}</div></div>
-      
+      <div class="detail-item"><div class="dl">Status MyPKP</div><div class="dv">${dn(r.dtsen)||'-'}</div></div>
       <div class="detail-item"><div class="dl">Backlog</div><div class="dv">${dn(r.backlog)||'-'}</div></div>
-      ${r.status_rtlh==='SK Dibatalkan'&&r.status_batal?`<div class="detail-item full"><div class="dl">Alasan Batal</div><div class="dv" style="color:var(--danger);font-weight:600">${r.status_batal}</div></div>`:''}
-      ${r.jenis_bantuan?`<div class="detail-item"><div class="dl">Jenis Bantuan</div><div class="dv">${r.jenis_bantuan}</div></div>`:''}      ${r.keterangan?`<div class="detail-item full"><div class="dl">Keterangan</div><div class="dv" style="font-style:italic;color:var(--gray-700)">${r.keterangan}</div></div>`:''}
+      ${r.status_rtlh==='Dibatalkan'&&r.status_batal?`<div class="detail-item full"><div class="dl">Alasan Batal</div><div class="dv" style="color:var(--danger);font-weight:600">${r.status_batal}</div></div>`:''}
+      ${r.jenis_bantuan?`<div class="detail-item"><div class="dl">Jenis Bantuan</div><div class="dv">${r.jenis_bantuan}</div></div>`:''}
       ${r.tahun_bantuan?`<div class="detail-item"><div class="dl">Tahun Bantuan</div><div class="dv">${r.tahun_bantuan}</div></div>`:''}
     </div>
     <div style="margin-top:14px">
@@ -2562,13 +2246,6 @@ function showDetail(r){
         :'<span style="font-size:.72rem;color:var(--gray-400)">Belum ada riwayat bantuan</span>'}
       </div>
     </div>
-    <div style="margin-top:14px">
-      <div style="font-size:.72rem;font-weight:800;color:var(--gray-600);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px;justify-content:space-between">
-        <span><i class="fas fa-link" style="color:var(--blue)"></i> Dokumen Terhubung</span>
-        ${canEdit()?`<button onclick="openLinkDok('${r.id}')" style="font-size:.65rem;padding:3px 10px;border-radius:6px;background:var(--blue);color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:700"><i class="fas fa-link"></i> Kelola</button>`:''}
-      </div>
-      <div id="dpDokLink" style="font-size:.72rem;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
-    </div>
     <div style="margin-top:14px" id="dpVerifSection">
       <div style="font-size:.72rem;font-weight:800;color:var(--gray-600);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px;justify-content:space-between">
         <span><i class="fas fa-clipboard-check" style="color:#10B981"></i> Riwayat Verifikasi Lapangan</span>
@@ -2578,8 +2255,8 @@ function showDetail(r){
     </div>
     <div style="margin-top:14px" id="dpDokSection">
       <div style="font-size:.72rem;font-weight:800;color:var(--gray-600);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px;justify-content:space-between">
-        <span><i class="fas fa-camera" style="color:var(--warning)"></i> Foto Rumah</span>
-        ${isAdmin?`<button onclick="openDokModal('${r.id}')" style="font-size:.65rem;padding:3px 10px;border-radius:6px;background:var(--warning);color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:700"><i class="fas fa-camera"></i> Foto</button>`:''}
+        <span><i class="fas fa-folder-open" style="color:var(--warning)"></i> Dokumen & Foto</span>
+        ${isAdmin?`<button onclick="openDokModal('${r.id}')" style="font-size:.65rem;padding:3px 10px;border-radius:6px;background:var(--warning);color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:700"><i class="fas fa-upload"></i> Upload</button>`:''}
       </div>
       <div id="dpDokList" style="font-size:.72rem;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
     </div>
@@ -2640,7 +2317,6 @@ function showDetail(r){
   loadVerifList(r.id);
   loadDokList(r.id);
   loadRiwayat(r.nik||r.id);
-  loadDokLink(r.id);
 }
 
 function closeDetail(){document.getElementById('detailPanel').classList.remove('open');clearDetailSession();}
@@ -2711,14 +2387,13 @@ const FIELDS=[
   {key:'kondisi_at',label:'Kondisi Atap',type:'text'},
   {key:'material_l',label:'Material Lantai',type:'text'},
   {key:'kondisi_la',label:'Kondisi Lantai',type:'text'},
-  {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['RTLH','Layak Huni','SK Dibatalkan']},
-  {key:'status_batal',label:'Alasan SK Dibatalkan',type:'select',opts:['','-','Meninggal Dunia','Tidak Bersedia Dibantu','Tidak Ada Biaya','Pindah Tempat Tinggal','Sudah Mampu Mandiri','Tidak Memenuhi Syarat','Lainnya'],onChange:'handleAlasanBatal(this)'},
-
+  {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['RTLH','Layak Huni','Dibatalkan']},
+  {key:'status_batal',label:'Alasan Dibatalkan',type:'select',opts:['','Meninggal Dunia','Tidak Bersedia Dibantu','Tidak Ada Biaya','Pindah Tempat Tinggal','Sudah Mampu Mandiri','Tidak Memenuhi Syarat','Lainnya']},
   {key:'jenis_bantuan',label:'Jenis Bantuan',type:'select',opts:['','RTLH','BSPS','DD','CSR','Lainnya']},
   {key:'tahun_bantuan',label:'Tahun Bantuan',type:'text',placeholder:'misal: 2025'},
+  {key:'dtsen',label:'Status (Cek Bantuan MyPKP)',type:'select',opts:['','Eligible','Not Eligible','Not Eligible1']},
   {key:'backlog',label:'Backlog',type:'select',opts:['','Backlog 1','Backlog 2']},
   {key:'desil',label:'Desil',type:'select',opts:['','Desil 1','Desil 2','Desil 3','Desil 4','Desil 5','Desil 6','Desil 7','Desil 8']},
-  {key:'keterangan',label:'Keterangan',type:'text',full:true,noNorm:true},
   {key:'latitude',label:'Latitude',type:'number'},
   {key:'longitude',label:'Longitude',type:'number'},
 ];
@@ -2729,19 +2404,6 @@ function getDesaList(){
   return[...new Set(window._batasNgawi.features.filter(f=>f.properties.WADMKC===kecName).map(f=>f.properties.NAMOBJ))].sort();
 }
 
-function handleAlasanBatal(sel){
-  const statusEl=document.getElementById('ff_status_rtlh');
-  if(!statusEl)return;
-  if(sel.value&&sel.value!=='-'){
-    statusEl.value='SK Dibatalkan';
-  } else {
-    const jbEl=document.getElementById('ff_jenis_bantuan');
-    if(jbEl&&jbEl.value)statusEl.value='Layak Huni';
-    else statusEl.value='RTLH';
-    sel.value='';
-  }
-}
-
 function openForm(id){
   if(!canEdit())return toast('Tidak ada akses edit','error');
   editId=id||null;
@@ -2749,59 +2411,40 @@ function openForm(id){
   const r=editId?brAll.find(x=>String(x.id)===String(editId)):{};
   // Super admin = isAdmin AND userKec is null/empty (no kecamatan restriction)
   const superAdmin=isSuperAdmin(); // Level 1 only can see/edit NIK
-  // Kelompokkan FIELDS per section
-  const SECTIONS=[
-    {title:'Identitas',icon:'fas fa-id-card',color:'var(--blue)',keys:['nik','no_kk','kep_kk','desa','alamat','jen_kel','umur']},
-    {title:'Sosial Ekonomi',icon:'fas fa-briefcase',color:'#7C3AED',keys:['pend_ter','pekerjaan','pengh','jml_peng','status_kep','luas_rum','luas_tan']},
-    {title:'Kondisi Bangunan',icon:'fas fa-home',color:'#EA580C',keys:['material_d','kondisi_di','material_a','kondisi_at','material_l','kondisi_la']},
-    {title:'Status & Bantuan',icon:'fas fa-hand-holding-heart',color:'var(--success)',keys:['status_rtlh','status_batal','jenis_bantuan','tahun_bantuan','backlog','desil','keterangan']},
-    {title:'Koordinat',icon:'fas fa-map-marker-alt',color:'var(--danger)',keys:['latitude','longitude']},
-  ];
-  const fieldMap=Object.fromEntries(FIELDS.map(f=>[f.key,f]));
   const g=document.getElementById('formGrid');
-  g.innerHTML=SECTIONS.map(sec=>{
-    const secFields=sec.keys.map(k=>fieldMap[k]).filter(Boolean);
-    const fieldsHtml=secFields.map(f=>{
-      const val=r?.[f.key]||'';
-      const locked=f.sensitive&&!superAdmin;
-      let inputHtml='';
-      if(f.type==='desa_select'){
-        const dl=getDesaList();
-        const valUpper=val.toUpperCase();
-        const inList=dl.some(d=>d.toUpperCase()===valUpper);
-        if(dl.length){
-          const extraOption=val&&!inList?`<option value="${val}" selected>${val}</option>`:'';
-          inputHtml=`<select id="ff_${f.key}" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.85rem;color:var(--gray-900);outline:none;background:#fff"><option value="">-- Pilih Desa --</option>${extraOption}${dl.map(d=>`<option value="${d}" ${valUpper===d.toUpperCase()?'selected':''}>${d}</option>`).join('')}</select>`;
-        } else {
-          inputHtml=`<input type="text" id="ff_${f.key}" value="${val}" placeholder="Nama desa" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.85rem;color:var(--gray-900);outline:none;box-sizing:border-box">`;
-        }
-      } else if(f.type==='select'){
-        const onChange=f.onChange?f.onChange:'';
-        const extraChange=f.key==='jenis_bantuan'?"if(this.value){const s=document.getElementById('ff_status_rtlh');if(s&&s.value!=='SK Dibatalkan')s.value='Layak Huni';}":'';
-        inputHtml=`<select id="ff_${f.key}" ${locked?'disabled':''} onchange="${extraChange}${onChange}" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.85rem;color:var(--gray-900);outline:none;background:#fff">${f.opts.map(o=>`<option value="${o==='-'?'':o}" ${(val===o||(o==='-'&&!val))?'selected':''}>${o||'(kosong)'}</option>`).join('')}</select>`;
-      } else if(f.sensitive){
-        if(locked){
-          inputHtml=`<input type="text" id="ff_${f.key}" value="${val}" readonly style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-100);font-family:inherit;font-size:.85rem;color:var(--gray-400);background:var(--gray-50);cursor:not-allowed;box-sizing:border-box">`;
-        } else {
-          inputHtml=`<input type="text" id="ff_${f.key}" value="${val}" placeholder="${f.key==='nik'?'16 digit NIK':'16 digit No. KK'}" maxlength="20" inputmode="numeric" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--success);font-family:inherit;font-size:.85rem;color:var(--gray-900);outline:none;box-sizing:border-box;font-weight:700;letter-spacing:1px">`;
-        }
-      } else {
-        inputHtml=`<input type="${f.type}" id="ff_${f.key}" value="${val}" ${f.placeholder?`placeholder="${f.placeholder}"`:''} style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.85rem;color:var(--gray-900);outline:none;box-sizing:border-box">`;
+  g.innerHTML=FIELDS.map(f=>{
+    const val=r?.[f.key]||'';
+    const cls=f.full?'form-group full':'form-group';
+    const locked=f.sensitive&&!superAdmin;
+    if(f.type==='desa_select'){
+      const dl=getDesaList();
+      // Cek apakah val ada di daftar (case-insensitive)
+      const valUpper=val.toUpperCase();
+      const inList=dl.some(d=>d.toUpperCase()===valUpper);
+      if(dl.length){
+        // Kalau val tidak ada di list, tambahkan sebagai option
+        const extraOption=val&&!inList?`<option value="${val}" selected>${val}</option>`:'';
+        return`<div class="${cls}"><label>${f.label}</label><select id="ff_${f.key}"><option value="">-- Pilih Desa --</option>${extraOption}${dl.map(d=>`<option value="${d}" ${valUpper===d.toUpperCase()?'selected':''}>${d}</option>`).join('')}</select></div>`;
       }
-      return`<div style="display:flex;flex-direction:column;gap:4px;${f.full?'grid-column:1/-1':''}">
-        <label style="font-size:.6rem;font-weight:800;color:var(--gray-500);text-transform:uppercase;letter-spacing:.06em">${f.label}</label>
-        ${inputHtml}
-      </div>`;
-    }).join('');
-    return`<div style="margin-bottom:16px">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid ${sec.color}22">
-        <i class="${sec.icon}" style="color:${sec.color};font-size:.8rem"></i>
-        <span style="font-size:.72rem;font-weight:800;color:${sec.color};text-transform:uppercase;letter-spacing:.06em">${sec.title}</span>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        ${fieldsHtml}
-      </div>
-    </div>`;
+      // Fallback: input text dengan nilai lama terjaga
+      return`<div class="${cls}"><label>${f.label}</label><input type="text" id="ff_${f.key}" value="${val}" placeholder="Nama desa"></div>`;
+    }
+    if(f.type==='select'){
+      return`<div class="${cls}"><label>${f.label}</label><select id="ff_${f.key}" ${locked?'disabled':''}
+        ${f.key==='jenis_bantuan'?`onchange="if(this.value){const s=document.getElementById('ff_status_rtlh');if(s&&s.value!=='Dibatalkan')s.value='Layak Huni';}"`:''}
+        >${f.opts.map(o=>`<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('')}</select></div>`;
+    }
+    if(f.sensitive){
+      // Always render NIK/KK — locked or editable depending on role
+      if(locked){
+        return`<div class="${cls}"><label>${f.label} <span style="color:var(--gold);font-size:.6rem">(Admin Inti)</span></label>
+          <input type="text" id="ff_${f.key}" value="${val}" class="locked" readonly style="background:var(--gray-50);color:var(--gray-400);cursor:not-allowed" maxlength="20"></div>`;
+      }else{
+        return`<div class="${cls}"><label>${f.label} <span style="color:var(--success);font-size:.6rem">✓ Dapat diedit</span></label>
+          <input type="text" id="ff_${f.key}" value="${val}" placeholder="${f.key==='nik'?'16 digit NIK':'16 digit No. KK'}" maxlength="20" inputmode="numeric" style="border-color:var(--success)"></div>`;
+      }
+    }
+    return`<div class="${cls}"><label>${f.label}</label><input type="${f.type}" id="ff_${f.key}" value="${val}"></div>`;
   }).join('');
   document.getElementById('photoUploadSection').style.display=isAdmin?'block':'none';
   document.getElementById('ovForm').classList.add('open');
@@ -2823,10 +2466,9 @@ async function saveForm(){
     else{v=el.value.trim();}
     if(f.type==='number')obj[f.key]=v?parseFloat(v):null;
     else{
-      // Normalize case untuk field teks bebas
-      const normalized=f.noNorm?v:(f.upper?normUpper(v):normCase(v));
-      if(!normalized&&oldRec&&oldRec[f.key])obj[f.key]=oldRec[f.key];
-      else obj[f.key]=normalized||null;
+      // Jangan overwrite dengan kosong kalau field sudah ada isinya di data lama
+      if(!v&&oldRec&&oldRec[f.key])obj[f.key]=oldRec[f.key];
+      else obj[f.key]=v||null;
     }
   }
   // Tambah timestamp update
@@ -2846,8 +2488,8 @@ async function saveForm(){
     // Catat perubahan ke rtlh_riwayat
     const changes=[];
     const FIELD_LABELS={kep_kk:'Nama KK',desa:'Desa',alamat:'Alamat',status_rtlh:'Status RTLH',
-      status_batal:'Alasan SK Dibatalkan',jenis_bantuan:'Jenis Bantuan',tahun_bantuan:'Tahun Bantuan',
-      desil:'Desil',luas_rum:'Luas Rumah',jml_peng:'Jml Penghuni',
+      status_batal:'Alasan Batal',jenis_bantuan:'Jenis Bantuan',tahun_bantuan:'Tahun Bantuan',
+      dtsen:'Status MyPKP',desil:'Desil',luas_rum:'Luas Rumah',jml_peng:'Jml Penghuni',
       pekerjaan:'Pekerjaan',jen_kel:'Jenis Kelamin',umur:'Umur',material_d:'Material Dinding',
       kondisi_di:'Kondisi Dinding',material_a:'Material Atap',kondisi_at:'Kondisi Atap',
       material_l:'Material Lantai',kondisi_la:'Kondisi Lantai'};
@@ -2886,10 +2528,6 @@ async function saveForm(){
   brFeatures=[...brAll];
   closeForm();
   toast(editId?'Data diperbarui':'Data ditambahkan','success');
-  // Auto-link dokumen jika ada jenis bantuan
-  if(saved.jenis_bantuan){
-    autoLinkDokumen(saved.id, saved.jenis_bantuan, saved.tahun_bantuan).catch(()=>{});
-  }
   renderSidebar();updateMap();
 }
 
@@ -2952,46 +2590,25 @@ function addExcelDropdowns(ws, rows){
   });
 }
 
-async function downloadExcel(withNIK){
+function downloadExcel(withNIK){
   const superAdmin=isSuperAdmin();
-  // Fetch verifikasi untuk semua data di kecamatan ini
-  const rtlhIds=brAll.map(r=>r.id);
-  let verifMap={};
-  if(rtlhIds.length){
-    const{data:verifData}=await sb.from('rtlh_verifikasi').select('*').in('rtlh_id',rtlhIds).order('tahun',{ascending:true});
-    (verifData||[]).forEach(v=>{
-      if(!verifMap[v.rtlh_id])verifMap[v.rtlh_id]=[];
-      verifMap[v.rtlh_id].push(v);
-    });
-  }
-  const rows=brAll.map(r=>{
-    const vList=verifMap[r.id]||[];
-    const verifCols={};
-    vList.forEach((v,i)=>{
-      const n=i+1;
-      verifCols[`Verif${n}_Tahun`]=v.tahun||'';
-      verifCols[`Verif${n}_Hasil`]=v.hasil||'';
-      verifCols[`Verif${n}_Keterangan`]=v.keterangan||'';
-      verifCols[`Verif${n}_Petugas`]=v.petugas||'';
-    });
-    return{
-      ID:r.id,Kecamatan:r.kec,Desa:r.desa,'Nama KK':r.kep_kk,
-      NIK:withNIK&&superAdmin?(r.nik||''):'***',
-      'No. KK':withNIK&&superAdmin?(r.no_kk||''):'***',
-      Alamat:r.alamat,'Jenis Kelamin':r.jen_kel,Umur:r.umur,
-      Pendidikan:r.pend_ter,Pekerjaan:r.pekerjaan,Penghasilan:r.pengh,
-      'Luas Rumah (m²)':r.luas_rum,'Luas Tanah (m²)':r.luas_tan,
-      'Jml Penghuni':r.jml_peng,'Status Kepemilikan':r.status_kep,
-      'Material Dinding':r.material_d,'Kondisi Dinding':r.kondisi_di,
-      'Material Atap':r.material_a,'Kondisi Atap':r.kondisi_at,
-      'Material Lantai':r.material_l,'Kondisi Lantai':r.kondisi_la,
-      'Status RTLH':r.status_rtlh,'Alasan SK Dibatalkan':r.status_batal,
-      'Jenis Bantuan':r.jenis_bantuan,'Tahun Bantuan':r.tahun_bantuan,
-      Backlog:r.backlog,Desil:r.desil,Keterangan:r.keterangan||'',
-      Latitude:r.latitude,Longitude:r.longitude,
-      ...verifCols,
-    };
-  });
+  const rows=brAll.map(r=>({
+    ID:r.id,Kecamatan:r.kec,Desa:r.desa,'Nama KK':r.kep_kk,
+    NIK:withNIK&&superAdmin?(r.nik||''):'***',
+    'No. KK':withNIK&&superAdmin?(r.no_kk||''):'***',
+    Alamat:r.alamat,'Jenis Kelamin':r.jen_kel,Umur:r.umur,
+    Pendidikan:r.pend_ter,Pekerjaan:r.pekerjaan,Penghasilan:r.pengh,
+    'Luas Rumah (m²)':r.luas_rum,'Luas Tanah (m²)':r.luas_tan,
+    'Jml Penghuni':r.jml_peng,'Status Kepemilikan':r.status_kep,
+    'Material Dinding':r.material_d,'Kondisi Dinding':r.kondisi_di,
+    'Material Atap':r.material_a,'Kondisi Atap':r.kondisi_at,
+    'Material Lantai':r.material_l,'Kondisi Lantai':r.kondisi_la,
+    'Status RTLH':r.status_rtlh,'Alasan Batal':r.status_batal,
+    'Jenis Bantuan':r.jenis_bantuan,'Tahun Bantuan':r.tahun_bantuan,
+    'Status MyPKP':r.dtsen,Backlog:r.backlog,Desil:r.desil,
+    DTSEN:r.dtsen,
+    Latitude:r.latitude,Longitude:r.longitude,
+  }));
   const ws=XLSX.utils.json_to_sheet(rows);
   ws['!cols']=Object.keys(rows[0]).map(k=>({wch:Math.max(k.length+2,14)}));
   addExcelDropdowns(ws,rows);
@@ -3019,10 +2636,11 @@ async function importExcel(input){
         kep_kk:row['Nama KK']||row['kep_kk']||null,
         desa:row['Desa']||row['desa']||null,
         alamat:row['Alamat']||row['alamat']||null,
-        nik:isSuperAdmin()?String(getCol(row,'NIK','nik')||'').replace(/[^0-9]/g,'')||null:undefined,
-        no_kk:isSuperAdmin()?String(getCol(row,'No. KK','no_kk')||'').replace(/[^0-9]/g,'')||null:undefined,
+        nik:isSuperAdmin()?String(row['NIK']||row['nik']||'').replace(/[^0-9]/g,'')||null:undefined,
+        no_kk:isSuperAdmin()?String(row['No. KK']||row['no_kk']||'').replace(/[^0-9]/g,'')||null:undefined,
         desil:row['Desil']||row['desil']||null,
         status_rtlh:row['Status RTLH']||row['status_rtlh']||null,
+        dtsen:row['DTSEN']||row['dtsen']||null,
         luas_rum:parseFloat(row['Luas Rumah']||row['luas_rum'])||null,
         jml_peng:parseInt(row['Jml Penghuni']||row['jml_peng'])||null,
         pekerjaan:row['Pekerjaan']||row['pekerjaan']||null,
@@ -3030,7 +2648,7 @@ async function importExcel(input){
         longitude:parseFloat(row['Longitude']||row['longitude'])||null,
       };
       if(!isSuperAdmin()){delete obj.nik;delete obj.no_kk;}
-      const id=getCol(row,'ID','id')||row['ID']||row['id'];
+      const id=row['ID']||row['id'];
       if(id){
         const{data}=await sb.from('rtlh').select('id').eq('id',id).single();
         if(data){
@@ -3092,25 +2710,7 @@ async function downloadExcelKab(withNIK){
     }
     const data=allRows2;
     if(!data||!data.length)return toast('Tidak ada data','error');
-    // Fetch verifikasi kabupaten
-    const kabIds=data.map(r=>r.id);
-    let verifMapKab={};
-    for(let vi=0;vi<kabIds.length;vi+=500){
-      const chunk=kabIds.slice(vi,vi+500);
-      const{data:vd}=await sb.from('rtlh_verifikasi').select('*').in('rtlh_id',chunk).order('tahun',{ascending:true});
-      (vd||[]).forEach(v=>{if(!verifMapKab[v.rtlh_id])verifMapKab[v.rtlh_id]=[];verifMapKab[v.rtlh_id].push(v);});
-    }
-    const rows=data.map(r=>{
-      const vList=verifMapKab[r.id]||[];
-      const verifCols={};
-      vList.forEach((v,i)=>{
-        const n=i+1;
-        verifCols[`Verif${n}_Tahun`]=v.tahun||'';
-        verifCols[`Verif${n}_Hasil`]=v.hasil||'';
-        verifCols[`Verif${n}_Keterangan`]=v.keterangan||'';
-        verifCols[`Verif${n}_Petugas`]=v.petugas||'';
-      });
-      return{
+    const rows=data.map(r=>({
       ID:r.id,Kecamatan:r.kec,Desa:r.desa,'Nama KK':r.kep_kk,
       NIK:withNIK&&superAdmin?(r.nik||''):'***',
       'No. KK':withNIK&&superAdmin?(r.no_kk||''):'***',
@@ -3121,14 +2721,12 @@ async function downloadExcelKab(withNIK){
       'Material Dinding':r.material_d,'Kondisi Dinding':r.kondisi_di,
       'Material Atap':r.material_a,'Kondisi Atap':r.kondisi_at,
       'Material Lantai':r.material_l,'Kondisi Lantai':r.kondisi_la,
-      'Status RTLH':r.status_rtlh,'Alasan SK Dibatalkan':r.status_batal,
+      'Status RTLH':r.status_rtlh,'Alasan Batal':r.status_batal,
       'Jenis Bantuan':r.jenis_bantuan,'Tahun Bantuan':r.tahun_bantuan,
-      Backlog:r.backlog,Desil:r.desil,Keterangan:r.keterangan||'',
+      'Status MyPKP':r.dtsen,Backlog:r.backlog,Desil:r.desil,
       Latitude:r.latitude,Longitude:r.longitude,
       'Terakhir Update':r.updated_at?new Date(r.updated_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'-',
-      ...verifCols,
-      };
-    });
+    }));
     const ws=XLSX.utils.json_to_sheet(rows);
     ws['!cols']=Object.keys(rows[0]).map(k=>({wch:Math.max(k.length+2,14)}));
     addExcelDropdowns(ws,rows);
@@ -3144,31 +2742,6 @@ async function downloadExcelKab(withNIK){
 
 // Helper: ambil nilai string atau null (bukan string kosong)
 function xlVal(v){const s=String(v==null?'':v).trim();return s||null;}
-
-// Case-insensitive column getter dari row Excel
-function getCol(row, ...names){
-  // Buat lookup map header lowercase sekali
-  if(!row._ciMap){
-    row._ciMap={};
-    for(const k of Object.keys(row)){
-      row._ciMap[k.toLowerCase().trim()]=k;
-    }
-  }
-  for(const name of names){
-    const actualKey=row._ciMap[name.toLowerCase().trim()];
-    if(actualKey!==undefined&&row[actualKey]!==undefined&&row[actualKey]!=='')return String(row[actualKey]);
-  }
-  return '';
-}
-
-// Normalize case: "GENENG" → "Geneng", "KARANGJATI" → "Karangjati"
-function normCase(v){
-  if(!v)return v;
-  // Field tertentu pakai Title Case
-  return String(v).trim().toLowerCase().replace(/(?:^|\s|\/)\S/g,c=>c.toUpperCase());
-}
-// Untuk field yang huruf semua besar OK (NIK, No KK)
-function normUpper(v){return v?String(v).trim().toUpperCase():v;}
 function xlNum(v){const n=parseFloat(String(v||'').replace(',','.'));return isNaN(n)?null:n;}
 function xlInt(v){const n=parseInt(String(v||''));return isNaN(n)?null:n;}
 
@@ -3192,182 +2765,85 @@ async function importExcelKab(input){
       const hasCol=(names)=>names.some(n=>excelHeaders.includes(n.toLowerCase()));
       
       log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memproses ${rows.length} baris... (${excelHeaders.length} kolom terdeteksi)`;
-      
-      // ── Build semua obj sekaligus ──
-      const toUpdate=[], toInsert=[], toUpsertByNIK=[];
-      
+      let ok=0,fail=0,errors=[];
       for(let i=0;i<rows.length;i++){
         const row=rows[i];
+        const rowNum=i+2;
         const obj={};
         // Hanya masukkan kolom yang ADA di file Excel
-        if(hasCol(['Kecamatan','kec']))obj.kec=normCase(xlVal(getCol(row,'Kecamatan','kec')));
-        if(hasCol(['Keterangan','keterangan']))obj.keterangan=xlVal(getCol(row,'Keterangan','keterangan'));
-        if(hasCol(['Desa','desa']))obj.desa=normCase(xlVal(getCol(row,'Desa','desa')));
-        if(hasCol(['Nama KK','kep_kk']))obj.kep_kk=normCase(xlVal(getCol(row,'Nama KK','kep_kk')));
-        if(hasCol(['Alamat','alamat']))obj.alamat=xlVal(getCol(row,'Alamat','alamat'));
-        if(hasCol(['Jenis Kelamin','jen_kel']))obj.jen_kel=xlVal(getCol(row,'Jenis Kelamin','jen_kel'));
-        if(hasCol(['Umur','umur']))obj.umur=xlInt(getCol(row,'Umur','umur'));
-        if(hasCol(['Pendidikan','pend_ter']))obj.pend_ter=xlVal(getCol(row,'Pendidikan','pend_ter'));
-        if(hasCol(['Pekerjaan','pekerjaan']))obj.pekerjaan=xlVal(getCol(row,'Pekerjaan','pekerjaan'));
-        if(hasCol(['Penghasilan','pengh']))obj.pengh=xlVal(getCol(row,'Penghasilan','pengh'));
-        if(hasCol(['Luas Rumah (m²)','Luas Rumah','luas_rum']))obj.luas_rum=xlNum(getCol(row,'Luas Rumah (m²)','Luas Rumah','luas_rum'));
-        if(hasCol(['Luas Tanah (m²)','Luas Tanah','luas_tan']))obj.luas_tan=xlNum(getCol(row,'Luas Tanah (m²)','Luas Tanah','luas_tan'));
-        if(hasCol(['Jml Penghuni','jml_peng']))obj.jml_peng=xlInt(getCol(row,'Jml Penghuni','jml_peng'));
-        if(hasCol(['Status Kepemilikan','status_kep']))obj.status_kep=xlVal(getCol(row,'Status Kepemilikan','status_kep'));
-        if(hasCol(['Material Dinding','material_d']))obj.material_d=xlVal(getCol(row,'Material Dinding','material_d'));
-        if(hasCol(['Kondisi Dinding','kondisi_di']))obj.kondisi_di=xlVal(getCol(row,'Kondisi Dinding','kondisi_di'));
-        if(hasCol(['Material Atap','material_a']))obj.material_a=xlVal(getCol(row,'Material Atap','material_a'));
-        if(hasCol(['Kondisi Atap','kondisi_at']))obj.kondisi_at=xlVal(getCol(row,'Kondisi Atap','kondisi_at'));
-        if(hasCol(['Material Lantai','material_l']))obj.material_l=xlVal(getCol(row,'Material Lantai','material_l'));
-        if(hasCol(['Kondisi Lantai','kondisi_la']))obj.kondisi_la=xlVal(getCol(row,'Kondisi Lantai','kondisi_la'));
+        if(hasCol(['Kecamatan','kec']))obj.kec=xlVal(row['Kecamatan']||row['kec']);
+        if(hasCol(['Desa','desa']))obj.desa=xlVal(row['Desa']||row['desa']);
+        if(hasCol(['Nama KK','kep_kk']))obj.kep_kk=xlVal(row['Nama KK']||row['kep_kk']);
+        if(hasCol(['Alamat','alamat']))obj.alamat=xlVal(row['Alamat']||row['alamat']);
+        if(hasCol(['Jenis Kelamin','jen_kel']))obj.jen_kel=xlVal(row['Jenis Kelamin']||row['jen_kel']);
+        if(hasCol(['Umur','umur']))obj.umur=xlInt(row['Umur']||row['umur']);
+        if(hasCol(['Pendidikan','pend_ter']))obj.pend_ter=xlVal(row['Pendidikan']||row['pend_ter']);
+        if(hasCol(['Pekerjaan','pekerjaan']))obj.pekerjaan=xlVal(row['Pekerjaan']||row['pekerjaan']);
+        if(hasCol(['Penghasilan','pengh']))obj.pengh=xlVal(row['Penghasilan']||row['pengh']);
+        if(hasCol(['Luas Rumah (m²)','Luas Rumah','luas_rum']))obj.luas_rum=xlNum(row['Luas Rumah (m²)']||row['Luas Rumah']||row['luas_rum']);
+        if(hasCol(['Luas Tanah (m²)','Luas Tanah','luas_tan']))obj.luas_tan=xlNum(row['Luas Tanah (m²)']||row['Luas Tanah']||row['luas_tan']);
+        if(hasCol(['Jml Penghuni','jml_peng']))obj.jml_peng=xlInt(row['Jml Penghuni']||row['jml_peng']);
+        if(hasCol(['Status Kepemilikan','status_kep']))obj.status_kep=xlVal(row['Status Kepemilikan']||row['status_kep']);
+        if(hasCol(['Material Dinding','material_d']))obj.material_d=xlVal(row['Material Dinding']||row['material_d']);
+        if(hasCol(['Kondisi Dinding','kondisi_di']))obj.kondisi_di=xlVal(row['Kondisi Dinding']||row['kondisi_di']);
+        if(hasCol(['Material Atap','material_a']))obj.material_a=xlVal(row['Material Atap']||row['material_a']);
+        if(hasCol(['Kondisi Atap','kondisi_at']))obj.kondisi_at=xlVal(row['Kondisi Atap']||row['kondisi_at']);
+        if(hasCol(['Material Lantai','material_l']))obj.material_l=xlVal(row['Material Lantai']||row['material_l']);
+        if(hasCol(['Kondisi Lantai','kondisi_la']))obj.kondisi_la=xlVal(row['Kondisi Lantai']||row['kondisi_la']);
         if(hasCol(['Status RTLH','status_rtlh'])){
-          const v=xlVal(getCol(row,'Status RTLH','status_rtlh'));
+          const v=xlVal(row['Status RTLH']||row['status_rtlh']);
           if(v){const u=v.toUpperCase().trim();
-            obj.status_rtlh=u==='LAYAK HUNI'||u==='SUDAH DITANGANI'||u==='SUDAH'?'Layak Huni':u==='RTLH'||u==='BELUM DITANGANI'||u==='BELUM'?'RTLH':u==='DIBATALKAN'||u==='BATAL'||u==='SK DIBATALKAN'?'SK Dibatalkan':v;
+            obj.status_rtlh=u==='LAYAK HUNI'||u==='SUDAH DITANGANI'||u==='SUDAH'?'Layak Huni':u==='RTLH'||u==='BELUM DITANGANI'||u==='BELUM'?'RTLH':u==='DIBATALKAN'||u==='BATAL'?'Dibatalkan':v;
           }
         }
-        if(hasCol(['Alasan Batal','status_batal']))obj.status_batal=xlVal(getCol(row,'Alasan SK Dibatalkan','Alasan Batal','status_batal'));
+        if(hasCol(['Alasan Batal','status_batal']))obj.status_batal=xlVal(row['Alasan Batal']||row['status_batal']);
         if(hasCol(['Jenis Bantuan','jenis_bantuan'])){
-          const v=xlVal(getCol(row,'Jenis Bantuan','jenis_bantuan'));
+          const v=xlVal(row['Jenis Bantuan']||row['jenis_bantuan']);
           if(v){const u=v.toUpperCase().trim();
             obj.jenis_bantuan=u==='RTLH'?'RTLH':u==='BSPS'?'BSPS':u==='DD'||u==='DANA DESA'?'Dana Desa':u==='CSR'?'CSR':v;
-            if(!obj.status_rtlh||obj.status_rtlh!=='SK Dibatalkan')obj.status_rtlh='Layak Huni';
-          }
-        }
-        if(hasCol(['Tahun Bantuan','tahun_bantuan']))obj.tahun_bantuan=xlVal(String(getCol(row,'Tahun Bantuan','tahun_bantuan')||'').replace(/[^0-9]/g,''));
-        if(hasCol(['Desil','desil']))obj.desil=xlVal(getCol(row,'Desil','desil'));
-        if(hasCol(['Backlog','backlog']))obj.backlog=xlVal(getCol(row,'Backlog','backlog'));
-        if(hasCol(['Latitude','latitude']))obj.latitude=xlNum(getCol(row,'Latitude','latitude'));
-        if(hasCol(['Longitude','longitude']))obj.longitude=xlNum(getCol(row,'Longitude','longitude'));
-
-        Object.keys(obj).forEach(k=>{if(obj[k]===null)delete obj[k];});
-        const nik=String(getCol(row,'NIK','nik')||'').replace(/[^0-9]/g,'');
-        const noKk=String(getCol(row,'No. KK','no_kk')||'').replace(/[^0-9]/g,'');
-        if(nik)obj.nik=nik;
-        if(noKk)obj.no_kk=noKk;
-        const id=parseInt(getCol(row,'ID','id')||0);
-        if(id){toUpdate.push({id,obj});}
-        else if(nik){toUpsertByNIK.push({nik,obj});}
-        else{toInsert.push(obj);}
-      }
-
-      log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Mengirim data ke server...`;
-      let ok=0,fail=0,errors=[];
-
-      // ── Batch update by ID (parallel 10) ──
-      const BATCH=10;
-      for(let i=0;i<toUpdate.length;i+=BATCH){
-        const batch=toUpdate.slice(i,i+BATCH);
-        const results=await Promise.all(batch.map(({id,obj})=>sb.from('rtlh').update(obj).eq('id',id)));
-        results.forEach((r,j)=>{if(r.error){fail++;errors.push(`ID ${batch[j].id}: ${r.error.message}`);}else ok++;});
-        log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Update by ID: ${Math.min(i+BATCH,toUpdate.length)}/${toUpdate.length}`;
-      }
-
-      // ── Batch upsert by NIK — cek existing dulu dalam satu query ──
-      if(toUpsertByNIK.length){
-        log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Upsert by NIK: ${toUpsertByNIK.length} baris...`;
-        const niks=toUpsertByNIK.map(x=>x.nik);
-        const{data:existingRows}=await sb.from('rtlh').select('id,nik').in('nik',niks);
-        const existMap=Object.fromEntries((existingRows||[]).map(r=>[r.nik,r.id]));
-        const updates=toUpsertByNIK.filter(x=>existMap[x.nik]);
-        const inserts=toUpsertByNIK.filter(x=>!existMap[x.nik]);
-        // Update existing
-        for(let i=0;i<updates.length;i+=BATCH){
-          const batch=updates.slice(i,i+BATCH);
-          const results=await Promise.all(batch.map(({nik,obj})=>sb.from('rtlh').update(obj).eq('nik',nik)));
-          results.forEach((r,j)=>{if(r.error){fail++;errors.push(`NIK ${batch[j].nik}: ${r.error.message}`);}else ok++;});
-        }
-        // Insert baru dalam satu batch
-        if(inserts.length){
-          const{error}=await sb.from('rtlh').insert(inserts.map(x=>x.obj));
-          if(error){fail+=inserts.length;errors.push(`Insert baru: ${error.message}`);}
-          else ok+=inserts.length;
-        }
-      }
-
-      // ── Insert baru ──
-      if(toInsert.length){
-        for(let i=0;i<toInsert.length;i+=50){
-          const batch=toInsert.slice(i,i+50);
-          const{error}=await sb.from('rtlh').insert(batch);
-          if(error){fail+=batch.length;errors.push(`Insert: ${error.message}`);}
-          else ok+=batch.length;
-        }
-      }
-      // ── Import verifikasi lapangan dari kolom Verif*_* ──
-      const verifInserts=[];
-      rows.forEach(row=>{
-        const id=parseInt(getCol(row,'ID','id')||0);
-        const nik=String(getCol(row,'NIK','nik')||'').replace(/[^0-9]/g,'');
-        if(!id&&!nik)return;
-        // Cari kolom Verif1_Tahun, Verif2_Tahun, dst
-        const allKeys=Object.keys(row);
-        const verifNums=[...new Set(allKeys.map(k=>{const m=k.match(/^[Vv]erif(\d+)_/);return m?m[1]:null}).filter(Boolean))];
-        verifNums.forEach(n=>{
-          const tahun=parseInt(getCol(row,`Verif${n}_Tahun`,`verif${n}_tahun`)||0);
-          const hasil=xlVal(getCol(row,`Verif${n}_Hasil`,`verif${n}_hasil`));
-          const ket=xlVal(getCol(row,`Verif${n}_Keterangan`,`verif${n}_keterangan`));
-          const petugas=xlVal(getCol(row,`Verif${n}_Petugas`,`verif${n}_petugas`));
-          if(tahun&&hasil)verifInserts.push({_ref:id||nik,_type:id?'id':'nik',tahun,hasil,keterangan:ket,petugas,created_by:user?.email});
-        });
-      });
-      if(verifInserts.length){
-        // Resolve rtlh_id dari ID atau NIK
-        const verifWithId=[];
-        for(const v of verifInserts){
-          let rtlhId=null;
-          if(v._type==='id'){rtlhId=v._ref;}
-          else{
-            const{data:found}=await sb.from('rtlh').select('id').eq('nik',v._ref).single();
-            if(found)rtlhId=found.id;
-          }
-          if(rtlhId){
-            // Cek apakah sudah ada verif untuk tahun ini
-            const{data:existing}=await sb.from('rtlh_verifikasi').select('id').eq('rtlh_id',rtlhId).eq('tahun',v.tahun).maybeSingle();
-            if(existing){
-              await sb.from('rtlh_verifikasi').update({hasil:v.hasil,keterangan:v.keterangan,petugas:v.petugas}).eq('id',existing.id);
-            }else{
-              verifWithId.push({rtlh_id:rtlhId,tahun:v.tahun,hasil:v.hasil,keterangan:v.keterangan,petugas:v.petugas,created_by:v.created_by});
+            // Otomatis set Layak Huni jika jenis bantuan terisi dan status bukan Dibatalkan
+            if(!obj.status_rtlh||obj.status_rtlh!=='Dibatalkan'){
+              obj.status_rtlh='Layak Huni';
             }
           }
         }
-        if(verifWithId.length)await sb.from('rtlh_verifikasi').insert(verifWithId);
-      }
-
-      // Auto-link dokumen untuk data yang punya jenis bantuan
-      const autoLinkBatch=rows.filter(row=>{
-        const jb=xlVal(getCol(row,'Jenis Bantuan','jenis_bantuan'));
-        return !!jb;
-      });
-      if(autoLinkBatch.length){
-        // Ambil semua dokumen library sekali
-        const{data:allDocs}=await sb.from('rtlh_dokumen_kabupaten').select('id,jenis,judul,tahun');
-        for(const row of autoLinkBatch){
-          const id=parseInt(getCol(row,'ID','id')||0);
-          const nik=String(getCol(row,'NIK','nik')||'').replace(/[^0-9]/g,'');
-          const jb=xlVal(getCol(row,'Jenis Bantuan','jenis_bantuan'));
-          const tahun=parseInt(String(getCol(row,'Tahun Bantuan','tahun_bantuan')||'').replace(/[^0-9]/g,''))||null;
-          if(!id&&!nik)continue;
-          // Resolve rtlh_id
-          let rtlhId=id;
-          if(!rtlhId&&nik){const{data:found}=await sb.from('rtlh').select('id').eq('nik',nik).single();if(found)rtlhId=found.id;}
-          if(!rtlhId)continue;
-          const jbUpper=(jb||'').toUpperCase();
-          const matches=(allDocs||[]).filter(d=>{
-            const judul=(d.judul||'').toUpperCase();
-            const tahunMatch=!tahun||!d.tahun||d.tahun===tahun;
-            const jenisMatch=judul.includes(jbUpper)||judul.includes('RTLH')||
-              (jbUpper==='BSPS'&&judul.includes('BSPS'))||
-              (jbUpper==='DANA DESA'&&(judul.includes('DD')||judul.includes('DANA DESA')));
-            return jenisMatch&&tahunMatch;
-          });
-          if(matches.length){
-            const links=matches.map(d=>({rtlh_id:rtlhId,dokumen_id:d.id,linked_by:user?.email}));
-            await sb.from('rtlh_dokumen_link').upsert(links,{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
+        if(hasCol(['Tahun Bantuan','tahun_bantuan']))obj.tahun_bantuan=xlVal(String(row['Tahun Bantuan']||row['tahun_bantuan']||'').replace(/[^0-9]/g,''));
+        if(hasCol(['Status MyPKP','DTSEN','dtsen']))obj.dtsen=xlVal(row['Status MyPKP']||row['DTSEN']||row['dtsen']);
+        if(hasCol(['Desil','desil']))obj.desil=xlVal(row['Desil']||row['desil']);
+        if(hasCol(['Backlog','backlog']))obj.backlog=xlVal(row['Backlog']||row['backlog']);
+        if(hasCol(['Latitude','latitude']))obj.latitude=xlNum(row['Latitude']||row['latitude']);
+        if(hasCol(['Longitude','longitude']))obj.longitude=xlNum(row['Longitude']||row['longitude']);
+        // Hapus key yang null supaya tidak overwrite data existing dengan null
+        Object.keys(obj).forEach(k=>{if(obj[k]===null)delete obj[k];});
+        const nik=String(row['NIK']||row['nik']||'').replace(/[^0-9]/g,'');
+        const noKk=String(row['No. KK']||row['no_kk']||'').replace(/[^0-9]/g,'');
+        if(nik)obj.nik=nik;
+        if(noKk)obj.no_kk=noKk;
+        const id=row['ID']||row['id'];
+        let error=null;
+        if(id&&parseInt(id)){
+          // Update by ID
+          const res=await sb.from('rtlh').update(obj).eq('id',parseInt(id));
+          error=res.error;
+        } else if(nik){
+          // Upsert by NIK
+          const{data:existing}=await sb.from('rtlh').select('id').eq('nik',nik).single();
+          if(existing){
+            const res=await sb.from('rtlh').update(obj).eq('nik',nik);
+            error=res.error;
+          } else {
+            const res=await sb.from('rtlh').insert(obj);
+            error=res.error;
           }
+        } else {
+          const res=await sb.from('rtlh').insert(obj);
+          error=res.error;
         }
+        if(error){fail++;errors.push(`Baris ${rowNum}: ${error.message}`);}
+        else ok++;
+        // Update progress tiap 10 baris
+        if(i%10===0)log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memproses... ${i+1}/${rows.length}`;
       }
-
       Object.keys(_kecCacheTime).forEach(k=>delete _kecCacheTime[k]);
       Object.keys(brCache).forEach(k=>delete brCache[k]);
       let logHtml=`<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Selesai: <strong>${ok}</strong> berhasil`;
@@ -3501,19 +2977,6 @@ async function saveVerif(){
     created_by:user?.email
   });
   if(error)return toast('Gagal simpan: '+error.message,'error');
-  // Jika hasil verifikasi Layak → update status RTLH jadi Layak Huni
-  if(hasil==='Layak'){
-    const r=brAll.find(x=>String(x.id)===String(_verifRtlhId));
-    if(r&&r.status_rtlh!=='Layak Huni'&&r.status_rtlh!=='SK Dibatalkan'){
-      await sb.from('rtlh').update({status_rtlh:'Layak Huni',updated_at:new Date().toISOString()}).eq('id',parseInt(_verifRtlhId));
-      // Catat riwayat
-      await sb.from('rtlh_riwayat').insert({nik:r.nik,rtlh_id:parseInt(_verifRtlhId),field_name:'Status RTLH',nilai_lama:r.status_rtlh||null,nilai_baru:'Layak Huni',diubah_oleh:user?.email});
-      // Update local
-      r.status_rtlh='Layak Huni';
-      brCache[currentKec]=brAll;
-      toast('Status RTLH diperbarui ke Layak Huni','success');
-    }
-  }
   toast('Verifikasi berhasil disimpan','success');
   loadVerifHistori(_verifRtlhId);
   loadVerifList(_verifRtlhId);
@@ -3542,9 +3005,9 @@ function downloadExcelIndividu(r){
     'Material Dinding':r.material_d||'', 'Kondisi Dinding':r.kondisi_di||'',
     'Material Atap':r.material_a||'', 'Kondisi Atap':r.kondisi_at||'',
     'Material Lantai':r.material_l||'', 'Kondisi Lantai':r.kondisi_la||'',
-    'Status RTLH':r.status_rtlh||'', 'Alasan SK Dibatalkan':r.status_batal||'',
+    'Status RTLH':r.status_rtlh||'', 'Alasan Batal':r.status_batal||'',
     'Jenis Bantuan':r.jenis_bantuan||'', 'Tahun Bantuan':r.tahun_bantuan||'',
-    Desil:r.desil||'',
+    'Status MyPKP':r.dtsen||'', Desil:r.desil||'',
     Latitude:r.latitude||'', Longitude:r.longitude||'',
   };
   const ws=XLSX.utils.json_to_sheet([row]);
@@ -3580,7 +3043,7 @@ async function uploadExcelIndividu(input, rtlhId){
         'Material Lantai':'material_l','Kondisi Lantai':'kondisi_la',
         'Status RTLH':'status_rtlh','Alasan Batal':'status_batal',
         'Jenis Bantuan':'jenis_bantuan','Tahun Bantuan':'tahun_bantuan',
-        'Desil':'desil',
+        'Status MyPKP':'dtsen','Desil':'desil',
       };
       for(const[k,v] of Object.entries(map)){
         const val=String(row[k]||'').trim();
@@ -3609,9 +3072,9 @@ async function uploadExcelIndividu(input, rtlhId){
           status_kep:'Status Kepemilikan',material_d:'Material Dinding',
           kondisi_di:'Kondisi Dinding',material_a:'Material Atap',kondisi_at:'Kondisi Atap',
           material_l:'Material Lantai',kondisi_la:'Kondisi Lantai',
-          status_rtlh:'Status RTLH',status_batal:'Alasan SK Dibatalkan',
+          status_rtlh:'Status RTLH',status_batal:'Alasan Batal',
           jenis_bantuan:'Jenis Bantuan',tahun_bantuan:'Tahun Bantuan',
-          desil:'Desil',
+          dtsen:'Status MyPKP',desil:'Desil',
         };
         const changes=[];
         for(const[key,label] of Object.entries(FIELD_LABELS)){
@@ -3641,12 +3104,11 @@ async function uploadExcelIndividu(input, rtlhId){
 // DOKUMEN & FOTO (multi-file per individu)
 // ══════════════════════════════════════════════════
 let _dokRtlhId=null;
+let _dokQueue=[];
+let _lightboxPhotos=[];
+let _lightboxIdx=0;
 
-const DOK_LABELS={
-  foto_rumah:'📷 Foto Rumah',berita_acara:'📄 Berita Acara',
-  surat_pernyataan:'📝 Surat Pernyataan',ktp:'🪪 KTP',
-  kk_doc:'👨‍👩‍👧 Kartu Keluarga',foto_lokasi:'🗺️ Foto Lokasi',lainnya:'📁 Lainnya'
-};
+const DOK_LABELS={foto_rumah:'Tampak Depan',foto_dalam:'Dalam Rumah',foto_atap:'Atap',foto_lantai:'Lantai',foto_lokasi:'Lokasi'};
 
 function openDokModal(rtlhId){
   if(!isAdmin)return toast('Hanya admin','error');
@@ -3654,73 +3116,144 @@ function openDokModal(rtlhId){
   const r=brAll.find(x=>String(x.id)===String(rtlhId));
   document.getElementById('dokSub').textContent=r?.kep_kk||rtlhId;
   document.getElementById('dokFile').value='';
-  document.getElementById('dokKet').value='';
   document.getElementById('dokUploadProgress').innerHTML='';
+  _dokQueue=[];renderDokQueue();
   loadDokFileList(rtlhId);
   document.getElementById('ovDok').classList.add('open');
 }
 
-async function loadDokList(rtlhId){
-  const el=document.getElementById('dpDokList');
-  if(!el)return;
-  const{data}=await sb.from('rtlh_dokumen').select('*').eq('rtlh_id',parseInt(rtlhId)).order('created_at',{ascending:false});
-  if(!data||!data.length){el.innerHTML='<span style="color:var(--gray-400)">Belum ada dokumen tersimpan</span>';return;}
-  el.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:6px">`+data.map(d=>{
-    const url=sb.storage.from('rtlh-dokumen').getPublicUrl(d.path).data.publicUrl;
-    const isImg=d.path.match(/\.(jpg|jpeg|png|webp|gif)$/i);
-    return`<a href="${url}" target="_blank" style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;border:1px solid var(--gray-200);background:#fff;text-decoration:none;color:var(--gray-700);font-size:.68rem;font-weight:600">
-      ${isImg?`<img src="${url}" style="width:24px;height:24px;object-fit:cover;border-radius:4px">`:'<i class="fas fa-file-alt" style="color:var(--blue)"></i>'}
-      ${DOK_LABELS[d.jenis]||d.jenis}${d.keterangan?' · '+d.keterangan:''}
-    </a>`;
-  }).join('')+'</div>';
-}
-
-async function loadDokFileList(rtlhId){
-  const el=document.getElementById('dokFileList');
-  if(!el)return;
-  el.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Memuat...';
-  const{data}=await sb.from('rtlh_dokumen').select('*').eq('rtlh_id',parseInt(rtlhId)).order('created_at',{ascending:false});
-  if(!data||!data.length){el.innerHTML='<span style="color:var(--gray-400)">Belum ada dokumen</span>';return;}
-  el.innerHTML=data.map(d=>{
-    const url=sb.storage.from('rtlh-dokumen').getPublicUrl(d.path).data.publicUrl;
-    const isImg=d.path.match(/\.(jpg|jpeg|png|webp|gif)$/i);
-    return`<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid var(--gray-200);margin-bottom:6px;background:#fff">
-      ${isImg?`<img src="${url}" style="width:36px;height:36px;object-fit:cover;border-radius:6px;cursor:pointer" onclick="window.open('${url}','_blank')">`:'<div style="width:36px;height:36px;border-radius:6px;background:var(--blue-bg);display:flex;align-items:center;justify-content:center;color:var(--blue)"><i class="fas fa-file-alt"></i></div>'}
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:700;font-size:.72rem">${DOK_LABELS[d.jenis]||d.jenis}</div>
-        <div style="font-size:.65rem;color:var(--gray-400)">${d.keterangan||''} · ${new Date(d.created_at).toLocaleDateString('id-ID')}</div>
-      </div>
-      <a href="${url}" target="_blank" style="color:var(--blue);font-size:.7rem;padding:4px 8px;border-radius:6px;background:var(--blue-bg);text-decoration:none"><i class="fas fa-external-link-alt"></i></a>
-      ${isSuperAdmin()?`<button onclick="deleteDok('${d.id}','${d.path}')" style="background:none;border:none;color:var(--gray-300);cursor:pointer;font-size:.7rem;padding:4px" title="Hapus"><i class="fas fa-trash"></i></button>`:''}
-    </div>`;
-  }).join('');
-}
-
-async function uploadDokumen(){
-  if(!_dokRtlhId)return;
-  const file=document.getElementById('dokFile').files[0];
-  const jenis=document.getElementById('dokJenis').value;
-  const ket=document.getElementById('dokKet').value.trim();
-  if(!file)return toast('Pilih file terlebih dahulu','error');
-  if(file.size>10*1024*1024)return toast('File terlalu besar (maks 10 MB)','error');
-  const prog=document.getElementById('dokUploadProgress');
-  prog.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Mengupload...';
-  const ext=file.name.split('.').pop().toLowerCase();
-  const path=`${_dokRtlhId}/${jenis}_${Date.now()}.${ext}`;
-  const{error:upErr}=await sb.storage.from('rtlh-dokumen').upload(path,file,{upsert:false});
-  if(upErr){prog.innerHTML=`<span style="color:var(--danger)">Gagal upload: ${upErr.message}</span>`;return;}
-  const{error:dbErr}=await sb.from('rtlh_dokumen').insert({
-    rtlh_id:parseInt(_dokRtlhId), jenis, keterangan:ket||null, path,
-    uploaded_by:user?.email
+function handleDokFiles(files){
+  const arr=Array.from(files).filter(f=>f.type.startsWith('image/'));
+  arr.forEach(f=>{
+    const reader=new FileReader();
+    reader.onload=function(e){
+      _dokQueue.push({file:f,preview:e.target.result,ket:'',jenis:'foto_rumah'});
+      renderDokQueue();
+    };
+    reader.readAsDataURL(f);
   });
-  if(dbErr){prog.innerHTML=`<span style="color:var(--danger)">Gagal simpan metadata: ${dbErr.message}</span>`;return;}
-  prog.innerHTML='<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Upload berhasil!</span>';
-  document.getElementById('dokFile').value='';
-  document.getElementById('dokKet').value='';
-  toast('Dokumen berhasil diupload','success');
+}
+
+function renderDokQueue(){
+  const wrap=document.getElementById('dokQueue');
+  const list=document.getElementById('dokQueueList');
+  const cnt=document.getElementById('dokQueueCount');
+  if(!_dokQueue.length){if(wrap)wrap.style.display='none';return;}
+  if(wrap)wrap.style.display='block';
+  if(cnt)cnt.textContent=_dokQueue.length;
+  if(!list)return;
+  var html='';
+  _dokQueue.forEach(function(item,i){
+    html+='<div style="width:100px;flex-shrink:0;position:relative">'+
+      '<img src="'+item.preview+'" style="width:100px;height:80px;object-fit:cover;border-radius:8px;border:2px solid var(--gray-200)">'+
+      '<button onclick="_dokQueue.splice('+i+',1);renderDokQueue()" style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);border:none;color:#fff;width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:.65rem"><i class="fas fa-times"></i></button>'+
+      '<select onchange="_dokQueue['+i+'].jenis=this.value" style="width:100%;font-size:.58rem;margin-top:3px;border-radius:4px;border:1px solid var(--gray-200);padding:2px;font-family:inherit">'+
+        '<option value="foto_rumah">Tampak Depan</option>'+
+        '<option value="foto_dalam">Dalam Rumah</option>'+
+        '<option value="foto_atap">Atap</option>'+
+        '<option value="foto_lantai">Lantai</option>'+
+        '<option value="foto_lokasi">Lokasi</option>'+
+      '</select>'+
+      '<input type="text" placeholder="Keterangan..." onchange="_dokQueue['+i+'].ket=this.value"'+
+        ' style="width:100%;font-size:.6rem;margin-top:3px;border-radius:4px;border:1px solid var(--gray-200);padding:2px 4px;font-family:inherit;box-sizing:border-box">'+
+    '</div>';
+  });
+  list.innerHTML=html;
+}
+
+async function uploadAllDok(){
+  if(!_dokRtlhId||!_dokQueue.length)return;
+  const prog=document.getElementById('dokUploadProgress');
+  var ok=0,fail=0;
+  for(var i=0;i<_dokQueue.length;i++){
+    var item=_dokQueue[i];
+    prog.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Mengupload foto '+(i+1)+'/'+_dokQueue.length+'...';
+    var ext=item.file.name.split('.').pop().toLowerCase();
+    var path=_dokRtlhId+'/'+item.jenis+'_'+Date.now()+'_'+i+'.'+ext;
+    var upRes=await sb.storage.from('rtlh-dokumen').upload(path,item.file,{upsert:false});
+    if(upRes.error){fail++;continue;}
+    var dbRes=await sb.from('rtlh_dokumen').insert({rtlh_id:parseInt(_dokRtlhId),jenis:item.jenis,keterangan:item.ket||null,path:path,uploaded_by:user?.email});
+    if(dbRes.error)fail++; else ok++;
+  }
+  _dokQueue=[];renderDokQueue();
+  prog.innerHTML='<span style="color:var(--success)"><i class="fas fa-check-circle"></i> '+ok+' foto berhasil'+( fail?' · '+fail+' gagal':'')+'</span>';
+  toast(ok+' foto diupload','success');
   loadDokFileList(_dokRtlhId);
   loadDokList(_dokRtlhId);
 }
+
+async function loadDokList(rtlhId){
+  var el=document.getElementById('dpDokList');
+  if(!el)return;
+  var res=await sb.from('rtlh_dokumen').select('*').eq('rtlh_id',parseInt(rtlhId)).order('created_at',{ascending:false});
+  var data=res.data||[];
+  if(!data.length){el.innerHTML='<span style="color:var(--gray-400)">Belum ada foto</span>';return;}
+  var imgs=data.filter(function(d){return d.path.match(/\.(jpg|jpeg|png|webp|gif)$/i);});
+  if(!imgs.length){el.innerHTML='<span style="color:var(--gray-400)">Belum ada foto</span>';return;}
+  _lightboxPhotos=imgs;
+  var html='<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch">';
+  imgs.forEach(function(d,i){
+    var url=sb.storage.from('rtlh-dokumen').getPublicUrl(d.path).data.publicUrl;
+    html+='<div style="flex-shrink:0;cursor:pointer" onclick="openLightboxDok('+i+')">'+
+      '<img src="'+url+'" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:2px solid var(--gray-200)">'+
+    '</div>';
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+async function loadDokFileList(rtlhId){
+  var el=document.getElementById('dokFileList');
+  if(!el)return;
+  el.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Memuat...';
+  var res=await sb.from('rtlh_dokumen').select('*').eq('rtlh_id',parseInt(rtlhId)).order('created_at',{ascending:false});
+  var data=res.data||[];
+  _lightboxPhotos=data;
+  if(!data.length){el.innerHTML='<div style="color:var(--gray-400);font-size:.72rem;text-align:center;padding:16px">Belum ada foto</div>';return;}
+
+
+async function editDokKetById(id,jenis,cur){
+  cur=cur||'';
+  var newKet=prompt('Edit keterangan foto ('+( DOK_LABELS[jenis]||jenis)+'):',cur);
+  if(newKet===null)return;
+  await sb.from('rtlh_dokumen').update({keterangan:newKet||null}).eq('id',id);
+  toast('Keterangan diperbarui','success');
+  loadDokFileList(_dokRtlhId);
+  loadDokList(_dokRtlhId);
+}
+
+function openLightboxDok(idx){
+  if(!_lightboxPhotos.length)return;
+  _lightboxIdx=idx;
+  var d=_lightboxPhotos[idx];
+  if(!d)return;
+  var url=sb.storage.from('rtlh-dokumen').getPublicUrl(d.path).data.publicUrl;
+  document.getElementById('lbImg').src=url;
+  document.getElementById('lbCaption').textContent=(DOK_LABELS[d.jenis]||d.jenis)+(d.keterangan?' · '+d.keterangan:'');
+  document.getElementById('lbCounter').textContent=(idx+1)+' / '+_lightboxPhotos.length;
+  document.getElementById('lbPrev').style.display=idx>0?'flex':'none';
+  document.getElementById('lbNext').style.display=idx<_lightboxPhotos.length-1?'flex':'none';
+  var lb=document.getElementById('fotoLightbox');
+  lb.style.display='flex';
+  document.body.style.overflow='hidden';
+  document.onkeydown=function(e){
+    if(e.key==='ArrowLeft')moveLightbox(-1);
+    else if(e.key==='ArrowRight')moveLightbox(1);
+    else if(e.key==='Escape')closeLightbox();
+  };
+}
+
+function moveLightbox(dir){
+  var newIdx=_lightboxIdx+dir;
+  if(newIdx>=0&&newIdx<_lightboxPhotos.length)openLightboxDok(newIdx);
+}
+
+function closeLightbox(){
+  document.getElementById('fotoLightbox').style.display='none';
+  document.body.style.overflow='';
+  document.onkeydown=null;
+}
+
 
 async function deleteDok(id,path){
   if(!isSuperAdmin())return;
@@ -3735,581 +3268,115 @@ async function deleteDok(id,path){
 // ══════════════════════════════════════════════════
 // CHATBOT AI — Asisten e-RTLH Ngawi
 // ══════════════════════════════════════════════════
+let chatHistory=[];
+let chatOpened=false;
 
-// ══════════════════════════════════════════════════
-// LIBRARY DOKUMEN KABUPATEN
-// ══════════════════════════════════════════════════
-let _dokLibFilter='';
-let _dokLibData=[];
-let _linkDokRtlhId=null;
+const CHAT_SYSTEM=`Kamu adalah Asisten AI untuk sistem e-RTLH Kabupaten Ngawi, sebuah sistem informasi Rumah Tidak Layak Huni (RTLH) milik DPRKP Kabupaten Ngawi, Jawa Timur.
 
-const DOK_JENIS_CONFIG={
-  'SK':{color:'#1D4ED8',bg:'#EFF6FF',icon:'fas fa-stamp'},
-  'BA':{color:'#16A34A',bg:'#F0FDF4',icon:'fas fa-file-signature'},
-  'Surat Pernyataan':{color:'#EA580C',bg:'#FFF7ED',icon:'fas fa-file-alt'},
-  'Lainnya':{color:'#6B7280',bg:'#F3F4F6',icon:'fas fa-file'},
-};
+Kamu membantu staf dinas DPRKP dengan:
+- Cara menggunakan fitur web e-RTLH (search, edit data, upload/download Excel, verifikasi lapangan, upload dokumen)
+- Penjelasan tentang program bantuan RTLH (BSPS, Dana Desa, CSR)
+- Kebijakan dan regulasi perumahan rakyat
+- Interpretasi data RTLH dan desil
+- Pertanyaan umum seputar RTLH Ngawi
 
-async function openDokLib(){
-  // Isi dropdown kecamatan di form upload
-  const kecSel=document.getElementById('dlKec');
-  if(kecSel&&kecSel.options.length<=1){
-    Object.keys(KEC_CONFIG).sort().forEach(k=>{
-      const o=document.createElement('option');o.value=k;o.textContent=k;kecSel.appendChild(o);
+Data saat ini: 19 Kecamatan, 217 Desa/Kelurahan, data dikelola berbasis NIK sebagai identitas unik.
+
+Gaya bicara: Ramah, santun, menggunakan bahasa Indonesia yang baik. Jawaban singkat dan langsung ke inti. Gunakan emoji secukupnya agar terasa hangat. Jika ditanya hal di luar konteks, tetap bantu dengan sopan.`;
+
+function toggleChat(){
+  const box=document.getElementById('chatBox');
+  const isOpen=box.classList.contains('open');
+  box.classList.toggle('open');
+  if(!isOpen&&!chatOpened){
+    chatOpened=true;
+    document.getElementById('chatBadge').style.display='none';
+    addBotMessage('Halo! 👋 Saya Asisten e-RTLH Ngawi. Ada yang bisa saya bantu?\n\nContoh pertanyaan:\n• Cara upload data Excel?\n• Apa itu Desil 1?\n• Bagaimana edit status RTLH?');
+  }
+  if(!isOpen)setTimeout(()=>document.getElementById('chatInput')?.focus(),300);
+}
+
+function addBotMessage(text,isTyping=false){
+  const msgs=document.getElementById('chatMessages');
+  if(!msgs)return;
+  const div=document.createElement('div');
+  div.className='chat-msg bot'+(isTyping?' typing':'');
+  div.id=isTyping?'typingIndicator':'';
+  if(isTyping){
+    div.innerHTML='<div class="typing-dots"><span></span><span></span><span></span></div>';
+  }else{
+    div.innerHTML=text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/•/g,'&bull;');
+  }
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+  return div;
+}
+
+function addUserMessage(text){
+  const msgs=document.getElementById('chatMessages');
+  if(!msgs)return;
+  const div=document.createElement('div');
+  div.className='chat-msg user';
+  div.textContent=text;
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+async function sendChat(){
+  const input=document.getElementById('chatInput');
+  const btn=document.getElementById('chatSendBtn');
+  const text=(input?.value||'').trim();
+  if(!text||btn?.disabled)return;
+
+  addUserMessage(text);
+  input.value='';
+  input.style.height='auto';
+  btn.disabled=true;
+
+  chatHistory.push({role:'user',content:text});
+
+  // Tampilkan typing indicator
+  const typing=addBotMessage('',true);
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:600,
+        system:CHAT_SYSTEM,
+        messages:chatHistory.slice(-10) // simpan 10 pesan terakhir
+      })
     });
+    const data=await res.json();
+    const reply=data.content?.[0]?.text||'Maaf, tidak bisa menjawab saat ini.';
+
+    // Hapus typing, tampilkan jawaban
+    typing?.remove();
+    addBotMessage(reply);
+    chatHistory.push({role:'assistant',content:reply});
+
+    // Batasi history
+    if(chatHistory.length>20)chatHistory=chatHistory.slice(-20);
+
+  }catch(e){
+    typing?.remove();
+    addBotMessage('Maaf, koneksi bermasalah. Coba lagi ya. 🙏');
+    chatHistory.pop(); // hapus pesan user yang gagal
+  }finally{
+    btn.disabled=false;
+    input.focus();
   }
-  // Tampilkan tombol upload hanya untuk admin
-  const btnUp=document.getElementById('btnUploadDokLib');
-  if(btnUp)btnUp.style.display=isAdmin?'inline-flex':'none';
-  document.getElementById('ovDokLib').classList.add('open');
-  await loadDokLib();
 }
 
-async function refreshDokLib(){
-  const btn=document.getElementById('btnRefreshDokLib');
-  if(btn){btn.innerHTML='<i class="fas fa-sync-alt fa-spin"></i>';btn.disabled=true;}
-  // Reload data dokumen terbaru
-  await loadDokLib();
-  // Re-run auto-link untuk semua dokumen yang punya jenis_bantuan
-  const docsWithLink=_dokLibData.filter(d=>d.jenis_bantuan);
-  if(!docsWithLink.length){
-    if(btn){btn.innerHTML='<i class="fas fa-sync-alt"></i>';btn.disabled=false;}
-    toast('Data diperbarui','success');
-    return;
+// Tampilkan badge setelah 5 detik jika chat belum dibuka
+setTimeout(()=>{
+  if(!chatOpened){
+    const badge=document.getElementById('chatBadge');
+    if(badge)badge.style.display='block';
   }
-  const el=document.getElementById('dokLibList');
-  const statusDiv=document.createElement('div');
-  statusDiv.style.cssText='padding:10px 14px;background:var(--blue-bg);font-size:.72rem;color:var(--blue);font-weight:600;border-bottom:1px solid var(--gray-200)';
-  statusDiv.innerHTML='<i class="fas fa-sync-alt fa-spin"></i> Menyinkronkan '+docsWithLink.length+' dokumen...';
-  el.parentElement.insertBefore(statusDiv,el);
-  let totalLinked=0;
-  for(const d of docsWithLink){
-    // Cari penerima yang cocok
-    let q=sb.from('rtlh').select('id').ilike('jenis_bantuan','%'+d.jenis_bantuan+'%');
-    if(d.tahun_bantuan)q=q.eq('tahun_bantuan',String(d.tahun_bantuan));
-    const{data:matched}=await q;
-    if(!matched?.length)continue;
-    // Batch upsert
-    for(let i=0;i<matched.length;i+=100){
-      const batch=matched.slice(i,i+100).map(r=>({rtlh_id:r.id,dokumen_id:d.id,linked_by:user?.email}));
-      await sb.from('rtlh_dokumen_link').upsert(batch,{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
-    }
-    totalLinked+=matched.length;
-    statusDiv.innerHTML='<i class="fas fa-sync-alt fa-spin"></i> Menyinkronkan: '+d.judul+' ('+matched.length+' penerima)';
-  }
-  statusDiv.innerHTML='<i class="fas fa-check-circle" style="color:var(--success)"></i> Sinkronisasi selesai — '+totalLinked+' link diperbarui';
-  setTimeout(()=>statusDiv.remove(),3000);
-  if(btn){btn.innerHTML='<i class="fas fa-sync-alt"></i>';btn.disabled=false;}
-  toast('Sinkronisasi selesai: '+totalLinked+' link diperbarui','success');
-}
-
-async function loadDokLib(){
-  const el=document.getElementById('dokLibList');
-  el.innerHTML='<div style="text-align:center;color:var(--gray-400);padding:32px"><i class="fas fa-circle-notch fa-spin fa-2x"></i></div>';
-  let q=sb.from('rtlh_dokumen_kabupaten').select('*').order('tahun',{ascending:false}).order('created_at',{ascending:false});
-  if(_dokLibFilter)q=q.eq('jenis',_dokLibFilter);
-  const{data,error}=await q;
-  _dokLibData=data||[];
-  if(error||!_dokLibData.length){
-    el.innerHTML='<div style="text-align:center;color:var(--gray-400);padding:32px"><i class="fas fa-folder-open" style="font-size:2rem;display:block;margin-bottom:8px;opacity:.3"></i><div style="font-size:.82rem">Belum ada dokumen</div></div>';
-    return;
-  }
-  renderDokLib(_dokLibData);
-}
-
-function renderDokLib(docs){
-  const el=document.getElementById('dokLibList');
-  el.innerHTML=docs.map(d=>{
-    const cfg=DOK_JENIS_CONFIG[d.jenis]||DOK_JENIS_CONFIG['Lainnya'];
-    const url=sb.storage.from('dokumen-kab').getPublicUrl(d.path).data.publicUrl;
-    const kb=d.ukuran?Math.round(d.ukuran/1024)+'KB':'';
-    return`<div class="dok-lib-card" style="margin-bottom:8px">
-      <div class="dok-lib-icon" style="background:${cfg.bg};color:${cfg.color}"><i class="${cfg.icon}"></i></div>
-      <div class="dok-lib-info">
-        <div class="dok-lib-title">${d.judul}</div>
-        <div class="dok-lib-meta">
-          <span style="background:${cfg.bg};color:${cfg.color};padding:1px 7px;border-radius:99px;font-weight:700;font-size:.6rem">${d.jenis}</span>
-          ${d.tahun?` · ${d.tahun}`:''}
-          ${d.kecamatan?` · Kec. ${d.kecamatan}`:' · Kabupaten'}
-          ${kb?' · '+kb:''}
-        </div>
-      </div>
-      <div style="display:flex;gap:6px;flex-shrink:0">
-        <a href="${url}" target="_blank" title="Buka dokumen" style="width:32px;height:32px;border-radius:8px;background:var(--blue-bg);color:var(--blue);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:.8rem"><i class="fas fa-external-link-alt"></i></a>
-        <button onclick="lihatPenerimaDok('${d.id}','${d.judul.replace(/'/g,"\\'")}')" title="Lihat penerima" style="width:32px;height:32px;border-radius:8px;background:#F5F3FF;color:#7C3AED;border:none;cursor:pointer;font-size:.8rem"><i class="fas fa-users"></i></button>
-        ${isAdmin?`<button onclick="openEditDokLib('${d.id}')" title="Edit" style="width:32px;height:32px;border-radius:8px;background:#FFF7ED;color:#EA580C;border:none;cursor:pointer;font-size:.8rem"><i class="fas fa-edit"></i></button>`:''}
-        ${isSuperAdmin()?`<button onclick="deleteDokLib('${d.id}','${d.path}')" title="Hapus" style="width:32px;height:32px;border-radius:8px;background:var(--danger-bg);color:var(--danger);border:none;cursor:pointer;font-size:.8rem"><i class="fas fa-trash"></i></button>`:''}
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function filterDokLib(jenis){
-  _dokLibFilter=jenis;
-  document.querySelectorAll('.dok-jenis-chip').forEach(btn=>{
-    btn.classList.remove('active');
-    btn.style.color='';btn.style.background='';btn.style.borderColor='';
-  });
-  const activeId=jenis?`djc_${jenis.replace(' ','')}`.replace('SuratPernyataan','SP'):'djc_all';
-  const activeBtn=document.getElementById(activeId);
-  if(activeBtn)activeBtn.classList.add('active');
-  loadDokLib();
-}
-
-function openUploadDokLib(){
-  if(!isAdmin)return toast('Hanya admin','error');
-  document.getElementById('dlJudul').value='';
-  document.getElementById('dlFile').value='';
-  _dlSelectedIds.clear();renderDlSelected();
-  const rdAuto=document.querySelector('input[name="dlLinkMode"][value="auto"]');if(rdAuto){rdAuto.checked=true;toggleDlLinkMode('auto');}
-  document.getElementById('dlProgress').innerHTML='';
-  document.getElementById('ovUploadDokLib').classList.add('open');
-}
-
-async function uploadDokLib(){
-  const jenis=document.getElementById('dlJenis').value;
-  const judul=document.getElementById('dlJudul').value.trim();
-  const tahun=parseInt(document.getElementById('dlTahun').value)||null;
-  const kec=document.getElementById('dlKec').value||null;
-  const file=document.getElementById('dlFile').files[0];
-  if(!judul)return toast('Isi judul dokumen','error');
-  if(!file)return toast('Pilih file','error');
-  if(file.size>20*1024*1024)return toast('File terlalu besar (maks 20 MB)','error');
-  const prog=document.getElementById('dlProgress');
-  prog.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Mengupload...';
-  const ext=file.name.split('.').pop().toLowerCase();
-  const safeName=judul.replace(/[^a-zA-Z0-9]/g,'_').slice(0,40);
-  const path=`${jenis}/${tahun||'umum'}/${safeName}_${Date.now()}.${ext}`;
-  const{error:upErr}=await sb.storage.from('dokumen-kab').upload(path,file,{upsert:false});
-  if(upErr){prog.innerHTML=`<span style="color:var(--danger)">Gagal upload: ${upErr.message}</span>`;return;}
-  const jenisBantuan=document.getElementById('dlJenisBantuan')?.value||null;
-  const tahunBantuan=document.getElementById('dlTahunBantuan')?.value||null;
-  const{error:dbErr}=await sb.from('rtlh_dokumen_kabupaten').insert({
-    jenis,judul,tahun,kecamatan:kec,path,ukuran:file.size,uploaded_by:user?.email,
-    jenis_bantuan:jenisBantuan||null,
-    tahun_bantuan:tahunBantuan?parseInt(tahunBantuan):null
-  });
-  if(dbErr){prog.innerHTML=`<span style="color:var(--danger)">Gagal simpan: ${dbErr.message}</span>`;return;}
-  prog.innerHTML='<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Berhasil diupload!</span>';
-  toast('Dokumen berhasil diupload','success');
-  // Auto-link atau manual link
-  const linkMode=document.querySelector('input[name="dlLinkMode"]:checked')?.value||'auto';
-  if(linkMode==='manual'&&_dlSelectedIds.size){
-    prog.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Menghubungkan '+_dlSelectedIds.size+' penerima...';
-    const{data:newDoc}=await sb.from('rtlh_dokumen_kabupaten').select('id').eq('path',path).single();
-    if(newDoc){
-      const batch=[..._dlSelectedIds].map(id=>({rtlh_id:id,dokumen_id:newDoc.id,linked_by:user?.email}));
-      await sb.from('rtlh_dokumen_link').upsert(batch,{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
-      prog.innerHTML='<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Upload selesai · '+_dlSelectedIds.size+' penerima terhubung!</span>';
-    }
-  } else if(jenisBantuan){
-  } else if(jenisBantuan){
-    prog.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Menghubungkan ke penerima...';
-    const{data:newDoc}=await sb.from('rtlh_dokumen_kabupaten').select('id').eq('path',path).single();
-    if(newDoc){
-      let qLink=sb.from('rtlh').select('id');
-      qLink=qLink.ilike('jenis_bantuan','%'+jenisBantuan+'%');
-      if(tahunBantuan)qLink=qLink.eq('tahun_bantuan',tahunBantuan);
-      const{data:matched}=await qLink;
-      if(matched?.length){
-        for(let i=0;i<matched.length;i+=100){
-          const batch=matched.slice(i,i+100).map(r=>({rtlh_id:r.id,dokumen_id:newDoc.id,linked_by:user?.email}));
-          await sb.from('rtlh_dokumen_link').upsert(batch,{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
-        }
-        prog.innerHTML='<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Upload selesai · '+matched.length+' penerima terhubung!</span>';
-      }
-    }
-  }
-  setTimeout(()=>{closeModal('ovUploadDokLib');loadDokLib();},1200);
-}
-
-let _penerimaDokAll=[];
-let _currentDokId=null;
-
-async function lihatPenerimaDok(dokId, judul){
-  _currentDokId=dokId;
-  document.getElementById('penerimaDokSub').textContent=judul;
-  document.getElementById('penerimaDokCount').innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Memuat...';
-  document.getElementById('penerimaDokList').innerHTML='<div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin fa-2x"></i></div>';
-  document.getElementById('penerimaDokSearch').value='';
-  document.getElementById('ovPenerimaDok').classList.add('open');
-  const{data,error}=await sb.from('rtlh_dokumen_link')
-    .select('rtlh_id, rtlh(id,kec,desa,kep_kk,nik,status_rtlh,desil,jenis_bantuan,tahun_bantuan)')
-    .eq('dokumen_id',dokId);
-  if(error||!data?.length){
-    document.getElementById('penerimaDokCount').textContent='Belum ada penerima terhubung';
-    document.getElementById('penerimaDokList').innerHTML='<div style="padding:24px;text-align:center;color:var(--gray-400)"><i class="fas fa-user-slash" style="font-size:1.5rem;display:block;margin-bottom:8px;opacity:.4"></i><div style="font-size:.78rem">Belum ada penerima yang dihubungkan</div></div>';
-    return;
-  }
-  _penerimaDokAll=data.map(lnk=>lnk.rtlh).filter(Boolean);
-  document.getElementById('penerimaDokCount').innerHTML='<strong>'+_penerimaDokAll.length+'</strong> penerima terhubung';
-  renderPenerimaDok(_penerimaDokAll);
-}
-
-function renderPenerimaDok(list){
-  const el=document.getElementById('penerimaDokList');
-  if(!list.length){el.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:.78rem">Tidak ada hasil</div>';return;}
-  const byDesa={};
-  list.forEach(r=>{
-    const key=((r.desa||'-')+'|'+(r.kec||'-')).toUpperCase();
-    if(!byDesa[key])byDesa[key]={desa:normCase(r.desa)||'-',kec:normCase(r.kec)||'-',items:[]};
-    byDesa[key].items.push(r);
-  });
-  el.innerHTML=Object.values(byDesa).map(g=>{
-    const itemsHtml=g.items.map(r=>{
-      const isLayak=r.status_rtlh==='Layak Huni';
-      const sc=isLayak?'var(--success)':r.status_rtlh==='SK Dibatalkan'?'var(--gray-400)':'var(--danger)';
-      const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
-      return '<div onclick="closeModal(&quot;ovPenerimaDok&quot;);closeModal(&quot;ovDokLib&quot;);bukaDetailDariSearch(&quot;'+r.id+'&quot;,&quot;'+kecKey+'&quot;)"'+
-        ' style="padding:8px 10px;border-radius:8px;border:1px solid var(--gray-100);margin-bottom:4px;cursor:pointer;display:flex;align-items:center;gap:8px;background:#fff"'+
-        ' onmouseover="this.style.background=\'var(--gray-50)\'" onmouseout="this.style.background=\'#fff\'">'+
-        '<div style="width:28px;height:28px;border-radius:50%;background:'+sc+'18;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+
-        '<i class="fas fa-'+(isLayak?'home':'house-damage')+'" style="color:'+sc+';font-size:.72rem"></i></div>'+
-        '<div style="flex:1;min-width:0">'+
-        '<div style="font-weight:700;font-size:.78rem;color:var(--gray-900)">'+showNama(r.kep_kk)+'</div>'+
-        '<div style="font-size:.63rem;color:var(--gray-400)">'+showNIK(r.nik)+(r.desil?' · '+r.desil:'')+(r.jenis_bantuan?' · '+r.jenis_bantuan+(r.tahun_bantuan?' '+r.tahun_bantuan:''):'')+'</div>'+
-        '</div>'+
-        '<span style="font-size:.6rem;font-weight:700;color:'+sc+';background:'+sc+'15;padding:2px 7px;border-radius:99px;flex-shrink:0">'+(r.status_rtlh||'RTLH')+'</span>'+
-        '<i class="fas fa-chevron-right" style="color:var(--gray-300);font-size:.65rem;flex-shrink:0"></i>'+
-      (isAdmin?'<button onclick="event.stopPropagation();unlinkPenerimaDok('+r.id+',\"'+_currentDokId+'\")" title="Hapus link" style="background:none;border:none;color:var(--gray-300);cursor:pointer;font-size:.75rem;padding:3px 4px;flex-shrink:0"><i class="fas fa-unlink"></i></button>':'')+
-      '</div>';
-    }).join('');
-    return '<div style="margin-bottom:12px">'+
-      '<div style="padding:5px 8px;background:var(--blue-bg);border-radius:6px;display:flex;align-items:center;gap:6px;margin-bottom:4px">'+
-      '<i class="fas fa-map-marker-alt" style="color:var(--blue);font-size:.68rem"></i>'+
-      '<span style="font-size:.72rem;font-weight:800;color:var(--blue)">'+g.desa+'</span>'+
-      '<span style="font-size:.65rem;color:var(--gray-500)"> · '+g.kec+'</span>'+
-      '<span style="margin-left:auto;font-size:.62rem;background:var(--blue);color:#fff;border-radius:99px;padding:1px 7px">'+g.items.length+'</span></div>'+
-      itemsHtml+'</div>';
-  }).join('');
-}
-
-async function unlinkPenerimaDok(rtlhId, dokId){
-  if(!confirm('Hapus link dokumen ini dari penerima?'))return;
-  const{error}=await sb.from('rtlh_dokumen_link').delete()
-    .eq('rtlh_id',parseInt(rtlhId)).eq('dokumen_id',dokId);
-  if(error)return toast('Gagal: '+error.message,'error');
-  toast('Link dihapus','success');
-  _penerimaDokAll=_penerimaDokAll.filter(r=>String(r.id)!==String(rtlhId));
-  document.getElementById('penerimaDokCount').innerHTML='<strong>'+_penerimaDokAll.length+'</strong> penerima terhubung';
-  renderPenerimaDok(_penerimaDokAll);
-  // Refresh detail panel jika sedang terbuka
-  loadDokLink(rtlhId);
-}
-
-function filterPenerimaDok(q){
-  if(!q.trim()){renderPenerimaDok(_penerimaDokAll);return;}
-  const ql=q.toLowerCase();
-  const filtered=_penerimaDokAll.filter(r=>
-    (r.kep_kk||'').toLowerCase().includes(ql)||(r.desa||'').toLowerCase().includes(ql)||(r.nik||'').includes(q)
-  );
-  document.getElementById('penerimaDokCount').innerHTML='<strong>'+filtered.length+'</strong> dari '+_penerimaDokAll.length+' penerima';
-  renderPenerimaDok(filtered);
-}
-
-// ══ Manual link penerima di upload dokumen ══
-let _dlSelectedIds=new Set();
-
-function toggleDlLinkMode(mode){
-  document.getElementById('dlManualWrap').style.display=mode==='manual'?'block':'none';
-  if(mode==='manual'){_dlSelectedIds.clear();renderDlSelected();}
-}
-
-async function searchDlManual(q){
-  if(!q||q.length<2)return;
-  const res=document.getElementById('dlManualResults');
-  res.style.display='block';
-  res.innerHTML='<div style="padding:8px;text-align:center;color:var(--gray-400);font-size:.72rem"><i class="fas fa-circle-notch fa-spin"></i></div>';
-  const{data}=await sb.from('rtlh').select('id,kec,desa,kep_kk,nik,status_rtlh')
-    .or('kep_kk.ilike.%'+q+'%,desa.ilike.%'+q+'%,nik.eq.'+q).limit(200);
-  if(!data?.length){res.innerHTML='<div style="padding:8px;text-align:center;color:var(--gray-400);font-size:.72rem">Tidak ditemukan</div>';return;}
-  // Kelompokkan per desa
-  const byDesa={};
-  data.forEach(r=>{
-    const k=((r.desa||'-')+'|'+(r.kec||'-')).toUpperCase();
-    if(!byDesa[k])byDesa[k]={desa:normCase(r.desa)||'-',kec:normCase(r.kec)||'-',ids:[],items:[]};
-    byDesa[k].ids.push(r.id);byDesa[k].items.push(r);
-  });
-  let html='';
-  for(const g of Object.values(byDesa)){
-    const allSel=g.ids.every(id=>_dlSelectedIds.has(id));
-    const idsJson=JSON.stringify(g.ids);
-    html+='<div><div style="padding:6px 10px;background:var(--blue-bg);display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--gray-200)">'+
-      '<i class="fas fa-map-marker-alt" style="color:var(--blue);font-size:.68rem"></i>'+
-      '<span style="font-size:.72rem;font-weight:800;color:var(--blue);flex:1">'+g.desa+' <span style="color:var(--gray-400);font-weight:500">· '+g.kec+'</span></span>'+
-      '<button onclick="toggleDlDesa('+idsJson+')" style="font-size:.62rem;font-weight:700;padding:2px 8px;border-radius:99px;border:1.5px solid var(--blue);background:'+(allSel?'var(--blue)':'transparent')+';color:'+(allSel?'#fff':'var(--blue)')+';cursor:pointer;font-family:inherit;flex-shrink:0">'+
-      (allSel?'✓ Dibatalkan':'+ '+g.ids.length+' orang')+
-      '</button></div>';
-    g.items.forEach(r=>{
-      const sel=_dlSelectedIds.has(r.id);
-      const sc=r.status_rtlh==='Layak Huni'?'var(--success)':'var(--danger)';
-      html+='<div onclick="toggleDlSelect('+r.id+')" style="padding:7px 10px;border-bottom:1px solid var(--gray-100);cursor:pointer;display:flex;align-items:center;gap:8px;background:'+(sel?'#EFF6FF':'#fff')+'">'+
-        '<i class="fas fa-'+(sel?'check-square':'square')+'" style="color:'+(sel?'var(--blue)':'var(--gray-300)')+';font-size:.82rem;flex-shrink:0"></i>'+
-        '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:.76rem">'+(r.kep_kk||'-')+'</div>'+
-        '<div style="font-size:.62rem;color:var(--gray-400)">'+(r.nik||'-')+'</div></div>'+
-        '<span style="font-size:.6rem;font-weight:700;color:'+sc+';background:'+sc+'15;padding:1px 6px;border-radius:99px">'+(r.status_rtlh||'RTLH')+'</span></div>';
-    });
-    html+='</div>';
-  }
-  res.innerHTML=html;
-}
-
-function toggleDlDesa(ids){
-  const allSel=ids.every(id=>_dlSelectedIds.has(id));
-  if(allSel){ids.forEach(id=>_dlSelectedIds.delete(id));}
-  else{ids.forEach(id=>_dlSelectedIds.add(id));}
-  renderDlSelected();
-  const q=document.getElementById('dlManualSearch')?.value||'';
-  if(q)searchDlManual(q);
-}
-
-
-function toggleDlSelect(id){
-  if(_dlSelectedIds.has(id))_dlSelectedIds.delete(id);
-  else _dlSelectedIds.add(id);
-  renderDlSelected();
-  // Refresh hasil search
-  const q=document.getElementById('dlManualSearch')?.value||'';
-  if(q)searchDlManual(q);
-}
-
-function renderDlSelected(){
-  const cnt=document.getElementById('dlSelectedCount');
-  const list=document.getElementById('dlSelectedList');
-  if(cnt)cnt.textContent=_dlSelectedIds.size;
-  if(!list)return;
-  if(!_dlSelectedIds.size){list.innerHTML='<span style="font-size:.68rem;color:var(--gray-400)">Belum ada yang dipilih</span>';return;}
-  // Tampilkan sebagai chips — hanya ID, nama diambil dari DOM search results
-  list.innerHTML=[..._dlSelectedIds].map(id=>`
-    <span style="background:var(--blue-bg);color:var(--blue);border-radius:99px;padding:2px 8px 2px 10px;font-size:.65rem;font-weight:700;display:flex;align-items:center;gap:4px">
-      ID:${id}
-      <button onclick="toggleDlSelect(${id},'')" style="background:none;border:none;cursor:pointer;color:var(--blue);font-size:.7rem;padding:0;line-height:1">×</button>
-    </span>`).join('');
-}
-
-async function runAutoLinkFromLib(dokId){
-  const d=_dokLibData.find(x=>x.id===dokId);
-  if(!d)return;
-  const prog=document.getElementById('autoLinkProgress');
-  prog.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Mencari penerima yang cocok...';
-  
-  // Ambil setting dari form edit (yang sedang dibuka) atau dari data dokumen
-  const jb=document.getElementById('editDlJenisBantuan')?.value||d.jenis_bantuan||null;
-  const tahunBantuan=document.getElementById('editDlTahunBantuan')?.value||null;
-  const tahun=tahunBantuan?parseInt(tahunBantuan):null;
-  
-  if(!jb&&!tahun){prog.innerHTML='<span style="color:var(--danger)">Pilih Jenis Bantuan atau Tahun terlebih dahulu</span>';return;}
-  
-  prog.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Mencari penerima yang cocok...';
-  
-  // Query penerima yang cocok
-  let qSimple=sb.from('rtlh').select('id');
-  if(jb)qSimple=qSimple.ilike('jenis_bantuan','%'+jb+'%');
-  if(tahun)qSimple=qSimple.eq('tahun_bantuan',String(tahun));
-  const{data:matched}=await qSimple;
-  
-  if(!matched?.length){prog.innerHTML='Tidak ada penerima yang cocok ditemukan.';return;}
-  
-  prog.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Menghubungkan ${matched.length} penerima...`;
-  
-  // Batch upsert link — 100 per batch
-  let linked=0;
-  for(let i=0;i<matched.length;i+=100){
-    const batch=matched.slice(i,i+100).map(r=>({rtlh_id:r.id,dokumen_id:dokId,linked_by:user?.email}));
-    await sb.from('rtlh_dokumen_link').upsert(batch,{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
-    linked+=batch.length;
-    prog.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> ${linked}/${matched.length} terhubung...`;
-  }
-  prog.innerHTML=`<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Berhasil! ${linked} penerima dihubungkan ke dokumen ini.</span>`;
-  toast(`${linked} penerima berhasil di-link ke dokumen ini`,'success');
-}
-
-async function deleteDokLib(id,path){
-  if(!isSuperAdmin())return;
-  if(!confirm('Hapus dokumen ini? Link ke penerima juga akan terhapus.'))return;
-  await sb.storage.from('dokumen-kab').remove([path]);
-  await sb.from('rtlh_dokumen_kabupaten').delete().eq('id',id);
-  toast('Dokumen dihapus','success');
-  loadDokLib();
-}
-
-function openEditDokLib(id){
-  const d=_dokLibData.find(x=>x.id===id);
-  if(!d)return toast('Data tidak ditemukan','error');
-  // Isi dropdown kecamatan jika belum
-  const kecSel=document.getElementById('editDlKec');
-  if(kecSel&&kecSel.options.length<=1){
-    Object.keys(KEC_CONFIG).sort().forEach(k=>{
-      const o=document.createElement('option');o.value=k;o.textContent=k;kecSel.appendChild(o);
-    });
-  }
-  document.getElementById('editDlId').value=d.id;
-  document.getElementById('editDlJenis').value=d.jenis;
-  document.getElementById('editDlJudul').value=d.judul;
-  document.getElementById('editDlTahun').value=d.tahun||'';
-  document.getElementById('editDlKec').value=d.kecamatan||'';
-  document.getElementById('editDlProgress').innerHTML='';
-  document.getElementById('editDlFile').value='';
-  document.getElementById('editDlCurrentFile').textContent=d.path.split('/').pop();
-  document.getElementById('editDlJenisBantuan').value=d.jenis_bantuan||'';
-  if(document.getElementById('editDlTahunBantuan'))document.getElementById('editDlTahunBantuan').value=d.tahun_bantuan||'';
-  document.getElementById('autoLinkProgress').innerHTML='';
-  document.getElementById('ovEditDokLib').classList.add('open');
-}
-
-async function saveEditDokLib(){
-  const id=document.getElementById('editDlId').value;
-  const jenis=document.getElementById('editDlJenis').value;
-  const judul=document.getElementById('editDlJudul').value.trim();
-  const tahun=parseInt(document.getElementById('editDlTahun').value)||null;
-  const kec=document.getElementById('editDlKec').value||null;
-  const file=document.getElementById('editDlFile').files[0];
-  if(!judul)return toast('Isi judul dokumen','error');
-  const prog=document.getElementById('editDlProgress');
-  prog.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Menyimpan...';
-  const jenisBantuan=document.getElementById('editDlJenisBantuan')?.value||null;
-  const tahunBantuan=document.getElementById('editDlTahunBantuan')?.value||null;
-  const updateObj={jenis,judul,tahun,kecamatan:kec,jenis_bantuan:jenisBantuan||null,tahun_bantuan:tahunBantuan?parseInt(tahunBantuan):null};
-  // Kalau ada file baru — upload dulu, hapus yang lama
-  if(file){
-    if(file.size>20*1024*1024){prog.innerHTML='<span style="color:var(--danger)">File terlalu besar (maks 20MB)</span>';return;}
-    const d=_dokLibData.find(x=>x.id===id);
-    const ext=file.name.split('.').pop().toLowerCase();
-    const safeName=judul.replace(/[^a-zA-Z0-9]/g,'_').slice(0,40);
-    const newPath=`${jenis}/${tahun||'umum'}/${safeName}_${Date.now()}.${ext}`;
-    const{error:upErr}=await sb.storage.from('dokumen-kab').upload(newPath,file,{upsert:false});
-    if(upErr){prog.innerHTML=`<span style="color:var(--danger)">Gagal upload: ${upErr.message}</span>`;return;}
-    // Hapus file lama
-    if(d?.path)await sb.storage.from('dokumen-kab').remove([d.path]);
-    updateObj.path=newPath;
-    updateObj.ukuran=file.size;
-  }
-  const{error}=await sb.from('rtlh_dokumen_kabupaten').update(updateObj).eq('id',id);
-  if(error){prog.innerHTML=`<span style="color:var(--danger)">Gagal simpan: ${error.message}</span>`;return;}
-  toast('Dokumen berhasil diperbarui','success');
-  closeModal('ovEditDokLib');
-  loadDokLib();
-}
-
-// ══ Link dokumen ke penerima ══
-async function openLinkDok(rtlhId){
-  _linkDokRtlhId=rtlhId;
-  const r=brAll.find(x=>String(x.id)===String(rtlhId));
-  document.getElementById('linkDokSub').textContent=r?.kep_kk||`ID: ${rtlhId}`;
-  document.getElementById('linkDokSearch').value='';
-  document.getElementById('dokSearchResults').innerHTML='';
-  document.getElementById('ovLinkDok').classList.add('open');
-  await loadLinkedDok(rtlhId);
-  // Load semua dokumen untuk pencarian
-  if(!_dokLibData.length)await loadDokLib();
-}
-
-async function loadLinkedDok(rtlhId){
-  const el=document.getElementById('linkedDokList');
-  const{data}=await sb.from('rtlh_dokumen_link')
-    .select('id,keterangan,dokumen_id,rtlh_dokumen_kabupaten(*)')
-    .eq('rtlh_id',parseInt(rtlhId));
-  if(!data?.length){el.innerHTML='<div style="color:var(--gray-400);font-size:.72rem">Belum ada dokumen terhubung</div>';return;}
-  el.innerHTML=data.map(lnk=>{
-    const d=lnk.rtlh_dokumen_kabupaten;
-    if(!d)return'';
-    const cfg=DOK_JENIS_CONFIG[d.jenis]||DOK_JENIS_CONFIG['Lainnya'];
-    const url=sb.storage.from('dokumen-kab').getPublicUrl(d.path).data.publicUrl;
-    return`<div class="dok-link-item">
-      <div style="width:28px;height:28px;border-radius:6px;background:${cfg.bg};color:${cfg.color};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.8rem"><i class="${cfg.icon}"></i></div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:700;font-size:.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.judul}</div>
-        <div style="font-size:.62rem;color:var(--gray-400)">${d.jenis} ${d.tahun||''} ${lnk.keterangan?'· '+lnk.keterangan:''}</div>
-      </div>
-      <a href="${url}" target="_blank" style="color:var(--blue);font-size:.72rem;padding:3px 8px;border-radius:6px;background:var(--blue-bg);text-decoration:none"><i class="fas fa-external-link-alt"></i></a>
-      <button onclick="unlinkDok('${lnk.id}')" style="background:none;border:none;color:var(--gray-300);cursor:pointer;font-size:.72rem;padding:3px"><i class="fas fa-unlink"></i></button>
-    </div>`;
-  }).join('');
-}
-
-function searchDokForLink(q){
-  const el=document.getElementById('dokSearchResults');
-  const filtered=_dokLibData.filter(d=>!q||d.judul.toLowerCase().includes(q.toLowerCase())||d.jenis.toLowerCase().includes(q.toLowerCase()));
-  if(!filtered.length){el.innerHTML='<div style="color:var(--gray-400);font-size:.72rem;padding:8px">Tidak ada dokumen</div>';return;}
-  el.innerHTML=filtered.map(d=>{
-    const cfg=DOK_JENIS_CONFIG[d.jenis]||DOK_JENIS_CONFIG['Lainnya'];
-    return`<div onclick="linkDokToPenerima('${d.id}')" style="padding:8px 10px;border-radius:8px;border:1px solid var(--gray-200);margin-bottom:6px;cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='var(--blue-bg)'" onmouseout="this.style.background=''">
-      <div style="width:28px;height:28px;border-radius:6px;background:${cfg.bg};color:${cfg.color};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.8rem"><i class="${cfg.icon}"></i></div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:700;font-size:.75rem">${d.judul}</div>
-        <div style="font-size:.62rem;color:var(--gray-400)">${d.jenis} ${d.tahun||''} ${d.kecamatan?'· Kec. '+d.kecamatan:''}</div>
-      </div>
-      <i class="fas fa-plus-circle" style="color:var(--blue);font-size:.85rem"></i>
-    </div>`;
-  }).join('');
-}
-
-async function linkDokToPenerima(dokId){
-  if(!_linkDokRtlhId)return;
-  const{error}=await sb.from('rtlh_dokumen_link').upsert({
-    rtlh_id:parseInt(_linkDokRtlhId),dokumen_id:dokId,linked_by:user?.email
-  },{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
-  if(error)return toast('Gagal: '+error.message,'error');
-  toast('Dokumen berhasil dihubungkan','success');
-  loadLinkedDok(_linkDokRtlhId);
-  loadDokLink(_linkDokRtlhId);
-}
-
-async function unlinkDok(linkId){
-  await sb.from('rtlh_dokumen_link').delete().eq('id',linkId);
-  toast('Link dihapus','success');
-  loadLinkedDok(_linkDokRtlhId);
-  loadDokLink(_linkDokRtlhId);
-}
-
-async function loadDokLink(rtlhId){
-  const el=document.getElementById('dpDokLink');
-  if(!el)return;
-  const{data}=await sb.from('rtlh_dokumen_link')
-    .select('id,rtlh_dokumen_kabupaten(id,jenis,judul,tahun,path)')
-    .eq('rtlh_id',parseInt(rtlhId));
-  if(!data?.length){el.innerHTML='<span style="color:var(--gray-400)">Belum ada dokumen terhubung</span>';return;}
-  el.innerHTML=data.map(lnk=>{
-    const d=lnk.rtlh_dokumen_kabupaten;
-    if(!d)return'';
-    const cfg=DOK_JENIS_CONFIG[d.jenis]||DOK_JENIS_CONFIG['Lainnya'];
-    const url=sb.storage.from('dokumen-kab').getPublicUrl(d.path).data.publicUrl;
-    return`<a href="${url}" target="_blank" style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;border:1px solid ${cfg.color}33;background:${cfg.bg};text-decoration:none;margin-bottom:4px">
-      <i class="${cfg.icon}" style="color:${cfg.color};font-size:.75rem"></i>
-      <span style="font-size:.72rem;font-weight:600;color:${cfg.color};flex:1">${d.judul}</span>
-      <i class="fas fa-external-link-alt" style="color:${cfg.color};font-size:.6rem"></i>
-    </a>`;
-  }).join('');
-}
-
-// ══ AUTO-LINK DOKUMEN berdasarkan Jenis Bantuan + Tahun ══
-async function autoLinkDokumen(rtlhId, jenisBantuan, tahunBantuan){
-  if(!rtlhId||!jenisBantuan)return;
-  // Cari dokumen di library yang cocok: jenis SK atau BA, tahun sama
-  // Mapping jenis bantuan ke jenis dokumen yang relevan
-  const tahun=parseInt(tahunBantuan)||null;
-  let q=sb.from('rtlh_dokumen_kabupaten').select('id,jenis,judul,tahun');
-  if(tahun)q=q.eq('tahun',tahun);
-  const{data:docs}=await q;
-  if(!data&&!docs?.length)return;
-  // Filter: cari dokumen yang judulnya mengandung jenis bantuan atau tahun
-  const jb=(jenisBantuan||'').toUpperCase();
-  const matches=(docs||[]).filter(d=>{
-    const judul=(d.judul||'').toUpperCase();
-    // Cocok kalau judul mengandung jenis bantuan DAN tahun sama
-    const tahunMatch=!tahun||!d.tahun||d.tahun===tahun;
-    const jenisMatch=judul.includes(jb)||judul.includes('RTLH')||
-      (jb==='BSPS'&&judul.includes('BSPS'))||
-      (jb==='DANA DESA'&&(judul.includes('DD')||judul.includes('DANA DESA')))||
-      (jb==='CSR'&&judul.includes('CSR'));
-    return jenisMatch&&tahunMatch;
-  });
-  if(!matches.length)return;
-  // Link ke semua dokumen yang cocok (upsert — tidak duplikat)
-  const links=matches.map(d=>({rtlh_id:parseInt(rtlhId),dokumen_id:d.id,linked_by:user?.email}));
-  await sb.from('rtlh_dokumen_link').upsert(links,{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
-  console.log(`[autoLink] Linked ${links.length} dokumen ke rtlh_id ${rtlhId}`);
-}
+},5000);
 
 // ══════════════════════════════════════════════════
 // MAINTENANCE MODE — Akses terbatas hanya staf dinas
@@ -4352,19 +3419,7 @@ async function doMaintenanceLogin(){
   }
 }
 
-// Tunggu semua library eksternal siap sebelum init
-async function waitLibs(){
-  const MAX=50; // max 5 detik
-  for(let i=0;i<MAX;i++){
-    if(window.L&&window.Chart&&window.XLSX&&window.supabase)return true;
-    await new Promise(r=>setTimeout(r,100));
-  }
-  return false; // timeout
-}
-
 window.addEventListener('DOMContentLoaded',async()=>{
-  // Tunggu library siap
-  await waitLibs();
   // Init Supabase client dulu sebelum apapun
   sb = window.supabase.createClient(SUPA_URL, SUPA_KEY, {auth:{persistSession:true,storageKey:'ertlh-auth',autoRefreshToken:true}});
   // Cek session dulu
@@ -4392,15 +3447,7 @@ window.addEventListener('DOMContentLoaded',async()=>{
     });
   }
   await initAuth();
-  // Render auth UI dulu
-  updAuth();
-  // Restore session
   restoreSession();
-  // Pastikan stats dimuat setelah auth & restore selesai
-  if(user){
-    const activePg=document.querySelector('.page.active')?.id;
-    if(activePg==='pgBeranda'||!activePg)await loadGlobalStats();
-  }
   // Load GeoJSON boundary — cache di sessionStorage biar tidak fetch ulang
   const _geoKey='e-rtlh-batas-ngawi-v1';
   const _geoCached=sessionStorage.getItem(_geoKey);
@@ -4414,258 +3461,30 @@ window.addEventListener('DOMContentLoaded',async()=>{
     }).catch(()=>{});
   }
 });
+
+}
 </script>
+<!-- ═══ CHATBOT AI ═══ -->
+<button id="chatBtn" onclick="toggleChat()" title="Tanya AI Asisten">
+  <i class="fas fa-robot"></i>
+  <span class="chat-badge" id="chatBadge">!</span>
+</button>
 
-
-<!-- ═══ MODAL LIBRARY DOKUMEN KABUPATEN ═══ -->
-<div class="overlay" id="ovDokLib">
-  <div class="modal" style="max-width:680px">
-    <div class="modal-head">
-      <div><h3><i class="fas fa-folder-open" style="color:var(--gold)"></i> Library Dokumen Kabupaten</h3>
-        <div class="sub">SK, BA, Surat Pernyataan — dokumen resmi RTLH</div>
-      </div>
-      <button class="modal-x" onclick="closeModal('ovDokLib')"><i class="fas fa-times"></i></button>
+<div id="chatBox">
+  <div class="chat-head">
+    <div class="ch-avatar"><i class="fas fa-robot"></i></div>
+    <div class="ch-info">
+      <div class="ch-name">Asisten e-RTLH</div>
+      <div class="ch-status">● Online · Powered by AI</div>
     </div>
-    <div class="modal-body" style="padding:0">
-      <!-- Filter jenis -->
-      <div style="padding:12px 16px;border-bottom:1px solid var(--gray-200);display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-        <button class="dok-jenis-chip active" id="djc_all" onclick="filterDokLib('')" style="background:var(--navy);color:#fff;border-color:var(--navy)">Semua</button>
-        <button class="dok-jenis-chip" id="djc_SK" onclick="filterDokLib('SK')" style="background:#EFF6FF;color:#1D4ED8;border-color:#BFDBFE">SK</button>
-        <button class="dok-jenis-chip" id="djc_BA" onclick="filterDokLib('BA')" style="background:#F0FDF4;color:#16A34A;border-color:#BBF7D0">BA</button>
-        <button class="dok-jenis-chip" id="djc_SP" onclick="filterDokLib('Surat Pernyataan')" style="background:#FFF7ED;color:#EA580C;border-color:#FED7AA">Surat Pernyataan</button>
-        <button class="dok-jenis-chip" id="djc_Lainnya" onclick="filterDokLib('Lainnya')" style="background:var(--gray-100);color:var(--gray-600);border-color:var(--gray-300)">Lainnya</button>
-        <button id="btnUploadDokLib" onclick="openUploadDokLib()" style="display:none;margin-left:auto;padding:5px 12px;border-radius:8px;background:var(--blue);color:#fff;border:none;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit"><i class="fas fa-upload"></i> Upload Dokumen</button>
-        <button onclick="refreshDokLib()" title="Refresh & sinkronisasi link" style="padding:5px 10px;border-radius:8px;background:var(--gray-100);color:var(--gray-600);border:1px solid var(--gray-200);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit" id="btnRefreshDokLib"><i class="fas fa-sync-alt"></i></button>
-      </div>
-      <!-- List dokumen -->
-      <div id="dokLibList" style="padding:14px 16px;min-height:200px;max-height:50vh;overflow-y:auto">
-        <div style="text-align:center;color:var(--gray-400);padding:32px"><i class="fas fa-circle-notch fa-spin fa-2x"></i></div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('ovDokLib')">Tutup</button>
-    </div>
+    <button class="ch-close" onclick="toggleChat()"><i class="fas fa-times"></i></button>
   </div>
-</div>
-
-<!-- ═══ MODAL UPLOAD DOKUMEN KABUPATEN ═══ -->
-<div class="overlay" id="ovUploadDokLib">
-  <div class="modal" style="max-width:480px">
-    <div class="modal-head">
-      <div><h3><i class="fas fa-upload" style="color:var(--blue)"></i> Upload Dokumen Kabupaten</h3></div>
-      <button class="modal-x" onclick="closeModal('ovUploadDokLib')"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-        <div class="form-group" style="margin:0">
-          <label>Jenis Dokumen <span style="color:var(--danger)">*</span></label>
-          <select id="dlJenis">
-            <option value="SK">SK (Surat Keputusan)</option>
-            <option value="BA">BA (Berita Acara)</option>
-            <option value="Surat Pernyataan">Surat Pernyataan</option>
-            <option value="Lainnya">Lainnya</option>
-          </select>
-        </div>
-        <div class="form-group" style="margin:0">
-          <label>Tahun</label>
-          <input type="number" id="dlTahun" value="2025" min="2020" max="2030">
-        </div>
-      </div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label>Judul Dokumen <span style="color:var(--danger)">*</span></label>
-        <input type="text" id="dlJudul" placeholder="misal: SK RTLH 2025 No. 188/...">
-      </div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label>Kecamatan (kosongkan jika berlaku seluruh kabupaten)</label>
-        <select id="dlKec">
-          <option value="">Seluruh Kabupaten</option>
-        </select>
-      </div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label>Berlaku untuk Jenis Bantuan <span style="font-weight:400;color:var(--gray-400)">(untuk auto-link)</span></label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <select id="dlJenisBantuan">
-            <option value="">Semua / Tidak spesifik</option>
-            <option value="RTLH">RTLH</option>
-            <option value="BSPS">BSPS</option>
-            <option value="Dana Desa">Dana Desa</option>
-            <option value="CSR">CSR</option>
-          </select>
-          <select id="dlTahunBantuan">
-            <option value="">Semua Tahun</option>
-            <option value="2021">2021</option>
-            <option value="2022">2022</option>
-            <option value="2023">2023</option>
-            <option value="2024">2024</option>
-            <option value="2025">2025</option>
-            <option value="2026">2026</option>
-            <option value="2027">2027</option>
-          </select>
-        </div>
-        <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Contoh: RTLH + 2026 → penerima RTLH 2026 otomatis terhubung saat disimpan</div>
-      </div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label>Mode Link Penerima</label>
-        <div style="display:flex;gap:8px">
-          <label style="display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;cursor:pointer;padding:7px 12px;border-radius:8px;border:1.5px solid var(--gray-200);flex:1;text-transform:none;letter-spacing:0">
-            <input type="radio" name="dlLinkMode" value="auto" checked onchange="toggleDlLinkMode(this.value)"> Auto (Jenis+Tahun)
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;cursor:pointer;padding:7px 12px;border-radius:8px;border:1.5px solid var(--gray-200);flex:1;text-transform:none;letter-spacing:0">
-            <input type="radio" name="dlLinkMode" value="manual" onchange="toggleDlLinkMode(this.value)"> Pilih Manual
-          </label>
-        </div>
-      </div>
-      <div id="dlManualWrap" style="display:none;margin-bottom:10px">
-        <div style="font-size:.68rem;font-weight:700;color:var(--gray-600);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">Cari & Pilih Penerima</div>
-        <div style="position:relative;margin-bottom:8px">
-          <input type="text" id="dlManualSearch" placeholder="Ketik nama, NIK, atau desa..." 
-            oninput="clearTimeout(this._t);this._t=setTimeout(()=>searchDlManual(this.value),400)"
-            style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.82rem;font-family:inherit;outline:none;box-sizing:border-box">
-        </div>
-        <div id="dlManualResults" style="max-height:150px;overflow-y:auto;border:1px solid var(--gray-200);border-radius:8px;margin-bottom:8px;display:none"></div>
-        <div style="font-size:.68rem;font-weight:700;color:var(--gray-600);margin-bottom:4px">Dipilih: <span id="dlSelectedCount">0</span> penerima</div>
-        <div id="dlSelectedList" style="max-height:100px;overflow-y:auto;display:flex;flex-wrap:wrap;gap:4px"></div>
-      </div>
-      <div class="form-group" style="margin-bottom:4px">
-        <label>File PDF <span style="color:var(--danger)">*</span></label>
-        <input type="file" id="dlFile" accept=".pdf,.doc,.docx,.jpg,.png" style="font-size:.8rem">
-        <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Format: PDF, DOC, JPG, PNG. Maks 20 MB.</div>
-      </div>
-      <div id="dlProgress" style="font-size:.72rem;margin-top:8px"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('ovUploadDokLib')">Batal</button>
-      <button class="btn btn-primary" onclick="uploadDokLib()"><i class="fas fa-upload"></i> Upload</button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ MODAL LINK DOKUMEN KE PENERIMA ═══ -->
-<div class="overlay" id="ovLinkDok">
-  <div class="modal" style="max-width:500px">
-    <div class="modal-head">
-      <div><h3><i class="fas fa-link" style="color:var(--blue)"></i> Link Dokumen ke Penerima</h3>
-        <div class="sub" id="linkDokSub">Hubungkan dokumen dengan penerima ini</div>
-      </div>
-      <button class="modal-x" onclick="closeModal('ovLinkDok')"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body">
-      <div style="font-size:.72rem;font-weight:700;color:var(--gray-600);margin-bottom:8px">Dokumen Terhubung:</div>
-      <div id="linkedDokList" style="margin-bottom:14px"></div>
-      <div style="font-size:.72rem;font-weight:700;color:var(--gray-600);margin-bottom:8px;border-top:1px solid var(--gray-200);padding-top:12px">Tambah Link Dokumen:</div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label>Cari Dokumen</label>
-        <input type="text" id="linkDokSearch" placeholder="Ketik judul atau jenis..." oninput="searchDokForLink(this.value)">
-      </div>
-      <div id="dokSearchResults" style="max-height:200px;overflow-y:auto"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('ovLinkDok')">Tutup</button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ MODAL PENERIMA DOKUMEN ═══ -->
-<div class="overlay" id="ovPenerimaDok">
-  <div class="modal" style="max-width:600px">
-    <div class="modal-head">
-      <div>
-        <h3><i class="fas fa-users" style="color:#7C3AED"></i> Penerima Dokumen</h3>
-        <div class="sub" id="penerimaDokSub"></div>
-      </div>
-      <button class="modal-x" onclick="closeModal('ovPenerimaDok')"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body" style="padding:0">
-      <div style="padding:10px 16px;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;justify-content:space-between;gap:8px">
-        <div id="penerimaDokCount" style="font-size:.75rem;color:var(--gray-500)"></div>
-        <input type="text" id="penerimaDokSearch" placeholder="Cari nama atau desa..." oninput="filterPenerimaDok(this.value)"
-          style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.75rem;font-family:inherit;outline:none;width:180px">
-      </div>
-      <div id="penerimaDokList" style="max-height:60vh;overflow-y:auto;padding:10px 14px"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('ovPenerimaDok')">Tutup</button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ MODAL EDIT DOKUMEN KABUPATEN ═══ -->
-<div class="overlay" id="ovEditDokLib">
-  <div class="modal" style="max-width:480px">
-    <div class="modal-head">
-      <div><h3><i class="fas fa-edit" style="color:#EA580C"></i> Edit Dokumen</h3></div>
-      <button class="modal-x" onclick="closeModal('ovEditDokLib')"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="editDlId">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-        <div class="form-group" style="margin:0">
-          <label>Jenis Dokumen</label>
-          <select id="editDlJenis">
-            <option value="SK">SK (Surat Keputusan)</option>
-            <option value="BA">BA (Berita Acara)</option>
-            <option value="Surat Pernyataan">Surat Pernyataan</option>
-            <option value="Lainnya">Lainnya</option>
-          </select>
-        </div>
-        <div class="form-group" style="margin:0">
-          <label>Tahun</label>
-          <input type="number" id="editDlTahun" min="2020" max="2030">
-        </div>
-      </div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label>Judul Dokumen</label>
-        <input type="text" id="editDlJudul">
-      </div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label>Kecamatan (kosongkan jika seluruh kabupaten)</label>
-        <select id="editDlKec">
-          <option value="">Seluruh Kabupaten</option>
-        </select>
-      </div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label>Berlaku untuk Jenis Bantuan <span style="font-weight:400;color:var(--gray-400)">(auto-link)</span></label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <select id="editDlJenisBantuan">
-            <option value="">Semua / Tidak spesifik</option>
-            <option value="RTLH">RTLH</option>
-            <option value="BSPS">BSPS</option>
-            <option value="Dana Desa">Dana Desa</option>
-            <option value="CSR">CSR</option>
-          </select>
-          <select id="editDlTahunBantuan">
-            <option value="">Semua Tahun</option>
-            <option value="2021">2021</option>
-            <option value="2022">2022</option>
-            <option value="2023">2023</option>
-            <option value="2024">2024</option>
-            <option value="2025">2025</option>
-            <option value="2026">2026</option>
-            <option value="2027">2027</option>
-          </select>
-        </div>
-        <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Contoh: RTLH + 2026 → semua penerima RTLH 2026 akan terhubung ke dokumen ini</div>
-      </div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label style="font-size:.68rem;font-weight:700;color:var(--gray-600)">AUTO-LINK KE PENERIMA</label>
-        <button onclick="runAutoLinkFromLib(document.getElementById('editDlId').value)" 
-          style="width:100%;padding:9px;border-radius:8px;background:var(--success-bg);color:var(--success);border:1px solid var(--success);font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px">
-          <i class="fas fa-magic"></i> Terapkan ke semua penerima yang cocok
-        </button>
-        <div id="autoLinkProgress" style="font-size:.68rem;color:var(--gray-500);margin-top:6px;text-align:center"></div>
-      </div>
-      <div class="form-group" style="margin-bottom:4px">
-        <label>Ganti File (opsional)</label>
-        <div style="font-size:.68rem;color:var(--gray-500);margin-bottom:4px">File saat ini: <span id="editDlCurrentFile" style="font-weight:600"></span></div>
-        <input type="file" id="editDlFile" accept=".pdf,.doc,.docx,.jpg,.png" style="font-size:.8rem">
-        <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Kosongkan jika tidak ingin ganti file. Maks 20 MB.</div>
-      </div>
-      <div id="editDlProgress" style="font-size:.72rem;margin-top:8px"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('ovEditDokLib')">Batal</button>
-      <button class="btn btn-primary" onclick="saveEditDokLib()"><i class="fas fa-save"></i> Simpan</button>
-    </div>
+  <div class="chat-messages" id="chatMessages"></div>
+  <div class="chat-input-wrap">
+    <textarea class="chat-input" id="chatInput" placeholder="Ketik pertanyaan..." rows="1"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"
+      oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,80)+'px'"></textarea>
+    <button class="chat-send" id="chatSendBtn" onclick="sendChat()"><i class="fas fa-paper-plane"></i></button>
   </div>
 </div>
 
