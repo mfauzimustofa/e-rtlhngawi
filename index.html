@@ -83,6 +83,12 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 .page{display:none;position:absolute;top:var(--header-h);left:0;right:0;bottom:0;overflow:hidden}
 .page.active{display:flex}
 #pgExcel.active{display:flex!important;flex-direction:column!important;overflow:hidden!important}
+#pgExcel.xedit-active table.xgrid{cursor:cell}
+#pgExcel.xedit-active table.xgrid td[data-id]:hover{background:#FFF9C4!important;cursor:cell}
+#pgExcel.xedit-active .excel-toolbar{background:#FFFBEB;border-bottom-color:#FCD34D}
+.xedit-banner{display:none;align-items:center;gap:10px;padding:6px 14px;background:#FFFBEB;border-bottom:1.5px solid #FCD34D;flex-shrink:0;font-size:.72rem;color:#92400E;font-weight:600}
+.xedit-banner.show{display:flex}
+.xedit-banner i{color:#F59E0B}
 .page-scroll{overflow-y:auto;flex:1}
 
 /* HERO */
@@ -824,21 +830,37 @@ table.xgrid thead th:hover .xresize{opacity:1;background:rgba(255,255,255,.3)}
 <!-- ═══ PAGE: EXCEL EDITOR ═══ -->
 <div class="page" id="pgExcel">
   <!-- Toolbar -->
-  <div class="excel-toolbar">
+  <div class="excel-toolbar" id="xToolbar">
     <button class="tb-btn" onclick="nav('beranda')" title="Kembali ke Beranda" style="gap:5px">
       <i class="fas fa-arrow-left" style="font-size:.65rem"></i> Beranda
     </button>
     <div class="tb-sep"></div>
-    <button class="tb-btn" id="xBtnSave" onclick="xSaveAll()" style="display:none;background:#F0FDF4;border-color:#16A34A;color:#15803D;font-weight:800;gap:5px">
-      <i class="fas fa-save"></i> Simpan <span id="xDirtyCount" style="background:#16A34A;color:#fff;border-radius:99px;padding:1px 6px;font-size:.6rem">0</span>
-    </button>
-    <button class="tb-btn" id="xBtnDiscard" onclick="xDiscardAll()" style="display:none;color:var(--danger)">
-      <i class="fas fa-times-circle"></i> Batalkan
+
+    <!-- TOMBOL MODE EDIT -->
+    <button id="xBtnEditMode" onclick="xToggleEditMode()"
+      title="Aktifkan mode edit untuk mulai mengedit data"
+      style="display:flex;align-items:center;gap:6px;padding:5px 13px;border-radius:7px;border:1.5px solid var(--gray-300);background:#fff;color:var(--gray-600);font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s">
+      <i class="fas fa-pencil-alt" style="font-size:.72rem"></i> Mode Edit: OFF
     </button>
     <div class="tb-sep"></div>
-    <button class="tb-btn" onclick="xOpenAddModal()" title="Tambah baris baru" style="gap:5px">
+
+    <!-- TOMBOL AKTIF SAAT MODE EDIT ON -->
+    <button class="tb-btn xedit-only" id="xBtnSave" onclick="xSaveAll()"
+      style="display:none;background:#F0FDF4;border-color:#16A34A;color:#15803D;font-weight:800;gap:5px">
+      <i class="fas fa-save"></i> Simpan
+      <span id="xDirtyCount" style="background:#16A34A;color:#fff;border-radius:99px;padding:1px 6px;font-size:.6rem">0</span>
+    </button>
+    <button class="tb-btn xedit-only" id="xBtnDiscard" onclick="xDiscardAll()"
+      style="display:none;color:var(--danger);gap:5px">
+      <i class="fas fa-times-circle"></i> Batalkan
+    </button>
+    <button class="tb-btn xedit-only" onclick="xOpenAddModal()"
+      id="xBtnAdd" style="display:none;gap:5px" title="Tambah baris baru">
       <i class="fas fa-plus" style="font-size:.7rem"></i> Tambah
     </button>
+    <div class="tb-sep xedit-only" id="xSepEdit" style="display:none"></div>
+
+    <!-- TOMBOL SELALU TAMPIL -->
     <button class="tb-btn" onclick="xExportExcel()" title="Ekspor ke Excel" style="gap:5px">
       <i class="fas fa-file-excel" style="color:#16A34A"></i> Ekspor
     </button>
@@ -849,9 +871,10 @@ table.xgrid thead th:hover .xresize{opacity:1;background:rgba(255,255,255,.3)}
     <button class="tb-btn" id="xBtnFreeze" onclick="xToggleFreeze()" title="Toggle freeze kolom kiri" style="gap:5px">
       <i class="fas fa-thumbtack" id="xFreezeIcon"></i> <span id="xFreezeLabel">Freeze: On</span>
     </button>
-    <button class="tb-btn" onclick="xLoad()" title="Refresh data dari server" style="gap:5px">
+    <button class="tb-btn" onclick="xLoad()" title="Refresh data dari server" style="gap:5px;color:var(--gray-500)">
       <i class="fas fa-sync-alt"></i>
     </button>
+
     <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0">
       <div id="xUnsavedChip" style="display:none;align-items:center;gap:5px;background:#FFFBEB;border:1px solid #FCD34D;border-radius:6px;padding:2px 9px;font-size:.65rem;font-weight:700;color:#92400E">
         <i class="fas fa-circle" style="font-size:.4rem;color:#F59E0B"></i>
@@ -861,11 +884,25 @@ table.xgrid thead th:hover .xresize{opacity:1;background:rgba(255,255,255,.3)}
     </div>
   </div>
 
-  <!-- Unsaved bar -->
+  <!-- Edit mode banner -->
+  <div class="xedit-banner" id="xEditBanner">
+    <i class="fas fa-pencil-alt"></i>
+    <span>Mode Edit aktif — diedit oleh <strong id="xEditorName">—</strong></span>
+    <span style="color:#B45309;font-weight:400">· Klik sel untuk langsung edit · Klik kanan untuk opsi lain</span>
+    <span id="xUnsavedCount" style="display:none">0</span>
+    <div style="margin-left:auto;display:flex;gap:6px">
+      <button onclick="xSaveAll()" id="xBannerSave" style="display:none;padding:3px 12px;border-radius:6px;background:#16A34A;color:#fff;border:none;font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit">
+        <i class="fas fa-save"></i> Simpan
+      </button>
+      <button onclick="xToggleEditMode()" style="padding:3px 12px;border-radius:6px;background:#fff;color:#92400E;border:1px solid #FCD34D;font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit">
+        <i class="fas fa-times"></i> Nonaktifkan
+      </button>
+    </div>
+  </div>
+
+  <!-- Unsaved bar (hidden, counter only) -->
   <div id="xUnsavedBar" style="display:none">
-    <i class="fas fa-exclamation-triangle"></i>
-    <span id="xUnsavedCount">0</span> perubahan belum disimpan —
-    <button onclick="xSaveAll()" style="background:var(--navy);color:#fff;border:none;border-radius:6px;padding:3px 12px;font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit">Simpan Sekarang</button>
+    <span id="_xUnsavedHidden">0</span>
   </div>
 
   <!-- Filter bar -->
@@ -906,8 +943,8 @@ table.xgrid thead th:hover .xresize{opacity:1;background:rgba(255,255,255,.3)}
     </table>
   </div>
 
-  <!-- Pager -->
-  <div id="xPager" style="display:none;align-items:center;gap:5px;padding:5px 14px;background:#fff;border-top:1.5px solid var(--gray-100);flex-shrink:0;font-size:.72rem;color:var(--gray-600)"></div>
+  <!-- Pager — di atas sheet, sticky -->
+  <div id="xPager" style="display:none;align-items:center;gap:5px;padding:5px 14px;background:#fff;border-bottom:1.5px solid var(--gray-200);flex-shrink:0;font-size:.72rem;color:var(--gray-600);position:sticky;top:0;z-index:25;box-shadow:0 1px 4px rgba(0,0,0,.06)"></div>
 
   <!-- Status bar -->
   <div class="excel-statusbar">
@@ -4955,6 +4992,51 @@ const XC=[
 
 /* ── State ── */
 let xAll=[], xRows=[], xDirty={};
+let xEditMode=false; // tombol pensil aktif = bisa edit
+
+function xToggleEditMode(){
+  xEditMode=!xEditMode;
+  const pg=document.getElementById('pgExcel');
+  const btn=document.getElementById('xBtnEditMode');
+  const banner=document.getElementById('xEditBanner');
+  const editorName=document.getElementById('xEditorName');
+  const editOnlyEls=document.querySelectorAll('.xedit-only');
+
+  if(xEditMode){
+    pg?.classList.add('xedit-active');
+    if(btn){
+      btn.style.background='#FEF3C7';
+      btn.style.borderColor='#F59E0B';
+      btn.style.color='#92400E';
+      btn.innerHTML='<i class="fas fa-pencil-alt" style="font-size:.72rem;color:#F59E0B"></i> Mode Edit: ON';
+    }
+    banner?.classList.add('show');
+    // Tampilkan nama editor
+    const nama=_adminUsername||user?.email?.split('@')[0]||'Admin';
+    if(editorName)editorName.textContent=nama;
+    // Tampilkan tombol edit-only (Simpan, Batalkan, Tambah)
+    editOnlyEls.forEach(el=>el.style.display='flex');
+  }else{
+    // Kalau ada perubahan belum simpan, konfirmasi dulu
+    if(Object.keys(xDirty).length>0){
+      if(!confirm('Ada '+Object.keys(xDirty).length+' perubahan belum disimpan. Nonaktifkan mode edit tanpa menyimpan?'))return;
+      xDirty={};
+      xUpdDirty();
+      xRenderBody(); // refresh tampilan baris dirty
+    }
+    pg?.classList.remove('xedit-active');
+    if(btn){
+      btn.style.background='#fff';
+      btn.style.borderColor='var(--gray-300)';
+      btn.style.color='var(--gray-600)';
+      btn.innerHTML='<i class="fas fa-pencil-alt" style="font-size:.72rem"></i> Mode Edit: OFF';
+    }
+    banner?.classList.remove('show');
+    editOnlyEls.forEach(el=>el.style.display='none');
+    // Tutup sel yang sedang diedit
+    if(xEd)_xCancel(xEd.td,xEd.id,xEd.k);
+  }
+}
 let xVis={}, xW={};
 let xSortK='', xSortD=1;
 let xFreeze=true;
@@ -5201,8 +5283,16 @@ function xRenderBody(){
 }
 
 function _xRenderPager(){
-  const pager=document.getElementById('xPager');
+  // Pastikan pager ada di dalam xSheetWrap SEBELUM table (agar sticky top bekerja)
+  const wrap=document.getElementById('xSheetWrap');
+  let pager=document.getElementById('xPager');
   if(!pager)return;
+  // Pindah ke awal wrap jika belum di sana
+  if(wrap&&pager.parentNode!==wrap){
+    wrap.insertBefore(pager,wrap.firstChild);
+  }else if(wrap&&wrap.firstChild!==pager){
+    wrap.insertBefore(pager,wrap.firstChild);
+  }
   const total=xRows.length;
   if(!total){pager.style.display='none';pager.innerHTML='';return;}
   pager.style.display='flex';
@@ -5266,6 +5356,7 @@ function _xCellVal(td,c,val){
 /* ── Edit inline ── */
 function xEdit(td,id,k){
   if(!canEdit()){toast('Tidak ada akses edit','error');return;}
+  if(!xEditMode){toast('Aktifkan Mode Edit (klik tombol pensil) untuk mengedit','warning');return;}
   const c=XC.find(x=>x.k===k);
   if(!c||c.ed===false)return;
   if(c.sen&&!isSuperAdmin()){toast('Hanya Super Admin yang bisa edit NIK/KK','error');return;}
@@ -5436,10 +5527,10 @@ function _xCtxMenu(e){
   m.classList.add('open');
 }
 function _xCloseCtx(){document.getElementById('xCtxMenu')?.classList.remove('open');}
-function xCtxEditCell(){_xCloseCtx();const td=document.querySelector('#xBody td[data-id="'+xCtxId+'"][data-k="'+xCtxK+'"]');if(td)xEdit(td,xCtxId,xCtxK);}
-function xCtxEditRow(){_xCloseCtx();xOpenForm(xCtxId);}
-function xCtxDupe(){_xCloseCtx();const r=xRows.find(x=>String(x.id)===String(xCtxId));if(r)xOpenForm(null,{...r,nik:undefined,no_kk:undefined});}
-function xCtxDelete(){_xCloseCtx();xDeleteRow(xCtxId);}
+function xCtxEditCell(){_xCloseCtx();if(!xEditMode){toast('Aktifkan Mode Edit untuk mengedit','warning');return;}const td=document.querySelector('#xBody td[data-id="'+xCtxId+'"][data-k="'+xCtxK+'"]');if(td)xEdit(td,xCtxId,xCtxK);}
+function xCtxEditRow(){_xCloseCtx();if(!xEditMode){toast('Aktifkan Mode Edit untuk mengedit','warning');return;}xOpenForm(xCtxId);}
+function xCtxDupe(){_xCloseCtx();if(!xEditMode){toast('Aktifkan Mode Edit untuk menduplikasi','warning');return;}const r=xRows.find(x=>String(x.id)===String(xCtxId));if(r)xOpenForm(null,{...r,nik:undefined,no_kk:undefined});}
+function xCtxDelete(){_xCloseCtx();if(!xEditMode){toast('Aktifkan Mode Edit untuk menghapus','warning');return;}xDeleteRow(xCtxId);}
 
 /* ── Form tambah/edit (mandiri) ── */
 function xOpenAddModal(){xOpenForm(null);}
@@ -5596,6 +5687,7 @@ async function xSaveAll(){
   }
   xFilter();xUpdDirty();
   toast(fail?ok+' berhasil, '+fail+' gagal':ok+' perubahan disimpan!',fail?'warning':'success');
+  if(!fail&&xEditMode)xToggleEditMode(); // auto-off edit mode setelah simpan sukses
 }
 
 function xDiscardAll(){
@@ -5607,12 +5699,17 @@ function xDiscardAll(){
 
 function xUpdDirty(){
   const n=Object.keys(xDirty).length;
-  ['xBtnSave','xBtnDiscard'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=n?'flex':'none';});
+  // Tombol Simpan & Batalkan — hanya tampil kalau edit mode ON dan ada perubahan
+  const btnSave=document.getElementById('xBtnSave');
+  const btnDiscard=document.getElementById('xBtnDiscard');
+  if(btnSave)btnSave.style.display=(xEditMode&&n>0)?'flex':'none';
+  if(btnDiscard)btnDiscard.style.display=(xEditMode&&n>0)?'flex':'none';
   const dc=document.getElementById('xDirtyCount');if(dc)dc.textContent=n;
-  const uc=document.getElementById('xUnsavedCount');if(uc)uc.textContent=n;
   const uc2=document.getElementById('xUnsavedCount2');if(uc2)uc2.textContent=n;
-  const ub=document.getElementById('xUnsavedBar');if(ub)ub.classList.toggle('show',n>0);
-  const chip=document.getElementById('xUnsavedChip');if(chip)chip.style.display=n?'flex':'none';
+  const chip=document.getElementById('xUnsavedChip');if(chip)chip.style.display=(xEditMode&&n>0)?'flex':'none';
+  // Banner save button
+  const bannerSave=document.getElementById('xBannerSave');
+  if(bannerSave)bannerSave.style.display=n>0?'flex':'none';
 }
 
 /* ── Ekspor Excel ── */
