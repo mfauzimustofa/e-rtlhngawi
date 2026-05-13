@@ -5003,7 +5003,12 @@ function xSort(k){
 /* ── Render grid ── */
 function xVisCols(){ return XC.filter(c=>xVis[c.k]!==false); }
 
-function xRender(){ xRenderHead(); xRenderBody(); _xUpdSB(); }
+function xRender(){
+  xVirtStart=-1;xVirtEnd=-1; // force re-render
+  xRenderHead();
+  xRenderBody();
+  _xUpdSB();
+}
 
 function xRenderHead(){
   const vis=xVisCols();
@@ -5031,9 +5036,15 @@ function xRenderHead(){
   document.getElementById('xHead').innerHTML=h;
 }
 
+/* ── Virtual scroll state ── */
+const X_ROW_H=30; // px per row
+let xVirtStart=0, xVirtEnd=0, xVirtTotal=0;
+const X_OVERSCAN=10; // baris ekstra atas/bawah
+
 function xRenderBody(){
   const vis=xVisCols();
   const tbody=document.getElementById('xBody');
+
   if(!xRows.length){
     tbody.innerHTML=`<tr><td colspan="${vis.length}" style="padding:50px;text-align:center;color:var(--gray-400);font-size:.8rem">
       <i class="fas fa-inbox" style="font-size:2rem;opacity:.2;display:block;margin-bottom:10px"></i>
@@ -5041,24 +5052,63 @@ function xRenderBody(){
     return;
   }
 
-  const frag=document.createDocumentFragment();
-  let frozenWidths=[];
+  // Hitung frozen left offsets
+  let frozenLeft={};
   if(xFreeze){
     let acc=0;
     vis.forEach(c=>{
-      if(c.fr||c.k==='_no'){frozenWidths.push({k:c.k,left:acc});acc+=xW[c.k]||c.w;}
-      else frozenWidths.push({k:c.k,left:null});
+      if(c.fr||c.k==='_no'){frozenLeft[c.k]=acc;acc+=xW[c.k]||c.w;}
     });
   }
 
-  xRows.forEach((r,idx)=>{
+  xVirtTotal=xRows.length;
+  xVirtRender(vis,frozenLeft);
+
+  // Pasang scroll listener sekali
+  const wrap=document.getElementById('xSheetWrap');
+  wrap.onscroll=()=>xVirtRender(vis,frozenLeft);
+}
+
+function xVirtRender(vis,frozenLeft){
+  const wrap=document.getElementById('xSheetWrap');
+  const tbody=document.getElementById('xBody');
+  if(!wrap||!tbody)return;
+
+  const scrollTop=wrap.scrollTop;
+  const viewH=wrap.clientHeight||600;
+
+  const start=Math.max(0,Math.floor(scrollTop/X_ROW_H)-X_OVERSCAN);
+  const end=Math.min(xVirtTotal,Math.ceil((scrollTop+viewH)/X_ROW_H)+X_OVERSCAN);
+
+  // Jika range sama persis → skip (kecuali dirty berubah)
+  if(start===xVirtStart&&end===xVirtEnd){return;}
+  xVirtStart=start;xVirtEnd=end;
+
+  const topPad=start*X_ROW_H;
+  const botPad=Math.max(0,(xVirtTotal-end)*X_ROW_H);
+
+  const frag=document.createDocumentFragment();
+
+  // Spacer atas
+  if(topPad>0){
+    const sp=document.createElement('tr');
+    sp.style.height=topPad+'px';
+    sp.innerHTML=`<td colspan="${vis.length}" style="padding:0;border:none;background:transparent"></td>`;
+    frag.appendChild(sp);
+  }
+
+  for(let idx=start;idx<end;idx++){
+    const r=xRows[idx];
+    if(!r)continue;
     const id=r.id;
     const dirty=xDirty[id];
     const tr=document.createElement('tr');
     tr.dataset.id=id;
+    tr.dataset.idx=idx;
     if(dirty)tr.classList.add('xrow-dirty');
+    if(idx%2===1)tr.style.background='#F8FAFC';
 
-    vis.forEach((c,ci)=>{
+    vis.forEach(c=>{
       const td=document.createElement('td');
       if(c.k==='_no'){
         td.className='xno';
@@ -5067,24 +5117,28 @@ function xRenderBody(){
         const isFr=xFreeze&&(c.fr||c.k==='_no');
         if(isFr){
           td.className='xfrozen';
-          const lw=frozenWidths[ci];
-          if(lw&&lw.left!==null)td.style.left=lw.left+'px';
+          if(frozenLeft[c.k]!==undefined)td.style.left=frozenLeft[c.k]+'px';
         }
         td.dataset.id=id;
         td.dataset.k=c.k;
         td.style.width=(xW[c.k]||c.w)+'px';
-
         const val=dirty&&dirty[c.k]!==undefined?dirty[c.k]:r[c.k];
         _xCellVal(td,c,val);
-
-        if(c.ed!==false){
-          td.onclick=()=>xEdit(td,id,c.k);
-        }
+        if(c.ed!==false) td.onclick=()=>xEdit(td,id,c.k);
       }
       tr.appendChild(td);
     });
     frag.appendChild(tr);
-  });
+  }
+
+  // Spacer bawah
+  if(botPad>0){
+    const sp=document.createElement('tr');
+    sp.style.height=botPad+'px';
+    sp.innerHTML=`<td colspan="${vis.length}" style="padding:0;border:none;background:transparent"></td>`;
+    frag.appendChild(sp);
+  }
+
   tbody.innerHTML='';
   tbody.appendChild(frag);
 }
@@ -5126,9 +5180,20 @@ function xEdit(td,id,k){
   if(!c||c.ed===false)return;
   if(c.sen&&!isSuperAdmin()){toast('Hanya Super Admin yang bisa edit NIK/KK','error');return;}
 
-  if(xEd)_xCommit(true); // commit sel sebelumnya diam-diam
+  if(xEd)_xCommit(true);
 
-  // Highlight row
+  // Scroll row into view agar tidak hilang saat virtual re-render
+  const wrap=document.getElementById('xSheetWrap');
+  const idx=xRows.findIndex(r=>r.id===id);
+  if(idx>=0){
+    const rowTop=idx*X_ROW_H;
+    const rowBot=rowTop+X_ROW_H;
+    const st=wrap.scrollTop;
+    const viewH=wrap.clientHeight;
+    if(rowTop<st)wrap.scrollTop=rowTop;
+    else if(rowBot>st+viewH)wrap.scrollTop=rowBot-viewH;
+  }
+
   document.querySelectorAll('#xBody tr.xrow-selected').forEach(r=>r.classList.remove('xrow-selected'));
   const tr=document.querySelector('#xBody tr[data-id="'+id+'"]');
   if(tr)tr.classList.add('xrow-selected');
@@ -5139,8 +5204,12 @@ function xEdit(td,id,k){
   const r=xRows.find(x=>x.id===id)||{};
   const cur=xDirty[id]&&xDirty[id][k]!==undefined?xDirty[id][k]:r[k];
 
-  td.classList.add('xediting');
-  td.innerHTML='';
+  // Pastikan td masih ada di DOM (virtual scroll mungkin sudah re-render)
+  const liveTd=document.querySelector('#xBody td[data-id="'+id+'"][data-k="'+k+'"]');
+  const target=liveTd||td;
+
+  target.classList.add('xediting');
+  target.innerHTML='';
 
   let inp;
   if(c.sel){
@@ -5159,17 +5228,17 @@ function xEdit(td,id,k){
   }
 
   inp.addEventListener('keydown',e=>{
-    if(e.key==='Escape'){e.stopPropagation();_xCancel(td,id,k);return;}
+    if(e.key==='Escape'){e.stopPropagation();_xCancel(target,id,k);return;}
     if(e.key==='Enter'){e.preventDefault();_xCommit(false);xNavCell(1,'v');return;}
     if(e.key==='Tab'){e.preventDefault();_xCommit(false);xNavCell(e.shiftKey?-1:1,'h');return;}
   });
   inp.addEventListener('blur',()=>setTimeout(()=>{if(xEd)_xCommit(false);},100));
 
-  td.appendChild(inp);
+  target.appendChild(inp);
   inp.focus();
   try{if(inp.select)inp.select();}catch(e){}
 
-  xEd={id,k,td,c};
+  xEd={id,k,td:target,c};
   _xMode('EDIT');
 }
 
