@@ -597,17 +597,19 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
         <!-- Progress Penanganan -->
         <div class="status-bar-wrap">
-          <div class="status-bar-title"><i class="fas fa-chart-pie"></i> Status Layak Huni vs RTLH</div>
+          <div class="status-bar-title"><i class="fas fa-chart-pie"></i> Status RTLH</div>
           <div style="position:relative;height:200px;margin-bottom:12px">
             <canvas id="chartStatus"></canvas>
           </div>
           <div class="prog-bar-track" id="statusBar">
             <div class="prog-bar-seg" id="pbSudah" style="background:var(--success)"></div>
             <div class="prog-bar-seg" id="pbBelum" style="background:var(--danger)"></div>
+            <div class="prog-bar-seg" id="pbLain" style="background:#7C3AED"></div>
           </div>
           <div class="status-legend" style="margin-top:10px">
             <div class="sl-item"><div class="sl-dot" style="background:var(--success)"></div><span id="lgSudah">Layak Huni: 0%</span></div>
             <div class="sl-item"><div class="sl-dot" style="background:var(--danger)"></div><span id="lgBelum">RTLH: 0%</span></div>
+            <div class="sl-item"><div class="sl-dot" style="background:#7C3AED"></div><span id="lgLain">Ket. Lain: 0%</span></div>
           </div>
         </div>
 
@@ -1402,7 +1404,7 @@ async function loadGlobalStats(){
     const layak=data.filter(r=>r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses').length;
     const belum=data.filter(r=>r.status_rtlh==='RTLH'||r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
     const batal=data.filter(r=>r.status_rtlh==='SK Dibatalkan').length;
-    const lain=data.filter(r=>r.status_rtlh==='Keterangan Lain').length;
+    const lain=data.filter(r=>r.status_rtlh&&r.status_rtlh!=='RTLH'&&r.status_rtlh!=='Layak Huni'&&r.status_rtlh!=='Belum Ditangani'&&r.status_rtlh!=='Sudah Ditangani'&&r.status_rtlh!=='Dalam Proses').length;
     const sudah=layak; const proses=0;
 
     document.getElementById('gs-total').textContent=total.toLocaleString('id');
@@ -1412,10 +1414,13 @@ async function loadGlobalStats(){
     if(elLain)elLain.textContent=lain.toLocaleString('id');
 
     const playak=pct(layak,total),pb=pct(belum,total);
+    const plain=pct(lain,total);
     document.getElementById('pbSudah').style.width=playak+'%';
     document.getElementById('pbBelum').style.width=pb+'%';
+    const pbLainEl=document.getElementById('pbLain');if(pbLainEl)pbLainEl.style.width=plain+'%';
     document.getElementById('lgSudah').textContent=`Layak Huni: ${playak}% (${layak})`;
     document.getElementById('lgBelum').textContent=`RTLH: ${pb}% (${belum})`;
+    const lgLainEl=document.getElementById('lgLain');if(lgLainEl)lgLainEl.textContent=`Ket. Lain: ${plain}% (${lain})`;
 
     // Per kec counts
     kecCounts={};
@@ -1758,13 +1763,13 @@ function renderChartStatus(data){
   const existing=Chart.getChart(ctx);if(existing)existing.destroy();
   const layak=data.filter(r=>r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses').length;
   const belum=data.filter(r=>r.status_rtlh==='RTLH'||r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
-  const batal=data.filter(r=>r.status_batal&&r.status_batal!=='-').length;
-  const tot=layak+belum+batal;
+  const lainChart=data.filter(r=>r.status_rtlh&&r.status_rtlh!=='RTLH'&&r.status_rtlh!=='Layak Huni'&&r.status_rtlh!=='Belum Ditangani'&&r.status_rtlh!=='Sudah Ditangani'&&r.status_rtlh!=='Dalam Proses').length;
+  const tot=layak+belum+lainChart||1;
   chartStatus=new Chart(ctx,{
     type:'doughnut',
     data:{
-      labels:['Layak Huni','RTLH','Ada SK Batal'],
-      datasets:[{data:[layak,belum,batal],backgroundColor:['#16A34A','#DC2626','#94A3B8'],borderWidth:3,borderColor:'#fff',hoverOffset:8}]
+      labels:['Layak Huni','RTLH','Keterangan Lain'],
+      datasets:[{data:[layak,belum,lainChart],backgroundColor:['#16A34A','#DC2626','#7C3AED'],borderWidth:3,borderColor:'#fff',hoverOffset:8}]
     },
     options:{
       responsive:true,maintainAspectRatio:false,cutout:'70%',
@@ -1777,8 +1782,10 @@ function renderChartStatus(data){
   // Update legend manual
   const elL=document.getElementById('lgSudah');
   const elR=document.getElementById('lgBelum');
+  const elLain=document.getElementById('lgLain');
   if(elL)elL.innerHTML=`<strong style="color:var(--success)">${layak}</strong> Layak Huni (${pct(layak,tot)}%)`;
   if(elR)elR.innerHTML=`<strong style="color:var(--danger)">${belum}</strong> RTLH (${pct(belum,tot)}%)`;
+  if(elLain)elLain.innerHTML=`<strong style="color:#7C3AED">${lainChart}</strong> Ket. Lain (${pct(lainChart,tot)}%)`;
 }
 
 function renderChartDesil(counts){
@@ -1989,14 +1996,17 @@ async function applyGlobalFilter(){
   res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>';
   let data=[];
   if(isLain){
+    // Ambil semua data yang bukan RTLH dan bukan Layak Huni (termasuk SK Dibatalkan legacy, Keterangan Lain, dll)
     const {count:totalCnt}=await sb.from('rtlh').select('*',{count:'exact',head:true})
-      .eq('status_rtlh','Keterangan Lain');
+      .not('status_rtlh','in','(RTLH,Layak Huni,Belum Ditangani,Sudah Ditangani,Dalam Proses)')
+      .not('status_rtlh','is',null);
     const pages=Math.ceil((totalCnt||0)/1000);
     cnt.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memuat ${totalCnt||0} data...`;
     if(!pages){res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:.78rem">Tidak ada data Keterangan Lain</div>';return;}
     const results=await Promise.all(Array.from({length:pages},(_,p)=>
       sb.from('rtlh').select('id,kec,desa,kep_kk,nik,status_rtlh,status_batal,desil')
-        .eq('status_rtlh','Keterangan Lain')
+        .not('status_rtlh','in','(RTLH,Layak Huni,Belum Ditangani,Sudah Ditangani,Dalam Proses)')
+        .not('status_rtlh','is',null)
         .order('kec').order('desa').range(p*1000,(p+1)*1000-1).limit(1000)
     ));
     data=results.flatMap(r=>r.data||[]);
@@ -2312,13 +2322,13 @@ function renderKecDashboard(){
   const total=brAll.length;
   const layak=brAll.filter(r=>r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses').length;
   const rtlh=brAll.filter(r=>r.status_rtlh==='RTLH'||r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
-  const batal=brAll.filter(r=>r.status_batal&&r.status_batal!=='-').length;
+  const lainKec=brAll.filter(r=>r.status_rtlh&&r.status_rtlh!=='RTLH'&&r.status_rtlh!=='Layak Huni'&&r.status_rtlh!=='Belum Ditangani'&&r.status_rtlh!=='Sudah Ditangani'&&r.status_rtlh!=='Dalam Proses').length;
   const desil14=brAll.filter(r=>{const m=String(r.desil||'').match(/\d+/);return m&&parseInt(m[0])<=4;}).length;
   d.innerHTML=`
     <div class="kd-stat">
       <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--success)">${layak}</div><div class="kdsi-lbl">Layak Huni</div></div>
       <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--danger)">${rtlh}</div><div class="kdsi-lbl">RTLH</div></div>
-      <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--gray-500)">${batal}</div><div class="kdsi-lbl">Ada SK Batal</div></div>
+      <div class="kd-stat-item"><div class="kdsi-val" style="color:#7C3AED">${lainKec}</div><div class="kdsi-lbl">Ket. Lain</div></div>
     </div>
     <div class="canvas-wrap"><canvas id="chartKecStatus"></canvas></div>`;
   setTimeout(()=>{
@@ -2327,7 +2337,7 @@ function renderKecDashboard(){
     const existing=Chart.getChart(ctx);
     if(existing)existing.destroy();
     new Chart(ctx,{type:'doughnut',
-      data:{labels:['Layak Huni','RTLH','Ada SK Batal'],datasets:[{data:[layak,rtlh,batal],backgroundColor:['#16A34A','#DC2626','#94A3B8'],borderWidth:2,cutout:'65%'}]},
+      data:{labels:['Layak Huni','RTLH','Keterangan Lain'],datasets:[{data:[layak,rtlh,lainKec],backgroundColor:['#16A34A','#DC2626','#7C3AED'],borderWidth:2,cutout:'65%'}]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:9},boxWidth:10,padding:6}}}}
     });
   },50);
