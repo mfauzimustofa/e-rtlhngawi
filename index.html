@@ -384,8 +384,9 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
   /* Kurangi padding page */
   .page-scroll{padding:0!important}
 }
-/* Loading skeleton */
-.skeleton{background:linear-gradient(90deg,var(--gray-100) 25%,var(--gray-200) 50%,var(--gray-100) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
+@media(max-width:480px){
+  #gsStatGrid{grid-template-columns:repeat(2,1fr)!important}
+}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
 
@@ -526,10 +527,11 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
     <!-- STAT CARDS -->
     <div class="section" style="margin-bottom:0;padding-bottom:6px;padding-top:12px">
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+      <div id="gsStatGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
         <div class="mini-stat" onclick="navWithFilter('')" title="Lihat semua data"><div class="ms-icon" style="background:linear-gradient(135deg,var(--blue),var(--blue-light))"><i class="fas fa-database"></i></div><div class="ms-texts"><div class="ms-val" id="gs-total">-</div><div class="ms-label">Total Data</div></div></div>
         <div class="mini-stat" onclick="navWithFilter('Layak Huni')" title="Lihat semua Layak Huni"><div class="ms-icon" style="background:linear-gradient(135deg,#16A34A,#22C55E)"><i class="fas fa-home"></i></div><div class="ms-texts"><div class="ms-val" id="gs-layak">-</div><div class="ms-label">Layak Huni</div></div></div>
         <div class="mini-stat" onclick="navWithFilter('RTLH')" title="Lihat semua RTLH"><div class="ms-icon" style="background:linear-gradient(135deg,var(--danger),#F87171)"><i class="fas fa-house-damage"></i></div><div class="ms-texts"><div class="ms-val" id="gs-belum">-</div><div class="ms-label">RTLH</div></div></div>
+        <div class="mini-stat" onclick="navWithFilter('_lain')" title="Lihat data Keterangan Lain"><div class="ms-icon" style="background:linear-gradient(135deg,#7C3AED,#A78BFA)"><i class="fas fa-question-circle"></i></div><div class="ms-texts"><div class="ms-val" id="gs-lain">-</div><div class="ms-label">Ket. Lain</div></div></div>
       </div>
     </div>
 
@@ -1398,9 +1400,12 @@ async function loadGlobalStats(){
     const batal=data.filter(r=>r.status_rtlh==='SK Dibatalkan').length;
     const sudah=layak; const proses=0;
 
+    const lain=total-layak-belum-batal;
     document.getElementById('gs-total').textContent=total.toLocaleString('id');
     document.getElementById('gs-layak').textContent=layak.toLocaleString('id');
     document.getElementById('gs-belum').textContent=belum.toLocaleString('id');
+    const elLain=document.getElementById('gs-lain');
+    if(elLain)elLain.textContent=(lain>0?lain:0).toLocaleString('id');
 
     const playak=pct(layak,total),pb=pct(belum,total);
     document.getElementById('pbSudah').style.width=playak+'%';
@@ -1969,15 +1974,64 @@ async function applyGlobalFilter(){
     document.getElementById('keclistResultWrap').style.display='none';
     return;
   }
+  const isLain=_globalStatusFilter==='_lain';
   // Tampilkan result wrap dengan filter status
   const wrap=document.getElementById('keclistResultWrap');
   const cnt=document.getElementById('keclistResultCount');
   const res=document.getElementById('keclistResult');
   wrap.style.display='block';
-  cnt.innerHTML=`<span style="background:${_globalStatusFilter==='Layak Huni'?'#F0FDF4':'#FEF2F2'};color:${_globalStatusFilter==='Layak Huni'?'#16A34A':'#DC2626'};padding:2px 10px;border-radius:99px;font-weight:700;font-size:.72rem">${_globalStatusFilter}</span>`;
+  const badgeColor=_globalStatusFilter==='Layak Huni'?{bg:'#F0FDF4',fg:'#16A34A'}:_globalStatusFilter==='RTLH'?{bg:'#FEF2F2',fg:'#DC2626'}:{bg:'#F3E8FF',fg:'#7C3AED'};
+  cnt.innerHTML=`<span style="background:${badgeColor.bg};color:${badgeColor.fg};padding:2px 10px;border-radius:99px;font-weight:700;font-size:.72rem">${isLain?'Keterangan Lain':_globalStatusFilter}</span>`;
   res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>';
   // Fetch data berdasarkan status
-  // Fetch semua data dengan parallel pagination
+  let queryBuilder;
+  if(isLain){
+    // Data yang bukan Layak Huni, bukan RTLH, bukan SK Dibatalkan, bukan kosong
+    const{count:totalCnt}=await sb.from('rtlh').select('*',{count:'exact',head:true})
+      .not('status_rtlh','in','(RTLH,Layak Huni,SK Dibatalkan,Belum Ditangani,Sudah Ditangani,Dalam Proses)')
+      .not('status_rtlh','is',null);
+    const pages=Math.ceil((totalCnt||0)/1000);
+    cnt.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memuat ${totalCnt||0} data...`;
+    const results=await Promise.all(Array.from({length:Math.max(pages,1)},(_,p)=>
+      sb.from('rtlh').select('id,kec,desa,kep_kk,nik,status_rtlh,desil')
+        .not('status_rtlh','in','(RTLH,Layak Huni,SK Dibatalkan,Belum Ditangani,Sudah Ditangani,Dalam Proses)')
+        .not('status_rtlh','is',null)
+        .order('kec').order('desa').range(p*1000,(p+1)*1000-1).limit(1000)
+    ));
+    const data=results.flatMap(r=>r.data||[]);
+    if(!data.length){res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:.78rem">Tidak ada data Keterangan Lain</div>';return;}
+    cnt.innerHTML=`<span style="font-weight:700">${data.length}</span> data Keterangan Lain`;
+    const byDesa={};
+    data.forEach(r=>{
+      const key=((r.desa||'-')+'|'+(r.kec||'-')).toUpperCase();
+      if(!byDesa[key])byDesa[key]={desa:normCase(r.desa)||'-',kec:normCase(r.kec)||'-',items:[]};
+      byDesa[key].items.push(r);
+    });
+    const sc='var(--purple,#7C3AED)';
+    res.innerHTML=Object.values(byDesa).map(g=>`
+      <div style="border-bottom:2px solid var(--blue-bg)">
+        <div style="padding:7px 12px;background:var(--blue-bg);display:flex;align-items:center;gap:6px">
+          <i class="fas fa-map-marker-alt" style="color:var(--blue);font-size:.72rem"></i>
+          <span style="font-size:.72rem;font-weight:800;color:var(--blue)">${g.desa}</span>
+          <span style="font-size:.65rem;color:var(--gray-500)">· ${g.kec}</span>
+          <span style="margin-left:auto;font-size:.62rem;background:var(--blue);color:#fff;border-radius:99px;padding:1px 7px">${g.items.length}</span>
+        </div>
+        ${g.items.map(r=>{
+          const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
+          return`<div onclick="clearKeclistSearch();_globalStatusFilter='';bukaDetailDariSearch('${r.id}','${kecKey}')"
+            style="padding:10px 12px;border-bottom:1px solid var(--gray-100);cursor:pointer;display:flex;align-items:center;gap:10px"
+            onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:.8rem;font-weight:700;color:var(--gray-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.kep_kk||'-'}</div>
+              <div style="font-size:.65rem;color:var(--gray-500)">${r.nik||'-'}</div>
+            </div>
+            <span style="font-size:.62rem;font-weight:700;background:#F3E8FF;color:#7C3AED;border-radius:99px;padding:2px 8px;flex-shrink:0">${r.status_rtlh||'-'}</span>
+          </div>`;
+        }).join('')}
+      </div>`).join('');
+    return;
+  }
+  // Filter status normal (Layak Huni / RTLH / dll)
   const{count:totalCnt}=await sb.from('rtlh').select('*',{count:'exact',head:true}).eq('status_rtlh',_globalStatusFilter);
   const pages=Math.ceil((totalCnt||0)/1000);
   cnt.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memuat ${totalCnt} data...`;
@@ -3818,12 +3872,70 @@ async function loadDokFileList(rtlhId){
 }
 
 async function editDokKet(id, curKet){
-  var newKet=prompt('Edit keterangan foto:',curKet);
-  if(newKet===null)return;
-  await sb.from('rtlh_dokumen').update({keterangan:newKet||null}).eq('id',id);
-  toast('Keterangan diperbarui','success');
-  loadDokFileList(_dokRtlhId);
-  loadDokList(_dokRtlhId);
+  // Tampilkan modal edit keterangan foto
+  let modalEl=document.getElementById('ovEditFotoKet');
+  if(!modalEl){
+    modalEl=document.createElement('div');
+    modalEl.id='ovEditFotoKet';
+    modalEl.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20000;display:flex;align-items:center;justify-content:center;padding:16px';
+    modalEl.innerHTML=`
+      <div style="background:#fff;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.18);width:100%;max-width:400px;overflow:hidden">
+        <div style="padding:16px 18px;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;justify-content:space-between">
+          <div style="font-size:.9rem;font-weight:800;color:var(--gray-900);display:flex;align-items:center;gap:7px">
+            <i class="fas fa-tag" style="color:var(--warning)"></i> Edit Keterangan Foto
+          </div>
+          <button onclick="document.getElementById('ovEditFotoKet').style.display='none'"
+            style="width:28px;height:28px;border-radius:7px;background:var(--gray-100);border:none;cursor:pointer;font-size:.85rem;color:var(--gray-600);display:flex;align-items:center;justify-content:center">
+            <i class="fas fa-times"></i></button>
+        </div>
+        <div style="padding:16px 18px">
+          <div style="font-size:.72rem;font-weight:700;color:var(--gray-600);margin-bottom:8px">Pilih kategori atau isi sendiri:</div>
+          <div id="efkPresets" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+            ${['Atap','Lantai','Dinding','Tampak Depan','Dalam Rumah','Lokasi'].map(p=>
+              `<button onclick="document.getElementById('efkInput').value='${p}';document.querySelectorAll('#efkPresets button').forEach(b=>b.style.background='');this.style.background='var(--blue)';this.style.color='#fff'"
+                style="padding:5px 12px;border-radius:99px;border:1.5px solid var(--gray-200);font-size:.72rem;font-weight:600;cursor:pointer;font-family:inherit;background:#fff;color:var(--gray-700);transition:all .15s">
+                ${p}</button>`
+            ).join('')}
+          </div>
+          <input type="text" id="efkInput" placeholder="Atau ketik keterangan sendiri..."
+            style="width:100%;padding:9px 12px;border-radius:9px;border:1.5px solid var(--gray-200);font-size:.85rem;font-family:inherit;outline:none;box-sizing:border-box"
+            onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--gray-200)'">
+        </div>
+        <div style="padding:12px 18px;border-top:1px solid var(--gray-200);display:flex;gap:8px;justify-content:flex-end">
+          <button onclick="document.getElementById('ovEditFotoKet').style.display='none'"
+            style="padding:7px 16px;border-radius:8px;background:var(--gray-100);color:var(--gray-700);border:none;font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit">Batal</button>
+          <button id="efkSaveBtn"
+            style="padding:7px 16px;border-radius:8px;background:var(--blue);color:#fff;border:none;font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px">
+            <i class="fas fa-save"></i> Simpan</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modalEl);
+  }
+  // Set nilai awal
+  const input=document.getElementById('efkInput');
+  input.value=curKet||'';
+  // Highlight preset jika cocok
+  document.querySelectorAll('#efkPresets button').forEach(b=>{
+    const match=b.textContent.trim()===curKet;
+    b.style.background=match?'var(--blue)':'';
+    b.style.color=match?'#fff':'var(--gray-700)';
+  });
+  modalEl.style.display='flex';
+  input.focus();
+  // Save handler
+  const saveBtn=document.getElementById('efkSaveBtn');
+  saveBtn.onclick=async function(){
+    const newKet=input.value.trim();
+    await sb.from('rtlh_dokumen').update({keterangan:newKet||null}).eq('id',id);
+    modalEl.style.display='none';
+    toast('Keterangan diperbarui','success');
+    loadDokFileList(_dokRtlhId);
+    loadDokList(_dokRtlhId);
+  };
+  // Enter key
+  input.onkeydown=function(e){if(e.key==='Enter')saveBtn.click();};
+  // Click backdrop
+  modalEl.onclick=function(e){if(e.target===modalEl)modalEl.style.display='none';};
 }
 
 function openLightboxDok(idx){
