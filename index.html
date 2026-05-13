@@ -3418,7 +3418,7 @@ async function doMaintenanceLogin(){
   }
 }
 
-window.addEventListener('DOMContentLoaded',async()=>{
+;(async function initApp(){
   // Init Supabase client dulu sebelum apapun
   sb = window.supabase.createClient(SUPA_URL, SUPA_KEY, {auth:{persistSession:true,storageKey:'ertlh-auth',autoRefreshToken:true}});
   // Cek session dulu
