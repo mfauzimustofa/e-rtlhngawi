@@ -442,6 +442,102 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 .empty-state{text-align:center;padding:36px 20px;color:var(--gray-400)}
 .empty-state i{font-size:2rem;margin-bottom:12px;display:block;opacity:.4}
 .empty-state p{font-size:.82rem}
+
+/* ══ PAGE EXCEL ══ */
+#pgExcel{flex-direction:column;overflow:hidden}
+.excel-toolbar{height:44px;background:#fff;border-bottom:1.5px solid var(--gray-200);display:flex;align-items:center;padding:0 10px;gap:4px;flex-shrink:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.excel-toolbar::-webkit-scrollbar{display:none}
+.excel-filterbar{background:var(--gray-50);border-bottom:1px solid var(--gray-200);padding:6px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0}
+.excel-filterbar select,.excel-filterbar input{padding:4px 8px;border-radius:6px;border:1.5px solid var(--gray-200);font-size:.72rem;font-family:var(--font);color:var(--gray-800);outline:none;background:#fff}
+.excel-filterbar select:focus,.excel-filterbar input:focus{border-color:var(--blue)}
+.excel-sheet-wrap{flex:1;overflow:auto;position:relative}
+.excel-sheet-wrap::-webkit-scrollbar{width:10px;height:10px}
+.excel-sheet-wrap::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:5px;border:2px solid #fff}
+.excel-sheet-wrap::-webkit-scrollbar-track{background:var(--gray-100)}
+.excel-statusbar{height:26px;background:var(--navy);display:flex;align-items:center;padding:0 12px;gap:12px;flex-shrink:0}
+.excel-statusbar span{font-size:.6rem;font-weight:600;color:rgba(255,255,255,.5)}
+.excel-statusbar strong{color:#fff}
+.excel-statusbar .es-mode{padding:1px 8px;border-radius:99px;font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;background:rgba(255,255,255,.08);color:rgba(255,255,255,.4)}
+.excel-statusbar .es-mode.editing{background:rgba(245,158,11,.2);color:var(--gold)}
+.excel-statusbar .sep{width:1px;height:12px;background:rgba(255,255,255,.15)}
+
+/* GRID */
+table.xgrid{border-collapse:separate;border-spacing:0;min-width:max-content;table-layout:fixed}
+table.xgrid thead th{
+  position:sticky;top:0;z-index:30;
+  background:var(--navy);color:#fff;
+  height:32px;padding:0 8px;
+  font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+  border-right:1px solid rgba(255,255,255,.1);border-bottom:2px solid rgba(255,255,255,.15);
+  white-space:nowrap;cursor:pointer;user-select:none;transition:background .12s;
+  text-align:left;overflow:hidden;
+}
+table.xgrid thead th:hover{background:#1B3A5C}
+table.xgrid thead th.xfrozen{position:sticky;z-index:40;background:var(--navy)}
+table.xgrid thead th.xno{position:sticky;left:0;z-index:50;background:#0a1e35;width:44px;min-width:44px;max-width:44px;text-align:center;cursor:default}
+table.xgrid thead th.xsort-asc::after{content:' ▲';font-size:.5rem;opacity:.7}
+table.xgrid thead th.xsort-desc::after{content:' ▼';font-size:.5rem;opacity:.7}
+
+table.xgrid tbody tr:nth-child(even){background:#F8FAFC}
+table.xgrid tbody tr:hover{background:#EFF6FF!important}
+table.xgrid tbody tr.xrow-dirty td.xno{border-left:3px solid var(--warning)!important}
+table.xgrid tbody tr.xrow-selected{background:#DBEAFE!important}
+
+table.xgrid td{
+  height:30px;padding:0 7px;
+  font-size:.73rem;color:var(--gray-800);
+  border-right:1px solid var(--gray-200);border-bottom:1px solid #F1F5F9;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  cursor:default;position:relative;outline:none;
+}
+table.xgrid td.xno{
+  position:sticky;left:0;z-index:20;
+  background:var(--gray-100);color:var(--gray-500);text-align:center;
+  font-size:.62rem;font-weight:700;cursor:default;
+  width:44px;min-width:44px;max-width:44px;
+  border-right:1px solid var(--gray-200)!important;
+}
+table.xgrid td.xfrozen{
+  position:sticky;z-index:19;
+  background:inherit;border-right:2px solid var(--gray-300)!important;
+  font-weight:600;
+}
+table.xgrid td.xfocused{outline:2px solid var(--blue);outline-offset:-2px;z-index:10}
+table.xgrid td.xediting{padding:0;overflow:visible;z-index:100}
+table.xgrid td.xediting input,
+table.xgrid td.xediting select{
+  width:100%;height:30px;min-height:30px;
+  padding:0 7px;border:2px solid var(--blue);
+  font-size:.73rem;font-family:var(--font);
+  background:#fff;color:var(--gray-900);outline:none;
+  box-shadow:0 0 0 3px rgba(27,108,168,.18);
+  position:absolute;left:0;top:0;z-index:200;
+  border-radius:0;
+}
+table.xgrid td.xediting input{min-width:120px}
+
+/* RESIZE HANDLE */
+.xresize{position:absolute;right:0;top:0;width:5px;height:100%;cursor:col-resize;z-index:5}
+.xresize:hover,.xresize.dragging{background:var(--gold);opacity:.8}
+
+/* STATUS BADGE in grid */
+.xbadge{display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:99px;font-size:.6rem;font-weight:700;white-space:nowrap;line-height:1.5}
+.xbadge.rtlh{background:#FEF2F2;color:#DC2626}
+.xbadge.layak{background:#F0FDF4;color:#16A34A}
+.xbadge.lain{background:#F3E8FF;color:#7C3AED}
+
+/* UNSAVED BANNER */
+#xUnsavedBar{display:none;background:var(--warning);color:var(--navy);font-size:.72rem;font-weight:800;padding:5px 14px;text-align:center;flex-shrink:0;align-items:center;justify-content:center;gap:10px}
+#xUnsavedBar.show{display:flex}
+
+/* CONTEXT MENU */
+#xCtxMenu{position:fixed;z-index:9999;background:#fff;border:1px solid var(--gray-200);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.15);padding:4px;min-width:190px;display:none}
+#xCtxMenu.open{display:block}
+.xctx-item{display:flex;align-items:center;gap:8px;padding:6px 11px;border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;color:var(--gray-700);white-space:nowrap}
+.xctx-item:hover{background:var(--blue-bg);color:var(--blue)}
+.xctx-item.danger:hover{background:var(--danger-bg);color:var(--danger)}
+.xctx-item i{width:14px;text-align:center;font-size:.72rem}
+.xctx-sep{height:1px;background:var(--gray-200);margin:3px 0}
 </style>
 </head>
 <body>
@@ -497,6 +593,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
   <nav class="nav-tabs" id="navTabs">
     <button class="nav-tab active" id="ntBeranda" onclick="nav('beranda')"><i class="fas fa-home"></i> Beranda</button>
     <button class="nav-tab" id="ntWebgis" onclick="nav('keclist')"><i class="fas fa-map-marked-alt"></i> WebGIS</button>
+    <button class="nav-tab" id="ntExcel" onclick="nav('excel')" style="display:none"><i class="fas fa-table"></i> Excel</button>
   </nav>
   <div class="header-right">
     <button class="btn-icon-sm" id="btnDokLib" onclick="openDokLib()" title="Library Dokumen Kabupaten" style="display:none"><i class="fas fa-folder-open"></i></button>
@@ -509,6 +606,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 <nav class="mob-bottom-nav">
   <button class="mob-nav-btn active" id="mnBeranda" onclick="nav('beranda')"><i class="fas fa-home"></i>Beranda</button>
   <button class="mob-nav-btn" id="mnWebgis" onclick="nav('keclist')"><i class="fas fa-map-marked-alt"></i>WebGIS</button>
+  <button class="mob-nav-btn" id="mnExcel" onclick="nav('excel')" style="display:none"><i class="fas fa-table"></i>Excel</button>
 </nav>
 
 <!-- TOAST -->
@@ -715,7 +813,102 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
     </div>
   </div>
   <div class="wg-body" id="wgBody"></div>
+
+<!-- ═══ PAGE: EXCEL EDITOR ═══ -->
+<div class="page" id="pgExcel">
+  <!-- Toolbar -->
+  <div class="excel-toolbar">
+    <button class="tb-btn" onclick="nav('beranda')"><i class="fas fa-home"></i> <span style="font-size:.65rem">Beranda</span></button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" id="xBtnSave" onclick="xSaveAll()" style="display:none;background:var(--success-bg);border-color:var(--success);color:var(--success);font-weight:700"><i class="fas fa-save"></i> Simpan (<span id="xDirtyCount">0</span>)</button>
+    <button class="tb-btn" id="xBtnDiscard" onclick="xDiscardAll()" style="display:none"><i class="fas fa-undo"></i> Batalkan</button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" onclick="xOpenAddModal()"><i class="fas fa-plus"></i> Tambah Baris</button>
+    <button class="tb-btn" onclick="xExportExcel()"><i class="fas fa-file-excel" style="color:var(--success)"></i> Ekspor Excel</button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" onclick="xOpenColModal()"><i class="fas fa-columns"></i> Kolom</button>
+    <button class="tb-btn" id="xBtnFreeze" onclick="xToggleFreeze()"><i class="fas fa-lock"></i> Freeze</button>
+    <div style="margin-left:auto;font-size:.62rem;font-weight:600;color:var(--gray-500);white-space:nowrap;padding-right:8px" id="xResultInfo">—</div>
+  </div>
+
+  <!-- Unsaved bar -->
+  <div id="xUnsavedBar">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span id="xUnsavedCount">0</span> perubahan belum disimpan —
+    <button onclick="xSaveAll()" style="background:var(--navy);color:#fff;border:none;border-radius:6px;padding:3px 12px;font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit">Simpan Sekarang</button>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="excel-filterbar">
+    <i class="fas fa-filter" style="color:var(--gray-400);font-size:.72rem"></i>
+    <select id="xFKec" onchange="xApplyFilter()" style="max-width:140px">
+      <option value="">Semua Kecamatan</option>
+    </select>
+    <select id="xFDesa" onchange="xApplyFilter()" style="max-width:130px">
+      <option value="">Semua Desa</option>
+    </select>
+    <select id="xFStatus" onchange="xApplyFilter()">
+      <option value="">Semua Status</option>
+      <option value="RTLH">RTLH</option>
+      <option value="Layak Huni">Layak Huni</option>
+      <option value="Keterangan Lain">Keterangan Lain</option>
+    </select>
+    <div style="position:relative">
+      <i class="fas fa-search" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--gray-400);font-size:.68rem;pointer-events:none"></i>
+      <input id="xFSearch" type="text" placeholder="Cari nama / NIK / desa..." oninput="xApplyFilter()" style="padding:4px 8px 4px 26px;width:200px">
+    </div>
+    <button onclick="xClearFilter()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--gray-200);background:#fff;font-size:.68rem;cursor:pointer;font-family:inherit;color:var(--gray-600)"><i class="fas fa-times"></i> Reset</button>
+    <span style="font-size:.65rem;font-weight:600;color:var(--gray-500);margin-left:auto" id="xInfo">—</span>
+  </div>
+
+  <!-- Grid -->
+  <div class="excel-sheet-wrap" id="xSheetWrap">
+    <table class="xgrid" id="xGrid">
+      <thead id="xHead"></thead>
+      <tbody id="xBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Status bar -->
+  <div class="excel-statusbar">
+    <span>Baris: <strong id="xSBRow">—</strong></span>
+    <div class="sep"></div>
+    <span>Kolom: <strong id="xSBCol">—</strong></span>
+    <div class="sep"></div>
+    <span>Sel aktif: <strong id="xSBCell">—</strong></span>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+      <span class="es-mode" id="xSBMode">VIEW</span>
+      <span style="font-size:.55rem;color:rgba(255,255,255,.25)">Klik sel → edit · Tab/Enter pindah · Esc batal · Klik kanan → menu</span>
+    </div>
+  </div>
 </div>
+
+<!-- CONTEXT MENU EXCEL -->
+<div id="xCtxMenu">
+  <div class="xctx-item" onclick="xCtxEditCell()"><i class="fas fa-edit"></i> Edit Sel Ini</div>
+  <div class="xctx-item" onclick="xCtxEditRow()"><i class="fas fa-list-alt"></i> Edit Baris (Form)</div>
+  <div class="xctx-sep"></div>
+  <div class="xctx-item" onclick="xCtxDupe()"><i class="fas fa-clone"></i> Duplikasi Baris</div>
+  <div class="xctx-sep"></div>
+  <div class="xctx-item danger" onclick="xCtxDelete()"><i class="fas fa-trash"></i> Hapus Baris</div>
+</div>
+
+<!-- MODAL KOLOM -->
+<div class="overlay" id="xOvCols">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head">
+      <h3><i class="fas fa-columns" style="color:var(--blue)"></i> Atur Kolom</h3>
+      <button class="modal-x" onclick="closeModal('xOvCols')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" id="xColModalBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="xSelectAllCols(true)">Semua</button>
+      <button class="btn btn-ghost" onclick="xSelectAllCols(false)">Sembunyikan</button>
+      <button class="btn btn-primary" onclick="xApplyColConfig()">Terapkan</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- ═══════════════════════════════ MODALS ═══════════════════════════════ -->
 
@@ -1203,6 +1396,11 @@ function nav(pg){_currentPage=pg;
     initMap();
     setTimeout(()=>{ if(map) map.invalidateSize(); },150);
     loadKec();
+  } else if(pg==='excel'){
+    document.getElementById('pgExcel').classList.add('active');
+    document.getElementById('ntExcel')?.classList.add('active');
+    document.getElementById('mnExcel')?.classList.add('active');
+    initExcel();
   }
   saveSession();
 }
@@ -1294,6 +1492,9 @@ function updAuth(){
   }
   // Update toolbar buttons
   document.getElementById('btnAddRtlh').style.display=canEdit()?'flex':'none';
+    // Tab Excel hanya untuk admin
+    const excelTabs=['ntExcel','mnExcel'];
+    excelTabs.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=isAdmin?'flex':'none';});
   document.getElementById('btnDelAll').style.display=(isSuperAdmin()&&currentKec)?'flex':'none';
   document.getElementById('btnDokLib').style.display=isAdmin?'flex':'none';
   document.getElementById('btnExcelKab').style.display=isAdmin?'flex':'none';
@@ -2205,6 +2406,9 @@ async function loadKec(){
     document.getElementById('kecSelector').value=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===currentKec)||currentKec;
   }
   document.getElementById('btnAddRtlh').style.display=canEdit()?'flex':'none';
+    // Tab Excel hanya untuk admin
+    const excelTabs=['ntExcel','mnExcel'];
+    excelTabs.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=isAdmin?'flex':'none';});
   document.getElementById('btnDelAll').style.display=isSuperAdmin()?'flex':'none';
 
   if(brCache[currentKec]){brAll=brCache[currentKec];brFeatures=[...brAll];renderSidebar();renderKecDashboard();updateMap();return;}
@@ -4622,6 +4826,572 @@ window.addEventListener('DOMContentLoaded',async()=>{
     }).catch(()=>{});
   }
 });
+</script>
+
+<script>
+// ══════════════════════════════════════════════════
+// EXCEL EDITOR ENGINE
+// ══════════════════════════════════════════════════
+
+const X_COLS=[
+  {key:'_no',    label:'No.',          width:44,  editable:false,frozen:true,noSort:true},
+  {key:'kep_kk', label:'Nama KK',      width:200, frozen:true, required:true},
+  {key:'kec',    label:'Kecamatan',    width:120},
+  {key:'desa',   label:'Desa',         width:130},
+  {key:'nik',    label:'NIK',          width:155, sensitive:true, mono:true},
+  {key:'no_kk',  label:'No. KK',       width:155, sensitive:true, mono:true},
+  {key:'alamat', label:'Alamat',       width:200},
+  {key:'jen_kel',label:'Jenis Kelamin',width:115, type:'select',opts:['LAKI-LAKI','PEREMPUAN']},
+  {key:'umur',   label:'Umur',         width:65,  type:'number', unit:'thn'},
+  {key:'pend_ter',label:'Pendidikan',  width:120},
+  {key:'pekerjaan',label:'Pekerjaan', width:140},
+  {key:'pengh',  label:'Penghasilan',  width:150},
+  {key:'jml_peng',label:'Jml Penghuni',width:100,type:'number',unit:'jiwa'},
+  {key:'status_kep',label:'Status Kepemilikan',width:150},
+  {key:'luas_rum',label:'Luas Rumah', width:100, type:'number',unit:'m²'},
+  {key:'luas_tan',label:'Luas Tanah', width:100, type:'number',unit:'m²'},
+  {key:'material_d',label:'Material Dinding',width:145},
+  {key:'kondisi_di',label:'Kondisi Dinding',width:135},
+  {key:'material_a',label:'Material Atap',  width:135},
+  {key:'kondisi_at',label:'Kondisi Atap',   width:125},
+  {key:'material_l',label:'Material Lantai',width:135},
+  {key:'kondisi_la',label:'Kondisi Lantai', width:125},
+  {key:'status_rtlh',label:'Status RTLH',  width:140,required:true,type:'select',opts:['RTLH','Layak Huni','Keterangan Lain']},
+  {key:'status_batal',label:'Alasan SK Batal',width:165,type:'select',opts:['','-','Meninggal Dunia','Tidak Bersedia Dibantu','Tidak Ada Biaya','Pindah Tempat Tinggal','Sudah Mampu Mandiri','Tidak Memenuhi Syarat','Lainnya']},
+  {key:'jenis_bantuan',label:'Jenis Bantuan',width:125,type:'select',opts:['','RTLH','BSPS','DD','CSR','Lainnya']},
+  {key:'tahun_bantuan',label:'Tahun Bantuan',width:110,type:'number'},
+  {key:'backlog',label:'Backlog',       width:105, type:'select',opts:['','Backlog 1','Backlog 2']},
+  {key:'desil',  label:'Desil',         width:95,  type:'select',opts:['','Desil 1','Desil 2','Desil 3','Desil 4','Desil 5','Desil 6','Desil 7','Desil 8']},
+  {key:'keterangan',label:'Keterangan',width:200},
+  {key:'latitude',label:'Latitude',    width:105, type:'number'},
+  {key:'longitude',label:'Longitude',  width:105, type:'number'},
+  {key:'updated_at',label:'Diperbarui',width:130, editable:false},
+];
+
+// State Excel
+let xAllData=[], xFiltered=[], xDirty={}, xColVis={}, xColW={};
+let xSortKey='', xSortDir=1;
+let xFreezeOn=true;
+let xEditing=null; // {rowId,key,td}
+let xFocused=null; // {rowId,key}
+let xCtxRowId=null, xCtxKey=null;
+let xExcelInited=false;
+
+// ─── INIT ──────────────────────────────────────────
+async function initExcel(){
+  if(!isAdmin){
+    document.getElementById('xGrid').parentElement.innerHTML='<div style="padding:40px;text-align:center;color:var(--gray-400)"><i class="fas fa-lock" style="font-size:2rem;display:block;margin-bottom:12px"></i><div>Fitur ini hanya untuk Admin.</div></div>';
+    return;
+  }
+  // Init col visibility & width
+  X_COLS.forEach(c=>{
+    if(xColVis[c.key]===undefined)xColVis[c.key]=true;
+    if(!xColW[c.key])xColW[c.key]=c.width;
+  });
+
+  // Populate kec select
+  const kecSel=document.getElementById('xFKec');
+  if(!kecSel.options.length||kecSel.options.length<2){
+    kecSel.innerHTML='<option value="">Semua Kecamatan</option>';
+    Object.keys(KEC_CONFIG).forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=k;kecSel.appendChild(o);});
+  }
+
+  // Context menu
+  document.getElementById('xGrid').addEventListener('contextmenu',xOnContextMenu);
+  document.addEventListener('keydown',xOnKeyDown,{capture:false});
+
+  if(!xExcelInited){
+    xExcelInited=true;
+    await xLoadData();
+  }else{
+    xRenderGrid();
+  }
+}
+
+// ─── LOAD DATA ────────────────────────────────────
+async function xLoadData(){
+  document.getElementById('xInfo').textContent='⏳ Memuat...';
+  xDirty={};
+  xUpdateDirtyUI();
+  try{
+    const colKeys=X_COLS.filter(c=>c.key!=='_no').map(c=>c.key).join(',');
+    const {count}=await sb.from('rtlh').select('*',{count:'exact',head:true});
+    const pages=Math.ceil((count||0)/1000);
+    const results=await Promise.all(Array.from({length:pages},(_,p)=>
+      sb.from('rtlh').select(colKeys).order('kec').order('desa').order('kep_kk').range(p*1000,(p+1)*1000-1)
+    ));
+    xAllData=results.flatMap(r=>r.data||[]);
+    xApplyFilter();
+    xUpdateDesaList();
+    toast(xAllData.length.toLocaleString('id')+' data dimuat ke Excel','info');
+  }catch(e){toast('Gagal muat Excel: '+e.message,'error');}
+}
+
+// ─── FILTER ───────────────────────────────────────
+function xApplyFilter(){
+  const kec=document.getElementById('xFKec').value;
+  const desa=document.getElementById('xFDesa').value;
+  const status=document.getElementById('xFStatus').value;
+  const q=(document.getElementById('xFSearch').value||'').trim().toLowerCase();
+
+  xFiltered=xAllData.filter(r=>{
+    if(kec&&(r.kec||'').toLowerCase()!==kec.toLowerCase())return false;
+    if(desa&&(r.desa||'').toLowerCase()!==desa.toLowerCase())return false;
+    if(status&&r.status_rtlh!==status)return false;
+    if(q){const hay=[(r.kep_kk||''),(r.nik||''),(r.desa||''),(r.kec||''),(r.alamat||'')].join(' ').toLowerCase();if(!hay.includes(q))return false;}
+    return true;
+  });
+
+  if(xSortKey&&xSortKey!=='_no'){
+    xFiltered.sort((a,b)=>{const av=String(a[xSortKey]||''),bv=String(b[xSortKey]||'');return av>bv?xSortDir:av<bv?-xSortDir:0;});
+  }
+
+  document.getElementById('xInfo').textContent=xFiltered.length.toLocaleString('id')+' dari '+xAllData.length.toLocaleString('id')+' baris';
+  document.getElementById('xResultInfo').textContent=xFiltered.length.toLocaleString('id')+' baris';
+  xRenderGrid();
+  xUpdateDesaList();
+}
+
+function xClearFilter(){
+  document.getElementById('xFKec').value='';
+  document.getElementById('xFDesa').value='';
+  document.getElementById('xFStatus').value='';
+  document.getElementById('xFSearch').value='';
+  xApplyFilter();
+}
+
+function xUpdateDesaList(){
+  const kec=document.getElementById('xFKec').value;
+  const sel=document.getElementById('xFDesa');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">Semua Desa</option>';
+  const desas=[...new Set(xAllData.filter(r=>!kec||(r.kec||'').toLowerCase()===kec.toLowerCase()).map(r=>r.desa||'').filter(Boolean))].sort();
+  desas.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;sel.appendChild(o);});
+  if(desas.includes(cur))sel.value=cur;
+}
+
+function xDoSort(key){
+  if(xSortKey===key)xSortDir*=-1;else{xSortKey=key;xSortDir=1;}
+  document.querySelectorAll('#xHead th').forEach(th=>{
+    th.classList.remove('xsort-asc','xsort-desc');
+    if(th.dataset.key===key)th.classList.add(xSortDir===1?'xsort-asc':'xsort-desc');
+  });
+  xApplyFilter();
+}
+
+// ─── RENDER GRID ──────────────────────────────────
+function xGetVisCols(){return X_COLS.filter(c=>xColVis[c.key]!==false);}
+
+function xRenderGrid(){
+  xRenderHead();
+  xRenderBody();
+  document.getElementById('xSBRow').textContent=xFiltered.length;
+  document.getElementById('xSBCol').textContent=xGetVisCols().length;
+}
+
+function xRenderHead(){
+  const vis=xGetVisCols();
+  let html='<tr>';
+  vis.forEach(c=>{
+    const w=xColW[c.key]||c.width;
+    const frozen=(xFreezeOn&&(c.frozen||c.key==='_no'))?'xfrozen':'';
+    const isNo=c.key==='_no';
+    const left=isNo?'left:0':'';
+    if(isNo){
+      html+=`<th class="xno" style="width:${w}px;min-width:${w}px">#</th>`;
+    }else{
+      html+=`<th data-key="${c.key}" class="${frozen}" style="width:${w}px;min-width:${w}px;${left};position:relative" onclick="xDoSort('${c.key}')">
+        ${c.label}
+        <div class="xresize" onmousedown="xStartResize(event,'${c.key}')" onclick="e=>{e.stopPropagation&&e.stopPropagation()}"></div>
+      </th>`;
+    }
+  });
+  html+='</tr>';
+  document.getElementById('xHead').innerHTML=html;
+}
+
+function xRenderBody(){
+  const vis=xGetVisCols();
+  const body=document.getElementById('xBody');
+  if(!xFiltered.length){
+    body.innerHTML=`<tr><td colspan="${vis.length}" style="padding:48px;text-align:center;color:var(--gray-400);font-size:.82rem"><i class="fas fa-inbox" style="font-size:2rem;display:block;margin-bottom:10px;opacity:.3"></i>Tidak ada data</td></tr>`;
+    return;
+  }
+  const frag=document.createDocumentFragment();
+  xFiltered.forEach((r,idx)=>{
+    const rid=r.id;
+    const dirty=xDirty[rid];
+    const tr=document.createElement('tr');
+    tr.dataset.id=rid;
+    if(dirty)tr.classList.add('xrow-dirty');
+
+    vis.forEach(c=>{
+      const td=document.createElement('td');
+      if(c.key==='_no'){
+        td.className='xno';td.textContent=idx+1;
+      }else{
+        const isFrozen=xFreezeOn&&c.frozen;
+        if(isFrozen)td.className='xfrozen';
+        td.dataset.id=rid;td.dataset.col=c.key;
+        td.style.width=(xColW[c.key]||c.width)+'px';
+        td.title='';
+
+        const rawVal=dirty&&dirty[c.key]!==undefined?dirty[c.key]:r[c.key];
+        xSetCellContent(td,c,rawVal);
+
+        if(c.editable!==false){
+          td.onclick=()=>xStartEdit(td,rid,c.key);
+        }
+      }
+      tr.appendChild(td);
+    });
+    frag.appendChild(tr);
+  });
+  body.innerHTML='';
+  body.appendChild(frag);
+}
+
+function xSetCellContent(td,col,val){
+  td.innerHTML='';td.style.color='';td.style.fontFamily='';td.title=String(val!=null?val:'');
+  if(col.key==='status_rtlh'){
+    if(!val)td.innerHTML='<span class="xbadge">—</span>';
+    else if(val==='RTLH')td.innerHTML='<span class="xbadge rtlh"><i class="fas fa-house-damage" style="font-size:.5rem"></i> RTLH</span>';
+    else if(val==='Layak Huni')td.innerHTML='<span class="xbadge layak"><i class="fas fa-home" style="font-size:.5rem"></i> Layak Huni</span>';
+    else if(val==='Keterangan Lain')td.innerHTML='<span class="xbadge lain"><i class="fas fa-question-circle" style="font-size:.5rem"></i> Ket. Lain</span>';
+    else td.innerHTML='<span class="xbadge">'+val+'</span>';
+  }else if(col.key==='updated_at'&&val){
+    td.textContent=new Date(val).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+  }else if(col.sensitive&&!isSuperAdmin()){
+    td.textContent=val?String(val).substring(0,6)+'**********':'-';
+    td.style.color='var(--gray-400)';td.style.fontFamily='monospace';td.style.fontSize='.68rem';
+  }else if(col.mono&&val){
+    td.style.fontFamily='monospace';td.style.fontSize='.7rem';td.style.letterSpacing='.3px';
+    td.textContent=val;
+  }else if(col.unit&&val!=null&&val!==''){
+    td.textContent=val+' '+col.unit;
+  }else{
+    if(val!=null&&val!=='')td.textContent=String(val);
+    else{td.textContent='—';td.style.color='var(--gray-200)';}
+  }
+}
+
+// ─── INLINE EDIT ─────────────────────────────────
+function xStartEdit(td,rowId,colKey){
+  if(!canEdit()){toast('Tidak ada akses edit','error');return;}
+  const col=X_COLS.find(c=>c.key===colKey);
+  if(!col||col.editable===false)return;
+  if(col.sensitive&&!isSuperAdmin()){toast('Hanya Super Admin yang bisa edit NIK/KK','error');return;}
+
+  if(xEditing)xCommitEdit(true);
+
+  // Highlight row
+  document.querySelectorAll('#xBody tr.xrow-selected').forEach(r=>r.classList.remove('xrow-selected'));
+  const tr=document.querySelector('#xBody tr[data-id="'+rowId+'"]');
+  if(tr)tr.classList.add('xrow-selected');
+
+  xFocused={rowId,colKey};
+  xUpdateStatusBar();
+
+  const r=xFiltered.find(x=>x.id===rowId)||{};
+  const curVal=xDirty[rowId]&&xDirty[rowId][colKey]!==undefined?xDirty[rowId][colKey]:r[colKey];
+
+  td.classList.add('xediting');
+  td.innerHTML='';
+
+  let inp;
+  if(col.type==='select'&&col.opts){
+    inp=document.createElement('select');
+    col.opts.forEach(o=>{const opt=document.createElement('option');opt.value=o||'';opt.textContent=o||'(kosong)';if(String(curVal||'')===(o||''))opt.selected=true;inp.appendChild(opt);});
+  }else{
+    inp=document.createElement('input');
+    inp.type=col.type==='number'?'number':'text';
+    inp.value=curVal!=null?String(curVal):'';
+  }
+
+  inp.style.cssText='width:100%;height:30px;padding:0 7px;border:2px solid var(--blue);font-size:.73rem;font-family:var(--font);background:#fff;color:var(--gray-900);outline:none;box-shadow:0 0 0 3px rgba(27,108,168,.18);position:absolute;left:0;top:0;z-index:200;box-sizing:border-box;border-radius:0';
+
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){xCancelEdit(td,rowId,colKey);return;}
+    if(e.key==='Enter'){e.preventDefault();xCommitEdit(false);xNavCell(1,'v');}
+    if(e.key==='Tab'){e.preventDefault();xCommitEdit(false);xNavCell(e.shiftKey?-1:1,'h');}
+  });
+  inp.addEventListener('blur',()=>setTimeout(()=>{if(xEditing)xCommitEdit(false);},80));
+
+  td.appendChild(inp);
+  inp.focus();
+  if(inp.select)inp.select();
+  xEditing={rowId,colKey,td,col};
+
+  document.getElementById('xSBMode').textContent='EDIT';
+  document.getElementById('xSBMode').className='es-mode editing';
+}
+
+function xCommitEdit(silent=false){
+  if(!xEditing)return;
+  const{rowId,colKey,td,col}=xEditing;
+  const inp=td.querySelector('input,select');
+  if(!inp){xEditing=null;return;}
+
+  let val=inp.value;
+  if(col.type==='number'&&val!=='')val=parseFloat(val)||null;
+  else val=val.trim()||null;
+
+  const r=xFiltered.find(x=>x.id===rowId)||{};
+  const orig=r[colKey];
+  if(String(val||'')!==String(orig||'')){
+    if(!xDirty[rowId])xDirty[rowId]={};
+    xDirty[rowId][colKey]=val;
+    const tr=document.querySelector('#xBody tr[data-id="'+rowId+'"]');
+    if(tr){tr.classList.add('xrow-dirty');}
+    if(!silent)toast('Diubah: '+col.label,'warning');
+  }
+
+  xEditing=null;
+  xRefreshCell(td,rowId,colKey);
+  xUpdateDirtyUI();
+  document.getElementById('xSBMode').textContent='VIEW';
+  document.getElementById('xSBMode').className='es-mode';
+}
+
+function xCancelEdit(td,rowId,colKey){
+  xEditing=null;
+  xRefreshCell(td,rowId,colKey);
+  document.getElementById('xSBMode').textContent='VIEW';
+  document.getElementById('xSBMode').className='es-mode';
+}
+
+function xRefreshCell(td,rowId,colKey){
+  const col=X_COLS.find(c=>c.key===colKey);
+  if(!col)return;
+  td.classList.remove('xediting');
+  const r=xFiltered.find(x=>x.id===rowId)||{};
+  const val=xDirty[rowId]&&xDirty[rowId][colKey]!==undefined?xDirty[rowId][colKey]:r[colKey];
+  xSetCellContent(td,col,val);
+}
+
+// ─── KEYBOARD ─────────────────────────────────────
+function xOnKeyDown(e){
+  if(document.getElementById('pgExcel').classList.contains('active')===false)return;
+  if(xEditing)return;
+  if(!xFocused)return;
+  const{rowId,colKey}=xFocused;
+  const vis=xGetVisCols().filter(c=>c.key!=='_no');
+  const ri=xFiltered.findIndex(r=>r.id===rowId);
+  const ci=vis.findIndex(c=>c.key===colKey);
+  if(e.key==='ArrowDown'){e.preventDefault();xNavFocus(ri+1,ci);}
+  else if(e.key==='ArrowUp'){e.preventDefault();xNavFocus(ri-1,ci);}
+  else if(e.key==='ArrowRight'){e.preventDefault();xNavFocus(ri,ci+1);}
+  else if(e.key==='ArrowLeft'){e.preventDefault();xNavFocus(ri,ci-1);}
+  else if(e.key==='Tab'){e.preventDefault();xNavFocus(ri,ci+(e.shiftKey?-1:1));}
+  else if(e.key==='Enter'||e.key==='F2'){
+    const td=document.querySelector('#xBody td[data-id="'+rowId+'"][data-col="'+colKey+'"]');
+    if(td)xStartEdit(td,rowId,colKey);
+  }else if((e.key==='Delete'||e.key==='Backspace')&&!e.target.tagName.match(/INPUT|SELECT/)){
+    const col=X_COLS.find(c=>c.key===colKey);
+    if(col&&col.editable!==false&&!col.sensitive){
+      if(!xDirty[rowId])xDirty[rowId]={};
+      xDirty[rowId][colKey]=null;
+      const td=document.querySelector('#xBody td[data-id="'+rowId+'"][data-col="'+colKey+'"]');
+      if(td)xRefreshCell(td,rowId,colKey);
+      xUpdateDirtyUI();
+    }
+  }
+}
+
+function xNavCell(dir,axis){
+  if(!xFocused)return;
+  const vis=xGetVisCols().filter(c=>c.key!=='_no');
+  const ri=xFiltered.findIndex(r=>r.id===xFocused.rowId);
+  const ci=vis.findIndex(c=>c.key===xFocused.colKey);
+  if(axis==='v')xNavFocus(ri+dir,ci);
+  else xNavFocus(ri,ci+dir);
+}
+
+function xNavFocus(ri,ci){
+  const vis=xGetVisCols().filter(c=>c.key!=='_no');
+  ri=Math.max(0,Math.min(xFiltered.length-1,ri));
+  ci=Math.max(0,Math.min(vis.length-1,ci));
+  const row=xFiltered[ri],col=vis[ci];
+  if(!row||!col)return;
+  xFocused={rowId:row.id,colKey:col.key};
+  document.querySelectorAll('#xBody td.xfocused').forEach(t=>t.classList.remove('xfocused'));
+  const td=document.querySelector('#xBody td[data-id="'+row.id+'"][data-col="'+col.key+'"]');
+  if(td){td.classList.add('xfocused');td.scrollIntoView({block:'nearest',inline:'nearest'});}
+  xUpdateStatusBar();
+}
+
+function xUpdateStatusBar(){
+  if(!xFocused)return;
+  const col=X_COLS.find(c=>c.key===xFocused.colKey);
+  const ri=xFiltered.findIndex(r=>r.id===xFocused.rowId);
+  document.getElementById('xSBCell').textContent=(col?.label||xFocused.colKey)+' · baris '+(ri+1);
+}
+
+// ─── CONTEXT MENU ────────────────────────────────
+function xOnContextMenu(e){
+  const td=e.target.closest('td[data-id]');
+  if(!td){xCloseCtx();return;}
+  e.preventDefault();
+  xCtxRowId=td.dataset.id;xCtxKey=td.dataset.col;
+  const m=document.getElementById('xCtxMenu');
+  m.style.left=Math.min(e.clientX,window.innerWidth-210)+'px';
+  m.style.top=Math.min(e.clientY,window.innerHeight-160)+'px';
+  m.classList.add('open');
+}
+function xCloseCtx(){document.getElementById('xCtxMenu').classList.remove('open');}
+document.addEventListener('click',e=>{if(!e.target.closest('#xCtxMenu'))xCloseCtx();});
+
+function xCtxEditCell(){xCloseCtx();const td=document.querySelector('#xBody td[data-id="'+xCtxRowId+'"][data-col="'+xCtxKey+'"]');if(td)xStartEdit(td,xCtxRowId,xCtxKey);}
+function xCtxEditRow(){xCloseCtx();xOpenEditModal(xCtxRowId);}
+function xCtxDupe(){xCloseCtx();const r=xFiltered.find(x=>String(x.id)===String(xCtxRowId));if(r)xOpenAddModal({...r,id:undefined,nik:undefined,no_kk:undefined});}
+function xCtxDelete(){xCloseCtx();xDeleteRow(xCtxRowId);}
+
+// ─── SAVE / DISCARD ──────────────────────────────
+async function xSaveAll(){
+  const ids=Object.keys(xDirty);
+  if(!ids.length){toast('Tidak ada perubahan','info');return;}
+  if(!confirm('Simpan '+ids.length+' perubahan ke database?'))return;
+  let ok=0,fail=0;
+  for(const id of ids){
+    const changes={...xDirty[id],updated_at:new Date().toISOString()};
+    const{error}=await sb.from('rtlh').update(changes).eq('id',parseInt(id));
+    if(error){fail++;console.error(id,error);}
+    else{
+      ok++;
+      // Sync ke allData dan xAllData
+      const ai=xAllData.findIndex(x=>String(x.id)===id);
+      if(ai>=0)xAllData[ai]={...xAllData[ai],...changes};
+      const bi=allData.findIndex(x=>String(x.id)===id);
+      if(bi>=0)allData[bi]={...allData[bi],...changes};
+      delete xDirty[id];
+    }
+  }
+  xApplyFilter();
+  xUpdateDirtyUI();
+  if(fail)toast(ok+' berhasil, '+fail+' gagal','warning');
+  else toast(ok+' perubahan disimpan!','success');
+}
+
+function xDiscardAll(){
+  if(!Object.keys(xDirty).length)return;
+  if(!confirm('Batalkan semua perubahan yang belum disimpan?'))return;
+  xDirty={};
+  xApplyFilter();
+  xUpdateDirtyUI();
+  toast('Perubahan dibatalkan','info');
+}
+
+function xUpdateDirtyUI(){
+  const n=Object.keys(xDirty).length;
+  const show=n>0;
+  document.getElementById('xBtnSave').style.display=show?'flex':'none';
+  document.getElementById('xBtnDiscard').style.display=show?'flex':'none';
+  document.getElementById('xDirtyCount').textContent=n;
+  document.getElementById('xUnsavedCount').textContent=n;
+  document.getElementById('xUnsavedBar').classList.toggle('show',show);
+}
+
+// ─── TAMBAH / EDIT ROW MODAL ─────────────────────
+function xOpenAddModal(prefill={}){
+  if(!canEdit()){toast('Tidak ada akses','error');return;}
+  xOpenRowModal(null,prefill);
+}
+function xOpenEditModal(rowId){
+  if(!canEdit()){toast('Tidak ada akses','error');return;}
+  const r=xFiltered.find(x=>String(x.id)===String(rowId));
+  if(!r)return;
+  xOpenRowModal(rowId,{...r,...(xDirty[rowId]||{})});
+}
+
+function xOpenRowModal(rowId,data={}){
+  // Gunakan modal form yang sudah ada di index.html
+  openForm(rowId?String(rowId):null);
+  if(rowId===null&&data&&Object.keys(data).length){
+    // Prefill fields
+    setTimeout(()=>{
+      Object.entries(data).forEach(([k,v])=>{
+        const el=document.getElementById('ff_'+k);
+        if(el&&v!=null)el.value=String(v);
+      });
+    },100);
+  }
+}
+
+async function xDeleteRow(rowId){
+  if(!isSuperAdmin()){toast('Hanya Super Admin yang bisa hapus','error');return;}
+  if(!confirm('Hapus baris ini dari database? Tidak bisa dibatalkan.'))return;
+  const{error}=await sb.from('rtlh').delete().eq('id',parseInt(rowId));
+  if(error)return toast('Gagal hapus: '+error.message,'error');
+  xAllData=xAllData.filter(x=>String(x.id)!==String(rowId));
+  allData=allData.filter(x=>String(x.id)!==String(rowId));
+  delete xDirty[rowId];
+  xApplyFilter();
+  xUpdateDirtyUI();
+  toast('Baris dihapus','success');
+}
+
+// ─── EKSPOR EXCEL ────────────────────────────────
+function xExportExcel(){
+  if(!window.XLSX){toast('Library XLSX tidak tersedia','error');return;}
+  if(!xFiltered.length){toast('Tidak ada data','error');return;}
+  const vis=xGetVisCols().filter(c=>c.key!=='_no');
+  const header=vis.map(c=>c.label);
+  const rows=xFiltered.map((r,i)=>vis.map(c=>{
+    const val=xDirty[r.id]&&xDirty[r.id][c.key]!==undefined?xDirty[r.id][c.key]:r[c.key];
+    if(c.key==='updated_at'&&val)return new Date(val).toLocaleDateString('id-ID');
+    return val!=null?val:'';
+  }));
+  const ws=XLSX.utils.aoa_to_sheet([header,...rows]);
+  ws['!cols']=vis.map(c=>({wch:Math.max(10,Math.ceil((xColW[c.key]||c.width)/7))}));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Data RTLH');
+  const d=new Date();
+  XLSX.writeFile(wb,'eRTLH_'+d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'.xlsx');
+  toast('Ekspor '+xFiltered.length+' baris berhasil','success');
+}
+
+// ─── KOLOM VISIBILITY ────────────────────────────
+function xOpenColModal(){
+  let html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">';
+  X_COLS.forEach(c=>{
+    if(c.key==='_no')return;
+    const checked=xColVis[c.key]!==false;
+    html+=`<label style="display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;border:1px solid ${checked?'var(--blue)':'var(--gray-200)'};cursor:pointer;font-size:.72rem;${checked?'background:var(--blue-bg)':''}">
+      <input type="checkbox" id="xcv_${c.key}" ${checked?'checked':''} style="accent-color:var(--blue)"> ${c.label}
+    </label>`;
+  });
+  html+='</div>';
+  document.getElementById('xColModalBody').innerHTML=html;
+  document.getElementById('xOvCols').classList.add('open');
+}
+function xSelectAllCols(v){document.querySelectorAll('#xColModalBody input[type=checkbox]').forEach(cb=>cb.checked=v);}
+function xApplyColConfig(){
+  X_COLS.forEach(c=>{if(c.key==='_no')return;const cb=document.getElementById('xcv_'+c.key);if(cb)xColVis[c.key]=cb.checked;});
+  closeModal('xOvCols');xRenderGrid();
+}
+
+// ─── FREEZE ──────────────────────────────────────
+function xToggleFreeze(){
+  xFreezeOn=!xFreezeOn;
+  document.getElementById('xBtnFreeze').innerHTML='<i class="fas fa-'+(xFreezeOn?'lock':'lock-open')+'"></i> Freeze: '+(xFreezeOn?'On':'Off');
+  xRenderGrid();
+}
+
+// ─── COLUMN RESIZE ───────────────────────────────
+let xResKey=null,xResX=0,xResW=0;
+function xStartResize(e,key){
+  e.stopPropagation();e.preventDefault();
+  xResKey=key;xResX=e.clientX;xResW=xColW[key]||120;
+  document.addEventListener('mousemove',xDoResize);
+  document.addEventListener('mouseup',xEndResize);
+}
+function xDoResize(e){
+  if(!xResKey)return;
+  const nw=Math.max(50,xResW+(e.clientX-xResX));
+  xColW[xResKey]=nw;
+  document.querySelectorAll('[data-col="'+xResKey+'"],th[data-key="'+xResKey+'"]').forEach(el=>{el.style.width=nw+'px';el.style.minWidth=nw+'px';});
+}
+function xEndResize(){xResKey=null;document.removeEventListener('mousemove',xDoResize);document.removeEventListener('mouseup',xEndResize);}
 </script>
 
 
