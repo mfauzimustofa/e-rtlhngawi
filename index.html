@@ -81,7 +81,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
 /* PAGES */
 .page{display:none;position:absolute;top:var(--header-h);left:0;right:0;bottom:0;overflow:hidden}
-.page.active{display:flex}
+.page.active{display:flex}.page.active#pgExcel{display:flex;flex-direction:column}
 .page-scroll{overflow-y:auto;flex:1}
 
 /* HERO */
@@ -444,7 +444,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 .empty-state p{font-size:.82rem}
 
 /* ══ PAGE EXCEL ══ */
-#pgExcel{display:flex!important;flex-direction:column;overflow:hidden;background:#fff;position:absolute;top:var(--header-h);left:0;right:0;bottom:0}
+#pgExcel{flex-direction:column;overflow:hidden;background:#fff}
 .excel-toolbar{height:44px;background:#fff;border-bottom:1.5px solid var(--gray-200);display:flex;align-items:center;padding:0 10px;gap:4px;flex-shrink:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .excel-toolbar::-webkit-scrollbar{display:none}
 .excel-filterbar{background:var(--gray-50);border-bottom:1px solid var(--gray-200);padding:6px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0}
@@ -1405,7 +1405,7 @@ function nav(pg){_currentPage=pg;
     document.getElementById('pgExcel').classList.add('active');
     document.getElementById('ntExcel')?.classList.add('active');
     document.getElementById('mnExcel')?.classList.add('active');
-    initExcel();
+    setTimeout(()=>initExcel(),50);
   }
   saveSession();
 }
@@ -4891,29 +4891,43 @@ let xInited=false;
 
 /* ── Init ── */
 async function initExcel(){
+  console.log('[Excel] initExcel called, isAdmin='+isAdmin+', user='+user?.email);
+
+  // Test: pastikan container terlihat
+  const wrap=document.getElementById('xSheetWrap');
+  const pg=document.getElementById('pgExcel');
+  if(!wrap||!pg){console.error('[Excel] Container tidak ditemukan!');return;}
+
+  // Tampilkan loading dulu
+  wrap.innerHTML='<div style="padding:60px;text-align:center;color:#64748b"><i class="fas fa-circle-notch fa-spin" style="font-size:2rem;display:block;margin-bottom:14px"></i>Memuat data Excel...</div>';
+
   if(!isAdmin){
-    document.getElementById('xSheetWrap').innerHTML=
-      '<div style="padding:60px;text-align:center;color:var(--gray-400)"><i class="fas fa-lock" style="font-size:2.5rem;opacity:.3;display:block;margin-bottom:14px"></i>Fitur hanya untuk Admin</div>';
+    wrap.innerHTML='<div style="padding:60px;text-align:center;color:#64748b"><i class="fas fa-lock" style="font-size:2.5rem;opacity:.3;display:block;margin-bottom:14px"></i>Fitur hanya untuk Admin</div>';
     return;
   }
-  XC.forEach(c=>{ if(!xVis[c.k]&&xVis[c.k]!==false)xVis[c.k]=true; if(!xW[c.k])xW[c.k]=c.w; });
 
-  /* Isi select kecamatan */
+  XC.forEach(c=>{if(xVis[c.k]===undefined)xVis[c.k]=true;if(!xW[c.k])xW[c.k]=c.w;});
+
+  // Rebuild table structure (karena innerHTML dipakai untuk loading)
+  wrap.innerHTML='<table class="xgrid" id="xGrid"><thead id="xHead"></thead><tbody id="xBody"><tr><td style="padding:20px;text-align:center;color:#94a3b8">Memuat...</td></tr></tbody></table>';
+
+  // Isi select kecamatan
   const kSel=document.getElementById('xFKec');
-  if(kSel.options.length<2){
+  if(kSel&&kSel.options.length<2){
     Object.keys(KEC_CONFIG).sort().forEach(k=>{
       const o=document.createElement('option');o.value=k;o.textContent=k;kSel.appendChild(o);
     });
   }
 
-  /* Event sekali saja */
+  // Pasang event sekali
   if(!xInited){
     xInited=true;
-    document.getElementById('xGrid').addEventListener('contextmenu',_xCtxMenu);
+    document.getElementById('xGrid')?.addEventListener('contextmenu',_xCtxMenu);
     document.addEventListener('keydown',_xKey);
-    document.addEventListener('click',e=>{ if(!e.target.closest('#xCtxMenu'))_xCloseCtx(); });
+    document.addEventListener('click',e=>{if(!e.target.closest('#xCtxMenu'))_xCloseCtx();});
     await xLoad();
-  } else {
+  }else{
+    xPage=0;
     xFilter();
   }
 }
@@ -5006,6 +5020,8 @@ function xVisCols(){ return XC.filter(c=>xVis[c.k]!==false); }
 function xRender(){xPage=0;xRenderHead();xRenderBody();_xUpdSB();}
 
 function xRenderHead(){
+  const thead=document.getElementById('xHead');
+  if(!thead)return;
   const vis=xVisCols();
   let h='<tr>';
   let left=0;
@@ -5013,50 +5029,44 @@ function xRenderHead(){
     const w=xW[c.k]||c.w;
     const isNo=c.k==='_no';
     const isFr=xFreeze&&(c.fr||isNo);
-    const stickyLeft=isFr?`left:${left}px;`:'';
+    const sl=isFr?`left:${left}px;`:'';
     if(isFr)left+=w;
-    const cls=[isNo?'xno':'', isFr&&!isNo?'xfrozen':''].filter(Boolean).join(' ');
     if(isNo){
       h+=`<th class="xno" style="width:${w}px;min-width:${w}px;max-width:${w}px;left:0">#</th>`;
     }else{
-      h+=`<th data-k="${c.k}" class="${isFr?'xfrozen':''}"
-          style="width:${w}px;min-width:${w}px;${stickyLeft}position:relative"
-          onclick="xSort('${c.k}')">
+      h+=`<th data-k="${c.k}" class="${isFr?'xfrozen':''}" style="width:${w}px;min-width:${w}px;${sl}position:relative" onclick="xSort('${c.k}')">
         ${c.lb}
         <div class="xresize" onmousedown="event.stopPropagation();xResStart(event,'${c.k}')"></div>
       </th>`;
     }
   });
   h+='</tr>';
-  document.getElementById('xHead').innerHTML=h;
+  thead.innerHTML=h;
 }
 
-/* ── Pagination state ── */
 const X_PAGE_SIZE=100;
 let xPage=0;
 
 function xRenderBody(){
   const vis=xVisCols();
   const tbody=document.getElementById('xBody');
+  if(!tbody){console.error('[Excel] tbody#xBody not found');return;}
 
   if(!xRows.length){
-    tbody.innerHTML=`<tr><td colspan="${vis.length}" style="padding:50px;text-align:center;color:var(--gray-400);font-size:.82rem">
-      <i class="fas fa-inbox" style="font-size:2rem;opacity:.25;display:block;margin-bottom:12px"></i>
-      Tidak ada data</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="${vis.length}" style="padding:50px;text-align:center;color:var(--gray-400);font-size:.82rem"><i class="fas fa-inbox" style="font-size:2rem;opacity:.25;display:block;margin-bottom:12px"></i>Tidak ada data</td></tr>`;
     _xRenderPager();
     return;
   }
 
-  // Hitung frozen left offsets
+  // Frozen left offsets
   const frozenLeft={};
   if(xFreeze){
     let acc=0;
-    vis.forEach(c=>{
-      if(c.fr||c.k==='_no'){frozenLeft[c.k]=acc;acc+=xW[c.k]||c.w;}
-    });
+    vis.forEach(c=>{if(c.fr||c.k==='_no'){frozenLeft[c.k]=acc;acc+=xW[c.k]||c.w;}});
   }
 
-  const totalPages=Math.ceil(xRows.length/X_PAGE_SIZE);
+  const total=xRows.length;
+  const totalPages=Math.ceil(total/X_PAGE_SIZE);
   xPage=Math.max(0,Math.min(xPage,totalPages-1));
   const start=xPage*X_PAGE_SIZE;
   const slice=xRows.slice(start,start+X_PAGE_SIZE);
@@ -5078,12 +5088,8 @@ function xRenderBody(){
         td.textContent=idx+1;
       }else{
         const isFr=xFreeze&&(c.fr||c.k==='_no');
-        if(isFr){
-          td.className='xfrozen';
-          if(frozenLeft[c.k]!==undefined)td.style.left=frozenLeft[c.k]+'px';
-        }
-        td.dataset.id=id;
-        td.dataset.k=c.k;
+        if(isFr){td.className='xfrozen';if(frozenLeft[c.k]!==undefined)td.style.left=frozenLeft[c.k]+'px';}
+        td.dataset.id=id;td.dataset.k=c.k;
         td.style.width=(xW[c.k]||c.w)+'px';
         const val=dirty&&dirty[c.k]!==undefined?dirty[c.k]:r[c.k];
         _xCellVal(td,c,val);
@@ -5093,7 +5099,6 @@ function xRenderBody(){
     });
     frag.appendChild(tr);
   });
-
   tbody.innerHTML='';
   tbody.appendChild(frag);
   _xRenderPager();
@@ -5104,173 +5109,34 @@ function _xRenderPager(){
   if(!pager){
     pager=document.createElement('div');
     pager.id='xPager';
-    pager.style.cssText='display:flex;align-items:center;gap:6px;padding:7px 12px;background:#fff;border-top:1px solid var(--gray-200);flex-shrink:0;font-size:.72rem;color:var(--gray-600)';
+    pager.style.cssText='display:flex;align-items:center;gap:6px;padding:6px 12px;background:#fff;border-top:1px solid var(--gray-200);flex-shrink:0;font-size:.72rem;color:var(--gray-600)';
     const wrap=document.getElementById('xSheetWrap');
-    wrap.parentNode.insertBefore(pager,wrap.nextSibling);
+    if(wrap&&wrap.parentNode)wrap.parentNode.insertBefore(pager,wrap.nextSibling);
   }
   const total=xRows.length;
+  if(!total){pager.innerHTML='';return;}
   const totalPages=Math.ceil(total/X_PAGE_SIZE)||1;
-  const start=xPage*X_PAGE_SIZE+1;
-  const end=Math.min((xPage+1)*X_PAGE_SIZE,total);
-
-  const btnStyle='padding:3px 10px;border-radius:5px;border:1px solid var(--gray-200);background:#fff;font-size:.7rem;cursor:pointer;font-family:inherit;color:var(--gray-700)';
-  const btnDis='padding:3px 10px;border-radius:5px;border:1px solid var(--gray-200);background:var(--gray-100);font-size:.7rem;cursor:default;font-family:inherit;color:var(--gray-400)';
-
+  const s=xPage*X_PAGE_SIZE+1, e=Math.min((xPage+1)*X_PAGE_SIZE,total);
+  const bs='padding:3px 9px;border-radius:5px;border:1px solid var(--gray-200);background:#fff;font-size:.7rem;cursor:pointer;font-family:inherit;color:var(--gray-700)';
+  const bd='padding:3px 9px;border-radius:5px;border:1px solid var(--gray-200);background:var(--gray-100);font-size:.7rem;cursor:default;font-family:inherit;color:var(--gray-400)';
   pager.innerHTML=`
-    <button style="${xPage>0?btnStyle:btnDis}" onclick="xGoPage(0)" ${xPage===0?'disabled':''}>«</button>
-    <button style="${xPage>0?btnStyle:btnDis}" onclick="xGoPage(${xPage-1})" ${xPage===0?'disabled':''}>‹</button>
-    <span style="flex:1;text-align:center">
-      Halaman <strong>${xPage+1}</strong> dari <strong>${totalPages}</strong>
-      &nbsp;·&nbsp; Baris ${start}–${end} dari <strong>${total.toLocaleString('id')}</strong>
-    </span>
-    <button style="${xPage<totalPages-1?btnStyle:btnDis}" onclick="xGoPage(${xPage+1})" ${xPage>=totalPages-1?'disabled':''}>›</button>
-    <button style="${xPage<totalPages-1?btnStyle:btnDis}" onclick="xGoPage(${totalPages-1})" ${xPage>=totalPages-1?'disabled':''}>»</button>
-    <select onchange="xGoPage(parseInt(this.value))" style="padding:3px 6px;border-radius:5px;border:1px solid var(--gray-200);font-size:.7rem;font-family:inherit;margin-left:4px">
-      ${Array.from({length:totalPages},(_,i)=>`<option value="${i}" ${i===xPage?'selected':''}>Hal. ${i+1}</option>`).join('')}
+    <button style="${xPage>0?bs:bd}" onclick="xGoPage(0)" ${xPage===0?'disabled':''}>«</button>
+    <button style="${xPage>0?bs:bd}" onclick="xGoPage(${xPage-1})" ${xPage===0?'disabled':''}>‹</button>
+    <span style="flex:1;text-align:center">Hal. <strong>${xPage+1}</strong>/${totalPages} &nbsp;·&nbsp; ${s}–${e} dari <strong>${total.toLocaleString('id')}</strong></span>
+    <button style="${xPage<totalPages-1?bs:bd}" onclick="xGoPage(${xPage+1})" ${xPage>=totalPages-1?'disabled':''}>›</button>
+    <button style="${xPage<totalPages-1?bs:bd}" onclick="xGoPage(${totalPages-1})" ${xPage>=totalPages-1?'disabled':''}>»</button>
+    <select onchange="xGoPage(parseInt(this.value))" style="padding:2px 6px;border-radius:5px;border:1px solid var(--gray-200);font-size:.7rem;font-family:inherit;margin-left:4px">
+      ${Array.from({length:totalPages},(_,i)=>`<option value="${i}"${i===xPage?' selected':''}>${i+1}</option>`).join('')}
     </select>`;
 }
 
 function xGoPage(p){
   xPage=p;
   xRenderBody();
-  const wrap=document.getElementById('xSheetWrap');
-  if(wrap)wrap.scrollTop=0;
+  document.getElementById('xSheetWrap')?.scrollTo(0,0);
 }
 
-function xRender(){xPage=0;xRenderHead();xRenderBody();_xUpdSB();}
 
-function xRenderHead(){
-  const vis=xVisCols();
-  let h='<tr>';
-  let left=0;
-  vis.forEach(c=>{
-    const w=xW[c.k]||c.w;
-    const isNo=c.k==='_no';
-    const isFr=xFreeze&&(c.fr||isNo);
-    const stickyLeft=isFr?`left:${left}px;`:'';
-    if(isFr)left+=w;
-    const cls=[isNo?'xno':'', isFr&&!isNo?'xfrozen':''].filter(Boolean).join(' ');
-    if(isNo){
-      h+=`<th class="xno" style="width:${w}px;min-width:${w}px;max-width:${w}px;left:0">#</th>`;
-    }else{
-      h+=`<th data-k="${c.k}" class="${isFr?'xfrozen':''}"
-          style="width:${w}px;min-width:${w}px;${stickyLeft}position:relative"
-          onclick="xSort('${c.k}')">
-        ${c.lb}
-        <div class="xresize" onmousedown="event.stopPropagation();xResStart(event,'${c.k}')"></div>
-      </th>`;
-    }
-  });
-  h+='</tr>';
-  document.getElementById('xHead').innerHTML=h;
-}
-
-/* ── Virtual scroll state ── */
-const X_ROW_H=30; // px per row
-let xVirtStart=0, xVirtEnd=0, xVirtTotal=0;
-const X_OVERSCAN=10; // baris ekstra atas/bawah
-
-function xRenderBody(){
-  const vis=xVisCols();
-  const tbody=document.getElementById('xBody');
-
-  if(!xRows.length){
-    tbody.innerHTML=`<tr><td colspan="${vis.length}" style="padding:50px;text-align:center;color:var(--gray-400);font-size:.8rem">
-      <i class="fas fa-inbox" style="font-size:2rem;opacity:.2;display:block;margin-bottom:10px"></i>
-      Tidak ada data</td></tr>`;
-    return;
-  }
-
-  // Hitung frozen left offsets
-  let frozenLeft={};
-  if(xFreeze){
-    let acc=0;
-    vis.forEach(c=>{
-      if(c.fr||c.k==='_no'){frozenLeft[c.k]=acc;acc+=xW[c.k]||c.w;}
-    });
-  }
-
-  xVirtTotal=xRows.length;
-  xVirtRender(vis,frozenLeft);
-
-  // Pasang scroll listener sekali
-  const wrap=document.getElementById('xSheetWrap');
-  wrap.onscroll=()=>xVirtRender(vis,frozenLeft);
-}
-
-function xVirtRender(vis,frozenLeft){
-  const wrap=document.getElementById('xSheetWrap');
-  const tbody=document.getElementById('xBody');
-  if(!wrap||!tbody)return;
-
-  const scrollTop=wrap.scrollTop;
-  const viewH=wrap.clientHeight||600;
-
-  const start=Math.max(0,Math.floor(scrollTop/X_ROW_H)-X_OVERSCAN);
-  const end=Math.min(xVirtTotal,Math.ceil((scrollTop+viewH)/X_ROW_H)+X_OVERSCAN);
-
-  // Jika range sama persis → skip (kecuali dirty berubah)
-  if(start===xVirtStart&&end===xVirtEnd){return;}
-  xVirtStart=start;xVirtEnd=end;
-
-  const topPad=start*X_ROW_H;
-  const botPad=Math.max(0,(xVirtTotal-end)*X_ROW_H);
-
-  const frag=document.createDocumentFragment();
-
-  // Spacer atas
-  if(topPad>0){
-    const sp=document.createElement('tr');
-    sp.style.height=topPad+'px';
-    sp.innerHTML=`<td colspan="${vis.length}" style="padding:0;border:none;background:transparent"></td>`;
-    frag.appendChild(sp);
-  }
-
-  for(let idx=start;idx<end;idx++){
-    const r=xRows[idx];
-    if(!r)continue;
-    const id=r.id;
-    const dirty=xDirty[id];
-    const tr=document.createElement('tr');
-    tr.dataset.id=id;
-    tr.dataset.idx=idx;
-    if(dirty)tr.classList.add('xrow-dirty');
-    if(idx%2===1)tr.style.background='#F8FAFC';
-
-    vis.forEach(c=>{
-      const td=document.createElement('td');
-      if(c.k==='_no'){
-        td.className='xno';
-        td.textContent=idx+1;
-      }else{
-        const isFr=xFreeze&&(c.fr||c.k==='_no');
-        if(isFr){
-          td.className='xfrozen';
-          if(frozenLeft[c.k]!==undefined)td.style.left=frozenLeft[c.k]+'px';
-        }
-        td.dataset.id=id;
-        td.dataset.k=c.k;
-        td.style.width=(xW[c.k]||c.w)+'px';
-        const val=dirty&&dirty[c.k]!==undefined?dirty[c.k]:r[c.k];
-        _xCellVal(td,c,val);
-        if(c.ed!==false) td.onclick=()=>xEdit(td,id,c.k);
-      }
-      tr.appendChild(td);
-    });
-    frag.appendChild(tr);
-  }
-
-  // Spacer bawah
-  if(botPad>0){
-    const sp=document.createElement('tr');
-    sp.style.height=botPad+'px';
-    sp.innerHTML=`<td colspan="${vis.length}" style="padding:0;border:none;background:transparent"></td>`;
-    frag.appendChild(sp);
-  }
-
-  tbody.innerHTML='';
-  tbody.appendChild(frag);
-}
 
 function _xCellVal(td,c,val){
   td.innerHTML='';td.style.color='';td.style.fontFamily='';td.style.fontSize='';
