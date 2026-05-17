@@ -4977,7 +4977,32 @@ async function cmStartImport(){
   log.innerHTML=logHtml;
   closeModal('ovColMap');
   toast(`Import: ${totalOk} berhasil${totalFail?', '+totalFail+' gagal':''}`,totalFail?'warning':'success');
-  if(typeof currentKec!=='undefined'&&currentKec){brAll=[];if(typeof loadKec==='function')await loadKec();}
+
+  // Hapus semua cache
+  Object.keys(_kecCacheTime||{}).forEach(k=>delete _kecCacheTime[k]);
+  Object.keys(brCache||{}).forEach(k=>delete brCache[k]);
+
+  // Reload data sesuai halaman aktif
+  const activePg=document.querySelector('.page.active')?.id;
+  if(activePg==='pgBeranda'||!activePg){
+    // Reload stats beranda + allData
+    if(typeof loadGlobalStats==='function')await loadGlobalStats();
+  }
+  if(activePg==='pgWebgis'&&currentKec){
+    brAll=[];
+    if(typeof loadKec==='function')await loadKec();
+  }
+  if(activePg==='pgKecList'){
+    // Reload keclist stats
+    if(typeof loadGlobalStats==='function')await loadGlobalStats();
+    if(typeof renderKecList==='function')renderKecList();
+  }
+  // Kalau modal Excel masih dari WebGIS dan currentKec ada, reload juga
+  if(activePg!=='pgWebgis'&&currentKec){
+    brAll=[];
+    if(typeof loadKec==='function')loadKec(); // non-blocking
+  }
+
   if(btn){btn.disabled=false;btn.innerHTML='<i class="fas fa-upload"></i> Import';}
 }
 
