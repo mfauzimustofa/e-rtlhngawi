@@ -4658,36 +4658,36 @@ const CM_FIELDS=[
   {k:'longitude',lb:'Longitude',type:'num'},
 ];
 const CM_HINTS={
-  nik:['nik','nomor induk','no nik','kependudukan'],
-  no_kk:['no kk','nomor kk','nokk','no. kk','kartu keluarga'],
-  kep_kk:['nama kk','nama kepala','kepala keluarga','nama','kep_kk'],
+  nik:['nik','nomor induk kependudukan','nik - angka','no nik','kependudukan','nik kepala','nik kk'],
+  no_kk:['no kk','nomor kk','nomor kartu keluarga','nokk','no. kk','kartu keluarga','nkk'],
+  kep_kk:['nama lengkap kepala','nama kepala rumah tangga','nama kk','nama kepala','kepala keluarga','nama lengkap','nama'],
   kec:['kecamatan','kec'],
-  desa:['desa','kelurahan'],
-  alamat:['alamat','address'],
+  desa:['desa','kelurahan','desa kelurahan'],
+  alamat:['alamat','alamat rumah','address','nama jalan'],
   jen_kel:['jenis kelamin','gender','kelamin'],
   umur:['umur','usia','age'],
-  pend_ter:['pendidikan','pend','sekolah'],
-  pekerjaan:['pekerjaan','profesi','job'],
-  pengh:['penghasilan','pendapatan','income'],
-  jml_peng:['jumlah penghuni','penghuni','anggota keluarga'],
-  status_kep:['kepemilikan','status kepemilikan'],
-  luas_rum:['luas rumah','luas bangunan'],
-  luas_tan:['luas tanah'],
-  material_d:['material dinding','mat dinding'],
+  pend_ter:['pendidikan','pend','sekolah','pendidikan terakhir'],
+  pekerjaan:['pekerjaan','profesi','job','mata pencaharian'],
+  pengh:['penghasilan','pendapatan','income','penghasilan per bulan'],
+  jml_peng:['jumlah kepala keluarga','jumlah penghuni','penghuni','anggota','anggota keluarga','jml'],
+  status_kep:['kepemilikan','status kepemilikan','status tanah'],
+  luas_rum:['luas rumah','luas bangunan','luas lantai'],
+  luas_tan:['luas tanah','luas lahan'],
+  material_d:['material dinding','mat dinding','bahan dinding','dinding'],
   kondisi_di:['kondisi dinding','kond dinding'],
-  material_a:['material atap','mat atap'],
+  material_a:['material atap','mat atap','bahan atap','atap'],
   kondisi_at:['kondisi atap','kond atap'],
-  material_l:['material lantai','mat lantai'],
+  material_l:['material lantai','mat lantai','bahan lantai','lantai'],
   kondisi_la:['kondisi lantai','kond lantai'],
-  status_rtlh:['status rtlh','status','kondisi','hasil verifikasi','layak','rtlh'],
-  status_batal:['alasan batal','batal','alasan'],
-  jenis_bantuan:['jenis bantuan','bantuan','program'],
+  status_rtlh:['status rtlh','status rumah','kondisi','hasil verifikasi','status'],
+  status_batal:['alasan batal','batal','alasan','alasan dibatalkan'],
+  jenis_bantuan:['jenis bantuan','bantuan','program','jenis program'],
   tahun_bantuan:['tahun bantuan','tahun'],
-  desil:['desil','desil dtks'],
+  desil:['desil','desil dtks','dtks'],
   backlog:['backlog'],
-  keterangan:['keterangan','catatan','ket','notes'],
+  keterangan:['keterangan','catatan','ket','notes','keterangan tidak layak'],
   latitude:['latitude','lat'],
-  longitude:['longitude','lng','lon'],
+  longitude:['longitude','lng','lon','long'],
 };
 let _cmFiles=[],_cmCurFile=0,_cmMapping={};
 
@@ -4786,14 +4786,22 @@ function importExcelKab(input){
 
 function cmAutoMap(){
   const fd=_cmFiles[_cmCurFile];if(!fd)return;
-  // Hanya pakai header yang bukan __EMPTY
   const cleanHeaders=fd.headers.filter(h=>!String(h).startsWith('__EMPTY'));
   _cmMapping[_cmCurFile]={};
   CM_FIELDS.forEach(field=>{
     const hints=CM_HINTS[field.k]||[field.lb.toLowerCase()];
     const match=cleanHeaders.find(h=>{
-      const hl=String(h).toLowerCase().replace(/[_\-\.]/g,' ').trim();
-      return hints.some(hint=>hl===hint||hl.includes(hint)||hint.includes(hl));
+      // Normalize: lowercase, hapus karakter khusus, trim
+      const hl=String(h).toLowerCase()
+        .replace(/[\(\)\*\/\-\.]/g,' ')
+        .replace(/\s+/g,' ').trim();
+      return hints.some(hint=>{
+        const hintN=hint.toLowerCase().replace(/\s+/g,' ').trim();
+        // Match exact, atau header mengandung hint, atau hint mengandung header
+        return hl===hintN||hl.includes(hintN)||hintN.includes(hl)||
+          // Match kata awal: "NIK - ANGKA 16 DIGIT" → match hint "nik"
+          hl.startsWith(hintN)||hintN.startsWith(hl.split(' ')[0]);
+      });
     });
     _cmMapping[_cmCurFile][field.k]=match||'';
   });
@@ -4921,13 +4929,15 @@ async function cmStartImport(){
       const nik=obj.nik||String(row['NIK']||row['nik']||'').replace(/[^0-9]/g,'');
       if(nik&&!obj.nik)obj.nik=nik;
 
-      // Skip baris tidak valid: tidak ada NIK, tidak ada nama, dan tidak ada ID
-      // Biasanya baris kosong, baris total, atau baris judul yang tersisa
-      if(!id&&!nik&&!obj.kep_kk){return;} // skip
+      // Skip baris tidak valid
+      if(!id&&!nik&&!obj.kep_kk){return;}
 
-      if(id)toUpdate.push({id,obj});
-      else if(nik)toUpsertByNIK.push({nik,obj});
-      else toInsert.push(obj);
+      // PRIORITAS: selalu cocokkan by NIK jika ada
+      // Hanya insert baru jika ada nama KK (data valid)
+      if(id) toUpdate.push({id,obj});
+      else if(nik) toUpsertByNIK.push({nik,obj}); // update if exists, insert if not
+      else if(obj.kep_kk) toInsert.push(obj); // insert baru hanya jika ada nama
+      // else: skip - tidak ada identifier sama sekali
     });
 
     // Update by ID
