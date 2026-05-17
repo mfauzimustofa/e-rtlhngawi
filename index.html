@@ -4685,7 +4685,7 @@ const CM_HINTS={
   tahun_bantuan:['tahun bantuan','tahun'],
   desil:['desil','desil dtks','dtks'],
   backlog:['backlog'],
-  keterangan:['keterangan','catatan','ket','notes','keterangan tidak layak'],
+  keterangan:['keterangan','catatan','ket','notes','keterangan tidak layak','keterangan layak','keterangan rtlh','keterangan dibantu','ket rtlh'],
   latitude:['latitude','lat'],
   longitude:['longitude','lng','lon','long'],
 };
@@ -4784,27 +4784,46 @@ function importExcelKab(input){
   if(input.value!==undefined)input.value='';
 }
 
+// Normalize string kolom: lowercase, hapus semua tanda baca, spasi berulang
+function cmNorm(s){
+  return String(s||'').toLowerCase()
+    .replace(/[\(\)\*\/\-\.\,\:\;\[\]\{\}\!\?\@\#\$\%\^\&\+\=\'\"\_]/g,' ')
+    .replace(/\s+/g,' ').trim();
+}
+// Ambil N kata pertama dari string
+function cmWords(s,n){return cmNorm(s).split(' ').slice(0,n).join(' ');}
+
 function cmAutoMap(){
   const fd=_cmFiles[_cmCurFile];if(!fd)return;
   const cleanHeaders=fd.headers.filter(h=>!String(h).startsWith('__EMPTY'));
   _cmMapping[_cmCurFile]={};
+
+  // Untuk setiap field database, cari kolom Excel yang paling cocok
   CM_FIELDS.forEach(field=>{
     const hints=CM_HINTS[field.k]||[field.lb.toLowerCase()];
-    const match=cleanHeaders.find(h=>{
-      // Normalize: lowercase, hapus karakter khusus, trim
-      const hl=String(h).toLowerCase()
-        .replace(/[\(\)\*\/\-\.]/g,' ')
-        .replace(/\s+/g,' ').trim();
-      return hints.some(hint=>{
-        const hintN=hint.toLowerCase().replace(/\s+/g,' ').trim();
-        // Match exact, atau header mengandung hint, atau hint mengandung header
-        return hl===hintN||hl.includes(hintN)||hintN.includes(hl)||
-          // Match kata awal: "NIK - ANGKA 16 DIGIT" → match hint "nik"
-          hl.startsWith(hintN)||hintN.startsWith(hl.split(' ')[0]);
+    let bestMatch='', bestScore=0;
+
+    cleanHeaders.forEach(h=>{
+      const hn=cmNorm(h);           // "keterangan layak dibangun mandiri"
+      const hw1=cmWords(h,1);       // "keterangan"
+      const hw2=cmWords(h,2);       // "keterangan layak"
+      const hw3=cmWords(h,3);       // "keterangan layak dibangun"
+
+      hints.forEach(hint=>{
+        const hintN=cmNorm(hint);
+        let score=0;
+        if(hn===hintN) score=100;              // exact match
+        else if(hw1===hintN) score=90;         // kata pertama exact
+        else if(hn.startsWith(hintN)) score=80;// header dimulai dengan hint
+        else if(hintN===hw1||hintN===hw2||hintN===hw3) score=75;
+        else if(hn.includes(hintN)) score=60;  // header mengandung hint
+        else if(hintN.includes(hw1)&&hw1.length>3) score=50; // hint mengandung kata pertama
+        if(score>bestScore){bestScore=score;bestMatch=h;}
       });
     });
-    _cmMapping[_cmCurFile][field.k]=match||'';
+    _cmMapping[_cmCurFile][field.k]=bestScore>=50?bestMatch:'';
   });
+
   if(document.getElementById('cmRows'))renderCmRows();
   if(document.getElementById('cmPreviewTable'))renderCmPreview();
 }
