@@ -4803,30 +4803,41 @@ function cmAutoMap(){
   const cleanHeaders=fd.headers.filter(h=>!String(h).startsWith('__EMPTY'));
   _cmMapping[_cmCurFile]={};
 
-  // Untuk setiap field database, cari kolom Excel yang paling cocok
+  // Step 1: hitung score semua kombinasi field→kolom
+  const scores=[]; // {fieldK, excelCol, score}
   CM_FIELDS.forEach(field=>{
     const hints=CM_HINTS[field.k]||[field.lb.toLowerCase()];
-    let bestMatch='', bestScore=0;
-
     cleanHeaders.forEach(h=>{
-      const hn=cmNorm(h);           // "keterangan layak dibangun mandiri"
-      const hw1=cmWords(h,1);       // "keterangan"
-      const hw2=cmWords(h,2);       // "keterangan layak"
-      const hw3=cmWords(h,3);       // "keterangan layak dibangun"
-
+      const hn=cmNorm(h);
+      const hw1=cmWords(h,1);
+      const hw2=cmWords(h,2);
+      const hw3=cmWords(h,3);
+      let bestScore=0;
       hints.forEach(hint=>{
         const hintN=cmNorm(hint);
         let score=0;
-        if(hn===hintN) score=100;              // exact match
-        else if(hw1===hintN) score=90;         // kata pertama exact
-        else if(hn.startsWith(hintN)) score=80;// header dimulai dengan hint
+        if(hn===hintN) score=100;
+        else if(hw1===hintN) score=90;
+        else if(hn.startsWith(hintN)) score=80;
         else if(hintN===hw1||hintN===hw2||hintN===hw3) score=75;
-        else if(hn.includes(hintN)) score=60;  // header mengandung hint
-        else if(hintN.includes(hw1)&&hw1.length>3) score=50; // hint mengandung kata pertama
-        if(score>bestScore){bestScore=score;bestMatch=h;}
+        else if(hn.includes(hintN)) score=60;
+        else if(hintN.includes(hw1)&&hw1.length>3) score=50;
+        if(score>bestScore)bestScore=score;
       });
+      if(bestScore>=50)scores.push({fieldK:field.k,excelCol:h,score:bestScore});
     });
-    _cmMapping[_cmCurFile][field.k]=bestScore>=50?bestMatch:'';
+  });
+
+  // Step 2: sort by score descending, assign greedy — satu kolom Excel hanya ke satu field
+  scores.sort((a,b)=>b.score-a.score);
+  const usedExcel=new Set();
+  const usedField=new Set();
+  scores.forEach(({fieldK,excelCol,score})=>{
+    if(!usedExcel.has(excelCol)&&!usedField.has(fieldK)){
+      _cmMapping[_cmCurFile][fieldK]=excelCol;
+      usedExcel.add(excelCol);
+      usedField.add(fieldK);
+    }
   });
 
   if(document.getElementById('cmRows'))renderCmRows();
