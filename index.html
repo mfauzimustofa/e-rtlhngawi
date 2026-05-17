@@ -2565,80 +2565,193 @@ function selectItem(id){
 function showDetail(r){
   const p=document.getElementById('detailPanel');
   document.getElementById('dpTitle').textContent=showNama(r.kep_kk);
-  const color=getCatColor(r._score);
   const desilNum=String(r.desil||'').match(/\d+/)?.[0];
-  document.getElementById('dpBody').innerHTML=`
-    <div class="detail-grid">
-      <div class="detail-item full"><div class="dl">NIK</div><div class="dv" style="display:flex;align-items:center;gap:8px">
-        <span style="font-family:monospace;font-size:.82rem;font-weight:700;letter-spacing:1px">${showNIK(r.nik)}</span>
-        ${r.nik?`<button onclick="navigator.clipboard.writeText('${r.nik}');toast('NIK disalin','success')" style="background:none;border:1px solid var(--gray-300);border-radius:6px;padding:2px 8px;font-size:.65rem;cursor:pointer;color:var(--gray-500)"><i class='fas fa-copy'></i></button>`:''}
-      </div></div>
-      <div class="detail-item full"><div class="dl">No. KK</div><div class="dv" style="font-family:monospace;font-size:.82rem;font-weight:700;letter-spacing:1px">${showKK(r.no_kk)}</div></div>
-      <div class="detail-item"><div class="dl">Desa</div><div class="dv">${dn(r.desa)}</div></div>
-      <div class="detail-item"><div class="dl">Kecamatan</div><div class="dv">${dn(r.kec)}</div></div>
-      <div class="detail-item full"><div class="dl">Alamat</div><div class="dv">${showAlamat(r.alamat)}</div></div>
-      <div class="detail-item"><div class="dl">Jenis Kelamin</div><div class="dv">${dn(r.jen_kel)}</div></div>
-      <div class="detail-item"><div class="dl">Umur</div><div class="dv">${r.umur?r.umur+' thn':'-'}</div></div>
-      <div class="detail-item"><div class="dl">Pendidikan</div><div class="dv">${dn(r.pend_ter)}</div></div>
-      <div class="detail-item"><div class="dl">Pekerjaan</div><div class="dv">${dn(r.pekerjaan)}</div></div>
-      <div class="detail-item"><div class="dl">Penghasilan</div><div class="dv">${dn(r.pengh)}</div></div>
-      <div class="detail-item"><div class="dl">Jml Penghuni</div><div class="dv">${dn(r.jml_peng)} jiwa</div></div>
-      <div class="detail-item"><div class="dl">Status Kepemilikan</div><div class="dv">${dn(r.status_kep)}</div></div>
-      <div class="detail-item"><div class="dl">Luas Rumah</div><div class="dv">${r.luas_rum?r.luas_rum+' m²':'-'}</div></div>
-      <div class="detail-item"><div class="dl">Luas Tanah</div><div class="dv">${r.luas_tan?r.luas_tan+' m²':'-'}</div></div>
-    </div>
-    <div style="margin:10px 0;padding:10px;background:var(--gray-50);border-radius:10px;border:1px solid var(--gray-200)">
-      <div style="font-size:.65rem;font-weight:800;color:var(--gray-500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Kondisi Bangunan</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:.72rem">
-        <div><span style="color:var(--gray-500)">Dinding</span><br><strong>${dn(r.material_d)}</strong> — ${dn(r.kondisi_di)}</div>
-        <div><span style="color:var(--gray-500)">Atap</span><br><strong>${dn(r.material_a)}</strong> — ${dn(r.kondisi_at)}</div>
-        <div><span style="color:var(--gray-500)">Lantai</span><br><strong>${dn(r.material_l)}</strong> — ${dn(r.kondisi_la)}</div>
-      </div>
-    </div>
-    <div class="detail-grid">
-      <div class="detail-item"><div class="dl">Status RTLH</div><div class="dv">${r.status_rtlh?`<span class="badge ${(r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')?'sudah':r.status_rtlh==='SK Dibatalkan'?'batal':'belum'}">${r.status_rtlh}</span>`:'-'}</div></div>
-      <div class="detail-item"><div class="dl">Desil</div><div class="dv" style="color:${desilNum?getDesilColor(desilNum):'inherit'};font-weight:700">${dn(r.desil)||'-'}</div></div>
-      
-      <div class="detail-item"><div class="dl">Backlog</div><div class="dv">${dn(r.backlog)||'-'}</div></div>
-      ${r.status_rtlh==='SK Dibatalkan'&&r.status_batal?`<div class="detail-item full"><div class="dl">Alasan Batal</div><div class="dv" style="color:var(--danger);font-weight:600">${r.status_batal}</div></div>`:''}
-      ${r.jenis_bantuan?`<div class="detail-item"><div class="dl">Jenis Bantuan</div><div class="dv">${r.jenis_bantuan}</div></div>`:''}      ${r.keterangan?`<div class="detail-item full"><div class="dl">Keterangan</div><div class="dv" style="font-style:italic;color:var(--gray-700)">${r.keterangan}</div></div>`:''}
-      ${r.tahun_bantuan?`<div class="detail-item"><div class="dl">Tahun Bantuan</div><div class="dv">${r.tahun_bantuan}</div></div>`:''}
-    </div>
-    <div style="margin-top:14px">
-      <div style="font-size:.72rem;font-weight:800;color:var(--gray-600);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px"><i class="fas fa-hand-holding-heart" style="color:var(--gold)"></i> Riwayat Program Bantuan</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px" id="dpBantuan">
-        ${(r.jenis_bantuan||r.bantuan_rtlh||r.bantuan_bsps||r.bantuan_dd||r.bantuan_csr||r.bantuan_lain)?
-        `<span style="background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue)33;border-radius:99px;font-size:.68rem;font-weight:700;padding:3px 10px"><i class="fas fa-check-circle"></i> ${r.jenis_bantuan||'Bantuan'} ${r.tahun_bantuan||''}</span>`
-        :'<span style="font-size:.72rem;color:var(--gray-400)">Belum ada riwayat bantuan</span>'}
-      </div>
-    </div>
-    <div style="margin-top:14px">
-      <div style="font-size:.72rem;font-weight:800;color:var(--gray-600);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px;justify-content:space-between">
-        <span><i class="fas fa-link" style="color:var(--blue)"></i> Dokumen Terhubung</span>
-        ${canEdit()?`<button onclick="openLinkDok('${r.id}')" style="font-size:.65rem;padding:3px 10px;border-radius:6px;background:var(--blue);color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:700"><i class="fas fa-link"></i> Kelola</button>`:''}
-      </div>
-      <div id="dpDokLink" style="font-size:.72rem;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
-    </div>
-    <div style="margin-top:14px" id="dpVerifSection">
-      <div style="font-size:.72rem;font-weight:800;color:var(--gray-600);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px;justify-content:space-between">
-        <span><i class="fas fa-clipboard-check" style="color:#10B981"></i> Riwayat Verifikasi Lapangan</span>
-        ${canEdit()?`<button onclick="openVerifModal('${r.id}')" style="font-size:.65rem;padding:3px 10px;border-radius:6px;background:#10B981;color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:700"><i class="fas fa-plus"></i> Tambah</button>`:''}
-      </div>
-      <div id="dpVerifList" style="font-size:.72rem;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
-    </div>
-    <div style="margin-top:14px" id="dpDokSection">
-      <div style="font-size:.72rem;font-weight:800;color:var(--gray-600);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px;justify-content:space-between">
-        <span><i class="fas fa-camera" style="color:var(--warning)"></i> Foto Rumah</span>
-        ${isAdmin?`<button onclick="openDokModal('${r.id}')" style="font-size:.65rem;padding:3px 10px;border-radius:6px;background:var(--warning);color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:700"><i class="fas fa-camera"></i> Foto</button>`:''}
-      </div>
-      <div id="dpDokList" style="font-size:.72rem;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
-    </div>
-    <div style="margin-top:14px">
-      <div style="font-size:.72rem;font-weight:800;color:var(--gray-600);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
-        <i class="fas fa-history" style="color:#7C3AED"></i> Riwayat Perubahan
-      </div>
-      <div id="dpRiwayatList" style="font-size:.72rem;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
+  const desilColor=desilNum?getDesilColor(desilNum):'var(--gray-400)';
+  const statusCls=(r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')?'sudah':'belum';
+  const hasBatal=r.status_batal&&r.status_batal!=='-';
+
+  // Helper: buat row item
+  const item=(label,value,opts={})=>{
+    if(!value&&value!==0)value='-';
+    const full=opts.full?'grid-column:1/-1':'';
+    const mono=opts.mono?'font-family:monospace;font-size:.8rem;letter-spacing:.5px':'';
+    const color=opts.color?`color:${opts.color};font-weight:700`:'';
+    return `<div class="detail-item${opts.full?' full':''}" style="${full}">
+      <div class="dl">${label}</div>
+      <div class="dv" style="${mono}${color}">${value}</div>
     </div>`;
+  };
+
+  // Helper: section header
+  const section=(icon,label,color,extra='')=>`
+    <div style="margin:14px 0 8px;display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:7px">
+        <div style="width:26px;height:26px;border-radius:7px;background:${color}18;display:flex;align-items:center;justify-content:center">
+          <i class="${icon}" style="color:${color};font-size:.72rem"></i>
+        </div>
+        <span style="font-size:.72rem;font-weight:800;color:var(--gray-700);text-transform:uppercase;letter-spacing:.5px">${label}</span>
+      </div>
+      ${extra}
+    </div>`;
+
+  // ── Status badge ──
+  const statusBadge=r.status_rtlh
+    ?`<span class="badge ${statusCls}">${r.status_rtlh}</span>`
+    :'<span style="color:var(--gray-400)">-</span>';
+
+  document.getElementById('dpBody').innerHTML=`
+
+    <!-- STATUS HERO -->
+    <div style="background:linear-gradient(135deg,var(--navy),#1B3A5C);border-radius:12px;padding:14px;margin-bottom:14px;color:#fff">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:.62rem;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Kepala Rumah Tangga</div>
+          <div style="font-size:1rem;font-weight:800;color:#fff;line-height:1.2;word-break:break-word">${showNama(r.kep_kk)}</div>
+          <div style="font-size:.7rem;color:rgba(255,255,255,.55);margin-top:4px">${[r.desa,r.kec].filter(Boolean).map(v=>normCase(v)||v).join(' · ')||'-'}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          ${r.status_rtlh?`<div style="background:${statusCls==='sudah'?'#16A34A':'#DC2626'}22;border:1px solid ${statusCls==='sudah'?'#16A34A':'#DC2626'}44;border-radius:8px;padding:4px 10px;font-size:.7rem;font-weight:800;color:${statusCls==='sudah'?'#86EFAC':'#FCA5A5'}">${r.status_rtlh}</div>`:''}
+          ${desilNum?`<div style="margin-top:5px;font-size:.65rem;font-weight:700;color:${desilColor}">● Desil ${desilNum}</div>`:''}
+        </div>
+      </div>
+      ${hasBatal?`<div style="margin-top:10px;padding:7px 10px;background:rgba(239,68,68,.15);border-radius:7px;border:1px solid rgba(239,68,68,.3);font-size:.7rem;color:#FCA5A5;display:flex;align-items:center;gap:6px">
+        <i class="fas fa-ban" style="font-size:.65rem"></i>
+        <span>Ada di BNBA/SK namun Dibatalkan — <strong>${r.status_batal}</strong></span>
+      </div>`:''}
+    </div>
+
+    <!-- IDENTITAS -->
+    ${section('fas fa-id-card','Identitas','var(--blue)')}
+    <div style="background:#fff;border-radius:10px;border:1px solid var(--gray-100);overflow:hidden">
+      <div class="detail-grid">
+        <div class="detail-item full">
+          <div class="dl">NIK</div>
+          <div class="dv" style="display:flex;align-items:center;gap:8px">
+            <span style="font-family:monospace;font-size:.82rem;font-weight:700;letter-spacing:1px">${showNIK(r.nik)}</span>
+            ${r.nik?`<button onclick="navigator.clipboard.writeText('${r.nik}');toast('NIK disalin','success')" style="background:none;border:1px solid var(--gray-200);border-radius:5px;padding:2px 7px;font-size:.6rem;cursor:pointer;color:var(--gray-500)"><i class='fas fa-copy'></i></button>`:''}
+            ${isSuperAdmin()?`<button onclick="openNIKModal(${r.id})" style="background:none;border:1px solid var(--blue);border-radius:5px;padding:2px 7px;font-size:.6rem;cursor:pointer;color:var(--blue)"><i class='fas fa-edit'></i></button>`:''}
+          </div>
+        </div>
+        <div class="detail-item full">
+          <div class="dl">No. KK</div>
+          <div class="dv" style="font-family:monospace;font-size:.82rem;font-weight:700;letter-spacing:1px">${showKK(r.no_kk)}</div>
+        </div>
+        ${item('Jenis Kelamin', dn(r.jen_kel))}
+        ${item('Umur', r.umur?r.umur+' tahun':null)}
+        ${item('Pendidikan', dn(r.pend_ter))}
+        ${item('Pekerjaan', dn(r.pekerjaan))}
+        ${item('Penghasilan', dn(r.pengh))}
+        ${item('Jumlah Penghuni', r.jml_peng?r.jml_peng+' jiwa':null)}
+        ${item('Alamat', showAlamat(r.alamat), {full:true})}
+      </div>
+    </div>
+
+    <!-- KONDISI RUMAH -->
+    ${section('fas fa-home','Kondisi Bangunan','#EA580C')}
+    <div style="background:#fff;border-radius:10px;border:1px solid var(--gray-100);overflow:hidden">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0">
+        ${['Dinding','Atap','Lantai'].map((part,i)=>{
+          const matKey=['material_d','material_a','material_l'][i];
+          const konKey=['kondisi_di','kondisi_at','kondisi_la'][i];
+          const mat=dn(r[matKey]);
+          const kon=dn(r[konKey]);
+          const icons=['fas fa-border-all','fas fa-chevron-up','fas fa-grip-horizontal'];
+          return `<div style="padding:10px 10px;border-right:${i<2?'1px solid var(--gray-100)':'none'};border-bottom:1px solid var(--gray-100)">
+            <div style="font-size:.6rem;font-weight:800;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">
+              <i class="${icons[i]}" style="font-size:.58rem"></i> ${part}
+            </div>
+            <div style="font-size:.72rem;font-weight:700;color:var(--gray-800)">${mat}</div>
+            <div style="font-size:.65rem;color:var(--gray-500);margin-top:1px">${kon}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="detail-grid">
+        ${item('Status Kepemilikan', dn(r.status_kep))}
+        ${item('Luas Rumah', r.luas_rum?r.luas_rum+' m²':null)}
+        ${item('Luas Tanah', r.luas_tan?r.luas_tan+' m²':null)}
+      </div>
+    </div>
+
+    <!-- BANTUAN & STATUS -->
+    ${section('fas fa-hand-holding-heart','Bantuan & Status','var(--success)')}
+    <div style="background:#fff;border-radius:10px;border:1px solid var(--gray-100);overflow:hidden">
+      <div class="detail-grid">
+        <div class="detail-item">
+          <div class="dl">Status RTLH</div>
+          <div class="dv">${statusBadge}</div>
+        </div>
+        <div class="detail-item">
+          <div class="dl">Desil</div>
+          <div class="dv" style="color:${desilColor};font-weight:700">${dn(r.desil)||'-'}</div>
+        </div>
+        ${item('Backlog', dn(r.backlog))}
+        ${item('Jenis Bantuan', dn(r.jenis_bantuan))}
+        ${item('Tahun Bantuan', dn(r.tahun_bantuan))}
+        ${r.keterangan?item('Keterangan', r.keterangan, {full:true}):''}
+      </div>
+    </div>
+
+    <!-- KOORDINAT -->
+    ${r.latitude&&r.longitude?`
+    ${section('fas fa-map-marker-alt','Koordinat GPS','var(--danger)')}
+    <div style="background:#fff;border-radius:10px;border:1px solid var(--gray-100);overflow:hidden">
+      <div class="detail-grid">
+        ${item('Latitude', r.latitude)}
+        ${item('Longitude', r.longitude)}
+      </div>
+      <div style="padding:0 12px 12px">
+        <a href="https://maps.google.com/?q=${r.latitude},${r.longitude}" target="_blank"
+          style="display:inline-flex;align-items:center;gap:5px;font-size:.7rem;font-weight:700;color:var(--blue);text-decoration:none;padding:5px 12px;border:1px solid var(--blue);border-radius:7px">
+          <i class="fas fa-external-link-alt" style="font-size:.6rem"></i> Buka di Google Maps
+        </a>
+      </div>
+    </div>`:''}
+
+    <!-- DOKUMEN TERHUBUNG -->
+    <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:7px">
+        <div style="width:26px;height:26px;border-radius:7px;background:#2563EB18;display:flex;align-items:center;justify-content:center">
+          <i class="fas fa-link" style="color:var(--blue);font-size:.72rem"></i>
+        </div>
+        <span style="font-size:.72rem;font-weight:800;color:var(--gray-700);text-transform:uppercase;letter-spacing:.5px">Dokumen Terhubung</span>
+      </div>
+      ${canEdit()?`<button onclick="openLinkDok('${r.id}')" style="font-size:.65rem;padding:3px 10px;border-radius:6px;background:var(--blue);color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:700"><i class="fas fa-link"></i> Kelola</button>`:''}
+    </div>
+    <div id="dpDokLink" style="font-size:.72rem;color:var(--gray-400);margin-top:6px"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
+
+    <!-- VERIFIKASI LAPANGAN -->
+    <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between" id="dpVerifSection">
+      <div style="display:flex;align-items:center;gap:7px">
+        <div style="width:26px;height:26px;border-radius:7px;background:#10B98118;display:flex;align-items:center;justify-content:center">
+          <i class="fas fa-clipboard-check" style="color:#10B981;font-size:.72rem"></i>
+        </div>
+        <span style="font-size:.72rem;font-weight:800;color:var(--gray-700);text-transform:uppercase;letter-spacing:.5px">Keterangan Verifikasi</span>
+      </div>
+      ${canEdit()?`<button onclick="openVerifModal('${r.id}')" style="font-size:.65rem;padding:3px 10px;border-radius:6px;background:#10B981;color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:700"><i class="fas fa-plus"></i> Tambah</button>`:''}
+    </div>
+    <div id="dpVerifList" style="font-size:.72rem;color:var(--gray-400);margin-top:6px"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
+
+    <!-- FOTO RUMAH -->
+    <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between" id="dpDokSection">
+      <div style="display:flex;align-items:center;gap:7px">
+        <div style="width:26px;height:26px;border-radius:7px;background:#F59E0B18;display:flex;align-items:center;justify-content:center">
+          <i class="fas fa-camera" style="color:var(--warning);font-size:.72rem"></i>
+        </div>
+        <span style="font-size:.72rem;font-weight:800;color:var(--gray-700);text-transform:uppercase;letter-spacing:.5px">Foto Rumah</span>
+      </div>
+      ${isAdmin?`<button onclick="openDokModal('${r.id}')" style="font-size:.65rem;padding:3px 10px;border-radius:6px;background:var(--warning);color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:700"><i class="fas fa-camera"></i> Foto</button>`:''}
+    </div>
+    <div id="dpDokList" style="font-size:.72rem;color:var(--gray-400);margin-top:6px"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
+
+    <!-- RIWAYAT PERUBAHAN -->
+    <div style="margin-top:14px;display:flex;align-items:center;gap:7px">
+      <div style="width:26px;height:26px;border-radius:7px;background:#7C3AED18;display:flex;align-items:center;justify-content:center">
+        <i class="fas fa-history" style="color:#7C3AED;font-size:.72rem"></i>
+      </div>
+      <span style="font-size:.72rem;font-weight:800;color:var(--gray-700);text-transform:uppercase;letter-spacing:.5px">Riwayat Perubahan</span>
+    </div>
+    <div id="dpRiwayatList" style="font-size:.72rem;color:var(--gray-400);margin-top:6px"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
+  `;
   const acts=document.getElementById('dpActions');
   acts.innerHTML='';
   if(canEdit()){
