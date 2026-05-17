@@ -4765,12 +4765,37 @@ function importExcelKab(input){
     reader.onload=(e)=>{
       try{
         const wb=XLSX.read(e.target.result,{type:'binary',cellText:true,cellDates:true});
-        const ws=wb.Sheets[wb.SheetNames[0]];
 
-        // Smart header detection
-        const{headerRow,rows,headers}=xlFindHeaderRow(ws);
+        // Pilih sheet terbaik: yang punya kolom paling banyak & paling mirip field database
+        const dbHintsFlat=['nik','nama','kk','desa','kecamatan','status','alamat','keterangan',
+          'nomor','kartu','keluarga','wilayah','urut','jumlah','bantuan','rtlh','kelamin'];
 
-        _cmFiles.push({name:file.name,rows,headers,headerRow});
+        // Kumpulkan info semua sheet
+        const allSheets=wb.SheetNames.map(shName=>{
+          const ws2=wb.Sheets[shName];
+          const raw2=XLSX.utils.sheet_to_json(ws2,{header:1,defval:''});
+          let maxCols=0,maxHints=0;
+          raw2.slice(0,20).forEach(row=>{
+            const ne=row.filter(v=>v!==''&&v!=null);
+            if(ne.length>maxCols){
+              maxCols=ne.length;
+              maxHints=ne.filter(v=>dbHintsFlat.some(h=>String(v).toLowerCase().includes(h))).length;
+            }
+          });
+          return{name:shName,ws:ws2,score:maxCols*5+maxHints*4,cols:maxCols};
+        });
+
+        // Pilih sheet dengan score tertinggi sebagai default
+        allSheets.sort((a,b)=>b.score-a.score);
+        const bestSheet=allSheets[0];
+        const{headerRow,rows,headers}=xlFindHeaderRow(bestSheet.ws);
+
+        _cmFiles.push({
+          name:file.name, rows, headers, headerRow,
+          wb, // simpan workbook untuk ganti sheet nanti
+          allSheets, // semua sheet info
+          activeSheet:bestSheet.name
+        });
         loaded++;
         log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Membaca file ${loaded}/${files.length}...`;
         if(loaded===files.length){
@@ -4844,6 +4869,20 @@ function cmAutoMap(){
   if(document.getElementById('cmPreviewTable'))renderCmPreview();
 }
 
+function cmSwitchSheet(fileIdx, sheetName){
+  const fd=_cmFiles[fileIdx];
+  if(!fd||!fd.wb)return;
+  const ws=fd.wb.Sheets[sheetName];
+  if(!ws)return;
+  const{headerRow,rows,headers}=xlFindHeaderRow(ws);
+  fd.rows=rows; fd.headers=headers; fd.headerRow=headerRow; fd.activeSheet=sheetName;
+  delete _cmMapping[fileIdx]; // reset mapping untuk sheet baru
+  _cmCurFile=fileIdx;
+  cmAutoMap();
+  renderCmRows();
+  renderCmPreview();
+}
+
 function cmOpenModal(){
   const tabs=document.getElementById('cmFileTabs');
   if(_cmFiles.length>1){
@@ -4880,22 +4919,41 @@ function renderCmRows(){
   const mapping=_cmMapping[_cmCurFile]||{};
   const cleanHeaders=fd.headers.filter(h=>!String(h).startsWith('__EMPTY'));
 
-  // Buat reverse mapping: excelCol → dbKey (untuk lookup)
   const reverseMap={};
   Object.entries(mapping).forEach(([dbKey,exCol])=>{if(exCol)reverseMap[exCol]=dbKey;});
 
-  // Dropdown field database
   const dbOpts='<option value="">(tidak diimport)</option>'+
     CM_FIELDS.map(f=>`<option value="${f.k}">${f.lb}</option>`).join('');
-
   const makeDbOpts=(selectedKey)=>dbOpts.replace(
     `value="${selectedKey}"`,`value="${selectedKey}" selected`
   );
 
-  // Hitung yang terdeteksi
   const detectedCount=cleanHeaders.filter(h=>reverseMap[h]).length;
 
-  let html=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:0 2px">
+  let html='';
+
+  // ── Sheet selector (jika lebih dari 1 sheet) ──
+  if(fd.allSheets&&fd.allSheets.length>1){
+    html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 10px;background:var(--blue-bg);border-radius:8px;border:1px solid var(--blue-light)">
+      <i class="fas fa-table" style="color:var(--blue);font-size:.75rem;flex-shrink:0"></i>
+      <span style="font-size:.72rem;font-weight:700;color:var(--blue);flex-shrink:0">Sheet:</span>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        ${fd.allSheets.map(sh=>{
+          const isActive=sh.name===fd.activeSheet;
+          return`<button onclick="cmSwitchSheet(${_cmCurFile},'${sh.name.replace(/'/g,"\\'")}')"
+            style="padding:3px 10px;border-radius:99px;border:1.5px solid ${isActive?'var(--blue)':'var(--gray-200)'};
+            background:${isActive?'var(--blue)':'#fff'};color:${isActive?'#fff':'var(--gray-600)'};
+            font-size:.68rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">
+            ${sh.name}
+            <span style="opacity:.7;font-weight:400">(${sh.cols} kol)</span>
+          </button>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  // ── Info deteksi ──
+  html+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:0 2px">
     <span style="font-size:.65rem;color:var(--gray-500)">
       <i class="fas fa-check-circle" style="color:var(--success)"></i>
       <strong style="color:var(--success)">${detectedCount}</strong> dari ${cleanHeaders.length} kolom Excel terdeteksi otomatis
@@ -4903,23 +4961,21 @@ function renderCmRows(){
     <span style="font-size:.62rem;color:var(--gray-400)">Periksa & koreksi jika perlu</span>
   </div>`;
 
-  // Header tabel
+  // ── Header tabel ──
   html+=`<div style="display:grid;grid-template-columns:1fr 18px 1fr;gap:6px;padding:4px 8px;background:var(--navy);border-radius:6px 6px 0 0;margin-bottom:2px">
     <div style="font-size:.62rem;font-weight:800;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.05em">Kolom di Excel Anda</div>
     <div></div>
     <div style="font-size:.62rem;font-weight:800;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.05em">Field Database</div>
   </div>`;
 
-  // Satu baris per kolom Excel
+  // ── Baris per kolom Excel ──
   html+=cleanHeaders.map(h=>{
     const dbKey=reverseMap[h]||'';
     const detected=!!dbKey;
-    const bg=detected?'#F0FDF4':'#fff';
-    const border=detected?'1px solid #BBF7D0':'1px solid var(--gray-200)';
-    return`<div style="display:grid;grid-template-columns:1fr 18px 1fr;align-items:center;gap:6px;padding:5px 8px;background:${bg};border:${border};border-radius:5px;margin-bottom:2px">
-      <div style="font-size:.72rem;font-weight:${detected?'700':'500'};color:${detected?'var(--gray-900)':'var(--gray-600)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${h}">${h}</div>
+    return`<div style="display:grid;grid-template-columns:1fr 18px 1fr;align-items:center;gap:6px;padding:5px 8px;background:${detected?'#F0FDF4':'#fff'};border:${detected?'1px solid #BBF7D0':'1px solid var(--gray-200)'};border-radius:5px;margin-bottom:2px">
+      <div style="font-size:.72rem;font-weight:${detected?'700':'500'};color:${detected?'var(--gray-900)':'var(--gray-600)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${h.replace(/"/g,'&quot;')}">${h}</div>
       <i class="fas fa-arrow-right" style="color:${detected?'var(--success)':'var(--gray-300)'};font-size:.6rem;text-align:center"></i>
-      <select data-excelcol="${h.replace(/"/g,'&quot;')}" onchange="cmUpdateMapByExcel(this.value,'${h.replace(/'/g,"\\'")}')"
+      <select data-excelcol="${h.replace(/"/g,'&quot;')}" onchange="cmUpdateMapByExcel(this.value,'${h.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')"
         style="padding:3px 6px;border-radius:5px;border:1px solid ${detected?'#86EFAC':'var(--gray-200)'};font-size:.7rem;font-family:var(--font);outline:none;background:#fff;width:100%;color:var(--gray-800)">
         ${makeDbOpts(dbKey)}
       </select>
@@ -4928,7 +4984,7 @@ function renderCmRows(){
 
   document.getElementById('cmRows').innerHTML=html;
   document.getElementById('cmFileInfo').textContent=
-    `${fd.name} · ${fd.rows.length.toLocaleString('id')} baris · ${cleanHeaders.length} kolom · header baris ke-${(fd.headerRow||0)+1}`;
+    `${fd.name} · Sheet: ${fd.activeSheet} · ${fd.rows.length.toLocaleString('id')} baris · ${cleanHeaders.length} kolom · header baris ke-${(fd.headerRow||0)+1}`;
 }
 
 // Update mapping: excelCol → dbKey
