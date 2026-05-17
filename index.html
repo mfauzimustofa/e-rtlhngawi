@@ -6,7 +6,9 @@
 <title>e-RTLH Kabupaten Ngawi | DPRKP Ngawi</title>
 <meta name="theme-color" content="#0C2340">
 <meta name="description" content="Sistem Informasi Rumah Tidak Layak Huni (RTLH) Kabupaten Ngawi — DPRKP Kab. Ngawi. Data 19 Kecamatan dan 217 Desa/Kelurahan.">
-<meta name="robots" content="noindex,nofollow">
+<meta name="robots" content="index,follow">
+<meta name="googlebot" content="index,follow">
+<link rel="canonical" href="https://e-rtlhngawi.id/">
 <!-- Favicon -->
 <link rel="icon" type="image/x-icon" href="data/favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="data/favicon-32.png">
@@ -82,13 +84,6 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 /* PAGES */
 .page{display:none;position:absolute;top:var(--header-h);left:0;right:0;bottom:0;overflow:hidden}
 .page.active{display:flex}
-#pgExcel.active{display:flex!important;flex-direction:column!important;overflow:hidden!important}
-#pgExcel.xedit-active table.xgrid{cursor:cell}
-#pgExcel.xedit-active table.xgrid td[data-id]:hover{background:#FFF9C4!important;cursor:cell}
-#pgExcel.xedit-active .excel-toolbar{background:#FFFBEB;border-bottom-color:#FCD34D}
-.xedit-banner{display:none;align-items:center;gap:10px;padding:6px 14px;background:#FFFBEB;border-bottom:1.5px solid #FCD34D;flex-shrink:0;font-size:.72rem;color:#92400E;font-weight:600}
-.xedit-banner.show{display:flex}
-.xedit-banner i{color:#F59E0B}
 .page-scroll{overflow-y:auto;flex:1}
 
 /* HERO */
@@ -391,9 +386,6 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
   /* Kurangi padding page */
   .page-scroll{padding:0!important}
 }
-@media(max-width:480px){
-  #gsStatGrid{grid-template-columns:repeat(2,1fr)!important}
-}
 /* Loading skeleton */
 .skeleton{background:linear-gradient(90deg,var(--gray-100) 25%,var(--gray-200) 50%,var(--gray-100) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
@@ -449,107 +441,6 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 .empty-state{text-align:center;padding:36px 20px;color:var(--gray-400)}
 .empty-state i{font-size:2rem;margin-bottom:12px;display:block;opacity:.4}
 .empty-state p{font-size:.82rem}
-
-/* ══ PAGE EXCEL ══ */
-#pgExcel{flex-direction:column;overflow:hidden;background:#fff}
-.excel-toolbar{height:48px;background:#fff;border-bottom:2px solid var(--gray-100);display:flex;align-items:center;padding:0 14px;gap:6px;flex-shrink:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-.excel-toolbar::-webkit-scrollbar{display:none}
-.excel-toolbar .tb-sep{width:1px;height:22px;background:var(--gray-200);margin:0 3px;flex-shrink:0}
-.excel-filterbar{background:var(--gray-50);border-bottom:1.5px solid var(--gray-200);padding:7px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0}
-.excel-filterbar select,.excel-filterbar input[type=text]{padding:5px 10px;border-radius:7px;border:1.5px solid var(--gray-200);font-size:.73rem;font-family:var(--font);color:var(--gray-800);outline:none;background:#fff;height:30px}
-.excel-filterbar select:focus,.excel-filterbar input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(27,108,168,.1)}
-.excel-filterbar select{cursor:pointer}
-.excel-sheet-wrap{flex:1;overflow:auto;position:relative;min-height:0}
-.excel-sheet-wrap::-webkit-scrollbar{width:8px;height:8px}
-.excel-sheet-wrap::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:4px;border:2px solid #fff}
-.excel-sheet-wrap::-webkit-scrollbar-track{background:transparent}
-.excel-sheet-wrap::-webkit-scrollbar-corner{background:transparent}
-.excel-statusbar{height:28px;background:var(--navy);display:flex;align-items:center;padding:0 14px;gap:14px;flex-shrink:0}
-.excel-statusbar span{font-size:.62rem;font-weight:600;color:rgba(255,255,255,.45)}
-.excel-statusbar strong{color:rgba(255,255,255,.9)}
-.excel-statusbar .es-mode{padding:2px 9px;border-radius:99px;font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;background:rgba(255,255,255,.08);color:rgba(255,255,255,.35)}
-.excel-statusbar .es-mode.editing{background:rgba(245,158,11,.18);color:var(--gold)}
-
-/* GRID */
-table.xgrid{border-collapse:separate;border-spacing:0;min-width:max-content;table-layout:fixed}
-table.xgrid thead th{
-  position:sticky;top:0;z-index:30;
-  background:var(--navy);color:#fff;
-  height:32px;padding:0 8px;
-  font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
-  border-right:1px solid rgba(255,255,255,.1);border-bottom:2px solid rgba(255,255,255,.15);
-  white-space:nowrap;cursor:pointer;user-select:none;transition:background .12s;
-  text-align:left;overflow:hidden;
-}
-table.xgrid thead th:hover{background:#1B3A5C}
-table.xgrid thead th.xfrozen{position:sticky;z-index:40;background:var(--navy)}
-table.xgrid thead th.xno{position:sticky;left:0;z-index:50;background:#0a1e35;width:44px;min-width:44px;max-width:44px;text-align:center;cursor:default}
-table.xgrid thead th.xsort-asc::after{content:' ▲';font-size:.5rem;opacity:.7}
-table.xgrid thead th.xsort-desc::after{content:' ▼';font-size:.5rem;opacity:.7}
-
-table.xgrid tbody tr:nth-child(even){background:#F8FAFC}
-table.xgrid tbody tr:hover{background:#EFF6FF!important}
-table.xgrid tbody tr.xrow-dirty td.xno{border-left:3px solid var(--warning)!important}
-table.xgrid tbody tr.xrow-selected{background:#DBEAFE!important}
-
-table.xgrid td{
-  height:30px;padding:0 7px;
-  font-size:.73rem;color:var(--gray-800);
-  border-right:1px solid var(--gray-200);border-bottom:1px solid #F1F5F9;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  cursor:default;position:relative;outline:none;
-}
-table.xgrid td.xno{
-  position:sticky;left:0;z-index:20;
-  background:var(--gray-100);color:var(--gray-500);text-align:center;
-  font-size:.62rem;font-weight:700;cursor:default;
-  width:44px;min-width:44px;max-width:44px;
-  border-right:1px solid var(--gray-200)!important;
-}
-table.xgrid td.xfrozen{
-  position:sticky;z-index:19;
-  background:inherit;border-right:2px solid var(--gray-300)!important;
-  font-weight:600;
-}
-table.xgrid td.xfocused{outline:2px solid var(--blue);outline-offset:-2px;z-index:10}
-table.xgrid td.xediting{padding:0;overflow:visible;z-index:100}
-table.xgrid td.xediting input,
-table.xgrid td.xediting select{
-  width:100%;height:30px;min-height:30px;
-  padding:0 7px;border:2px solid var(--blue);
-  font-size:.73rem;font-family:var(--font);
-  background:#fff;color:var(--gray-900);outline:none;
-  box-shadow:0 0 0 3px rgba(27,108,168,.18);
-  position:absolute;left:0;top:0;z-index:200;
-  border-radius:0;
-}
-table.xgrid td.xediting input{min-width:120px}
-
-/* RESIZE HANDLE */
-.xresize{position:absolute;right:0;top:0;width:4px;height:100%;cursor:col-resize;z-index:5;opacity:0;transition:opacity .15s}
-table.xgrid thead th:hover .xresize{opacity:1;background:rgba(255,255,255,.3)}
-.xresize:hover,.xresize.dragging{opacity:1!important;background:var(--gold)!important}
-
-/* STATUS BADGE in grid */
-.xbadge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:99px;font-size:.62rem;font-weight:700;white-space:nowrap;line-height:1.4;letter-spacing:.01em}
-.xbadge.rtlh{background:#FEE2E2;color:#B91C1C;border:1px solid #FECACA}
-.xbadge.layak{background:#DCFCE7;color:#15803D;border:1px solid #BBF7D0}
-.xbadge.lain{background:#EDE9FE;color:#6D28D9;border:1px solid #DDD6FE}
-.xbadge.empty{color:#D1D5DB;font-weight:400;font-size:.7rem}
-
-/* UNSAVED BANNER */
-#xUnsavedBar{display:none;background:var(--warning);color:var(--navy);font-size:.72rem;font-weight:800;padding:5px 14px;text-align:center;flex-shrink:0;align-items:center;justify-content:center;gap:10px}
-#xUnsavedBar.show{display:flex}
-
-/* CONTEXT MENU */
-#xCtxMenu{position:fixed;z-index:9999;background:#fff;border:1px solid var(--gray-200);border-radius:10px;box-shadow:0 4px 24px rgba(0,0,0,.12),0 1px 4px rgba(0,0,0,.06);padding:4px;min-width:200px;display:none;animation:xCtxIn .12s ease}
-#xCtxMenu.open{display:block}
-@keyframes xCtxIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
-.xctx-item{display:flex;align-items:center;gap:9px;padding:7px 12px;border-radius:7px;font-size:.77rem;font-weight:600;cursor:pointer;color:var(--gray-700);white-space:nowrap}
-.xctx-item:hover{background:var(--blue-bg);color:var(--blue)}
-.xctx-item.danger:hover{background:var(--danger-bg);color:var(--danger)}
-.xctx-item i{width:15px;text-align:center;font-size:.75rem;opacity:.7}
-.xctx-sep{height:1px;background:var(--gray-100);margin:3px 0}
 </style>
 </head>
 <body>
@@ -605,7 +496,6 @@ table.xgrid thead th:hover .xresize{opacity:1;background:rgba(255,255,255,.3)}
   <nav class="nav-tabs" id="navTabs">
     <button class="nav-tab active" id="ntBeranda" onclick="nav('beranda')"><i class="fas fa-home"></i> Beranda</button>
     <button class="nav-tab" id="ntWebgis" onclick="nav('keclist')"><i class="fas fa-map-marked-alt"></i> WebGIS</button>
-    <button class="nav-tab" id="ntExcel" onclick="nav('excel')" style="display:none"><i class="fas fa-table"></i> Excel</button>
   </nav>
   <div class="header-right">
     <button class="btn-icon-sm" id="btnDokLib" onclick="openDokLib()" title="Library Dokumen Kabupaten" style="display:none"><i class="fas fa-folder-open"></i></button>
@@ -618,7 +508,6 @@ table.xgrid thead th:hover .xresize{opacity:1;background:rgba(255,255,255,.3)}
 <nav class="mob-bottom-nav">
   <button class="mob-nav-btn active" id="mnBeranda" onclick="nav('beranda')"><i class="fas fa-home"></i>Beranda</button>
   <button class="mob-nav-btn" id="mnWebgis" onclick="nav('keclist')"><i class="fas fa-map-marked-alt"></i>WebGIS</button>
-  <button class="mob-nav-btn" id="mnExcel" onclick="nav('excel')" style="display:none"><i class="fas fa-table"></i>Excel</button>
 </nav>
 
 <!-- TOAST -->
@@ -639,11 +528,10 @@ table.xgrid thead th:hover .xresize{opacity:1;background:rgba(255,255,255,.3)}
 
     <!-- STAT CARDS -->
     <div class="section" style="margin-bottom:0;padding-bottom:6px;padding-top:12px">
-      <div id="gsStatGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
         <div class="mini-stat" onclick="navWithFilter('')" title="Lihat semua data"><div class="ms-icon" style="background:linear-gradient(135deg,var(--blue),var(--blue-light))"><i class="fas fa-database"></i></div><div class="ms-texts"><div class="ms-val" id="gs-total">-</div><div class="ms-label">Total Data</div></div></div>
-        <div class="mini-stat" onclick="navWithFilter('RTLH')" title="Lihat semua RTLH"><div class="ms-icon" style="background:linear-gradient(135deg,var(--danger),#F87171)"><i class="fas fa-house-damage"></i></div><div class="ms-texts"><div class="ms-val" id="gs-belum">-</div><div class="ms-label">RTLH</div></div></div>
         <div class="mini-stat" onclick="navWithFilter('Layak Huni')" title="Lihat semua Layak Huni"><div class="ms-icon" style="background:linear-gradient(135deg,#16A34A,#22C55E)"><i class="fas fa-home"></i></div><div class="ms-texts"><div class="ms-val" id="gs-layak">-</div><div class="ms-label">Layak Huni</div></div></div>
-        <div class="mini-stat" onclick="navWithFilter('Keterangan Lain')" title="Lihat Keterangan Lain"><div class="ms-icon" style="background:linear-gradient(135deg,#7C3AED,#A78BFA)"><i class="fas fa-question-circle"></i></div><div class="ms-texts"><div class="ms-val" id="gs-lain">-</div><div class="ms-label">Ket. Lain</div></div></div>
+        <div class="mini-stat" onclick="navWithFilter('RTLH')" title="Lihat semua RTLH"><div class="ms-icon" style="background:linear-gradient(135deg,var(--danger),#F87171)"><i class="fas fa-house-damage"></i></div><div class="ms-texts"><div class="ms-val" id="gs-belum">-</div><div class="ms-label">RTLH</div></div></div>
       </div>
     </div>
 
@@ -674,6 +562,7 @@ table.xgrid thead th:hover .xresize{opacity:1;background:rgba(255,255,255,.3)}
             <option value="">Semua Status</option>
             <option value="RTLH">RTLH</option>
             <option value="Layak Huni">Layak Huni</option>
+            <option value="SK Dibatalkan">SK Dibatalkan</option>
           </select>
           <button onclick="clearSearch()" style="background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:.78rem;padding:4px"><i class="fas fa-times"></i></button>
         </div>
@@ -707,19 +596,17 @@ table.xgrid thead th:hover .xresize{opacity:1;background:rgba(255,255,255,.3)}
 
         <!-- Progress Penanganan -->
         <div class="status-bar-wrap">
-          <div class="status-bar-title"><i class="fas fa-chart-pie"></i> Status RTLH</div>
+          <div class="status-bar-title"><i class="fas fa-chart-pie"></i> Status Layak Huni vs RTLH</div>
           <div style="position:relative;height:200px;margin-bottom:12px">
             <canvas id="chartStatus"></canvas>
           </div>
           <div class="prog-bar-track" id="statusBar">
             <div class="prog-bar-seg" id="pbSudah" style="background:var(--success)"></div>
             <div class="prog-bar-seg" id="pbBelum" style="background:var(--danger)"></div>
-            <div class="prog-bar-seg" id="pbLain" style="background:#7C3AED"></div>
           </div>
           <div class="status-legend" style="margin-top:10px">
             <div class="sl-item"><div class="sl-dot" style="background:var(--success)"></div><span id="lgSudah">Layak Huni: 0%</span></div>
             <div class="sl-item"><div class="sl-dot" style="background:var(--danger)"></div><span id="lgBelum">RTLH: 0%</span></div>
-            <div class="sl-item"><div class="sl-dot" style="background:#7C3AED"></div><span id="lgLain">Ket. Lain: 0%</span></div>
           </div>
         </div>
 
@@ -827,175 +714,12 @@ table.xgrid thead th:hover .xresize{opacity:1;background:rgba(255,255,255,.3)}
   <div class="wg-body" id="wgBody"></div>
 </div>
 
-<!-- ═══ PAGE: EXCEL EDITOR ═══ -->
-<div class="page" id="pgExcel">
-  <!-- Toolbar -->
-  <div class="excel-toolbar" id="xToolbar">
-    <button class="tb-btn" onclick="nav('beranda')" title="Kembali ke Beranda" style="gap:5px">
-      <i class="fas fa-arrow-left" style="font-size:.65rem"></i> Beranda
-    </button>
-    <div class="tb-sep"></div>
-
-    <!-- TOMBOL MODE EDIT -->
-    <button id="xBtnEditMode" onclick="xToggleEditMode()"
-      title="Aktifkan mode edit untuk mulai mengedit data"
-      style="display:flex;align-items:center;gap:6px;padding:5px 13px;border-radius:7px;border:1.5px solid var(--gray-300);background:#fff;color:var(--gray-600);font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s">
-      <i class="fas fa-pencil-alt" style="font-size:.72rem"></i> Mode Edit: OFF
-    </button>
-    <div class="tb-sep"></div>
-
-    <!-- TOMBOL AKTIF SAAT MODE EDIT ON -->
-    <button class="tb-btn xedit-only" id="xBtnSave" onclick="xSaveAll()"
-      style="display:none;background:#F0FDF4;border-color:#16A34A;color:#15803D;font-weight:800;gap:5px">
-      <i class="fas fa-save"></i> Simpan
-      <span id="xDirtyCount" style="background:#16A34A;color:#fff;border-radius:99px;padding:1px 6px;font-size:.6rem">0</span>
-    </button>
-    <button class="tb-btn xedit-only" id="xBtnDiscard" onclick="xDiscardAll()"
-      style="display:none;color:var(--danger);gap:5px">
-      <i class="fas fa-times-circle"></i> Batalkan
-    </button>
-    <button class="tb-btn xedit-only" onclick="xOpenAddModal()"
-      id="xBtnAdd" style="display:none;gap:5px" title="Tambah baris baru">
-      <i class="fas fa-plus" style="font-size:.7rem"></i> Tambah
-    </button>
-    <div class="tb-sep xedit-only" id="xSepEdit" style="display:none"></div>
-
-    <!-- TOMBOL SELALU TAMPIL -->
-    <button class="tb-btn" onclick="xExportExcel()" title="Ekspor ke Excel" style="gap:5px">
-      <i class="fas fa-file-excel" style="color:#16A34A"></i> Ekspor
-    </button>
-    <div class="tb-sep"></div>
-    <button class="tb-btn" onclick="xOpenColModal()" title="Atur kolom yang ditampilkan">
-      <i class="fas fa-columns"></i> Kolom
-    </button>
-    <button class="tb-btn" id="xBtnFreeze" onclick="xToggleFreeze()" title="Toggle freeze kolom kiri" style="gap:5px">
-      <i class="fas fa-thumbtack" id="xFreezeIcon"></i> <span id="xFreezeLabel">Freeze: On</span>
-    </button>
-    <button class="tb-btn" onclick="xLoad()" title="Refresh data dari server" style="gap:5px;color:var(--gray-500)">
-      <i class="fas fa-sync-alt"></i>
-    </button>
-
-    <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0">
-      <div id="xUnsavedChip" style="display:none;align-items:center;gap:5px;background:#FFFBEB;border:1px solid #FCD34D;border-radius:6px;padding:2px 9px;font-size:.65rem;font-weight:700;color:#92400E">
-        <i class="fas fa-circle" style="font-size:.4rem;color:#F59E0B"></i>
-        <span id="xUnsavedCount2">0</span> belum disimpan
-      </div>
-      <span style="font-size:.68rem;font-weight:700;color:var(--gray-500);white-space:nowrap" id="xResultInfo">—</span>
-    </div>
-  </div>
-
-  <!-- Edit mode banner -->
-  <div class="xedit-banner" id="xEditBanner">
-    <i class="fas fa-pencil-alt"></i>
-    <span>Mode Edit aktif — diedit oleh <strong id="xEditorName">—</strong></span>
-    <span style="color:#B45309;font-weight:400">· Klik sel untuk langsung edit · Klik kanan untuk opsi lain</span>
-    <span id="xUnsavedCount" style="display:none">0</span>
-    <div style="margin-left:auto;display:flex;gap:6px">
-      <button onclick="xSaveAll()" id="xBannerSave" style="display:none;padding:3px 12px;border-radius:6px;background:#16A34A;color:#fff;border:none;font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit">
-        <i class="fas fa-save"></i> Simpan
-      </button>
-      <button onclick="xToggleEditMode()" style="padding:3px 12px;border-radius:6px;background:#fff;color:#92400E;border:1px solid #FCD34D;font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit">
-        <i class="fas fa-times"></i> Nonaktifkan
-      </button>
-    </div>
-  </div>
-
-  <!-- Unsaved bar (hidden, counter only) -->
-  <div id="xUnsavedBar" style="display:none">
-    <span id="_xUnsavedHidden">0</span>
-  </div>
-
-  <!-- Filter bar -->
-  <div class="excel-filterbar">
-    <i class="fas fa-filter" style="color:var(--gray-400);font-size:.7rem;flex-shrink:0"></i>
-    <select id="xFKec" onchange="xFilter()" style="max-width:145px">
-      <option value="">Semua Kecamatan</option>
-    </select>
-    <select id="xFDesa" onchange="xFilter()" style="max-width:135px">
-      <option value="">Semua Desa</option>
-    </select>
-    <select id="xFStatus" onchange="xFilter()" style="max-width:145px">
-      <option value="">Semua Status</option>
-      <option value="RTLH">🔴 RTLH</option>
-      <option value="Layak Huni">🟢 Layak Huni</option>
-      <option value="Keterangan Lain">🟣 Keterangan Lain</option>
-    </select>
-    <div style="position:relative;flex:1;max-width:240px;min-width:160px">
-      <i class="fas fa-search" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--gray-400);font-size:.68rem;pointer-events:none"></i>
-      <input id="xFSearch" type="text" placeholder="Nama / NIK / desa..." oninput="xFilter()" style="padding:5px 9px 5px 28px;width:100%;box-sizing:border-box;height:30px;border-radius:7px;border:1.5px solid var(--gray-200);font-family:var(--font);font-size:.73rem;outline:none">
-    </div>
-    <button onclick="xClearFilter()" style="padding:0 10px;border-radius:7px;border:1.5px solid var(--gray-200);background:#fff;height:30px;font-size:.7rem;cursor:pointer;font-family:inherit;color:var(--gray-600);display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0">
-      <i class="fas fa-times" style="font-size:.65rem"></i> Reset
-    </button>
-    <div style="margin-left:auto;font-size:.68rem;font-weight:600;color:var(--gray-500);white-space:nowrap;flex-shrink:0" id="xInfo">—</div>
-  </div>
-
-  <!-- Grid -->
-  <div class="excel-sheet-wrap" id="xSheetWrap">
-    <table class="xgrid" id="xGrid">
-      <thead id="xHead"></thead>
-      <tbody id="xBody">
-        <tr><td colspan="30" style="padding:48px;text-align:center;color:var(--gray-400)">
-          <i class="fas fa-circle-notch fa-spin" style="font-size:1.5rem;display:block;margin-bottom:12px;opacity:.4"></i>
-          Klik tab Excel untuk memuat data...
-        </td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Pager — di atas sheet, sticky -->
-  <div id="xPager" style="display:none;align-items:center;gap:5px;padding:5px 14px;background:#fff;border-bottom:1.5px solid var(--gray-200);flex-shrink:0;font-size:.72rem;color:var(--gray-600);position:sticky;top:0;z-index:25;box-shadow:0 1px 4px rgba(0,0,0,.06)"></div>
-
-  <!-- Status bar -->
-  <div class="excel-statusbar">
-    <span>Baris: <strong id="xSBRow">—</strong></span>
-    <div style="width:1px;height:12px;background:rgba(255,255,255,.15)"></div>
-    <span>Kolom: <strong id="xSBCol">—</strong></span>
-    <div style="width:1px;height:12px;background:rgba(255,255,255,.15)"></div>
-    <span>Sel aktif: <strong id="xSBCell">—</strong></span>
-    <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
-      <span class="es-mode" id="xSBMode">VIEW</span>
-      <span style="font-size:.55rem;color:rgba(255,255,255,.25)">Klik sel → edit · Tab/Enter pindah · Esc batal · Klik kanan → menu</span>
-    </div>
-  </div>
-</div>
-
-<!-- CONTEXT MENU EXCEL -->
-<div id="xCtxMenu">
-  <div class="xctx-item" onclick="xCtxEditCell()"><i class="fas fa-edit"></i> Edit Sel Ini</div>
-  <div class="xctx-item" onclick="xCtxEditRow()"><i class="fas fa-list-alt"></i> Edit Baris (Form)</div>
-  <div class="xctx-sep"></div>
-  <div class="xctx-item" onclick="xCtxDupe()"><i class="fas fa-clone"></i> Duplikasi Baris</div>
-  <div class="xctx-sep"></div>
-  <div class="xctx-item danger" onclick="xCtxDelete()"><i class="fas fa-trash"></i> Hapus Baris</div>
-</div>
-
-<!-- MODAL KOLOM -->
-<div class="overlay" id="xOvCols">
-  <div class="modal" style="max-width:420px">
-    <div class="modal-head">
-      <h3><i class="fas fa-columns" style="color:var(--blue)"></i> Atur Kolom</h3>
-      <button class="modal-x" onclick="closeModal('xOvCols')"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body" id="xColModalBody"></div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="xSelectAllCols(true)">Semua</button>
-      <button class="btn btn-ghost" onclick="xSelectAllCols(false)">Sembunyikan</button>
-      <button class="btn btn-primary" onclick="xApplyColConfig()">Terapkan</button>
-    </div>
-  </div>
-</div>
-
-
 <!-- ═══════════════════════════════ MODALS ═══════════════════════════════ -->
 
 <!-- DETAIL PANEL (floating card di atas peta) -->
 <div class="detail-panel" id="detailPanel">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px 0">
-    <div style="display:flex;align-items:center;gap:8px">
-      <button id="dpBackBtn" onclick="goBackFromDetail()" style="display:none;background:none;border:1px solid var(--gray-200);border-radius:8px;cursor:pointer;color:var(--gray-600);font-size:.72rem;font-weight:700;padding:4px 10px;font-family:inherit;align-items:center;gap:5px"><i class="fas fa-arrow-left"></i> Kembali</button>
-      <div id="dpTitle" style="font-size:.9rem;font-weight:800;color:var(--navy)"></div>
-    </div>
+    <div id="dpTitle" style="font-size:.9rem;font-weight:800;color:var(--navy)"></div>
     <button onclick="closeDetail()" style="background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:1rem"><i class="fas fa-times"></i></button>
   </div>
   <div id="dpBody" style="padding:10px 14px"></div>
@@ -1048,6 +772,7 @@ table.xgrid thead th:hover .xresize{opacity:1;background:rgba(255,255,255,.3)}
             <option value="">Semua Status</option>
             <option value="RTLH">RTLH</option>
             <option value="Layak Huni">Layak Huni</option>
+            <option value="SK Dibatalkan">SK Dibatalkan</option>
           </select>
         </div>
         <div class="form-group" style="margin:0">
@@ -1077,16 +802,56 @@ table.xgrid thead th:hover .xresize{opacity:1;background:rgba(255,255,255,.3)}
       </div>
       <div style="border-top:1px solid var(--gray-200);padding-top:14px">
         <div style="font-size:.72rem;font-weight:700;color:var(--gray-700);margin-bottom:8px"><i class="fas fa-upload"></i> Import Excel</div>
-        <div class="upload-zone" onclick="document.getElementById('xlsxKabFile').click()" id="exUploadZone" style="padding:16px;border-radius:10px;border:2px dashed var(--gray-300);text-align:center;cursor:pointer">
+        <div class="upload-zone" id="exUploadZone"
+          onclick="document.getElementById('xlsxKabFile').click()"
+          ondragover="event.preventDefault();this.style.borderColor='var(--blue)'"
+          ondragleave="this.style.borderColor='var(--gray-300)'"
+          ondrop="event.preventDefault();this.style.borderColor='var(--gray-300)';importExcelKab({files:event.dataTransfer.files})"
+          style="padding:16px;border-radius:10px;border:2px dashed var(--gray-300);text-align:center;cursor:pointer">
           <i class="fas fa-file-excel" style="font-size:1.5rem;color:var(--success);margin-bottom:6px;display:block"></i>
-          <p style="font-size:.78rem;color:var(--gray-500)">Klik atau seret file Excel (.xlsx) di sini</p>
-          <input type="file" id="xlsxKabFile" accept=".xlsx" style="display:none" onchange="importExcelKab(this)">
+          <p style="font-size:.78rem;color:var(--gray-500)">Klik atau seret <strong>satu atau lebih</strong> file Excel</p>
+          <p style="font-size:.65rem;color:var(--gray-400);margin-top:3px">Multi-file: Ctrl+klik · Atau drag & drop</p>
+          <input type="file" id="xlsxKabFile" accept=".xlsx" multiple style="display:none" onchange="importExcelKab(this)">
         </div>
         <div id="exImportLog" style="display:none;margin-top:10px;font-size:.72rem;max-height:150px;overflow-y:auto"></div>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('ovExcelKab')">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL COLUMN MAPPING -->
+<div class="overlay" id="ovColMap">
+  <div class="modal" style="max-width:800px;max-height:92vh">
+    <div class="modal-head">
+      <div>
+        <h3><i class="fas fa-random" style="color:var(--blue)"></i> Mapping Kolom Excel → Database</h3>
+        <div class="sub" id="cmSubtitle">Cocokkan kolom Excel dengan field database</div>
+      </div>
+      <button class="modal-x" onclick="closeModal('ovColMap')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" style="padding:0">
+      <div id="cmFileTabs" style="display:none;border-bottom:1px solid var(--gray-200);padding:8px 16px 0;background:var(--gray-50);display:flex;gap:4px;flex-wrap:wrap"></div>
+      <div style="padding:14px 16px">
+        <div style="display:grid;grid-template-columns:1fr 28px 1fr;gap:0;font-size:.65rem;font-weight:800;color:var(--gray-500);text-transform:uppercase;letter-spacing:.06em;padding:0 4px;margin-bottom:6px">
+          <span>Field Database</span><span></span><span>Kolom di Excel Anda</span>
+        </div>
+        <div id="cmRows" style="display:flex;flex-direction:column;gap:3px;max-height:48vh;overflow-y:auto"></div>
+      </div>
+      <div style="border-top:1px solid var(--gray-200);padding:10px 16px;background:var(--gray-50)">
+        <div style="font-size:.65rem;font-weight:800;color:var(--gray-500);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Preview 3 Baris Pertama</div>
+        <div id="cmPreviewTable" style="overflow-x:auto;font-size:.68rem"></div>
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between">
+      <span id="cmFileInfo" style="font-size:.7rem;color:var(--gray-500)"></span>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="closeModal('ovColMap')">Batal</button>
+        <button class="btn btn-ghost" onclick="cmAutoMap()"><i class="fas fa-magic"></i> Auto-detect</button>
+        <button class="btn btn-primary" id="cmImportBtn" onclick="cmStartImport()"><i class="fas fa-upload"></i> Import</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1421,14 +1186,6 @@ function restoreSession(){
   const kec=sessionStorage.getItem('ertlh_kec');
   const detailStr=sessionStorage.getItem('ertlh_detail');
   if(kec)currentKec=kec;
-
-  // Set initial hash state agar ada baseline di history
-  // Ini berarti Back pertama tidak langsung keluar
-  const startHash=window.location.hash;
-  if(!startHash||startHash==='#'){
-    history.replaceState({page:'beranda'},document.title,'#beranda');
-  }
-
   if(pg==='pgWebgis'&&kec){
     document.getElementById('wgSearchBar').style.display='block';
     nav('webgis');
@@ -1448,34 +1205,14 @@ function restoreSession(){
     }
   }
   else if(pg==='pgKecList'){nav('keclist');}
-  else if(pg==='pgExcel'){nav('excel');}
   else nav('beranda');
 }
 
 // ══════════════════════════════════════════════════
-// NAVIGATION + BROWSER HISTORY
+// NAVIGATION
 // ══════════════════════════════════════════════════
-let _currentPage='beranda';
-let _navFromPop=false; // flag agar popstate tidak push history lagi
-
-// Map page name → hash
-const PAGE_HASH={beranda:'#beranda',keclist:'#webgis',webgis:'#webgis',excel:'#excel'};
-const HASH_PAGE={'#beranda':'beranda','#webgis':'keclist','#excel':'excel'};
-
-// Tangkap tombol Back/Forward browser
-window.addEventListener('popstate',e=>{
-  const hash=window.location.hash||'#beranda';
-  const pg=HASH_PAGE[hash]||'beranda';
-  _navFromPop=true;
-  nav(pg);
-  _navFromPop=false;
-});
-
-function nav(pg){_currentPage=pg;
-  document.querySelectorAll('.page').forEach(p=>{
-    p.classList.remove('active');
-    if(p.id==='pgExcel')p.style.display=''; // reset inline style
-  });
+function nav(pg){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.mob-nav-btn').forEach(t=>t.classList.remove('active'));
 
@@ -1500,25 +1237,8 @@ function nav(pg){_currentPage=pg;
     initMap();
     setTimeout(()=>{ if(map) map.invalidateSize(); },150);
     loadKec();
-  } else if(pg==='excel'){
-    const pgEl=document.getElementById('pgExcel');
-    pgEl.classList.add('active');
-    pgEl.style.display='flex';
-    pgEl.style.flexDirection='column';
-    document.getElementById('ntExcel')?.classList.add('active');
-    document.getElementById('mnExcel')?.classList.add('active');
-    setTimeout(()=>initExcel(),50);
   }
   saveSession();
-
-  // Push ke browser history agar tombol Back berfungsi
-  if(!_navFromPop){
-    const hash=PAGE_HASH[pg]||'#beranda';
-    const curHash=window.location.hash||'#beranda';
-    if(hash!==curHash){
-      history.pushState({page:pg},document.title,hash);
-    }
-  }
 }
 
 // ══════════════════════════════════════════════════
@@ -1608,9 +1328,6 @@ function updAuth(){
   }
   // Update toolbar buttons
   document.getElementById('btnAddRtlh').style.display=canEdit()?'flex':'none';
-    // Tab Excel hanya untuk admin
-    const excelTabs=['ntExcel','mnExcel'];
-    excelTabs.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=isAdmin?'flex':'none';});
   document.getElementById('btnDelAll').style.display=(isSuperAdmin()&&currentKec)?'flex':'none';
   document.getElementById('btnDokLib').style.display=isAdmin?'flex':'none';
   document.getElementById('btnExcelKab').style.display=isAdmin?'flex':'none';
@@ -1721,23 +1438,17 @@ async function loadGlobalStats(){
     const layak=data.filter(r=>r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses').length;
     const belum=data.filter(r=>r.status_rtlh==='RTLH'||r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
     const batal=data.filter(r=>r.status_rtlh==='SK Dibatalkan').length;
-    const lain=data.filter(r=>r.status_rtlh&&r.status_rtlh!=='RTLH'&&r.status_rtlh!=='Layak Huni'&&r.status_rtlh!=='Belum Ditangani'&&r.status_rtlh!=='Sudah Ditangani'&&r.status_rtlh!=='Dalam Proses').length;
     const sudah=layak; const proses=0;
 
     document.getElementById('gs-total').textContent=total.toLocaleString('id');
-    document.getElementById('gs-belum').textContent=belum.toLocaleString('id');
     document.getElementById('gs-layak').textContent=layak.toLocaleString('id');
-    const elLain=document.getElementById('gs-lain');
-    if(elLain)elLain.textContent=lain.toLocaleString('id');
+    document.getElementById('gs-belum').textContent=belum.toLocaleString('id');
 
     const playak=pct(layak,total),pb=pct(belum,total);
-    const plain=pct(lain,total);
     document.getElementById('pbSudah').style.width=playak+'%';
     document.getElementById('pbBelum').style.width=pb+'%';
-    const pbLainEl=document.getElementById('pbLain');if(pbLainEl)pbLainEl.style.width=plain+'%';
     document.getElementById('lgSudah').textContent=`Layak Huni: ${playak}% (${layak})`;
     document.getElementById('lgBelum').textContent=`RTLH: ${pb}% (${belum})`;
-    const lgLainEl=document.getElementById('lgLain');if(lgLainEl)lgLainEl.textContent=`Ket. Lain: ${plain}% (${lain})`;
 
     // Per kec counts
     kecCounts={};
@@ -1746,7 +1457,7 @@ async function loadGlobalStats(){
       if(!kecCounts[k])kecCounts[k]={total:0,sudah:0,proses:0,belum:0};
       kecCounts[k].total++;
       if(r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')kecCounts[k].sudah++;
-      else kecCounts[k].belum++;
+      else if(r.status_rtlh!=='SK Dibatalkan')kecCounts[k].belum++;
     });
 
     // Desil counts
@@ -2080,13 +1791,13 @@ function renderChartStatus(data){
   const existing=Chart.getChart(ctx);if(existing)existing.destroy();
   const layak=data.filter(r=>r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses').length;
   const belum=data.filter(r=>r.status_rtlh==='RTLH'||r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
-  const lainChart=data.filter(r=>r.status_rtlh&&r.status_rtlh!=='RTLH'&&r.status_rtlh!=='Layak Huni'&&r.status_rtlh!=='Belum Ditangani'&&r.status_rtlh!=='Sudah Ditangani'&&r.status_rtlh!=='Dalam Proses').length;
-  const tot=layak+belum+lainChart||1;
+  const batal=data.filter(r=>r.status_rtlh==='SK Dibatalkan').length;
+  const tot=layak+belum+batal;
   chartStatus=new Chart(ctx,{
     type:'doughnut',
     data:{
-      labels:['Layak Huni','RTLH','Keterangan Lain'],
-      datasets:[{data:[layak,belum,lainChart],backgroundColor:['#16A34A','#DC2626','#7C3AED'],borderWidth:3,borderColor:'#fff',hoverOffset:8}]
+      labels:['Layak Huni','RTLH','SK Dibatalkan'],
+      datasets:[{data:[layak,belum,batal],backgroundColor:['#16A34A','#DC2626','#94A3B8'],borderWidth:3,borderColor:'#fff',hoverOffset:8}]
     },
     options:{
       responsive:true,maintainAspectRatio:false,cutout:'70%',
@@ -2099,10 +1810,8 @@ function renderChartStatus(data){
   // Update legend manual
   const elL=document.getElementById('lgSudah');
   const elR=document.getElementById('lgBelum');
-  const elLain=document.getElementById('lgLain');
   if(elL)elL.innerHTML=`<strong style="color:var(--success)">${layak}</strong> Layak Huni (${pct(layak,tot)}%)`;
   if(elR)elR.innerHTML=`<strong style="color:var(--danger)">${belum}</strong> RTLH (${pct(belum,tot)}%)`;
-  if(elLain)elLain.innerHTML=`<strong style="color:#7C3AED">${lainChart}</strong> Ket. Lain (${pct(lainChart,tot)}%)`;
 }
 
 function renderChartDesil(counts){
@@ -2211,10 +1920,10 @@ async function searchNIK(){
       </div>
       ${group.items.map(r=>{
         const isLayak=r.status_rtlh==='Layak Huni';
-        const isBatal=r.status_batal&&r.status_batal!=='-';
+        const isBatal=r.status_rtlh==='SK Dibatalkan';
         const statusColor=isLayak?'var(--success)':isBatal?'var(--gray-400)':'var(--danger)';
         const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
-        return`<div onclick="bukaDetailDariSearch('${r.id}','${kecKey}','beranda')"
+        return`<div onclick="bukaDetailDariSearch('${r.id}','${kecKey}')"
           style="padding:12px 14px;border-bottom:1px solid var(--gray-100);cursor:pointer;display:flex;align-items:center;gap:12px;transition:background .15s;active:background:var(--gray-50)"
           onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
           <div style="width:36px;height:36px;border-radius:50%;background:${statusColor}20;display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -2234,9 +1943,8 @@ async function searchNIK(){
   `).join('');
 }
 
-async function bukaDetailDariSearch(id, kecKey, fromPage=''){
+async function bukaDetailDariSearch(id, kecKey){
   if(!kecKey)return toast('Kecamatan tidak ditemukan','error');
-  _prevPageBeforeDetail=fromPage||_currentPage||'';
   // Fetch data lengkap langsung dari Supabase — tidak perlu tunggu loadKec
   const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,backlog,desil,nik,no_kk,updated_at,keterangan';
   const{data,error}=await sb.from('rtlh').select(cols).eq('id',parseInt(id)).single();
@@ -2279,7 +1987,7 @@ async function ensureKecCounts(force=false){
       if(!kecCounts[k])kecCounts[k]={total:0,sudah:0,proses:0,belum:0};
       kecCounts[k].total++;
       if(r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')kecCounts[k].sudah++;
-      else kecCounts[k].belum++;
+      else if(r.status_rtlh!=='SK Dibatalkan')kecCounts[k].belum++;
     });
   }catch(e){console.error(e);}
 }
@@ -2298,82 +2006,67 @@ async function navWithFilter(status){
 
 async function applyGlobalFilter(){
   if(!_globalStatusFilter){
+    // Semua data — hapus filter
     document.getElementById('keclistResult').innerHTML='';
     document.getElementById('keclistResultWrap').style.display='none';
     return;
   }
-  const isLain=_globalStatusFilter==='_lain'||_globalStatusFilter==='Keterangan Lain';
+  // Tampilkan result wrap dengan filter status
   const wrap=document.getElementById('keclistResultWrap');
   const cnt=document.getElementById('keclistResultCount');
   const res=document.getElementById('keclistResult');
   wrap.style.display='block';
-  const badgeStyle=isLain?'background:#F3E8FF;color:#7C3AED':_globalStatusFilter==='Layak Huni'?'background:#F0FDF4;color:#16A34A':'background:#FEF2F2;color:#DC2626';
-  const badgeLabel=isLain?'Keterangan Lain':_globalStatusFilter;
-  cnt.innerHTML=`<span style="${badgeStyle};padding:2px 10px;border-radius:99px;font-weight:700;font-size:.72rem">${badgeLabel}</span>`;
+  cnt.innerHTML=`<span style="background:${_globalStatusFilter==='Layak Huni'?'#F0FDF4':'#FEF2F2'};color:${_globalStatusFilter==='Layak Huni'?'#16A34A':'#DC2626'};padding:2px 10px;border-radius:99px;font-weight:700;font-size:.72rem">${_globalStatusFilter}</span>`;
   res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>';
-  let data=[];
-  if(isLain){
-    // Ambil semua data yang bukan RTLH dan bukan Layak Huni (termasuk SK Dibatalkan legacy, Keterangan Lain, dll)
-    const {count:totalCnt}=await sb.from('rtlh').select('*',{count:'exact',head:true})
-      .not('status_rtlh','in','(RTLH,Layak Huni,Belum Ditangani,Sudah Ditangani,Dalam Proses)')
-      .not('status_rtlh','is',null);
-    const pages=Math.ceil((totalCnt||0)/1000);
-    cnt.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memuat ${totalCnt||0} data...`;
-    if(!pages){res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:.78rem">Tidak ada data Keterangan Lain</div>';return;}
-    const results=await Promise.all(Array.from({length:pages},(_,p)=>
-      sb.from('rtlh').select('id,kec,desa,kep_kk,nik,status_rtlh,status_batal,desil')
-        .not('status_rtlh','in','(RTLH,Layak Huni,Belum Ditangani,Sudah Ditangani,Dalam Proses)')
-        .not('status_rtlh','is',null)
-        .order('kec').order('desa').range(p*1000,(p+1)*1000-1).limit(1000)
-    ));
-    data=results.flatMap(r=>r.data||[]);
-  } else {
-    const{count:totalCnt}=await sb.from('rtlh').select('*',{count:'exact',head:true}).eq('status_rtlh',_globalStatusFilter);
-    const pages=Math.ceil((totalCnt||0)/1000);
-    cnt.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memuat ${totalCnt} data...`;
-    const results=await Promise.all(Array.from({length:pages},(_,p)=>
-      sb.from('rtlh').select('id,kec,desa,kep_kk,nik,status_rtlh,status_batal,desil')
-        .eq('status_rtlh',_globalStatusFilter).order('kec').order('desa')
-        .range(p*1000,(p+1)*1000-1).limit(1000)
-    ));
-    data=results.flatMap(r=>r.data||[]);
-  }
-  if(!data.length){res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:.78rem">Tidak ada data</div>';return;}
-  cnt.innerHTML=`<span style="font-weight:700">${data.length}</span> data ${badgeLabel}`;
-  const byDesa={};
-  data.forEach(r=>{
-    const key=((r.desa||'-')+'|'+(r.kec||'-')).toUpperCase();
-    if(!byDesa[key])byDesa[key]={desa:normCase(r.desa)||'-',kec:normCase(r.kec)||'-',items:[]};
-    byDesa[key].items.push(r);
-  });
-  const isLayakFilter=_globalStatusFilter==='Layak Huni';
-  const sc=isLain?'#7C3AED':isLayakFilter?'var(--success)':'var(--danger)';
-  const icon=isLain?'question-circle':isLayakFilter?'home':'house-damage';
-  res.innerHTML=Object.values(byDesa).map(g=>`
-    <div style="border-bottom:2px solid var(--blue-bg)">
-      <div style="padding:7px 12px;background:var(--blue-bg);display:flex;align-items:center;gap:6px">
-        <i class="fas fa-map-marker-alt" style="color:var(--blue);font-size:.72rem"></i>
-        <span style="font-size:.72rem;font-weight:800;color:var(--blue)">${g.desa}</span>
-        <span style="font-size:.65rem;color:var(--gray-500)">· ${g.kec}</span>
-        <span style="margin-left:auto;font-size:.62rem;background:var(--blue);color:#fff;border-radius:99px;padding:1px 7px">${g.items.length}</span>
-      </div>
-      ${g.items.map(r=>{
-        const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
-        const hasBatal=r.status_batal&&r.status_batal!=='-';
-        return`<div onclick="clearKeclistSearch();_globalStatusFilter='';bukaDetailDariSearch('${r.id}','${kecKey}','keclist')"
-          style="padding:10px 12px;border-bottom:1px solid var(--gray-100);cursor:pointer;display:flex;align-items:center;gap:10px"
-          onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
-          <div style="width:32px;height:32px;border-radius:50%;background:${sc}18;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <i class="fas fa-${icon}" style="color:${sc};font-size:.78rem"></i>
+  // Fetch data berdasarkan status
+  // Fetch semua data dengan parallel pagination
+  const{count:totalCnt}=await sb.from('rtlh').select('*',{count:'exact',head:true}).eq('status_rtlh',_globalStatusFilter);
+  const pages=Math.ceil((totalCnt||0)/1000);
+  cnt.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memuat ${totalCnt} data...`;
+  const results=await Promise.all(Array.from({length:pages},(_,p)=>
+    sb.from('rtlh').select('id,kec,desa,kep_kk,nik,status_rtlh,desil')
+      .eq('status_rtlh',_globalStatusFilter).order('kec').order('desa')
+      .range(p*1000,(p+1)*1000-1).limit(1000)
+  ));
+  const data=results.flatMap(r=>r.data||[]);
+  const error=results.find(r=>r.error)?.error;
+  if(error||!data?.length){
+        res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:.78rem">Tidak ada data</div>';
+        return;
+      }
+      cnt.innerHTML=`<span style="font-weight:700">${data.length}</span> data ${_globalStatusFilter}`;
+      const byDesa={};
+      data.forEach(r=>{
+        const key=((r.desa||'-')+'|'+(r.kec||'-')).toUpperCase();
+        if(!byDesa[key])byDesa[key]={desa:normCase(r.desa)||'-',kec:normCase(r.kec)||'-',items:[]};
+        byDesa[key].items.push(r);
+      });
+      const isLayakFilter=_globalStatusFilter==='Layak Huni';
+      const sc=isLayakFilter?'var(--success)':'var(--danger)';
+      res.innerHTML=Object.values(byDesa).map(g=>`
+        <div style="border-bottom:2px solid var(--blue-bg)">
+          <div style="padding:7px 12px;background:var(--blue-bg);display:flex;align-items:center;gap:6px">
+            <i class="fas fa-map-marker-alt" style="color:var(--blue);font-size:.72rem"></i>
+            <span style="font-size:.72rem;font-weight:800;color:var(--blue)">${g.desa}</span>
+            <span style="font-size:.65rem;color:var(--gray-500)">· ${g.kec}</span>
+            <span style="margin-left:auto;font-size:.62rem;background:var(--blue);color:#fff;border-radius:99px;padding:1px 7px">${g.items.length}</span>
           </div>
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:700;font-size:.8rem;color:var(--gray-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${showNama(r.kep_kk)}</div>
-            <div style="font-size:.65rem;color:var(--gray-500)">${r.nik||'-'} ${r.desil?'· '+r.desil:''}${hasBatal?' · <span style=\"color:#6B7280\">SK Batal: '+r.status_batal+'</span>':''}</div>
-          </div>
-          <span style="font-size:.62rem;font-weight:700;color:${sc};background:${sc}15;padding:2px 7px;border-radius:99px;flex-shrink:0">${r.status_rtlh||'RTLH'}</span>
-        </div>`;
-      }).join('')}
-    </div>`).join('');
+          ${g.items.map(r=>{
+            const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
+            return`<div onclick="clearKeclistSearch();_globalStatusFilter='';bukaDetailDariSearch('${r.id}','${kecKey}')"
+              style="padding:10px 12px;border-bottom:1px solid var(--gray-100);cursor:pointer;display:flex;align-items:center;gap:10px"
+              onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
+              <div style="width:32px;height:32px;border-radius:50%;background:${sc}18;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <i class="fas fa-${isLayakFilter?'home':'house-damage'}" style="color:${sc};font-size:.78rem"></i>
+              </div>
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:700;font-size:.8rem;color:var(--gray-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${showNama(r.kep_kk)}</div>
+                <div style="font-size:.65rem;color:var(--gray-500)">${r.nik||'-'} ${r.desil?'· '+r.desil:''}</div>
+              </div>
+              <span style="font-size:.62rem;font-weight:700;color:${sc};background:${sc}15;padding:2px 7px;border-radius:99px;flex-shrink:0">${r.status_rtlh||'RTLH'}</span>
+            </div>`;
+          }).join('')}
+        </div>`).join('');
 }
 
 function clearKeclistSearch(){
@@ -2438,7 +2131,7 @@ async function searchKeclist(){
         const isLayak=r.status_rtlh==='Layak Huni';
         const sc=isLayak?'var(--success)':'var(--danger)';
         const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
-        return`<div onclick="clearKeclistSearch();bukaDetailDariSearch('${r.id}','${kecKey}','keclist')"
+        return`<div onclick="clearKeclistSearch();bukaDetailDariSearch('${r.id}','${kecKey}')"
           style="padding:10px 12px;border-bottom:1px solid var(--gray-100);cursor:pointer;display:flex;align-items:center;gap:10px"
           onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
           <div style="width:32px;height:32px;border-radius:50%;background:${sc}18;display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -2522,9 +2215,6 @@ async function loadKec(){
     document.getElementById('kecSelector').value=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===currentKec)||currentKec;
   }
   document.getElementById('btnAddRtlh').style.display=canEdit()?'flex':'none';
-    // Tab Excel hanya untuk admin
-    const excelTabs=['ntExcel','mnExcel'];
-    excelTabs.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=isAdmin?'flex':'none';});
   document.getElementById('btnDelAll').style.display=isSuperAdmin()?'flex':'none';
 
   if(brCache[currentKec]){brAll=brCache[currentKec];brFeatures=[...brAll];renderSidebar();renderKecDashboard();updateMap();return;}
@@ -2614,8 +2304,7 @@ function renderSidebar(){
       <button class="filter-chip active" data-status-chip="all" onclick="setFilterStatus('all')">Semua</button>
       <button class="filter-chip" data-status-chip="RTLH" onclick="setFilterStatus('RTLH')" style="border-color:#DC2626;color:#DC2626">RTLH</button>
       <button class="filter-chip" data-status-chip="Layak Huni" onclick="setFilterStatus('Layak Huni')" style="border-color:#16A34A;color:#16A34A">Layak Huni</button>
-      <button class="filter-chip" data-status-chip="Batal" onclick="setFilterStatus('Batal')" style="border-color:#9CA3AF;color:#6B7280"><i class="fas fa-ban" style="font-size:.6rem"></i> Ada SK Batal</button>
-      <button class="filter-chip" data-status-chip="Keterangan Lain" onclick="setFilterStatus('Keterangan Lain')" style="border-color:#7C3AED;color:#7C3AED">Ket. Lain</button>
+      <button class="filter-chip" data-status-chip="Dibatalkan" onclick="setFilterStatus('SK Dibatalkan')" style="border-color:#9CA3AF;color:#6B7280">SK Dibatalkan</button>
       <span style="font-size:.68rem;font-weight:700;color:var(--gray-500);margin-left:6px">Desil:</span>
       <button class="filter-chip active" data-desil-chip="all" onclick="setFilterDesil('all')">Semua</button>
       <button class="filter-chip" data-desil-chip="1" onclick="setFilterDesil('1')" style="color:#BE123C">D1</button>
@@ -2642,13 +2331,13 @@ function renderKecDashboard(){
   const total=brAll.length;
   const layak=brAll.filter(r=>r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses').length;
   const rtlh=brAll.filter(r=>r.status_rtlh==='RTLH'||r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
-  const lainKec=brAll.filter(r=>r.status_rtlh&&r.status_rtlh!=='RTLH'&&r.status_rtlh!=='Layak Huni'&&r.status_rtlh!=='Belum Ditangani'&&r.status_rtlh!=='Sudah Ditangani'&&r.status_rtlh!=='Dalam Proses').length;
+  const batal=brAll.filter(r=>r.status_rtlh==='SK Dibatalkan').length;
   const desil14=brAll.filter(r=>{const m=String(r.desil||'').match(/\d+/);return m&&parseInt(m[0])<=4;}).length;
   d.innerHTML=`
     <div class="kd-stat">
       <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--success)">${layak}</div><div class="kdsi-lbl">Layak Huni</div></div>
       <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--danger)">${rtlh}</div><div class="kdsi-lbl">RTLH</div></div>
-      <div class="kd-stat-item"><div class="kdsi-val" style="color:#7C3AED">${lainKec}</div><div class="kdsi-lbl">Ket. Lain</div></div>
+      <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--gray-500)">${batal}</div><div class="kdsi-lbl">SK Dibatalkan</div></div>
     </div>
     <div class="canvas-wrap"><canvas id="chartKecStatus"></canvas></div>`;
   setTimeout(()=>{
@@ -2657,7 +2346,7 @@ function renderKecDashboard(){
     const existing=Chart.getChart(ctx);
     if(existing)existing.destroy();
     new Chart(ctx,{type:'doughnut',
-      data:{labels:['Layak Huni','RTLH','Keterangan Lain'],datasets:[{data:[layak,rtlh,lainKec],backgroundColor:['#16A34A','#DC2626','#7C3AED'],borderWidth:2,cutout:'65%'}]},
+      data:{labels:['Layak Huni','RTLH','SK Dibatalkan'],datasets:[{data:[layak,rtlh,batal],backgroundColor:['#16A34A','#DC2626','#94A3B8'],borderWidth:2,cutout:'65%'}]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:9},boxWidth:10,padding:6}}}}
     });
   },50);
@@ -2680,9 +2369,7 @@ function setFilterDesil(d){
 }
 function applyFilters(){
   brFeatures=brAll.filter(r=>{
-    if(filterStatus==='Batal'){
-      if(!r.status_batal||r.status_batal==='-')return false;
-    } else if(filterStatus!=='all'&&r.status_rtlh!==filterStatus)return false;
+    if(filterStatus!=='all'&&r.status_rtlh!==filterStatus)return false;
     if(filterDesil!=='all'){
       const m=String(r.desil||'').match(/\d+/);
       if(filterDesil==='5+'){if(!m||parseInt(m[0])<5)return false;}
@@ -2772,7 +2459,7 @@ function renderSidebarList(){
     const desa=group.desa;
     const items=group.items;
     const layak=items.filter(r=>r.status_rtlh==='Layak Huni').length;
-    const rtlh=items.filter(r=>r.status_rtlh!=='Layak Huni').length;
+    const rtlh=items.filter(r=>r.status_rtlh!=='Layak Huni'&&r.status_rtlh!=='SK Dibatalkan').length;
     return`<div class="desa-group">
       <div class="desa-header" onclick="toggleDesaGroup('dg_${desa.replace(/\s/g,'_')}')" style="padding:8px 14px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);border-top:2px solid var(--blue-bg);display:flex;align-items:center;gap:8px;cursor:pointer;position:sticky;top:0;z-index:5">
         <i class="fas fa-map-marker-alt" style="color:var(--blue);font-size:.72rem;flex-shrink:0"></i>
@@ -2786,8 +2473,7 @@ function renderSidebarList(){
         ${items.map((r,i)=>{
           const desilNum=String(r.desil||'').match(/\d+/)?.[0]||'';
           const color=desilNum?getDesilColor(desilNum):'#94A3B8';
-          const statusCls=r.status_rtlh==='Layak Huni'?'sudah':r.status_rtlh==='Keterangan Lain'?'batal':'belum';
-          const hasBatal=r.status_batal&&r.status_batal!=='-';
+          const statusCls=r.status_rtlh==='Layak Huni'?'sudah':r.status_rtlh==='SK Dibatalkan'?'batal':'belum';
           return`<div class="rtlh-item" id="ri_${r.id}" onclick="selectItem(${r.id})">
             <div style="display:flex;align-items:center;gap:8px">
               <div style="width:22px;height:22px;border-radius:6px;background:${color}18;color:${color};font-size:.6rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div>
@@ -2800,7 +2486,7 @@ function renderSidebarList(){
             <div class="ri-badges">
               <span class="badge ${statusCls}">${r.status_rtlh||'RTLH'}</span>
               ${desilNum?`<span class="badge desil" style="background:${getDesilColor(desilNum)}22;color:${getDesilColor(desilNum)}">Desil ${desilNum}</span>`:''}
-              ${hasBatal?`<span class="badge batal" title="Ada di BNBA/SK namun dibatalkan: ${r.status_batal}"><i class="fas fa-ban" style="font-size:.55rem"></i> SK Batal</span>`:''}
+              
             </div>
             <div class="ri-detail" id="det_${r.id}">
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
@@ -2847,7 +2533,7 @@ function updateMap(){
   brFeatures.forEach(r=>{
     if(!r.latitude||!r.longitude)return;
     const isLayak=r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses';
-    const isBatal=r.status_batal&&r.status_batal!=='-';
+    const isBatal=r.status_rtlh==='SK Dibatalkan';
     const markerColor=isLayak?'#16A34A':isBatal?'#94A3B8':'#DC2626';
     const mk=L.circleMarker([r.latitude,r.longitude],{radius:7,fillColor:markerColor,color:'#fff',weight:1.5,fillOpacity:.85});
     mk.on('click',()=>selectItem(r.id));
@@ -2910,11 +2596,11 @@ function showDetail(r){
       </div>
     </div>
     <div class="detail-grid">
-      <div class="detail-item"><div class="dl">Status RTLH</div><div class="dv">${r.status_rtlh?`<span class="badge ${(r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')?'sudah':'belum'}">${r.status_rtlh}</span>`:'-'}</div></div>
+      <div class="detail-item"><div class="dl">Status RTLH</div><div class="dv">${r.status_rtlh?`<span class="badge ${(r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')?'sudah':r.status_rtlh==='SK Dibatalkan'?'batal':'belum'}">${r.status_rtlh}</span>`:'-'}</div></div>
       <div class="detail-item"><div class="dl">Desil</div><div class="dv" style="color:${desilNum?getDesilColor(desilNum):'inherit'};font-weight:700">${dn(r.desil)||'-'}</div></div>
       
       <div class="detail-item"><div class="dl">Backlog</div><div class="dv">${dn(r.backlog)||'-'}</div></div>
-      ${r.status_batal&&r.status_batal!=='-'?`<div class="detail-item full" style="grid-column:1/-1"><div class="dl" style="color:var(--gray-500)">Ada di BNBA / SK namun Dibatalkan</div><div class="dv" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="background:#F3F4F6;color:#6B7280;border:1px solid #D1D5DB;border-radius:99px;padding:2px 10px;font-size:.72rem;font-weight:700"><i class="fas fa-ban" style="margin-right:3px"></i>SK Dibatalkan</span><span style="font-size:.78rem;color:var(--danger);font-weight:600">Alasan: ${r.status_batal}</span></div></div>`:''}
+      ${r.status_rtlh==='SK Dibatalkan'&&r.status_batal?`<div class="detail-item full"><div class="dl">Alasan Batal</div><div class="dv" style="color:var(--danger);font-weight:600">${r.status_batal}</div></div>`:''}
       ${r.jenis_bantuan?`<div class="detail-item"><div class="dl">Jenis Bantuan</div><div class="dv">${r.jenis_bantuan}</div></div>`:''}      ${r.keterangan?`<div class="detail-item full"><div class="dl">Keterangan</div><div class="dv" style="font-style:italic;color:var(--gray-700)">${r.keterangan}</div></div>`:''}
       ${r.tahun_bantuan?`<div class="detail-item"><div class="dl">Tahun Bantuan</div><div class="dv">${r.tahun_bantuan}</div></div>`:''}
     </div>
@@ -2935,7 +2621,7 @@ function showDetail(r){
     </div>
     <div style="margin-top:14px" id="dpVerifSection">
       <div style="font-size:.72rem;font-weight:800;color:var(--gray-600);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px;justify-content:space-between">
-        <span><i class="fas fa-clipboard-check" style="color:#10B981"></i> Keterangan Verifikasi Lapangan</span>
+        <span><i class="fas fa-clipboard-check" style="color:#10B981"></i> Riwayat Verifikasi Lapangan</span>
         ${canEdit()?`<button onclick="openVerifModal('${r.id}')" style="font-size:.65rem;padding:3px 10px;border-radius:6px;background:#10B981;color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:700"><i class="fas fa-plus"></i> Tambah</button>`:''}
       </div>
       <div id="dpVerifList" style="font-size:.72rem;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
@@ -2998,9 +2684,6 @@ function showDetail(r){
     dpActionsEl.parentNode.appendChild(uploadArea);
   }
   p.classList.add('open');
-  // Tampilkan tombol Kembali jika ada halaman sebelumnya
-  const dpBackBtn=document.getElementById('dpBackBtn');
-  if(dpBackBtn)dpBackBtn.style.display=_prevPageBeforeDetail?'flex':'none';
   // Simpan ke session supaya tidak hilang saat refresh
   saveDetailSession(r);
   // Load riwayat verifikasi & dokumen
@@ -3011,18 +2694,6 @@ function showDetail(r){
 }
 
 function closeDetail(){document.getElementById('detailPanel').classList.remove('open');clearDetailSession();}
-
-// Kembali ke halaman sebelum detail dibuka
-let _prevPageBeforeDetail='';
-let _prevKecBeforeDetail='';
-function goBackFromDetail(){
-  closeDetail();
-  if(_prevPageBeforeDetail==='beranda'){nav('beranda');}
-  else if(_prevPageBeforeDetail==='keclist'){nav('keclist');}
-  else{// tetap di webgis, cukup tutup panel
-  }
-  _prevPageBeforeDetail='';
-}
 
 // ── NIK / KK MODAL (Super Admin only) ──
 let nikEditId=null;
@@ -3090,7 +2761,7 @@ const FIELDS=[
   {key:'kondisi_at',label:'Kondisi Atap',type:'text'},
   {key:'material_l',label:'Material Lantai',type:'text'},
   {key:'kondisi_la',label:'Kondisi Lantai',type:'text'},
-  {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['RTLH','Layak Huni','Keterangan Lain']},
+  {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['RTLH','Layak Huni','SK Dibatalkan']},
   {key:'status_batal',label:'Alasan SK Dibatalkan',type:'select',opts:['','-','Meninggal Dunia','Tidak Bersedia Dibantu','Tidak Ada Biaya','Pindah Tempat Tinggal','Sudah Mampu Mandiri','Tidak Memenuhi Syarat','Lainnya'],onChange:'handleAlasanBatal(this)'},
 
   {key:'jenis_bantuan',label:'Jenis Bantuan',type:'select',opts:['','RTLH','BSPS','DD','CSR','Lainnya']},
@@ -3109,8 +2780,16 @@ function getDesaList(){
 }
 
 function handleAlasanBatal(sel){
-  // status_batal adalah kolom terpisah, tidak mengubah status_rtlh
-  // Jika alasan dikosongkan, biarkan status_rtlh tetap
+  const statusEl=document.getElementById('ff_status_rtlh');
+  if(!statusEl)return;
+  if(sel.value&&sel.value!=='-'){
+    statusEl.value='SK Dibatalkan';
+  } else {
+    const jbEl=document.getElementById('ff_jenis_bantuan');
+    if(jbEl&&jbEl.value)statusEl.value='Layak Huni';
+    else statusEl.value='RTLH';
+    sel.value='';
+  }
 }
 
 function openForm(id){
@@ -3148,7 +2827,7 @@ function openForm(id){
         }
       } else if(f.type==='select'){
         const onChange=f.onChange?f.onChange:'';
-        const extraChange=f.key==='jenis_bantuan'?"if(this.value){const s=document.getElementById('ff_status_rtlh');if(s&&!s.value)s.value='Layak Huni';}":'';
+        const extraChange=f.key==='jenis_bantuan'?"if(this.value){const s=document.getElementById('ff_status_rtlh');if(s&&s.value!=='SK Dibatalkan')s.value='Layak Huni';}":'';
         inputHtml=`<select id="ff_${f.key}" ${locked?'disabled':''} onchange="${extraChange}${onChange}" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-family:inherit;font-size:.85rem;color:var(--gray-900);outline:none;background:#fff">${f.opts.map(o=>`<option value="${o==='-'?'':o}" ${(val===o||(o==='-'&&!val))?'selected':''}>${o||'(kosong)'}</option>`).join('')}</select>`;
       } else if(f.sensitive){
         if(locked){
@@ -3602,7 +3281,7 @@ async function importExcelKab(input){
           const v=xlVal(getCol(row,'Jenis Bantuan','jenis_bantuan'));
           if(v){const u=v.toUpperCase().trim();
             obj.jenis_bantuan=u==='RTLH'?'RTLH':u==='BSPS'?'BSPS':u==='DD'||u==='DANA DESA'?'Dana Desa':u==='CSR'?'CSR':v;
-            if(!obj.status_rtlh||obj.status_rtlh==='RTLH')obj.status_rtlh='Layak Huni';
+            if(!obj.status_rtlh||obj.status_rtlh!=='SK Dibatalkan')obj.status_rtlh='Layak Huni';
           }
         }
         if(hasCol(['Tahun Bantuan','tahun_bantuan']))obj.tahun_bantuan=xlVal(String(getCol(row,'Tahun Bantuan','tahun_bantuan')||'').replace(/[^0-9]/g,''));
@@ -3875,7 +3554,7 @@ async function saveVerif(){
   // Jika hasil verifikasi Layak → update status RTLH jadi Layak Huni
   if(hasil==='Layak'){
     const r=brAll.find(x=>String(x.id)===String(_verifRtlhId));
-    if(r&&r.status_rtlh!=='Layak Huni'){
+    if(r&&r.status_rtlh!=='Layak Huni'&&r.status_rtlh!=='SK Dibatalkan'){
       await sb.from('rtlh').update({status_rtlh:'Layak Huni',updated_at:new Date().toISOString()}).eq('id',parseInt(_verifRtlhId));
       // Catat riwayat
       await sb.from('rtlh_riwayat').insert({nik:r.nik,rtlh_id:parseInt(_verifRtlhId),field_name:'Status RTLH',nilai_lama:r.status_rtlh||null,nilai_baru:'Layak Huni',diubah_oleh:user?.email});
@@ -4486,7 +4165,7 @@ function renderPenerimaDok(list){
   el.innerHTML=Object.values(byDesa).map(g=>{
     const itemsHtml=g.items.map(r=>{
       const isLayak=r.status_rtlh==='Layak Huni';
-      const sc=isLayak?'var(--success)':'var(--danger)';
+      const sc=isLayak?'var(--success)':r.status_rtlh==='SK Dibatalkan'?'var(--gray-400)':'var(--danger)';
       const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
       return '<div onclick="closeModal(&quot;ovPenerimaDok&quot;);closeModal(&quot;ovDokLib&quot;);bukaDetailDariSearch(&quot;'+r.id+'&quot;,&quot;'+kecKey+'&quot;)"'+
         ' style="padding:8px 10px;border-radius:8px;border:1px solid var(--gray-100);margin-bottom:4px;cursor:pointer;display:flex;align-items:center;gap:8px;background:#fff"'+
@@ -4942,802 +4621,558 @@ window.addEventListener('DOMContentLoaded',async()=>{
     }).catch(()=>{});
   }
 });
-</script>
 
-<script>
-/* ═══════════════════════════════════════════════════════════
-   EXCEL EDITOR — engine mandiri, tidak bergantung brAll/WebGIS
-   ═══════════════════════════════════════════════════════════ */
-
-/* ── Definisi kolom ── */
-const XC=[
-  {k:'_no',    lb:'No.',             w:44,  ed:false, fr:true},
-  {k:'kep_kk', lb:'Nama KK',         w:200, fr:true,  req:true},
-  {k:'kec',    lb:'Kecamatan',       w:130},
-  {k:'desa',   lb:'Desa',            w:140},
-  {k:'nik',    lb:'NIK',             w:160, sen:true, mono:true},
-  {k:'no_kk',  lb:'No. KK',          w:160, sen:true, mono:true},
-  {k:'alamat', lb:'Alamat',          w:210},
-  {k:'jen_kel',lb:'Jenis Kelamin',   w:120, sel:['LAKI-LAKI','PEREMPUAN']},
-  {k:'umur',   lb:'Umur',            w:70,  num:true, unit:'thn'},
-  {k:'pend_ter',lb:'Pendidikan',     w:130},
-  {k:'pekerjaan',lb:'Pekerjaan',     w:150},
-  {k:'pengh',  lb:'Penghasilan',     w:160},
-  {k:'jml_peng',lb:'Jml Penghuni',  w:100, num:true, unit:'jiwa'},
-  {k:'status_kep',lb:'Status Kepemilikan',w:160},
-  {k:'luas_rum',lb:'Luas Rumah',     w:100, num:true, unit:'m²'},
-  {k:'luas_tan',lb:'Luas Tanah',     w:100, num:true, unit:'m²'},
-  {k:'material_d',lb:'Material Dinding',w:150},
-  {k:'kondisi_di',lb:'Kondisi Dinding',w:140},
-  {k:'material_a',lb:'Material Atap',  w:140},
-  {k:'kondisi_at',lb:'Kondisi Atap',   w:130},
-  {k:'material_l',lb:'Material Lantai',w:140},
-  {k:'kondisi_la',lb:'Kondisi Lantai', w:130},
-  {k:'status_rtlh',lb:'Status RTLH',  w:145, req:true,
-    sel:['RTLH','Layak Huni','Keterangan Lain']},
-  {k:'status_batal',lb:'Alasan SK Batal',w:170,
-    sel:['','-','Meninggal Dunia','Tidak Bersedia Dibantu','Tidak Ada Biaya',
-         'Pindah Tempat Tinggal','Sudah Mampu Mandiri','Tidak Memenuhi Syarat','Lainnya']},
-  {k:'jenis_bantuan',lb:'Jenis Bantuan',w:130,
-    sel:['','RTLH','BSPS','DD','CSR','Lainnya']},
-  {k:'tahun_bantuan',lb:'Tahun Bantuan',w:115, num:true},
-  {k:'backlog',lb:'Backlog',          w:110, sel:['','Backlog 1','Backlog 2']},
-  {k:'desil',  lb:'Desil',            w:100,
-    sel:['','Desil 1','Desil 2','Desil 3','Desil 4','Desil 5','Desil 6','Desil 7','Desil 8']},
-  {k:'keterangan',lb:'Keterangan',   w:210},
-  {k:'latitude',lb:'Latitude',       w:110, num:true},
-  {k:'longitude',lb:'Longitude',     w:110, num:true},
-  {k:'updated_at',lb:'Diperbarui',   w:130, ed:false},
+// ══════════════════════════════════════════════════
+// IMPORT EXCEL: COLUMN MAPPING + MULTI-FILE
+// ══════════════════════════════════════════════════
+const CM_FIELDS=[
+  {k:'nik',lb:'NIK',type:'nik'},
+  {k:'no_kk',lb:'No. KK',type:'kk'},
+  {k:'kep_kk',lb:'Nama KK',type:'normCase'},
+  {k:'kec',lb:'Kecamatan',type:'normCase'},
+  {k:'desa',lb:'Desa',type:'normCase'},
+  {k:'alamat',lb:'Alamat',type:'text'},
+  {k:'jen_kel',lb:'Jenis Kelamin',type:'text'},
+  {k:'umur',lb:'Umur',type:'int'},
+  {k:'pend_ter',lb:'Pendidikan',type:'text'},
+  {k:'pekerjaan',lb:'Pekerjaan',type:'text'},
+  {k:'pengh',lb:'Penghasilan',type:'text'},
+  {k:'jml_peng',lb:'Jumlah Penghuni',type:'int'},
+  {k:'status_kep',lb:'Status Kepemilikan',type:'text'},
+  {k:'luas_rum',lb:'Luas Rumah (m²)',type:'num'},
+  {k:'luas_tan',lb:'Luas Tanah (m²)',type:'num'},
+  {k:'material_d',lb:'Material Dinding',type:'text'},
+  {k:'kondisi_di',lb:'Kondisi Dinding',type:'text'},
+  {k:'material_a',lb:'Material Atap',type:'text'},
+  {k:'kondisi_at',lb:'Kondisi Atap',type:'text'},
+  {k:'material_l',lb:'Material Lantai',type:'text'},
+  {k:'kondisi_la',lb:'Kondisi Lantai',type:'text'},
+  {k:'status_rtlh',lb:'Status RTLH',type:'status'},
+  {k:'status_batal',lb:'Alasan SK Batal',type:'text'},
+  {k:'jenis_bantuan',lb:'Jenis Bantuan',type:'text'},
+  {k:'tahun_bantuan',lb:'Tahun Bantuan',type:'year'},
+  {k:'desil',lb:'Desil',type:'text'},
+  {k:'backlog',lb:'Backlog',type:'text'},
+  {k:'keterangan',lb:'Keterangan',type:'text'},
+  {k:'latitude',lb:'Latitude',type:'num'},
+  {k:'longitude',lb:'Longitude',type:'num'},
 ];
+const CM_HINTS={
+  nik:['nik','nomor induk','no nik','kependudukan'],
+  no_kk:['no kk','nomor kk','nokk','no. kk','kartu keluarga'],
+  kep_kk:['nama kk','nama kepala','kepala keluarga','nama','kep_kk'],
+  kec:['kecamatan','kec'],
+  desa:['desa','kelurahan'],
+  alamat:['alamat','address'],
+  jen_kel:['jenis kelamin','gender','kelamin'],
+  umur:['umur','usia','age'],
+  pend_ter:['pendidikan','pend','sekolah'],
+  pekerjaan:['pekerjaan','profesi','job'],
+  pengh:['penghasilan','pendapatan','income'],
+  jml_peng:['jumlah penghuni','penghuni','anggota keluarga'],
+  status_kep:['kepemilikan','status kepemilikan'],
+  luas_rum:['luas rumah','luas bangunan'],
+  luas_tan:['luas tanah'],
+  material_d:['material dinding','mat dinding'],
+  kondisi_di:['kondisi dinding','kond dinding'],
+  material_a:['material atap','mat atap'],
+  kondisi_at:['kondisi atap','kond atap'],
+  material_l:['material lantai','mat lantai'],
+  kondisi_la:['kondisi lantai','kond lantai'],
+  status_rtlh:['status rtlh','status','kondisi','hasil verifikasi','layak','rtlh'],
+  status_batal:['alasan batal','batal','alasan'],
+  jenis_bantuan:['jenis bantuan','bantuan','program'],
+  tahun_bantuan:['tahun bantuan','tahun'],
+  desil:['desil','desil dtks'],
+  backlog:['backlog'],
+  keterangan:['keterangan','catatan','ket','notes'],
+  latitude:['latitude','lat'],
+  longitude:['longitude','lng','lon'],
+};
+let _cmFiles=[],_cmCurFile=0,_cmMapping={};
 
-/* ── State ── */
-let xAll=[], xRows=[], xDirty={};
-let xEditMode=false; // tombol pensil aktif = bisa edit
-
-function xToggleEditMode(){
-  xEditMode=!xEditMode;
-  const pg=document.getElementById('pgExcel');
-  const btn=document.getElementById('xBtnEditMode');
-  const banner=document.getElementById('xEditBanner');
-  const editorName=document.getElementById('xEditorName');
-  const editOnlyEls=document.querySelectorAll('.xedit-only');
-
-  if(xEditMode){
-    pg?.classList.add('xedit-active');
-    if(btn){
-      btn.style.background='#FEF3C7';
-      btn.style.borderColor='#F59E0B';
-      btn.style.color='#92400E';
-      btn.innerHTML='<i class="fas fa-pencil-alt" style="font-size:.72rem;color:#F59E0B"></i> Mode Edit: ON';
-    }
-    banner?.classList.add('show');
-    // Tampilkan nama editor
-    const nama=_adminUsername||user?.email?.split('@')[0]||'Admin';
-    if(editorName)editorName.textContent=nama;
-    // Tampilkan tombol edit-only (Simpan, Batalkan, Tambah)
-    editOnlyEls.forEach(el=>el.style.display='flex');
-  }else{
-    // Kalau ada perubahan belum simpan, konfirmasi dulu
-    if(Object.keys(xDirty).length>0){
-      if(!confirm('Ada '+Object.keys(xDirty).length+' perubahan belum disimpan. Nonaktifkan mode edit tanpa menyimpan?'))return;
-      xDirty={};
-      xUpdDirty();
-      xRenderBody(); // refresh tampilan baris dirty
-    }
-    pg?.classList.remove('xedit-active');
-    if(btn){
-      btn.style.background='#fff';
-      btn.style.borderColor='var(--gray-300)';
-      btn.style.color='var(--gray-600)';
-      btn.innerHTML='<i class="fas fa-pencil-alt" style="font-size:.72rem"></i> Mode Edit: OFF';
-    }
-    banner?.classList.remove('show');
-    editOnlyEls.forEach(el=>el.style.display='none');
-    // Tutup sel yang sedang diedit
-    if(xEd)_xCancel(xEd.td,xEd.id,xEd.k);
-  }
-}
-let xVis={}, xW={};
-let xSortK='', xSortD=1;
-let xFreeze=true;
-let xEd=null;   // {id,k,td}
-let xFoc=null;  // {id,k}
-let xCtxId=null, xCtxK=null;
-let xInited=false;
-
-/* ── Init ── */
-async function initExcel(){
-  // Cek admin
-  if(!isAdmin){
-    document.getElementById('xBody').innerHTML=
-      '<tr><td colspan="35" style="padding:60px;text-align:center;color:#64748b">'
-      +'<i class="fas fa-lock" style="font-size:2rem;display:block;margin-bottom:14px;opacity:.3"></i>'
-      +'Fitur hanya untuk Admin</td></tr>';
-    return;
-  }
-
-  // Init col config sekali
-  XC.forEach(c=>{if(xVis[c.k]===undefined)xVis[c.k]=true;if(!xW[c.k])xW[c.k]=c.w;});
-
-  // Isi select kecamatan sekali
-  const kSel=document.getElementById('xFKec');
-  if(kSel&&kSel.options.length<2){
-    Object.keys(KEC_CONFIG).sort().forEach(k=>{
-      const o=document.createElement('option');o.value=k;o.textContent=k;kSel.appendChild(o);
-    });
-  }
-
-  if(xInited){
-    // Sudah pernah load — langsung render ulang
-    xPage=0; xFilter();
-    return;
-  }
-
-  // Pertama kali
-  xInited=true;
-
-  // Event delegation - satu listener untuk semua klik sel & context menu
-  const wrap=document.getElementById('xSheetWrap');
-
-  // Click: edit sel - event delegation di xSheetWrap
-  wrap.addEventListener('click',e=>{
-    // Jika klik pada input/select yang sedang aktif, biarkan
-    if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;
-    const td=e.target.closest('td[data-id][data-k]');
-    if(!td)return;
-    xEdit(td, td.dataset.id, td.dataset.k);
-  });
-
-  // Context menu
-  wrap.addEventListener('contextmenu',e=>{
-    const td=e.target.closest('td[data-id]');if(!td)return;
-    e.preventDefault();
-    xCtxId=td.dataset.id; xCtxK=td.dataset.k;
-    const m=document.getElementById('xCtxMenu');
-    m.style.left=Math.min(e.clientX,window.innerWidth-210)+'px';
-    m.style.top=Math.min(e.clientY,window.innerHeight-170)+'px';
-    m.classList.add('open');
-  });
-
-  document.addEventListener('keydown',_xKey);
-  document.addEventListener('click',e=>{if(!e.target.closest('#xCtxMenu'))_xCloseCtx();});
-
-  // Render header dulu (bisa dilakukan tanpa data)
-  xRenderHead();
-
-  // Loading indicator di tbody
-  document.getElementById('xBody').innerHTML=
-    '<tr><td colspan="35" style="padding:40px;text-align:center;color:#94a3b8">'
-    +'<i class="fas fa-circle-notch fa-spin" style="font-size:1.5rem;display:block;margin-bottom:12px"></i>'
-    +'Memuat data...</td></tr>';
-
-  await xLoad();
-}
-
-/* ── Load semua data dari Supabase ── */
-async function xLoad(){
-  const info=document.getElementById('xInfo');
-  if(info)info.textContent='⏳ Memuat...';
-  xDirty={}; xUpdDirty();
-  try{
-    console.log('[Excel] xLoad start, sb=',!!sb);
-    const cols=XC.filter(c=>c.k!=='_no').map(c=>c.k).join(',');
-    const {count}=await sb.from('rtlh').select('*',{count:'exact',head:true});
-    console.log('[Excel] count=',count);
-    const pages=Math.ceil((count||0)/1000);
-    const res=await Promise.all(Array.from({length:pages},(_,p)=>
-      sb.from('rtlh').select(cols).order('kec').order('desa').order('kep_kk')
-        .range(p*1000,(p+1)*1000-1)
-    ));
-    xAll=res.flatMap(r=>r.data||[]);
-    console.log('[Excel] xAll loaded:', xAll.length);
-    xUpdDesa();
-    xFilter();
-    toast(xAll.length.toLocaleString('id')+' data dimuat','info');
-  }catch(e){ 
-    console.error('[Excel] xLoad ERROR:', e);
-    toast('Gagal muat: '+e.message,'error'); 
-  }
-}
-
-/* ── Filter & sort ── */
-function xApplyFilter(){xFilter();}
-function xFilter(){
-  if(!xInited||!xAll.length){xRender();return;}
-  const kec=(document.getElementById('xFKec').value||'').toLowerCase();
-  const desa=(document.getElementById('xFDesa').value||'').toLowerCase();
-  const st=document.getElementById('xFStatus').value||'';
-  const q=(document.getElementById('xFSearch').value||'').toLowerCase().trim();
-
-  xRows=xAll.filter(r=>{
-    if(kec&&(r.kec||'').toLowerCase()!==kec)return false;
-    if(desa&&(r.desa||'').toLowerCase()!==desa)return false;
-    if(st&&r.status_rtlh!==st)return false;
-    if(q){
-      const h=[(r.kep_kk||''),(r.nik||''),(r.desa||''),(r.kec||''),(r.alamat||'')].join(' ').toLowerCase();
-      if(!h.includes(q))return false;
-    }
-    return true;
-  });
-
-  if(xSortK&&xSortK!=='_no'){
-    xRows.sort((a,b)=>{
-      const av=String(a[xSortK]||''),bv=String(b[xSortK]||'');
-      return av>bv?xSortD:av<bv?-xSortD:0;
-    });
-  }
-
-  const info='Menampilkan '+xRows.length.toLocaleString('id')+' / '+xAll.length.toLocaleString('id')+' baris';
-  document.getElementById('xInfo').textContent=info;
-  document.getElementById('xResultInfo').textContent=xRows.length.toLocaleString('id')+' baris';
-  xRender();
-  xUpdDesa();
-}
-
-function xClearFilter(){
-  ['xFKec','xFDesa','xFStatus','xFSearch'].forEach(id=>{
-    const el=document.getElementById(id);if(el)el.value='';
-  });
-  xFilter();
-}
-
-function xUpdDesa(){
-  const kec=(document.getElementById('xFKec').value||'').toLowerCase();
-  const sel=document.getElementById('xFDesa');
-  const cur=sel.value;
-  sel.innerHTML='<option value="">Semua Desa</option>';
-  const desas=[...new Set(
-    xAll.filter(r=>!kec||(r.kec||'').toLowerCase()===kec).map(r=>r.desa||'').filter(Boolean)
-  )].sort();
-  desas.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;sel.appendChild(o);});
-  if(desas.some(d=>d.toLowerCase()===cur.toLowerCase()))sel.value=cur;
-}
-
-function xSort(k){
-  if(xSortK===k)xSortD*=-1; else{xSortK=k;xSortD=1;}
-  document.querySelectorAll('#xHead th').forEach(th=>{
-    th.classList.remove('xsort-asc','xsort-desc');
-    if(th.dataset.k===k)th.classList.add(xSortD===1?'xsort-asc':'xsort-desc');
-  });
-  xFilter();
-}
-
-/* ── Render grid ── */
-function xVisCols(){ return XC.filter(c=>xVis[c.k]!==false); }
-
-function xRender(){xPage=0;xRenderHead();xRenderBody();_xUpdSB();}
-
-function xRenderHead(){
-  const thead=document.getElementById('xHead');
-  console.log('[Excel] xRenderHead, thead=',!!thead);
-  if(!thead)return;
-  const vis=xVisCols();
-  let h='<tr>';
-  let left=0;
-  vis.forEach(c=>{
-    const w=xW[c.k]||c.w;
-    const isNo=c.k==='_no';
-    const isFr=xFreeze&&(c.fr||isNo);
-    const sl=isFr?`left:${left}px;`:'';
-    if(isFr)left+=w;
-    if(isNo){
-      h+=`<th class="xno" style="width:${w}px;min-width:${w}px;max-width:${w}px;left:0">#</th>`;
-    }else{
-      h+=`<th data-k="${c.k}" class="${isFr?'xfrozen':''}" style="width:${w}px;min-width:${w}px;${sl}position:relative" onclick="xSort('${c.k}')">
-        ${c.lb}
-        <div class="xresize" onmousedown="event.stopPropagation();xResStart(event,'${c.k}')"></div>
-      </th>`;
-    }
-  });
-  h+='</tr>';
-  thead.innerHTML=h;
-}
-
-const X_PAGE_SIZE=100;
-let xPage=0;
-
-function xRenderBody(){
-  const vis=xVisCols();
-  const tbody=document.getElementById('xBody');
-  console.log('[Excel] xRenderBody, tbody=',!!tbody, 'xRows=',xRows.length, 'vis cols=',vis.length);
-  if(!tbody){console.error('[Excel] tbody#xBody not found');return;}
-
-  if(!xRows.length){
-    tbody.innerHTML=`<tr><td colspan="${vis.length}" style="padding:50px;text-align:center;color:var(--gray-400);font-size:.82rem"><i class="fas fa-inbox" style="font-size:2rem;opacity:.25;display:block;margin-bottom:12px"></i>Tidak ada data</td></tr>`;
-    _xRenderPager();
-    return;
-  }
-
-  // Frozen left offsets
-  const frozenLeft={};
-  if(xFreeze){
-    let acc=0;
-    vis.forEach(c=>{if(c.fr||c.k==='_no'){frozenLeft[c.k]=acc;acc+=xW[c.k]||c.w;}});
-  }
-
-  const total=xRows.length;
-  const totalPages=Math.ceil(total/X_PAGE_SIZE);
-  xPage=Math.max(0,Math.min(xPage,totalPages-1));
-  const start=xPage*X_PAGE_SIZE;
-  const slice=xRows.slice(start,start+X_PAGE_SIZE);
-
-  const frag=document.createDocumentFragment();
-  slice.forEach((r,i)=>{
-    const idx=start+i;
-    const id=r.id;
-    const dirty=xDirty[String(id)];
-    const tr=document.createElement('tr');
-    tr.dataset.id=String(id);
-    if(dirty)tr.classList.add('xrow-dirty');
-    if(idx%2===1)tr.style.background='#F8FAFC';
-
-    vis.forEach(col=>{
-      const td=document.createElement('td');
-      if(col.k==='_no'){
-        td.className='xno';
-        td.textContent=idx+1;
-      }else{
-        const isFr=xFreeze&&(col.fr||col.k==='_no');
-        if(isFr){td.className='xfrozen';if(frozenLeft[col.k]!==undefined)td.style.left=frozenLeft[col.k]+'px';}
-        td.dataset.id=String(id);td.dataset.k=col.k;
-        td.style.width=(xW[col.k]||col.w)+'px';
-        const val=dirty&&dirty[col.k]!==undefined?dirty[col.k]:r[col.k];
-        _xCellVal(td,col,val);
-        // onclick handled via event delegation di xSheetWrap
+function importExcelKab(input){
+  const files=Array.from(input.files||[]);
+  if(!files.length)return;
+  if(!canEdit())return toast('Tidak ada akses','error');
+  const log=document.getElementById('exImportLog');
+  log.style.display='block';
+  log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Membaca ${files.length} file...`;
+  _cmFiles=[];_cmCurFile=0;_cmMapping={};
+  let loaded=0;
+  files.forEach((file)=>{
+    const reader=new FileReader();
+    reader.onload=(e)=>{
+      try{
+        const wb=XLSX.read(e.target.result,{type:'binary',cellText:true,cellDates:true});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+        const headers=rows.length>0?Object.keys(rows[0]):[];
+        _cmFiles.push({name:file.name,rows,headers});
+        loaded++;
+        log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Membaca file ${loaded}/${files.length}...`;
+        if(loaded===files.length){
+          const total=_cmFiles.reduce((a,f)=>a+f.rows.length,0);
+          log.innerHTML=`<i class="fas fa-check-circle" style="color:var(--success)"></i> ${files.length} file · ${total.toLocaleString('id')} baris siap`;
+          // Auto-map semua file
+          _cmFiles.forEach((_,i)=>{_cmCurFile=i;cmAutoMap();});
+          _cmCurFile=0;
+          cmOpenModal();
+        }
+      }catch(err){
+        log.innerHTML=`<span style="color:var(--danger)">Error: ${err.message}</span>`;
       }
-      tr.appendChild(td);
-    });
-    frag.appendChild(tr);
+    };
+    reader.readAsBinaryString(file);
   });
-  tbody.innerHTML='';
-  tbody.appendChild(frag);
-  _xRenderPager();
+  if(input.value!==undefined)input.value='';
 }
 
-function _xRenderPager(){
-  // Pastikan pager ada di dalam xSheetWrap SEBELUM table (agar sticky top bekerja)
-  const wrap=document.getElementById('xSheetWrap');
-  let pager=document.getElementById('xPager');
-  if(!pager)return;
-  // Pindah ke awal wrap jika belum di sana
-  if(wrap&&pager.parentNode!==wrap){
-    wrap.insertBefore(pager,wrap.firstChild);
-  }else if(wrap&&wrap.firstChild!==pager){
-    wrap.insertBefore(pager,wrap.firstChild);
-  }
-  const total=xRows.length;
-  if(!total){pager.style.display='none';pager.innerHTML='';return;}
-  pager.style.display='flex';
-  const totalPages=Math.ceil(total/X_PAGE_SIZE)||1;
-  const s=xPage*X_PAGE_SIZE+1, e=Math.min((xPage+1)*X_PAGE_SIZE,total);
-  const bs='padding:3px 10px;border-radius:6px;border:1.5px solid var(--gray-200);background:#fff;font-size:.72rem;cursor:pointer;font-family:inherit;color:var(--gray-700);font-weight:600';
-  const bd='padding:3px 10px;border-radius:6px;border:1.5px solid var(--gray-100);background:var(--gray-50);font-size:.72rem;cursor:default;font-family:inherit;color:var(--gray-300);font-weight:600';
-  pager.innerHTML=`
-    <button style="${xPage>0?bs:bd}" onclick="xGoPage(0)" ${xPage===0?'disabled':''} title="Halaman pertama">«</button>
-    <button style="${xPage>0?bs:bd}" onclick="xGoPage(${xPage-1})" ${xPage===0?'disabled':''} title="Halaman sebelumnya">‹ Prev</button>
-    <span style="flex:1;text-align:center;font-size:.7rem;color:var(--gray-500)">
-      Hal. <strong style="color:var(--gray-800)">${xPage+1}</strong> / ${totalPages}
-      &nbsp;<span style="color:var(--gray-300)">·</span>&nbsp;
-      Baris <strong style="color:var(--gray-800)">${s.toLocaleString('id')}–${e.toLocaleString('id')}</strong> dari <strong style="color:var(--gray-800)">${total.toLocaleString('id')}</strong>
-    </span>
-    <button style="${xPage<totalPages-1?bs:bd}" onclick="xGoPage(${xPage+1})" ${xPage>=totalPages-1?'disabled':''} title="Halaman berikutnya">Next ›</button>
-    <button style="${xPage<totalPages-1?bs:bd}" onclick="xGoPage(${totalPages-1})" ${xPage>=totalPages-1?'disabled':''} title="Halaman terakhir">»</button>
-    <select onchange="xGoPage(parseInt(this.value))" style="padding:3px 6px;border-radius:6px;border:1.5px solid var(--gray-200);font-size:.7rem;font-family:inherit;margin-left:6px;cursor:pointer" title="Langsung ke halaman">
-      ${Array.from({length:totalPages},(_,i)=>`<option value="${i}"${i===xPage?' selected':''}>Hal. ${i+1}</option>`).join('')}
-    </select>`;
-}
-
-function xGoPage(p){
-  xPage=p;
-  xRenderBody();
-  document.getElementById('xSheetWrap')?.scrollTo(0,0);
-}
-
-
-
-
-
-/* ── Edit inline ── */
-function xEdit(td,id,k){
-  const sid=String(id);
-  if(!xEditMode){toast('Aktifkan Mode Edit terlebih dahulu','warning');return;}
-  if(!canEdit())return;
-  const col=XC.find(x=>x.k===k);
-  if(!col||col.ed===false)return;
-  if(col.sen&&!isSuperAdmin()){toast('Hanya Super Admin yang bisa edit NIK/KK','error');return;}
-
-  // Commit sel sebelumnya jika berbeda
-  if(xEd){
-    if(xEd.id===sid&&xEd.k===k)return;
-    _xCommit(true);
-  }
-
-  // Highlight row
-  document.querySelectorAll('#xBody tr.xrow-selected').forEach(r=>r.classList.remove('xrow-selected'));
-  const tr=document.querySelector('#xBody tr[data-id="'+sid+'"]');
-  if(tr)tr.classList.add('xrow-selected');
-  xFoc={id:sid,k}; _xUpdSB();
-
-  // Ambil TD langsung dari DOM pakai dataset — paling reliable
-  const target=document.querySelector('#xBody td[data-id="'+sid+'"][data-k="'+k+'"]');
-  if(!target)return;
-
-  const rowData=xRows.find(x=>String(x.id)===sid)||{};
-  const curVal=xDirty[sid]&&xDirty[sid][k]!==undefined?xDirty[sid][k]:rowData[k];
-
-  target.classList.add('xediting');
-  target.innerHTML='';
-
-  let inp;
-  if(col.sel){
-    inp=document.createElement('select');
-    col.sel.forEach(o=>{
-      const opt=document.createElement('option');
-      opt.value=o; opt.textContent=o||'(kosong)';
-      if(String(curVal??'')===(o))opt.selected=true;
-      inp.appendChild(opt);
+function cmAutoMap(){
+  const fd=_cmFiles[_cmCurFile];if(!fd)return;
+  _cmMapping[_cmCurFile]={};
+  CM_FIELDS.forEach(field=>{
+    const hints=CM_HINTS[field.k]||[field.lb.toLowerCase()];
+    const match=fd.headers.find(h=>{
+      const hl=String(h).toLowerCase().replace(/[_\-\.]/g,' ').trim();
+      return hints.some(hint=>hl===hint||hl.includes(hint)||hint.includes(hl));
     });
-  }else{
-    inp=document.createElement('input');
-    inp.type=col.num?'number':'text';
-    inp.value=curVal!=null?String(curVal):'';
-    inp.step='any';
-  }
-
-  inp.addEventListener('keydown',e=>{
-    if(e.key==='Escape'){e.stopPropagation();_xCancel(target,sid,k);return;}
-    if(e.key==='Enter'){e.preventDefault();_xCommit(false);xNavCell(1,'v');return;}
-    if(e.key==='Tab'){e.preventDefault();_xCommit(false);xNavCell(e.shiftKey?-1:1,'h');return;}
+    _cmMapping[_cmCurFile][field.k]=match||'';
   });
-
-  // Tidak pakai blur listener — commit terjadi saat klik sel lain atau Enter/Tab
-  // Ini menghindari race condition sepenuhnya
-
-  target.appendChild(inp);
-  inp.focus();
-  try{inp.tagName==='INPUT'&&inp.select();}catch(_){}
-  xEd={id:sid,k,td:target,col};
-  _xMode('EDIT');
+  if(document.getElementById('cmRows'))renderCmRows();
+  if(document.getElementById('cmPreviewTable'))renderCmPreview();
 }
 
-function _xCommit(silent){
-  if(!xEd)return;
-  const{id,k,td,col}=xEd; xEd=null;
-  const inp=td.querySelector('input,select');
-  if(!inp){_xRefreshCell(td,id,k);_xMode('VIEW');return;}
-
-  let val=inp.value;
-  if(col.num) val=val!==''?(parseFloat(val)||null):null;
-  else val=val.trim()||null;
-
-  const rowData=xRows.find(x=>String(x.id)===id)||{};
-  const orig=rowData[k];
-  if(String(val??'')!==String(orig??'')){
-    if(!xDirty[id])xDirty[id]={};
-    xDirty[id][k]=val;
-    const tr=document.querySelector('#xBody tr[data-id="'+id+'"]');
-    if(tr)tr.classList.add('xrow-dirty');
-    if(!silent)toast('✏ '+col.lb+' diubah','warning');
-  }
-  _xRefreshCell(td,id,k);
-  xUpdDirty();
-  _xMode('VIEW');
-}
-
-function _xCancel(td,id,k){
-  xEd=null; _xRefreshCell(td,String(id),k); _xMode('VIEW');
-}
-
-function _xRefreshCell(td,id,k){
-  const sid=String(id);
-  const col=XC.find(x=>x.k===k); if(!col)return;
-  td.classList.remove('xediting');
-  const rowData=xRows.find(x=>String(x.id)===sid)||{};
-  const val=xDirty[sid]&&xDirty[sid][k]!==undefined?xDirty[sid][k]:rowData[k];
-  _xCellVal(td,col,val);
-}
-
-function _xCellVal(td,col,val){
-  td.innerHTML='';td.style.color='';td.style.fontFamily='';td.style.fontSize='';
-  if(col.k==='status_rtlh'){
-    if(!val||val==='-') td.innerHTML='<span class="xbadge empty">—</span>';
-    else if(val==='RTLH') td.innerHTML='<span class="xbadge rtlh"><i class="fas fa-house-damage" style="font-size:.5rem"></i> RTLH</span>';
-    else if(val==='Layak Huni') td.innerHTML='<span class="xbadge layak"><i class="fas fa-home" style="font-size:.5rem"></i> Layak Huni</span>';
-    else if(val==='Keterangan Lain') td.innerHTML='<span class="xbadge lain"><i class="fas fa-question-circle" style="font-size:.5rem"></i> Ket. Lain</span>';
-    else td.innerHTML='<span class="xbadge">'+val+'</span>';
-  }else if(col.k==='updated_at'){
-    td.textContent=val?new Date(val).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}):'—';
-    td.style.color='var(--gray-400)';
-  }else if(col.sen&&!isSuperAdmin()){
-    td.textContent=val?String(val).slice(0,6)+'**********':'—';
-    td.style.color='var(--gray-400)';td.style.fontFamily='monospace';td.style.fontSize='.68rem';
-  }else if(col.mono&&val){
-    td.style.fontFamily='monospace';td.style.fontSize='.7rem';td.style.letterSpacing='.3px';
-    td.textContent=String(val);
-  }else if(col.unit&&val!=null&&val!==''){
-    td.textContent=val+' '+col.unit;
+function cmOpenModal(){
+  const tabs=document.getElementById('cmFileTabs');
+  if(_cmFiles.length>1){
+    tabs.style.display='flex';
+    tabs.innerHTML=_cmFiles.map((f,i)=>`
+      <button onclick="cmSwitchFile(${i})" id="cmTab_${i}"
+        style="padding:4px 12px;border-radius:6px 6px 0 0;border:1px solid var(--gray-200);border-bottom:none;font-size:.68rem;font-weight:700;cursor:pointer;font-family:inherit;background:${i===0?'#fff':'var(--gray-50)'};color:${i===0?'var(--blue)':'var(--gray-500)'}">
+        <i class="fas fa-file-excel" style="color:var(--success);font-size:.58rem"></i> ${f.name.replace('.xlsx','').substring(0,18)}
+        <span style="background:var(--gray-200);border-radius:99px;padding:1px 5px;font-size:.58rem;margin-left:3px">${f.rows.length}</span>
+      </button>`).join('');
   }else{
-    if(val!=null&&val!==''){td.textContent=String(val);td.style.color='';}
-    else{td.innerHTML='<span style="color:#E2E8F0">—</span>';}
+    tabs.style.display='none';
   }
+  const total=_cmFiles.reduce((a,f)=>a+f.rows.length,0);
+  document.getElementById('cmSubtitle').textContent=`${_cmFiles.length} file · ${total.toLocaleString('id')} baris total`;
+  _cmCurFile=0;
+  renderCmRows();renderCmPreview();
+  document.getElementById('ovColMap').classList.add('open');
 }
 
-function xNavCell(d,axis){
-  if(!xFoc)return;
-  const vis=xVisCols().filter(col=>col.k!=='_no'&&col.ed!==false);
-  const ri=xRows.findIndex(r=>String(r.id)===xFoc.id);
-  const ci=vis.findIndex(col=>col.k===xFoc.k);
-  if(axis==='v')_xNavTo(ri+d,ci); else _xNavTo(ri,ci+d);
+function cmSwitchFile(i){
+  _cmCurFile=i;
+  document.querySelectorAll('[id^=cmTab_]').forEach((t,j)=>{
+    t.style.background=j===i?'#fff':'var(--gray-50)';
+    t.style.color=j===i?'var(--blue)':'var(--gray-500)';
+  });
+  if(!_cmMapping[i])cmAutoMap();
+  else{renderCmRows();renderCmPreview();}
 }
 
-function _xNavTo(ri,ci){
-  const vis=xVisCols().filter(col=>col.k!=='_no'&&col.ed!==false);
-  ri=Math.max(0,Math.min(xRows.length-1,ri));
-  ci=Math.max(0,Math.min(vis.length-1,ci));
-  const row=xRows[ri],col=vis[ci];
-  if(!row||!col)return;
-  xFoc={id:String(row.id),k:col.k};
-  document.querySelectorAll('#xBody td.xfocused').forEach(t=>t.classList.remove('xfocused'));
-  const targetPage=Math.floor(ri/X_PAGE_SIZE);
-  if(targetPage!==xPage){xPage=targetPage;xRenderBody();}
-  const td=document.querySelector('#xBody td[data-id="'+String(row.id)+'"][data-k="'+col.k+'"]');
-  if(td){td.classList.add('xfocused');td.scrollIntoView({block:'nearest',inline:'nearest'});}
-  _xUpdSB();
+function renderCmRows(){
+  const fd=_cmFiles[_cmCurFile];if(!fd)return;
+  const mapping=_cmMapping[_cmCurFile]||{};
+  const optHtml=`<option value="">(tidak diimport)</option>`+
+    fd.headers.map(h=>`<option value="${String(h).replace(/"/g,'&quot;')}">${h}</option>`).join('');
+  document.getElementById('cmRows').innerHTML=CM_FIELDS.map(field=>{
+    const cur=mapping[field.k]||'';
+    const has=!!cur;
+    const opts=optHtml.replace(`value="${cur.replace(/"/g,'&quot;')}"`,`value="${cur.replace(/"/g,'&quot;')}" selected`);
+    return`<div style="display:grid;grid-template-columns:1fr 24px 1fr;align-items:center;gap:5px;padding:4px 6px;border-radius:6px;background:${has?'#EBF5FF':'var(--gray-50)'};border:1px solid ${has?'var(--blue)':'var(--gray-200)'}">
+      <div><div style="font-size:.72rem;font-weight:700;color:var(--gray-800)">${field.lb}</div><div style="font-size:.58rem;color:var(--gray-400)">${field.k}</div></div>
+      <div style="text-align:center;color:${has?'var(--blue)':'var(--gray-300)'}"><i class="fas fa-arrow-right" style="font-size:.65rem"></i></div>
+      <select data-field="${field.k}" onchange="cmUpdateMap('${field.k}',this.value)"
+        style="padding:3px 5px;border-radius:5px;border:1px solid ${has?'var(--blue)':'var(--gray-200)'};font-size:.7rem;font-family:var(--font);outline:none;background:#fff;width:100%">
+        ${opts}
+      </select>
+    </div>`;
+  }).join('');
+  document.getElementById('cmFileInfo').textContent=`${fd.name} · ${fd.rows.length.toLocaleString('id')} baris · ${fd.headers.length} kolom`;
 }
 
-function _xKey(e){
-  if(!document.getElementById('pgExcel')?.classList.contains('active'))return;
-  if(xEd)return;
-  if(!xFoc)return;
-  const{id,k}=xFoc;
-  const vis=xVisCols().filter(col=>col.k!=='_no'&&col.ed!==false);
-  const ri=xRows.findIndex(r=>String(r.id)===id);
-  const ci=vis.findIndex(col=>col.k===k);
-  if(e.key==='ArrowDown'||e.key==='Enter'){e.preventDefault();_xNavTo(ri+1,ci);}
-  else if(e.key==='ArrowUp'){e.preventDefault();_xNavTo(ri-1,ci);}
-  else if(e.key==='ArrowRight'||e.key==='Tab'){e.preventDefault();_xNavTo(ri,ci+(e.shiftKey?-1:1));}
-  else if(e.key==='ArrowLeft'){e.preventDefault();_xNavTo(ri,ci-1);}
-  else if(e.key==='F2'){
-    const td=document.querySelector('#xBody td[data-id="'+id+'"][data-k="'+k+'"]');
-    if(td)xEdit(td,id,k);
-  }else if(e.key==='Delete'||e.key==='Backspace'){
-    if(!xEditMode)return;
-    const col2=XC.find(x=>x.k===k);
-    if(col2&&col2.ed!==false&&!col2.sen){
-      const sid2=String(id);
-      if(!xDirty[sid2])xDirty[sid2]={};
-      xDirty[sid2][k]=null;
-      const td2=document.querySelector('#xBody td[data-id="'+sid2+'"][data-k="'+k+'"]');
-      if(td2)_xRefreshCell(td2,sid2,k);
-      const tr2=document.querySelector('#xBody tr[data-id="'+sid2+'"]');
-      if(tr2)tr2.classList.add('xrow-dirty');
-      xUpdDirty();
+function cmUpdateMap(fieldKey,excelCol){
+  if(!_cmMapping[_cmCurFile])_cmMapping[_cmCurFile]={};
+  _cmMapping[_cmCurFile][fieldKey]=excelCol;
+  const row=document.querySelector(`[data-field="${fieldKey}"]`)?.closest('div[style*="grid"]');
+  if(row){const has=!!excelCol;row.style.background=has?'#EBF5FF':'var(--gray-50)';row.style.border=`1px solid ${has?'var(--blue)':'var(--gray-200)'}`;}
+  renderCmPreview();
+}
+
+function renderCmPreview(){
+  const fd=_cmFiles[_cmCurFile];if(!fd)return;
+  const mapping=_cmMapping[_cmCurFile]||{};
+  const mapped=CM_FIELDS.filter(f=>mapping[f.k]);
+  if(!mapped.length){document.getElementById('cmPreviewTable').innerHTML='<span style="color:var(--gray-400);font-size:.7rem">Belum ada kolom dipilih</span>';return;}
+  const rows=fd.rows.slice(0,3);
+  document.getElementById('cmPreviewTable').innerHTML=`<table style="border-collapse:collapse;width:100%">
+    <thead><tr style="background:var(--navy);color:#fff">${mapped.map(f=>`<th style="padding:3px 8px;font-size:.65rem;font-weight:700;white-space:nowrap">${f.lb}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map((row,i)=>`<tr style="background:${i%2?'var(--gray-50)':'#fff'}">${mapped.map(f=>{
+      const v=String(row[mapping[f.k]]||'').substring(0,25);
+      return`<td style="padding:2px 8px;border-bottom:1px solid var(--gray-100);font-size:.68rem;color:${v?'var(--gray-800)':'var(--gray-300)'}">${v||'—'}</td>`;
+    }).join('')}</tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function cmConvertVal(raw,type){
+  if(raw==null||raw==='')return null;
+  const s=String(raw).trim();
+  if(!s)return null;
+  if(type==='nik'||type==='kk')return s.replace(/[^0-9]/g,'')||null;
+  if(type==='int'){const n=parseInt(s);return isNaN(n)?null:n;}
+  if(type==='num'){const n=parseFloat(s.replace(',','.'));return isNaN(n)?null:n;}
+  if(type==='year')return s.replace(/[^0-9]/g,'')||null;
+  if(type==='normCase')return normCase(s)||s;
+  if(type==='status'){
+    const u=s.toUpperCase().trim();
+    return u==='LAYAK HUNI'||u==='SUDAH'||u==='SUDAH DITANGANI'||u==='LAYAK DIBANTU'||u==='DIBANTU'?'Layak Huni':
+      u==='RTLH'||u==='BELUM'||u==='BELUM DITANGANI'?'RTLH':s;
+  }
+  return s;
+}
+
+async function cmStartImport(){
+  if(!_cmFiles.length)return;
+  const btn=document.getElementById('cmImportBtn');
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Mengimport...';}
+  const log=document.getElementById('exImportLog');
+  let totalOk=0,totalFail=0,allErrors=[];
+  const BATCH=10;
+
+  for(let fi=0;fi<_cmFiles.length;fi++){
+    const fd=_cmFiles[fi];
+    const mapping=_cmMapping[fi]||_cmMapping[0]||{};
+    log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> File ${fi+1}/${_cmFiles.length}: ${fd.name} (${fd.rows.length} baris)...`;
+
+    const toUpdate=[],toUpsertByNIK=[],toInsert=[];
+    fd.rows.forEach(row=>{
+      const obj={};
+      CM_FIELDS.forEach(field=>{
+        const exCol=mapping[field.k];
+        if(!exCol)return;
+        const val=cmConvertVal(row[exCol],field.type);
+        if(val!=null)obj[field.k]=val;
+      });
+      obj.updated_at=new Date().toISOString();
+      const id=parseInt(row['ID']||row['id']||0);
+      const nik=obj.nik||String(row['NIK']||row['nik']||'').replace(/[^0-9]/g,'');
+      if(nik&&!obj.nik)obj.nik=nik;
+      if(id)toUpdate.push({id,obj});
+      else if(nik)toUpsertByNIK.push({nik,obj});
+      else toInsert.push(obj);
+    });
+
+    // Update by ID
+    for(let i=0;i<toUpdate.length;i+=BATCH){
+      const batch=toUpdate.slice(i,i+BATCH);
+      log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> File ${fi+1}: update ${Math.min(i+BATCH,toUpdate.length)}/${toUpdate.length}...`;
+      const res=await Promise.all(batch.map(({id,obj})=>sb.from('rtlh').update(obj).eq('id',id)));
+      res.forEach((r,j)=>{if(r.error){totalFail++;allErrors.push(`ID ${batch[j].id}: ${r.error.message}`);}else totalOk++;});
     }
-  }
-}
 
-function _xMode(m){
-  const el=document.getElementById('xSBMode');
-  if(!el)return;
-  el.textContent=m;
-  el.className='es-mode'+(m==='EDIT'?' editing':'');
-}
-
-function _xUpdSB(){
-  const r=document.getElementById('xSBRow');if(r)r.textContent=xRows.length;
-  const c2=document.getElementById('xSBCol');if(c2)c2.textContent=xVisCols().length;
-  if(xFoc){
-    const col=XC.find(x=>x.k===xFoc.k);
-    const ri=xRows.findIndex(r=>String(r.id)===xFoc.id);
-    const el=document.getElementById('xSBCell');
-    if(el)el.textContent=(col?.lb||xFoc.k)+' · baris '+(ri+1);
-  }
-}
-
-function _xCloseCtx(){document.getElementById('xCtxMenu')?.classList.remove('open');}
-
-function xCtxEditCell(){_xCloseCtx();if(!xEditMode){toast('Aktifkan Mode Edit untuk mengedit','warning');return;}const td=document.querySelector('#xBody td[data-id="'+xCtxId+'"][data-k="'+xCtxK+'"]');if(td)xEdit(td,xCtxId,xCtxK);}
-function xCtxEditRow(){_xCloseCtx();if(!xEditMode){toast('Aktifkan Mode Edit untuk mengedit','warning');return;}xOpenForm(xCtxId);}
-function xCtxDupe(){_xCloseCtx();if(!xEditMode){toast('Aktifkan Mode Edit untuk menduplikasi','warning');return;}const r=xRows.find(x=>String(x.id)===String(xCtxId));if(r)xOpenForm(null,{...r,nik:undefined,no_kk:undefined});}
-function xCtxDelete(){_xCloseCtx();if(!xEditMode){toast('Aktifkan Mode Edit untuk menghapus','warning');return;}xDeleteRow(xCtxId);}
-
-function xOpenAddModal(){xOpenForm(null);}
-
-function xOpenForm(editId,prefill=null){
-  if(!canEdit()){toast('Tidak ada akses','error');return;}
-  const r=editId?xRows.find(x=>String(x.id)===String(editId)):null;
-  const data=prefill?{...prefill}:(r?{...r}:{});
-  const sections=[
-    {lb:'Identitas',ic:'fas fa-id-card',cl:'var(--blue)',keys:['kep_kk','nik','no_kk','kec','desa','alamat','jen_kel','umur']},
-    {lb:'Sosial Ekonomi',ic:'fas fa-briefcase',cl:'#7C3AED',keys:['pend_ter','pekerjaan','pengh','jml_peng','status_kep','luas_rum','luas_tan']},
-    {lb:'Kondisi Bangunan',ic:'fas fa-home',cl:'#EA580C',keys:['material_d','kondisi_di','material_a','kondisi_at','material_l','kondisi_la']},
-    {lb:'Status & Bantuan',ic:'fas fa-hand-holding-heart',cl:'var(--success)',keys:['status_rtlh','status_batal','jenis_bantuan','tahun_bantuan','backlog','desil','keterangan']},
-    {lb:'Koordinat',ic:'fas fa-map-marker-alt',cl:'var(--danger)',keys:['latitude','longitude']},
-  ];
-  const cmap=Object.fromEntries(XC.map(col=>[col.k,col]));
-  const su=isSuperAdmin();
-  let body='';
-  sections.forEach(sec=>{
-    const cols=sec.keys.map(k=>cmap[k]).filter(Boolean);
-    if(!cols.length)return;
-    body+=`<div style="margin-bottom:18px"><div style="font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:${sec.cl};margin-bottom:9px;padding-bottom:5px;border-bottom:2px solid ${sec.cl}22;display:flex;align-items:center;gap:5px"><i class="${sec.ic}"></i>${sec.lb}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">`;
-    cols.forEach(col=>{
-      const val=data[col.k]!=null?String(data[col.k]):'';
-      const locked=col.sen&&!su;
-      const full=(col.k==='keterangan'||col.k==='alamat')?'grid-column:1/-1':'';
-      body+=`<div style="display:flex;flex-direction:column;gap:3px;${full}"><label style="font-size:.6rem;font-weight:800;color:var(--gray-500);text-transform:uppercase;letter-spacing:.06em">${col.lb}${col.req?' *':''}</label>`;
-      if(col.sel){
-        body+=`<select id="xfm_${col.k}" style="padding:7px 9px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.82rem;font-family:var(--font);outline:none;background:#fff;color:var(--gray-900)">`;
-        col.sel.forEach(o=>body+=`<option value="${o}"${val===(o||'')||(val===''&&!o)?'selected':''}>${o||'(kosong)'}</option>`);
-        body+=`</select>`;
-      }else if(locked){
-        body+=`<input type="text" id="xfm_${col.k}" value="${val.replace(/"/g,'&quot;')}" readonly style="padding:7px 9px;border-radius:8px;border:1.5px solid var(--gray-100);font-size:.82rem;font-family:var(--font);background:var(--gray-50);color:var(--gray-400);cursor:not-allowed;box-sizing:border-box">`;
-      }else{
-        body+=`<input type="${col.num?'number':'text'}" id="xfm_${col.k}" value="${val.replace(/"/g,'&quot;')}" step="any" style="padding:7px 9px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.82rem;font-family:var(--font);outline:none;background:#fff;color:var(--gray-900);box-sizing:border-box">`;
+    // Upsert by NIK
+    if(toUpsertByNIK.length){
+      log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> File ${fi+1}: upsert NIK ${toUpsertByNIK.length}...`;
+      const niks=toUpsertByNIK.map(x=>x.nik);
+      const{data:ex}=await sb.from('rtlh').select('id,nik').in('nik',niks);
+      const exMap=Object.fromEntries((ex||[]).map(r=>[r.nik,r.id]));
+      const ups=toUpsertByNIK.filter(x=>exMap[x.nik]);
+      const ins=toUpsertByNIK.filter(x=>!exMap[x.nik]);
+      for(let i=0;i<ups.length;i+=BATCH){
+        const batch=ups.slice(i,i+BATCH);
+        const res=await Promise.all(batch.map(({nik,obj})=>sb.from('rtlh').update(obj).eq('nik',nik)));
+        res.forEach((r,j)=>{if(r.error){totalFail++;allErrors.push(`NIK ${batch[j].nik}: ${r.error.message}`);}else totalOk++;});
       }
-      body+=`</div>`;
-    });
-    body+=`</div></div>`;
-  });
-  let ov=document.getElementById('xOvForm');
-  if(!ov){
-    ov=document.createElement('div');ov.id='xOvForm';ov.className='overlay';
-    ov.innerHTML=`<div class="modal" style="max-width:640px"><div class="modal-head"><h3 id="xFmTitle"></h3><button class="modal-x" onclick="closeModal('xOvForm')"><i class="fas fa-times"></i></button></div><div class="modal-body" id="xFmBody" style="max-height:70vh;overflow-y:auto"></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('xOvForm')">Batal</button><button class="btn btn-primary" id="xFmSaveBtn"><i class="fas fa-save"></i> Simpan</button></div></div>`;
-    document.body.appendChild(ov);
-  }
-  document.getElementById('xFmTitle').innerHTML='<i class="fas fa-'+(editId?'edit':'plus')+'"></i> '+(editId?'Edit':'Tambah')+' Data RTLH';
-  document.getElementById('xFmBody').innerHTML=body;
-  ov.classList.add('open');
-  document.getElementById('xFmSaveBtn').onclick=()=>xSaveForm(editId);
-}
+      for(let i=0;i<ins.length;i+=50){
+        const batch=ins.slice(i,i+50);
+        const{error}=await sb.from('rtlh').insert(batch.map(x=>x.obj));
+        if(error){totalFail+=batch.length;allErrors.push(`Insert: ${error.message}`);}else totalOk+=batch.length;
+      }
+    }
 
-async function xSaveForm(editId){
-  const obj={};
-  XC.filter(col=>col.k!=='_no'&&col.k!=='updated_at').forEach(col=>{
-    const el=document.getElementById('xfm_'+col.k);
-    if(!el||el.readOnly)return;
-    let v=el.value.trim();
-    if(col.num)obj[col.k]=v!==''?(parseFloat(v)||null):null;
-    else obj[col.k]=v||null;
-  });
-  if(!obj.kep_kk)return toast('Nama KK wajib diisi','error');
-  if(!obj.status_rtlh)return toast('Status RTLH wajib diisi','error');
-  obj.updated_at=new Date().toISOString();
-  const saveBtn=document.getElementById('xFmSaveBtn');
-  saveBtn.disabled=true;saveBtn.textContent='Menyimpan...';
-  if(editId){
-    const{data,error}=await sb.from('rtlh').update(obj).eq('id',parseInt(editId)).select('*').single();
-    if(error){saveBtn.disabled=false;saveBtn.innerHTML='<i class="fas fa-save"></i> Simpan';return toast('Gagal: '+error.message,'error');}
-    const i=xAll.findIndex(x=>String(x.id)===String(editId));
-    if(i>=0)xAll[i]={...xAll[i],...data};
-    const bi=brAll.findIndex(x=>String(x.id)===String(editId));
-    if(bi>=0)brAll[bi]={...brAll[bi],...data};
-    delete xDirty[String(editId)];
-    toast('Data diperbarui','success');
-  }else{
-    if(!obj.kec)return(saveBtn.disabled=false,saveBtn.innerHTML='<i class="fas fa-save"></i> Simpan',toast('Kecamatan wajib diisi','error'));
-    const{data,error}=await sb.from('rtlh').insert(obj).select('*').single();
-    if(error){saveBtn.disabled=false;saveBtn.innerHTML='<i class="fas fa-save"></i> Simpan';return toast('Gagal: '+error.message,'error');}
-    xAll.unshift(data);
-    toast('Data ditambahkan','success');
-  }
-  closeModal('xOvForm');
-  xUpdDirty();xFilter();
-}
-
-async function xDeleteRow(id){
-  id=String(id);
-  if(!isSuperAdmin()){toast('Hanya Super Admin yang bisa hapus','error');return;}
-  if(!confirm('Hapus baris ini dari database? Tidak bisa dibatalkan.'))return;
-  const{error}=await sb.from('rtlh').delete().eq('id',parseInt(id));
-  if(error)return toast('Gagal hapus: '+error.message,'error');
-  xAll=xAll.filter(x=>String(x.id)!==id);
-  brAll=brAll.filter(x=>String(x.id)!==id);
-  delete xDirty[id];
-  xFilter();xUpdDirty();
-  toast('Baris dihapus','success');
-}
-
-async function xSaveAll(){
-  const ids=Object.keys(xDirty);
-  if(!ids.length){toast('Tidak ada perubahan','info');return;}
-  if(!confirm('Simpan '+ids.length+' perubahan ke database?'))return;
-  let ok=0,fail=0;
-  for(const id of ids){
-    const changes={...xDirty[id],updated_at:new Date().toISOString()};
-    const{error}=await sb.from('rtlh').update(changes).eq('id',parseInt(id));
-    if(error){fail++;console.error('xSave fail',id,error);}
-    else{
-      ok++;
-      const ai=xAll.findIndex(x=>String(x.id)===id);
-      if(ai>=0)xAll[ai]={...xAll[ai],...changes};
-      const bi=brAll.findIndex(x=>String(x.id)===id);
-      if(bi>=0)brAll[bi]={...brAll[bi],...changes};
-      delete xDirty[id];
+    // Insert baru
+    for(let i=0;i<toInsert.length;i+=50){
+      const batch=toInsert.slice(i,i+50);
+      log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> File ${fi+1}: insert ${Math.min(i+50,toInsert.length)}/${toInsert.length}...`;
+      const{error}=await sb.from('rtlh').insert(batch);
+      if(error){totalFail+=batch.length;allErrors.push(`Insert: ${error.message}`);}else totalOk+=batch.length;
     }
   }
-  xFilter();xUpdDirty();
-  toast(fail?ok+' berhasil, '+fail+' gagal':ok+' perubahan disimpan!',fail?'warning':'success');
-  if(!fail&&xEditMode)xToggleEditMode();
+
+  Object.keys(_kecCacheTime||{}).forEach(k=>delete _kecCacheTime[k]);
+  Object.keys(brCache||{}).forEach(k=>delete brCache[k]);
+
+  let logHtml=`<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Selesai: <strong>${totalOk}</strong> berhasil`;
+  if(totalFail)logHtml+=` · <span style="color:var(--danger)">${totalFail} gagal</span>`;
+  logHtml+='</span>';
+  if(allErrors.length)logHtml+=`<div style="margin-top:6px;max-height:60px;overflow-y:auto;font-size:.65rem;color:var(--danger)">${allErrors.slice(0,5).join('<br>')}</div>`;
+  log.innerHTML=logHtml;
+  closeModal('ovColMap');
+  toast(`Import: ${totalOk} berhasil${totalFail?', '+totalFail+' gagal':''}`,totalFail?'warning':'success');
+  if(typeof currentKec!=='undefined'&&currentKec){brAll=[];if(typeof loadKec==='function')await loadKec();}
+  if(btn){btn.disabled=false;btn.innerHTML='<i class="fas fa-upload"></i> Import';}
 }
 
-function xDiscardAll(){
-  if(!Object.keys(xDirty).length)return;
-  if(!confirm('Batalkan semua perubahan yang belum disimpan?'))return;
-  xDirty={};xFilter();xUpdDirty();
-  toast('Perubahan dibatalkan','info');
-}
-
-function xUpdDirty(){
-  const n=Object.keys(xDirty).length;
-  const btnSave=document.getElementById('xBtnSave');
-  const btnDiscard=document.getElementById('xBtnDiscard');
-  if(btnSave)btnSave.style.display=(xEditMode&&n>0)?'flex':'none';
-  if(btnDiscard)btnDiscard.style.display=(xEditMode&&n>0)?'flex':'none';
-  const dc=document.getElementById('xDirtyCount');if(dc)dc.textContent=n;
-  const uc2=document.getElementById('xUnsavedCount2');if(uc2)uc2.textContent=n;
-  const chip=document.getElementById('xUnsavedChip');if(chip)chip.style.display=(xEditMode&&n>0)?'flex':'none';
-  const bannerSave=document.getElementById('xBannerSave');
-  if(bannerSave)bannerSave.style.display=n>0?'flex':'none';
-}
-
-function xExportExcel(){
-  if(!window.XLSX){toast('XLSX tidak tersedia','error');return;}
-  if(!xRows.length){toast('Tidak ada data','error');return;}
-  const vis=xVisCols().filter(col=>col.k!=='_no');
-  const header=vis.map(col=>col.lb);
-  const rows=xRows.map(r=>vis.map(col=>{
-    const val=xDirty[String(r.id)]&&xDirty[String(r.id)][col.k]!==undefined?xDirty[String(r.id)][col.k]:r[col.k];
-    if(col.k==='updated_at'&&val)return new Date(val).toLocaleDateString('id-ID');
-    return val!=null?val:'';
-  }));
-  const ws=XLSX.utils.aoa_to_sheet([header,...rows]);
-  ws['!cols']=vis.map(col=>({wch:Math.max(10,Math.round((xW[col.k]||col.w)/7))}));
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'Data RTLH');
-  const d=new Date();
-  const fn='eRTLH_'+d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'.xlsx';
-  XLSX.writeFile(wb,fn);
-  toast('Ekspor '+xRows.length.toLocaleString('id')+' baris → '+fn,'success');
-}
-
-function xOpenColModal(){
-  let html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">';
-  XC.forEach(col=>{
-    if(col.k==='_no')return;
-    const chk=xVis[col.k]!==false;
-    html+=`<label style="display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;border:1px solid ${chk?'var(--blue)':'var(--gray-200)'};cursor:pointer;font-size:.72rem;${chk?'background:var(--blue-bg);':''}"><input type="checkbox" id="xcv_${col.k}" ${chk?'checked':''} style="accent-color:var(--blue)"> ${col.lb}</label>`;
-  });
-  html+='</div>';
-  document.getElementById('xColModalBody').innerHTML=html;
-  document.getElementById('xOvCols').classList.add('open');
-}
-function xSelectAllCols(v){document.querySelectorAll('#xColModalBody input[type=checkbox]').forEach(cb=>cb.checked=v);}
-function xApplyColConfig(){
-  XC.forEach(col=>{if(col.k==='_no')return;const cb=document.getElementById('xcv_'+col.k);if(cb)xVis[col.k]=cb.checked;});
-  closeModal('xOvCols');xRender();
-}
-
-function xToggleFreeze(){
-  xFreeze=!xFreeze;
-  const icon=document.getElementById('xFreezeIcon');
-  const label=document.getElementById('xFreezeLabel');
-  if(icon)icon.style.opacity=xFreeze?'1':'.4';
-  if(label)label.textContent='Freeze: '+(xFreeze?'On':'Off');
-  xRender();
-}
-
-let _xRK=null,_xRX=0,_xRW=0;
-function xResStart(e,k){
-  _xRK=k;_xRX=e.clientX;_xRW=xW[k]||120;
-  document.addEventListener('mousemove',_xResMove);
-  document.addEventListener('mouseup',_xResEnd);
-}
-function _xResMove(e){
-  if(!_xRK)return;
-  const nw=Math.max(48,_xRW+(e.clientX-_xRX));
-  xW[_xRK]=nw;
-  document.querySelectorAll('[data-k="'+_xRK+'"],th[data-k="'+_xRK+'"]').forEach(el=>{el.style.width=nw+'px';el.style.minWidth=nw+'px';});
-}
-function _xResEnd(){_xRK=null;document.removeEventListener('mousemove',_xResMove);document.removeEventListener('mouseup',_xResEnd);}
 </script>
+
+
+<!-- ═══ MODAL LIBRARY DOKUMEN KABUPATEN ═══ -->
+<div class="overlay" id="ovDokLib">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-head">
+      <div><h3><i class="fas fa-folder-open" style="color:var(--gold)"></i> Library Dokumen Kabupaten</h3>
+        <div class="sub">SK, BA, Surat Pernyataan — dokumen resmi RTLH</div>
+      </div>
+      <button class="modal-x" onclick="closeModal('ovDokLib')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" style="padding:0">
+      <!-- Filter jenis -->
+      <div style="padding:12px 16px;border-bottom:1px solid var(--gray-200);display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <button class="dok-jenis-chip active" id="djc_all" onclick="filterDokLib('')" style="background:var(--navy);color:#fff;border-color:var(--navy)">Semua</button>
+        <button class="dok-jenis-chip" id="djc_SK" onclick="filterDokLib('SK')" style="background:#EFF6FF;color:#1D4ED8;border-color:#BFDBFE">SK</button>
+        <button class="dok-jenis-chip" id="djc_BA" onclick="filterDokLib('BA')" style="background:#F0FDF4;color:#16A34A;border-color:#BBF7D0">BA</button>
+        <button class="dok-jenis-chip" id="djc_SP" onclick="filterDokLib('Surat Pernyataan')" style="background:#FFF7ED;color:#EA580C;border-color:#FED7AA">Surat Pernyataan</button>
+        <button class="dok-jenis-chip" id="djc_Lainnya" onclick="filterDokLib('Lainnya')" style="background:var(--gray-100);color:var(--gray-600);border-color:var(--gray-300)">Lainnya</button>
+        <button id="btnUploadDokLib" onclick="openUploadDokLib()" style="display:none;margin-left:auto;padding:5px 12px;border-radius:8px;background:var(--blue);color:#fff;border:none;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit"><i class="fas fa-upload"></i> Upload Dokumen</button>
+        <button onclick="refreshDokLib()" title="Refresh & sinkronisasi link" style="padding:5px 10px;border-radius:8px;background:var(--gray-100);color:var(--gray-600);border:1px solid var(--gray-200);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit" id="btnRefreshDokLib"><i class="fas fa-sync-alt"></i></button>
+      </div>
+      <!-- List dokumen -->
+      <div id="dokLibList" style="padding:14px 16px;min-height:200px;max-height:50vh;overflow-y:auto">
+        <div style="text-align:center;color:var(--gray-400);padding:32px"><i class="fas fa-circle-notch fa-spin fa-2x"></i></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ovDokLib')">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL UPLOAD DOKUMEN KABUPATEN ═══ -->
+<div class="overlay" id="ovUploadDokLib">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head">
+      <div><h3><i class="fas fa-upload" style="color:var(--blue)"></i> Upload Dokumen Kabupaten</h3></div>
+      <button class="modal-x" onclick="closeModal('ovUploadDokLib')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="form-group" style="margin:0">
+          <label>Jenis Dokumen <span style="color:var(--danger)">*</span></label>
+          <select id="dlJenis">
+            <option value="SK">SK (Surat Keputusan)</option>
+            <option value="BA">BA (Berita Acara)</option>
+            <option value="Surat Pernyataan">Surat Pernyataan</option>
+            <option value="Lainnya">Lainnya</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Tahun</label>
+          <input type="number" id="dlTahun" value="2025" min="2020" max="2030">
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Judul Dokumen <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="dlJudul" placeholder="misal: SK RTLH 2025 No. 188/...">
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Kecamatan (kosongkan jika berlaku seluruh kabupaten)</label>
+        <select id="dlKec">
+          <option value="">Seluruh Kabupaten</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Berlaku untuk Jenis Bantuan <span style="font-weight:400;color:var(--gray-400)">(untuk auto-link)</span></label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <select id="dlJenisBantuan">
+            <option value="">Semua / Tidak spesifik</option>
+            <option value="RTLH">RTLH</option>
+            <option value="BSPS">BSPS</option>
+            <option value="Dana Desa">Dana Desa</option>
+            <option value="CSR">CSR</option>
+          </select>
+          <select id="dlTahunBantuan">
+            <option value="">Semua Tahun</option>
+            <option value="2021">2021</option>
+            <option value="2022">2022</option>
+            <option value="2023">2023</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+          </select>
+        </div>
+        <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Contoh: RTLH + 2026 → penerima RTLH 2026 otomatis terhubung saat disimpan</div>
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Mode Link Penerima</label>
+        <div style="display:flex;gap:8px">
+          <label style="display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;cursor:pointer;padding:7px 12px;border-radius:8px;border:1.5px solid var(--gray-200);flex:1;text-transform:none;letter-spacing:0">
+            <input type="radio" name="dlLinkMode" value="auto" checked onchange="toggleDlLinkMode(this.value)"> Auto (Jenis+Tahun)
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;cursor:pointer;padding:7px 12px;border-radius:8px;border:1.5px solid var(--gray-200);flex:1;text-transform:none;letter-spacing:0">
+            <input type="radio" name="dlLinkMode" value="manual" onchange="toggleDlLinkMode(this.value)"> Pilih Manual
+          </label>
+        </div>
+      </div>
+      <div id="dlManualWrap" style="display:none;margin-bottom:10px">
+        <div style="font-size:.68rem;font-weight:700;color:var(--gray-600);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">Cari & Pilih Penerima</div>
+        <div style="position:relative;margin-bottom:8px">
+          <input type="text" id="dlManualSearch" placeholder="Ketik nama, NIK, atau desa..." 
+            oninput="clearTimeout(this._t);this._t=setTimeout(()=>searchDlManual(this.value),400)"
+            style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.82rem;font-family:inherit;outline:none;box-sizing:border-box">
+        </div>
+        <div id="dlManualResults" style="max-height:150px;overflow-y:auto;border:1px solid var(--gray-200);border-radius:8px;margin-bottom:8px;display:none"></div>
+        <div style="font-size:.68rem;font-weight:700;color:var(--gray-600);margin-bottom:4px">Dipilih: <span id="dlSelectedCount">0</span> penerima</div>
+        <div id="dlSelectedList" style="max-height:100px;overflow-y:auto;display:flex;flex-wrap:wrap;gap:4px"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:4px">
+        <label>File PDF <span style="color:var(--danger)">*</span></label>
+        <input type="file" id="dlFile" accept=".pdf,.doc,.docx,.jpg,.png" style="font-size:.8rem">
+        <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Format: PDF, DOC, JPG, PNG. Maks 20 MB.</div>
+      </div>
+      <div id="dlProgress" style="font-size:.72rem;margin-top:8px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ovUploadDokLib')">Batal</button>
+      <button class="btn btn-primary" onclick="uploadDokLib()"><i class="fas fa-upload"></i> Upload</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL LINK DOKUMEN KE PENERIMA ═══ -->
+<div class="overlay" id="ovLinkDok">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-head">
+      <div><h3><i class="fas fa-link" style="color:var(--blue)"></i> Link Dokumen ke Penerima</h3>
+        <div class="sub" id="linkDokSub">Hubungkan dokumen dengan penerima ini</div>
+      </div>
+      <button class="modal-x" onclick="closeModal('ovLinkDok')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:.72rem;font-weight:700;color:var(--gray-600);margin-bottom:8px">Dokumen Terhubung:</div>
+      <div id="linkedDokList" style="margin-bottom:14px"></div>
+      <div style="font-size:.72rem;font-weight:700;color:var(--gray-600);margin-bottom:8px;border-top:1px solid var(--gray-200);padding-top:12px">Tambah Link Dokumen:</div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Cari Dokumen</label>
+        <input type="text" id="linkDokSearch" placeholder="Ketik judul atau jenis..." oninput="searchDokForLink(this.value)">
+      </div>
+      <div id="dokSearchResults" style="max-height:200px;overflow-y:auto"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ovLinkDok')">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL PENERIMA DOKUMEN ═══ -->
+<div class="overlay" id="ovPenerimaDok">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-head">
+      <div>
+        <h3><i class="fas fa-users" style="color:#7C3AED"></i> Penerima Dokumen</h3>
+        <div class="sub" id="penerimaDokSub"></div>
+      </div>
+      <button class="modal-x" onclick="closeModal('ovPenerimaDok')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" style="padding:0">
+      <div style="padding:10px 16px;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <div id="penerimaDokCount" style="font-size:.75rem;color:var(--gray-500)"></div>
+        <input type="text" id="penerimaDokSearch" placeholder="Cari nama atau desa..." oninput="filterPenerimaDok(this.value)"
+          style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.75rem;font-family:inherit;outline:none;width:180px">
+      </div>
+      <div id="penerimaDokList" style="max-height:60vh;overflow-y:auto;padding:10px 14px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ovPenerimaDok')">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL EDIT DOKUMEN KABUPATEN ═══ -->
+<div class="overlay" id="ovEditDokLib">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head">
+      <div><h3><i class="fas fa-edit" style="color:#EA580C"></i> Edit Dokumen</h3></div>
+      <button class="modal-x" onclick="closeModal('ovEditDokLib')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editDlId">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="form-group" style="margin:0">
+          <label>Jenis Dokumen</label>
+          <select id="editDlJenis">
+            <option value="SK">SK (Surat Keputusan)</option>
+            <option value="BA">BA (Berita Acara)</option>
+            <option value="Surat Pernyataan">Surat Pernyataan</option>
+            <option value="Lainnya">Lainnya</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Tahun</label>
+          <input type="number" id="editDlTahun" min="2020" max="2030">
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Judul Dokumen</label>
+        <input type="text" id="editDlJudul">
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Kecamatan (kosongkan jika seluruh kabupaten)</label>
+        <select id="editDlKec">
+          <option value="">Seluruh Kabupaten</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Berlaku untuk Jenis Bantuan <span style="font-weight:400;color:var(--gray-400)">(auto-link)</span></label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <select id="editDlJenisBantuan">
+            <option value="">Semua / Tidak spesifik</option>
+            <option value="RTLH">RTLH</option>
+            <option value="BSPS">BSPS</option>
+            <option value="Dana Desa">Dana Desa</option>
+            <option value="CSR">CSR</option>
+          </select>
+          <select id="editDlTahunBantuan">
+            <option value="">Semua Tahun</option>
+            <option value="2021">2021</option>
+            <option value="2022">2022</option>
+            <option value="2023">2023</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+          </select>
+        </div>
+        <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Contoh: RTLH + 2026 → semua penerima RTLH 2026 akan terhubung ke dokumen ini</div>
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label style="font-size:.68rem;font-weight:700;color:var(--gray-600)">AUTO-LINK KE PENERIMA</label>
+        <button onclick="runAutoLinkFromLib(document.getElementById('editDlId').value)" 
+          style="width:100%;padding:9px;border-radius:8px;background:var(--success-bg);color:var(--success);border:1px solid var(--success);font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px">
+          <i class="fas fa-magic"></i> Terapkan ke semua penerima yang cocok
+        </button>
+        <div id="autoLinkProgress" style="font-size:.68rem;color:var(--gray-500);margin-top:6px;text-align:center"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:4px">
+        <label>Ganti File (opsional)</label>
+        <div style="font-size:.68rem;color:var(--gray-500);margin-bottom:4px">File saat ini: <span id="editDlCurrentFile" style="font-weight:600"></span></div>
+        <input type="file" id="editDlFile" accept=".pdf,.doc,.docx,.jpg,.png" style="font-size:.8rem">
+        <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Kosongkan jika tidak ingin ganti file. Maks 20 MB.</div>
+      </div>
+      <div id="editDlProgress" style="font-size:.72rem;margin-top:8px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ovEditDokLib')">Batal</button>
+      <button class="btn btn-primary" onclick="saveEditDokLib()"><i class="fas fa-save"></i> Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ END APP SHELL ═══ -->
+</div>
+
+</body>
+</html>
