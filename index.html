@@ -4864,95 +4864,112 @@ function renderCmRows(){
   const mapping=_cmMapping[_cmCurFile]||{};
   const cleanHeaders=fd.headers.filter(h=>!String(h).startsWith('__EMPTY'));
 
-  // Build option html
-  const makeOpts=(cur)=>`<option value="">(tidak diimport)</option>`+
-    cleanHeaders.map(h=>{
-      const hEsc=String(h).replace(/"/g,'&quot;');
-      return`<option value="${hEsc}"${h===cur?' selected':''}>${h}</option>`;
-    }).join('');
+  // Buat reverse mapping: excelCol → dbKey (untuk lookup)
+  const reverseMap={};
+  Object.entries(mapping).forEach(([dbKey,exCol])=>{if(exCol)reverseMap[exCol]=dbKey;});
 
-  // Pisah: terdeteksi vs tidak
-  const detected=CM_FIELDS.filter(f=>mapping[f.k]);
-  const undetected=CM_FIELDS.filter(f=>!mapping[f.k]);
+  // Dropdown field database
+  const dbOpts='<option value="">(tidak diimport)</option>'+
+    CM_FIELDS.map(f=>`<option value="${f.k}">${f.lb}</option>`).join('');
 
-  let html='';
+  const makeDbOpts=(selectedKey)=>dbOpts.replace(
+    `value="${selectedKey}"`,`value="${selectedKey}" selected`
+  );
 
-  // ── Terdeteksi ──
-  if(detected.length){
-    html+=`<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;margin-top:2px">
-      <i class="fas fa-check-circle" style="color:var(--success);font-size:.75rem"></i>
-      <span style="font-size:.65rem;font-weight:800;color:var(--success);text-transform:uppercase;letter-spacing:.05em">${detected.length} kolom terdeteksi</span>
-      <span style="font-size:.62rem;color:var(--gray-400)">— periksa apakah sudah benar</span>
+  // Hitung yang terdeteksi
+  const detectedCount=cleanHeaders.filter(h=>reverseMap[h]).length;
+
+  let html=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:0 2px">
+    <span style="font-size:.65rem;color:var(--gray-500)">
+      <i class="fas fa-check-circle" style="color:var(--success)"></i>
+      <strong style="color:var(--success)">${detectedCount}</strong> dari ${cleanHeaders.length} kolom Excel terdeteksi otomatis
+    </span>
+    <span style="font-size:.62rem;color:var(--gray-400)">Periksa & koreksi jika perlu</span>
+  </div>`;
+
+  // Header tabel
+  html+=`<div style="display:grid;grid-template-columns:1fr 18px 1fr;gap:6px;padding:4px 8px;background:var(--navy);border-radius:6px 6px 0 0;margin-bottom:2px">
+    <div style="font-size:.62rem;font-weight:800;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.05em">Kolom di Excel Anda</div>
+    <div></div>
+    <div style="font-size:.62rem;font-weight:800;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.05em">Field Database</div>
+  </div>`;
+
+  // Satu baris per kolom Excel
+  html+=cleanHeaders.map(h=>{
+    const dbKey=reverseMap[h]||'';
+    const detected=!!dbKey;
+    const bg=detected?'#F0FDF4':'#fff';
+    const border=detected?'1px solid #BBF7D0':'1px solid var(--gray-200)';
+    return`<div style="display:grid;grid-template-columns:1fr 18px 1fr;align-items:center;gap:6px;padding:5px 8px;background:${bg};border:${border};border-radius:5px;margin-bottom:2px">
+      <div style="font-size:.72rem;font-weight:${detected?'700':'500'};color:${detected?'var(--gray-900)':'var(--gray-600)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${h}">${h}</div>
+      <i class="fas fa-arrow-right" style="color:${detected?'var(--success)':'var(--gray-300)'};font-size:.6rem;text-align:center"></i>
+      <select data-excelcol="${h.replace(/"/g,'&quot;')}" onchange="cmUpdateMapByExcel(this.value,'${h.replace(/'/g,"\\'")}')"
+        style="padding:3px 6px;border-radius:5px;border:1px solid ${detected?'#86EFAC':'var(--gray-200)'};font-size:.7rem;font-family:var(--font);outline:none;background:#fff;width:100%;color:var(--gray-800)">
+        ${makeDbOpts(dbKey)}
+      </select>
     </div>`;
-    html+=detected.map(field=>{
-      const cur=mapping[field.k]||'';
-      return`<div style="display:grid;grid-template-columns:140px 20px 1fr;align-items:center;gap:6px;padding:5px 8px;border-radius:7px;background:#F0FDF4;border:1px solid #BBF7D0;margin-bottom:3px">
-        <div>
-          <div style="font-size:.72rem;font-weight:700;color:var(--gray-900)">${field.lb}</div>
-          <div style="font-size:.58rem;color:var(--gray-400);font-family:monospace">${field.k}</div>
-        </div>
-        <i class="fas fa-arrow-right" style="color:var(--success);font-size:.65rem;text-align:center"></i>
-        <select data-field="${field.k}" onchange="cmUpdateMap('${field.k}',this.value)"
-          style="padding:4px 6px;border-radius:6px;border:1.5px solid #86EFAC;font-size:.72rem;font-family:var(--font);outline:none;background:#fff;width:100%;color:var(--gray-800)">
-          ${makeOpts(cur)}
-        </select>
-      </div>`;
-    }).join('');
-  }
-
-  // ── Tidak terdeteksi (bisa pilih manual) ──
-  if(undetected.length){
-    html+=`<div style="display:flex;align-items:center;gap:6px;margin-top:10px;margin-bottom:5px">
-      <i class="fas fa-question-circle" style="color:var(--gray-400);font-size:.75rem"></i>
-      <span style="font-size:.65rem;font-weight:800;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em">${undetected.length} kolom tidak terdeteksi</span>
-      <span style="font-size:.62rem;color:var(--gray-400)">— pilih manual jika perlu</span>
-    </div>`;
-    html+=undetected.map(field=>{
-      return`<div style="display:grid;grid-template-columns:140px 20px 1fr;align-items:center;gap:6px;padding:4px 8px;border-radius:7px;background:var(--gray-50);border:1px solid var(--gray-200);margin-bottom:3px">
-        <div>
-          <div style="font-size:.7rem;font-weight:600;color:var(--gray-500)">${field.lb}</div>
-          <div style="font-size:.58rem;color:var(--gray-300);font-family:monospace">${field.k}</div>
-        </div>
-        <i class="fas fa-arrow-right" style="color:var(--gray-300);font-size:.65rem;text-align:center"></i>
-        <select data-field="${field.k}" onchange="cmUpdateMap('${field.k}',this.value)"
-          style="padding:4px 6px;border-radius:6px;border:1px solid var(--gray-200);font-size:.72rem;font-family:var(--font);outline:none;background:#fff;width:100%;color:var(--gray-600)">
-          ${makeOpts('')}
-        </select>
-      </div>`;
-    }).join('');
-  }
+  }).join('');
 
   document.getElementById('cmRows').innerHTML=html;
   document.getElementById('cmFileInfo').textContent=
-    `${fd.name} · ${fd.rows.length.toLocaleString('id')} baris · header baris ke-${(fd.headerRow||0)+1} · ${cleanHeaders.length} kolom Excel`;
+    `${fd.name} · ${fd.rows.length.toLocaleString('id')} baris · ${cleanHeaders.length} kolom · header baris ke-${(fd.headerRow||0)+1}`;
 }
 
+// Update mapping: excelCol → dbKey
+function cmUpdateMapByExcel(dbKey, excelCol){
+  if(!_cmMapping[_cmCurFile])_cmMapping[_cmCurFile]={};
+  // Hapus mapping lama untuk dbKey ini (hindari duplikat)
+  Object.keys(_cmMapping[_cmCurFile]).forEach(k=>{
+    if(_cmMapping[_cmCurFile][k]===excelCol&&k!==dbKey)
+      _cmMapping[_cmCurFile][k]='';
+  });
+  // Hapus juga jika dbKey sudah dipakai kolom lain
+  if(dbKey){
+    Object.keys(_cmMapping[_cmCurFile]).forEach(k=>{
+      if(k!==dbKey&&_cmMapping[_cmCurFile][k]===excelCol)
+        _cmMapping[_cmCurFile][k]='';
+    });
+    _cmMapping[_cmCurFile][dbKey]=excelCol;
+  }else{
+    // User pilih "(tidak diimport)" — hapus mapping untuk kolom ini
+    Object.keys(_cmMapping[_cmCurFile]).forEach(k=>{
+      if(_cmMapping[_cmCurFile][k]===excelCol)
+        _cmMapping[_cmCurFile][k]='';
+    });
+  }
+  renderCmRows();
+  renderCmPreview();
+}
+
+// Backward compat
 function cmUpdateMap(fieldKey,excelCol){
   if(!_cmMapping[_cmCurFile])_cmMapping[_cmCurFile]={};
   _cmMapping[_cmCurFile][fieldKey]=excelCol;
-  // Re-render rows agar detected/undetected section terupdate
-  renderCmRows();
-  renderCmPreview();
+  renderCmRows();renderCmPreview();
 }
 
 function renderCmPreview(){
   const fd=_cmFiles[_cmCurFile];if(!fd)return;
   const mapping=_cmMapping[_cmCurFile]||{};
+  // mapped = CM_FIELDS yang punya excelCol
   const mapped=CM_FIELDS.filter(f=>mapping[f.k]);
   const el=document.getElementById('cmPreviewTable');
-  if(!mapped.length){el.innerHTML='<span style="color:var(--gray-400);font-size:.7rem">Belum ada kolom yang terdeteksi</span>';return;}
+  if(!mapped.length){
+    el.innerHTML='<span style="color:var(--gray-400);font-size:.7rem">Belum ada kolom yang dipetakan</span>';
+    return;
+  }
   const rows=fd.rows.slice(0,3);
   el.innerHTML=`<table style="border-collapse:collapse;width:100%;font-size:.68rem">
     <thead>
-      <tr style="background:#1a2f4a;color:rgba(255,255,255,.6)">
-        ${mapped.map(f=>`<th style="padding:2px 8px;font-size:.58rem;font-weight:600;white-space:nowrap;text-align:left">${mapping[f.k]}</th>`).join('')}
+      <tr style="background:#1a2f4a;color:rgba(255,255,255,.55)">
+        ${mapped.map(f=>`<th style="padding:2px 8px;font-size:.58rem;font-weight:600;white-space:nowrap;text-align:left;max-width:120px;overflow:hidden;text-overflow:ellipsis" title="${mapping[f.k]}">${mapping[f.k]}</th>`).join('')}
       </tr>
       <tr style="background:var(--navy);color:#fff">
-        ${mapped.map(f=>`<th style="padding:3px 8px;font-size:.65rem;font-weight:700;white-space:nowrap;text-align:left">→ ${f.lb}</th>`).join('')}
+        ${mapped.map(f=>`<th style="padding:3px 8px;font-size:.62rem;font-weight:700;white-space:nowrap;text-align:left">→ ${f.lb}</th>`).join('')}
       </tr>
     </thead>
     <tbody>${rows.map((row,i)=>`<tr style="background:${i%2?'var(--gray-50)':'#fff'}">${mapped.map(f=>{
-      const v=String(row[mapping[f.k]]||'').substring(0,25);
+      const v=String(row[mapping[f.k]]??'').substring(0,25);
       return`<td style="padding:3px 8px;border-bottom:1px solid var(--gray-100);color:${v?'var(--gray-800)':'var(--gray-300)'}">${v||'—'}</td>`;
     }).join('')}</tr>`).join('')}</tbody>
   </table>`;
