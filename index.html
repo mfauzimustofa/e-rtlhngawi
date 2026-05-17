@@ -4692,51 +4692,58 @@ const CM_HINTS={
 let _cmFiles=[],_cmCurFile=0,_cmMapping={};
 
 // Cari baris header yang sebenarnya di Excel
-// Return: {headerRow, rows} — headerRow adalah index baris header (0-based)
 function xlFindHeaderRow(ws){
-  // Baca semua baris tanpa header (pakai header:1 → array of arrays)
   const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-  if(!raw.length)return{headerRow:0,rows:[]};
+  if(!raw.length)return{headerRow:0,rows:[],headers:[]};
 
-  // Cari baris pertama yang:
-  // 1. Punya minimal 2 sel tidak kosong
-  // 2. Mayoritas selnya adalah string (bukan angka panjang = data NIK)
-  // 3. Bukan baris yang semua selnya angka besar (= baris data)
   let bestRow=0;
+  let bestScore=0;
+
   for(let i=0;i<Math.min(raw.length,20);i++){
     const row=raw[i];
     const nonEmpty=row.filter(v=>v!==''&&v!=null);
     if(nonEmpty.length<2)continue;
-    // Hitung berapa sel yang string (bukan angka murni)
+
+    // Hitung score: lebih banyak sel teks unik = lebih mungkin header
     const strings=nonEmpty.filter(v=>{
       const s=String(v).trim();
-      return isNaN(s)||s.length<8; // string atau angka pendek (bukan NIK)
+      // String yang bukan angka panjang (bukan NIK/KK)
+      return isNaN(s.replace(/[\s\-\.]/g,''))||s.length<6;
     });
-    // Kalau mayoritas non-empty adalah string → ini kemungkinan header
-    if(strings.length>=nonEmpty.length*0.5){
-      bestRow=i;
-      break;
-    }
+    // Bonus kalau kata-katanya mirip field database
+    const dbHints=['nik','nama','kk','desa','kecamatan','status','alamat','umur',
+      'pekerjaan','lantai','dinding','atap','bantuan','desil','backlog','keterangan'];
+    const hintMatches=strings.filter(s=>
+      dbHints.some(h=>String(s).toLowerCase().includes(h))
+    ).length;
+
+    const score=(strings.length/Math.max(nonEmpty.length,1))*10 + hintMatches*3 + Math.min(nonEmpty.length,10);
+
+    if(score>bestScore){bestScore=score;bestRow=i;}
   }
 
-  // Baca ulang dengan baris header yang ditemukan
-  const headerArr=raw[bestRow].map(v=>String(v===''||v==null?`__EMPTY_${Math.random().toString(36).slice(2,5)}`:v).trim());
+  // Build header array dari baris terpilih
+  const headerArr=raw[bestRow].map((v,j)=>{
+    const s=String(v===''||v==null?'':v).trim();
+    return s||null; // null untuk kolom kosong
+  });
 
-  // Buat rows dari baris setelah header
+  // Buat rows dari baris setelah header — skip baris yang semua kosong
   const dataRows=[];
   for(let i=bestRow+1;i<raw.length;i++){
     const row=raw[i];
-    // Skip baris yang semua kosong
     if(row.every(v=>v===''||v==null))continue;
     const obj={};
-    headerArr.forEach((h,j)=>{obj[h]=row[j]??'';});
+    headerArr.forEach((h,j)=>{
+      if(h)obj[h]=row[j]??''; // hanya simpan kolom yang punya header
+    });
     dataRows.push(obj);
   }
 
-  // Filter header — hapus yang __EMPTY dan duplikat
-  const cleanHeaders=headerArr.filter(h=>!h.startsWith('__EMPTY'));
+  // Headers bersih — hanya yang tidak null
+  const cleanHeaders=[...new Set(headerArr.filter(h=>h&&h.length>0))];
 
-  return{headerRow:bestRow,rows:dataRows,headers:cleanHeaders,allHeaders:headerArr};
+  return{headerRow:bestRow,rows:dataRows,headers:cleanHeaders};
 }
 
 function importExcelKab(input){
@@ -4913,6 +4920,11 @@ async function cmStartImport(){
       const id=parseInt(row['ID']||row['id']||0);
       const nik=obj.nik||String(row['NIK']||row['nik']||'').replace(/[^0-9]/g,'');
       if(nik&&!obj.nik)obj.nik=nik;
+
+      // Skip baris tidak valid: tidak ada NIK, tidak ada nama, dan tidak ada ID
+      // Biasanya baris kosong, baris total, atau baris judul yang tersisa
+      if(!id&&!nik&&!obj.kep_kk){return;} // skip
+
       if(id)toUpdate.push({id,obj});
       else if(nik)toUpsertByNIK.push({nik,obj});
       else toInsert.push(obj);
