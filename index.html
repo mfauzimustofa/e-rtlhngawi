@@ -4696,54 +4696,59 @@ function xlFindHeaderRow(ws){
   const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
   if(!raw.length)return{headerRow:0,rows:[],headers:[]};
 
-  let bestRow=0;
-  let bestScore=0;
+  const dbHints=['nik','nama','kk','desa','kecamatan','status','alamat','umur',
+    'pekerjaan','lantai','dinding','atap','bantuan','desil','backlog','keterangan',
+    'nomor','kartu','keluarga','wilayah','urut','jumlah','jenis','kelamin'];
+
+  let bestRow=0, bestScore=-1;
 
   for(let i=0;i<Math.min(raw.length,20);i++){
     const row=raw[i];
     const nonEmpty=row.filter(v=>v!==''&&v!=null);
     if(nonEmpty.length<2)continue;
 
-    // Hitung score: lebih banyak sel teks unik = lebih mungkin header
+    // Hitung berapa sel yang teks (bukan angka NIK/KK panjang)
     const strings=nonEmpty.filter(v=>{
-      const s=String(v).trim();
-      // String yang bukan angka panjang (bukan NIK/KK)
-      return isNaN(s.replace(/[\s\-\.]/g,''))||s.length<6;
+      const s=String(v).replace(/[\s\.\-]/g,'');
+      return isNaN(s)||s.length<8;
     });
-    // Bonus kalau kata-katanya mirip field database
-    const dbHints=['nik','nama','kk','desa','kecamatan','status','alamat','umur',
-      'pekerjaan','lantai','dinding','atap','bantuan','desil','backlog','keterangan'];
+
+    // Berapa kata yang cocok dengan hint database
     const hintMatches=strings.filter(s=>
       dbHints.some(h=>String(s).toLowerCase().includes(h))
     ).length;
 
-    const score=(strings.length/Math.max(nonEmpty.length,1))*10 + hintMatches*3 + Math.min(nonEmpty.length,10);
+    // Score: lebih banyak kolom teks = lebih bagus
+    // nonEmpty count paling penting (baris header biasanya paling banyak kolom)
+    const score = nonEmpty.length * 5
+      + strings.length * 3
+      + hintMatches * 4;
 
-    if(score>bestScore){bestScore=score;bestRow=i;}
+    if(score > bestScore){bestScore=score; bestRow=i;}
   }
 
-  // Build header array dari baris terpilih
-  const headerArr=raw[bestRow].map((v,j)=>{
-    const s=String(v===''||v==null?'':v).trim();
-    return s||null; // null untuk kolom kosong
-  });
+  // Build header dari baris terpilih — pakai nilai sel apa adanya
+  const rawHeader=raw[bestRow];
+  const headerArr=rawHeader.map(v=>String(v===''||v==null?'':v).trim());
 
-  // Buat rows dari baris setelah header — skip baris yang semua kosong
+  // Build rows dari baris setelah header, skip baris kosong semua
   const dataRows=[];
   for(let i=bestRow+1;i<raw.length;i++){
     const row=raw[i];
     if(row.every(v=>v===''||v==null))continue;
     const obj={};
-    headerArr.forEach((h,j)=>{
-      if(h)obj[h]=row[j]??''; // hanya simpan kolom yang punya header
-    });
+    headerArr.forEach((h,j)=>{if(h)obj[h]=row[j]??'';});
     dataRows.push(obj);
   }
 
-  // Headers bersih — hanya yang tidak null
-  const cleanHeaders=[...new Set(headerArr.filter(h=>h&&h.length>0))];
+  // Headers bersih: tidak null, tidak kosong, tidak duplikat
+  const seen=new Set();
+  const cleanHeaders=headerArr.filter(h=>{
+    if(!h||seen.has(h))return false;
+    seen.add(h); return true;
+  });
 
-  return{headerRow:bestRow,rows:dataRows,headers:cleanHeaders};
+  return{headerRow:bestRow, rows:dataRows, headers:cleanHeaders};
 }
 
 function importExcelKab(input){
