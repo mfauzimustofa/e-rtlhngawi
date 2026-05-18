@@ -651,15 +651,24 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
       <div style="flex:1;position:relative">
         <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.4);font-size:.8rem;pointer-events:none"></i>
         <input type="text" id="kecSearchList"
-          placeholder="Cari nama, NIK, desa, BSPS 2024, kecamatan..."
+          placeholder="Ketik nama, NIK, desa, atau kecamatan..."
           maxlength="80" autocomplete="off" spellcheck="false" inputmode="search"
           style="width:100%;padding:11px 14px 11px 36px;border-radius:10px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.12);color:#fff;font-size:.85rem;font-family:inherit;outline:none;box-sizing:border-box;transition:all .2s"
-          onfocus="this.style.background='rgba(255,255,255,.18)';this.style.borderColor='rgba(255,255,255,.5)'"
-          onblur="this.style.background='rgba(255,255,255,.12)';this.style.borderColor='rgba(255,255,255,.2)'"
-          onkeydown="if(event.key==='Enter')searchKeclist()"
-          oninput="clearTimeout(this._kt);const v=this.value.trim();if(v.length>=3){this._kt=setTimeout(()=>searchKeclist(),400)}else if(!v){clearKeclistSearch()}else{renderKecList()}">
+          onfocus="this.style.background='rgba(255,255,255,.18)';this.style.borderColor='rgba(255,255,255,.5)';showSearchHints()"
+          onblur="this.style.background='rgba(255,255,255,.12)';this.style.borderColor='rgba(255,255,255,.2)';setTimeout(hideSearchHints,200)"
+          onkeydown="if(event.key==='Enter')searchKeclist();if(event.key==='Escape'){clearKeclistSearch();this.blur()}"
+          oninput="clearTimeout(this._kt);const v=this.value.trim();hideSearchHints();if(v.length>=2){this._kt=setTimeout(()=>searchKeclist(),350)}else if(!v){clearKeclistSearch()}else{renderKecList()}">
       </div>
       <button onclick="searchKeclist()" style="padding:11px 16px;border-radius:10px;background:var(--gold);color:var(--navy);border:none;font-size:.85rem;font-weight:700;cursor:pointer;flex-shrink:0"><i class="fas fa-search"></i></button>
+    </div>
+    <!-- Search hints -->
+    <div id="searchHints" style="display:none;flex-wrap:wrap;gap:5px;margin-top:6px">
+      <span style="font-size:.62rem;color:rgba(255,255,255,.45);align-self:center">Contoh:</span>
+      <button onclick="setSearch('RTLH')" style="padding:3px 10px;border-radius:99px;background:rgba(220,38,38,.25);border:1px solid rgba(220,38,38,.4);color:#FCA5A5;font-size:.65rem;cursor:pointer;font-family:inherit">RTLH</button>
+      <button onclick="setSearch('Layak Huni')" style="padding:3px 10px;border-radius:99px;background:rgba(22,163,74,.2);border:1px solid rgba(22,163,74,.4);color:#86EFAC;font-size:.65rem;cursor:pointer;font-family:inherit">Layak Huni</button>
+      <button onclick="setSearch('BSPS')" style="padding:3px 10px;border-radius:99px;background:rgba(245,158,11,.2);border:1px solid rgba(245,158,11,.4);color:#FCD34D;font-size:.65rem;cursor:pointer;font-family:inherit">BSPS</button>
+      <button onclick="setSearch('Ngawi')" style="padding:3px 10px;border-radius:99px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);font-size:.65rem;cursor:pointer;font-family:inherit">Ngawi</button>
+      <button onclick="setSearch('Paron')" style="padding:3px 10px;border-radius:99px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);font-size:.65rem;cursor:pointer;font-family:inherit">Paron</button>
     </div>
     <div id="keclistResultWrap" style="display:none;max-height:55vh;overflow-y:auto;background:#fff;border-radius:10px;margin-top:6px;box-shadow:0 8px 24px rgba(0,0,0,.3)">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px 4px;border-bottom:1px solid var(--gray-100)">
@@ -2124,6 +2133,85 @@ async function applyGlobalFilter(){
         </div>`).join('');
 }
 
+function showSearchHints(){
+  const h=document.getElementById('searchHints');
+  const q=(document.getElementById('kecSearchList')?.value||'').trim();
+  if(h&&!q)h.style.display='flex';
+}
+function hideSearchHints(){
+  const h=document.getElementById('searchHints');
+  if(h)h.style.display='none';
+}
+function setSearch(val){
+  const inp=document.getElementById('kecSearchList');
+  if(!inp)return;
+  inp.value=val;
+  hideSearchHints();
+  searchKeclist();
+}
+
+async function showDesaStat(kecName){
+  // Tampilkan statistik per desa untuk kecamatan ini
+  const wrap=document.getElementById('keclistResultWrap');
+  const res=document.getElementById('keclistResult');
+  const cnt=document.getElementById('keclistResultCount');
+  wrap.style.display='block';
+  res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat statistik desa...</div>';
+  cnt.innerHTML=`<strong>${kecName}</strong> — statistik per desa`;
+
+  const{data,error}=await sb.from('rtlh')
+    .select('desa,status_rtlh,desil')
+    .ilike('kec',`%${kecName}%`)
+    .limit(5000);
+
+  if(error||!data?.length){
+    res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:.78rem">Tidak ada data</div>';
+    return;
+  }
+
+  // Group by desa
+  const byDesa={};
+  data.forEach(r=>{
+    const d=normCase(r.desa)||r.desa||'-';
+    if(!byDesa[d])byDesa[d]={desa:d,total:0,layak:0,rtlh:0,lain:0};
+    byDesa[d].total++;
+    if(r.status_rtlh==='Layak Huni')byDesa[d].layak++;
+    else if(r.status_rtlh==='RTLH'||!r.status_rtlh)byDesa[d].rtlh++;
+    else byDesa[d].lain++;
+  });
+
+  const desas=Object.values(byDesa).sort((a,b)=>b.total-a.total);
+  cnt.innerHTML=`<strong>${kecName}</strong> · ${desas.length} desa · ${data.length.toLocaleString('id')} data`;
+
+  res.innerHTML=`
+    <div style="padding:8px 12px;background:var(--blue-bg);border-bottom:1px solid var(--gray-100);display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:.7rem;font-weight:800;color:var(--blue)"><i class="fas fa-map-marker-alt"></i> ${kecName} — ${desas.length} Desa</span>
+      <button onclick="clearKeclistSearch()" style="background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:.78rem"><i class="fas fa-times"></i></button>
+    </div>
+    ${desas.map(({desa,total,layak,rtlh,lain})=>{
+      const pLayak=total?Math.round(layak/total*100):0;
+      const pRtlh=total?Math.round(rtlh/total*100):0;
+      const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===kecName.toUpperCase())||'';
+      return`<div style="padding:10px 12px;border-bottom:1px solid var(--gray-100);cursor:pointer"
+        onclick="clearKeclistSearch();selectKec('${kecKey}')"
+        onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+          <span style="font-size:.78rem;font-weight:700;color:var(--gray-900)">${desa}</span>
+          <span style="font-size:.65rem;font-weight:700;color:var(--gray-500)">${total} data</span>
+        </div>
+        <div style="height:5px;background:var(--gray-100);border-radius:99px;overflow:hidden;margin-bottom:4px">
+          <div style="height:100%;width:${pLayak}%;background:var(--success);border-radius:99px;float:left"></div>
+          <div style="height:100%;width:${pRtlh}%;background:var(--danger);border-radius:99px;float:left"></div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <span style="font-size:.62rem;color:var(--success);font-weight:700"><i class="fas fa-home" style="font-size:.55rem"></i> ${layak} layak (${pLayak}%)</span>
+          <span style="font-size:.62rem;color:var(--danger);font-weight:700"><i class="fas fa-house-damage" style="font-size:.55rem"></i> ${rtlh} RTLH (${pRtlh}%)</span>
+          ${lain?`<span style="font-size:.62rem;color:var(--purple);font-weight:700">${lain} lain</span>`:''}
+        </div>
+      </div>`;
+    }).join('')}`;
+}
+
 function clearKeclistSearch(){
   const inp=document.getElementById('kecSearchList');
   if(inp)inp.value='';
@@ -2144,16 +2232,76 @@ async function searchKeclist(){
 
   // Cek apakah search kecamatan dulu
   const kecMatch=Object.keys(KEC_CONFIG).filter(k=>k.toLowerCase().includes(ql));
-  if(kecMatch.length&&!['bsps','rtlh','dd','dana desa','csr'].some(b=>ql.startsWith(b))){
-    res.innerHTML='';cnt.innerHTML='Kecamatan ditemukan';
+  const skipKec=['bsps','rtlh','dd','dana desa','csr','layak','dibantu'].some(b=>ql.startsWith(b));
+  if(kecMatch.length&&!skipKec){
+    res.innerHTML='';
+    const totalKecMatch=kecMatch.length;
+    cnt.innerHTML=`${totalKecMatch} kecamatan ditemukan`;
     kecMatch.forEach(k=>{
+      const c2=kecCounts[k.toUpperCase()]||{total:0,sudah:0,belum:0};
       const d=document.createElement('div');
       d.onclick=()=>{clearKeclistSearch();selectKec(k);};
-      d.style.cssText='padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--gray-100)';
-      d.onmouseover=()=>d.style.background='var(--gray-50)';d.onmouseout=()=>d.style.background='';
-      d.innerHTML=`<i class="fas fa-map-marker-alt" style="color:var(--blue);font-size:.85rem"></i><span style="font-weight:700;font-size:.85rem">${k}</span><i class="fas fa-chevron-right" style="color:var(--gray-400);margin-left:auto;font-size:.75rem"></i>`;
+      d.style.cssText='padding:11px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--gray-100)';
+      d.onmouseover=()=>d.style.background='var(--blue-bg)';d.onmouseout=()=>d.style.background='';
+      d.innerHTML=`
+        <div style="width:34px;height:34px;border-radius:9px;background:var(--blue-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <i class="fas fa-map-marked-alt" style="color:var(--blue);font-size:.82rem"></i>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:800;font-size:.85rem;color:var(--gray-900)">${k}</div>
+          <div style="font-size:.63rem;color:var(--gray-400);margin-top:1px">
+            <span style="font-weight:700;color:var(--blue)">Kecamatan</span>
+            · ${c2.total} data
+            ${c2.sudah?`· <span style="color:var(--success)">${c2.sudah} layak</span>`:''}
+            ${c2.belum?`· <span style="color:var(--danger)">${c2.belum} RTLH</span>`:''}
+          </div>
+        </div>
+        <i class="fas fa-chevron-right" style="color:var(--gray-300);font-size:.72rem"></i>`;
       res.appendChild(d);
     });
+
+    // Juga cari desa dengan nama yang sama (misal "Ngawi" bisa desa dan kecamatan)
+    const{data:desaMatch}=await sb.from('rtlh')
+      .select('desa,kec,status_rtlh')
+      .ilike('desa',`%${q}%`)
+      .limit(200);
+    if(desaMatch&&desaMatch.length){
+      const byDesa2={};
+      desaMatch.forEach(r=>{
+        const key=((r.desa||'')+':'+(r.kec||'')).toUpperCase();
+        if(!byDesa2[key])byDesa2[key]={desa:normCase(r.desa)||r.desa,kec:normCase(r.kec)||r.kec,total:0,layak:0,rtlh:0};
+        byDesa2[key].total++;
+        if(r.status_rtlh==='Layak Huni')byDesa2[key].layak++;
+        else byDesa2[key].rtlh++;
+      });
+      const desaEl=document.createElement('div');
+      desaEl.innerHTML=`<div style="padding:6px 12px;background:var(--gray-50);font-size:.62rem;font-weight:800;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;border-top:2px solid var(--gray-200)">Desa dengan nama serupa</div>`;
+      res.appendChild(desaEl);
+      Object.values(byDesa2).sort((a,b)=>b.total-a.total).forEach(({desa,kec,total,layak,rtlh})=>{
+        const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(kec||'').toUpperCase())||'';
+        const d2=document.createElement('div');
+        d2.onclick=()=>{clearKeclistSearch();if(kecKey)selectKec(kecKey);};
+        d2.style.cssText='padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--gray-100)';
+        d2.onmouseover=()=>d2.style.background='var(--success-bg)';d2.onmouseout=()=>d2.style.background='';
+        d2.innerHTML=`
+          <div style="width:34px;height:34px;border-radius:9px;background:#F0FDF4;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <i class="fas fa-map-marker-alt" style="color:var(--success);font-size:.82rem"></i>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:.83rem;color:var(--gray-900)">${desa}</div>
+            <div style="font-size:.63rem;color:var(--gray-400);margin-top:1px">
+              <span style="font-weight:700;color:var(--success)">Desa</span>
+              · Kec. ${kec}
+              · ${total} data
+              ${layak?`· <span style="color:var(--success)">${layak} layak</span>`:''}
+              ${rtlh?`· <span style="color:var(--danger)">${rtlh} RTLH</span>`:''}
+            </div>
+          </div>
+          <i class="fas fa-chevron-right" style="color:var(--gray-300);font-size:.72rem"></i>`;
+        res.appendChild(d2);
+      });
+      cnt.innerHTML=`${totalKecMatch} kecamatan · ${Object.keys(byDesa2).length} desa ditemukan`;
+    }
     return;
   }
 
@@ -2207,26 +2355,40 @@ function renderKecList(){
   const g=document.getElementById('kecListGrid');
   const names=Object.keys(KEC_CONFIG).sort().filter(k=>k.toLowerCase().includes(q));
   g.innerHTML=names.map(k=>{
-    const c=kecCounts[k.toUpperCase()]||{total:0,sudah:0,proses:0,belum:0};
-    const ps=pct(c.sudah,c.total),pp=pct(c.proses,c.total);
-    return`<div class="kec-card" onclick="selectKec('${k}')">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <div class="kc-name" style="margin:0">${k}</div>
-        <i class="fas fa-chevron-right" style="color:var(--gray-400);font-size:.75rem"></i>
+    const c2=kecCounts[k.toUpperCase()]||{total:0,sudah:0,proses:0,belum:0};
+    const ps=pct(c2.sudah,c2.total),pb=pct(c2.belum,c2.total);
+    const pctLayak=c2.total?Math.round(c2.sudah/c2.total*100):0;
+    return`<div class="kec-card" style="cursor:pointer;position:relative" onclick="selectKec('${k}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div>
+          <div class="kc-name" style="margin:0">${k}</div>
+          <div style="font-size:.6rem;color:var(--gray-400);margin-top:1px">Kecamatan · ${c2.total} data</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:.68rem;font-weight:800;color:${pctLayak>=50?'var(--success)':'var(--danger)'}">${pctLayak}%</div>
+          <div style="font-size:.55rem;color:var(--gray-400)">layak</div>
+        </div>
       </div>
-      <div style="display:flex;gap:6px;align-items:baseline">
-        <div class="kc-total">${c.total}</div>
-        <div class="kc-sub">RTLH</div>
+      <div class="kc-mini-bar" style="margin-bottom:6px">
+        <div class="kc-mb-seg" style="width:${ps}%;background:var(--success);border-radius:99px 0 0 99px"></div>
+        <div class="kc-mb-seg" style="flex:1;background:var(--danger);border-radius:${ps<1?'99px':'0 99px 99px 0'}"></div>
       </div>
-      <div class="kc-mini-bar" style="margin-top:8px">
-        <div class="kc-mb-seg" style="width:${ps}%;background:var(--success)"></div>
-        <div class="kc-mb-seg" style="width:${pp}%;background:var(--warning)"></div>
-        <div class="kc-mb-seg" style="flex:1;background:var(--danger)"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:8px">
+        <div style="background:#F0FDF4;border-radius:6px;padding:4px 7px;text-align:center">
+          <div style="font-size:.72rem;font-weight:800;color:var(--success)">${c2.sudah}</div>
+          <div style="font-size:.55rem;color:var(--success);font-weight:600">Layak Huni</div>
+        </div>
+        <div style="background:#FEF2F2;border-radius:6px;padding:4px 7px;text-align:center">
+          <div style="font-size:.72rem;font-weight:800;color:var(--danger)">${c2.belum}</div>
+          <div style="font-size:.55rem;color:var(--danger);font-weight:600">RTLH</div>
+        </div>
       </div>
-      <div style="display:flex;gap:8px;margin-top:5px">
-        <span style="font-size:.6rem;color:var(--success);font-weight:600">✓${c.sudah}</span>
-        <span style="font-size:.6rem;color:var(--warning);font-weight:600">⏳${c.proses}</span>
-        <span style="font-size:.6rem;color:var(--danger);font-weight:600">✗${c.belum}</span>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <button onclick="event.stopPropagation();showDesaStat('${k}')"
+          style="font-size:.6rem;padding:3px 9px;border-radius:99px;border:1px solid var(--gray-200);background:#fff;color:var(--gray-600);cursor:pointer;font-family:inherit;font-weight:600;display:flex;align-items:center;gap:4px">
+          <i class="fas fa-table" style="font-size:.55rem"></i> Per Desa
+        </button>
+        <span style="font-size:.6rem;color:var(--gray-400)">Buka WebGIS →</span>
       </div>
     </div>`;
   }).join('');
