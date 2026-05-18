@@ -3319,7 +3319,7 @@ function showDetail(r){
           <div style="font-size:.7rem;color:rgba(255,255,255,.55);margin-top:4px">${[r.desa,r.kec].filter(Boolean).map(v=>normCase(v)||v).join(' · ')||'-'}</div>
         </div>
         <div style="text-align:right;flex-shrink:0">
-          ${r.status_rtlh?`<div style="background:${statusCls==='sudah'?'#16A34A':'#DC2626'}22;border:1px solid ${statusCls==='sudah'?'#16A34A':'#DC2626'}44;border-radius:8px;padding:4px 10px;font-size:.7rem;font-weight:800;color:${statusCls==='sudah'?'#86EFAC':'#FCA5A5'}">${r.status_rtlh}</div>`:''}
+          ${r.status_rtlh?`<div style="background:${_kat==='Layak Huni'?'#16A34A':_kat==='Keterangan Lain'?'#7C3AED':'#DC2626'}22;border:1px solid ${_kat==='Layak Huni'?'#16A34A':_kat==='Keterangan Lain'?'#7C3AED':'#DC2626'}44;border-radius:8px;padding:4px 10px;font-size:.7rem;font-weight:800;color:${_kat==='Layak Huni'?'#86EFAC':_kat==='Keterangan Lain'?'#C4B5FD':'#FCA5A5'}">${r.status_rtlh}</div>`:''}
           ${desilNum?`<div style="margin-top:5px;font-size:.65rem;font-weight:700;color:${desilColor}">● Desil ${desilNum}</div>`:''}
         </div>
       </div>
