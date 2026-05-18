@@ -1365,30 +1365,88 @@ async function doLogout(){
   if(MAINTENANCE_MODE)setTimeout(()=>showMaintenanceOverlay(),600);
 }
 
-// Auto-refresh digantikan Supabase Realtime
+// Auto-refresh via Supabase Realtime
 let _realtimeChannel=null;
 let _pollTimer=null;
+let _rtPending=false; // debounce rapid changes
+
 function startAutoRefresh(){
   Object.keys(_kecCacheTime).forEach(k=>delete _kecCacheTime[k]);
   if(_realtimeChannel)try{sb.removeChannel(_realtimeChannel);}catch(e){}
   if(_pollTimer)clearInterval(_pollTimer);
-  // Supabase Realtime
+
+  // Supabase Realtime — berlaku untuk semua user (bukan hanya admin)
   _realtimeChannel=sb.channel('rtlh-live')
     .on('postgres_changes',{event:'*',schema:'public',table:'rtlh'},async(payload)=>{
-      if(document.hidden||!isAdmin)return;
-      if(payload.new?.kec)delete brCache[payload.new.kec];
-      Object.keys(_kecCacheTime).forEach(k=>delete _kecCacheTime[k]);
+      if(document.hidden)return;
+      if(_rtPending)return; // debounce
+      _rtPending=true;
+      setTimeout(()=>_rtPending=false, 2000);
+
+      const changed=payload.new||payload.old||{};
+      const changedKec=(changed.kec||'').toUpperCase().trim();
+
+      // Hapus cache kecamatan yang berubah saja
+      if(changedKec){
+        delete brCache[changedKec];
+        delete _kecCacheTime[changedKec];
+      }else{
+        Object.keys(_kecCacheTime).forEach(k=>delete _kecCacheTime[k]);
+      }
+
       const activePage=document.querySelector('.page.active')?.id;
+
       try{
-        if(activePage==='pgBeranda')await loadGlobalStats();
-        else if(activePage==='pgWebgis'&&currentKec){brAll=[];await loadKec();}
-        else if(activePage==='pgKecList'){await ensureKecCounts(true);renderKecList();}
-      }catch(e){}
+        if(activePage==='pgBeranda'){
+          await loadGlobalStats();
+        }
+        else if(activePage==='pgWebgis'&&currentKec){
+          // Update hanya record yang berubah di brAll (tidak reload semua)
+          const id=changed.id;
+          if(id&&payload.eventType==='UPDATE'){
+            const idx=brAll.findIndex(x=>x.id===id);
+            if(idx>=0){
+              // Fetch data terbaru hanya 1 record ini
+              const{data}=await sb.from('rtlh').select('*').eq('id',id).single();
+              if(data){
+                brAll[idx]=data;
+                // Re-render sidebar dan peta tanpa reload semua
+                renderSidebarList();
+                updateMap();
+                // Toast kecil
+                toast(`Data diperbarui: ${data.kep_kk||'1 record'}`,'info');
+              }
+            }else if(payload.eventType==='INSERT'){
+              // Data baru di kecamatan yang sedang dibuka
+              const{data}=await sb.from('rtlh').select('*').eq('id',id).single();
+              if(data&&(data.kec||'').toUpperCase().trim()===currentKec.toUpperCase()){
+                brAll.push(data);
+                renderSidebarList();
+                updateMap();
+                toast('Data baru ditambahkan','info');
+              }
+            }else{
+              // DELETE atau perubahan lain — reload kecamatan ini saja
+              brAll=[];await loadKec();
+            }
+          }else if(changedKec===currentKec.toUpperCase()||!changedKec){
+            brAll=[];await loadKec();
+          }
+        }
+        else if(activePage==='pgKecList'){
+          await ensureKecCounts(true);renderKecList();
+        }
+      }catch(e){console.warn('Realtime update error:',e);}
     })
-    .subscribe();
-  // Fallback polling 3 menit
+    .subscribe((status)=>{
+      if(status==='SUBSCRIBED'){
+        console.log('[Realtime] Connected — auto-sync aktif');
+      }
+    });
+
+  // Fallback polling 5 menit (kalau realtime terputus)
   _pollTimer=setInterval(async()=>{
-    if(document.hidden||!isAdmin)return;
+    if(document.hidden)return;
     const activePage=document.querySelector('.page.active')?.id;
     try{
       if(activePage==='pgBeranda')await loadGlobalStats();
@@ -1397,7 +1455,7 @@ function startAutoRefresh(){
         brAll=[];await loadKec();
       }
     }catch(e){}
-  },3*60*1000);
+  },5*60*1000);
 }
 
 function closeModal(id){document.getElementById(id).classList.remove('open')}
