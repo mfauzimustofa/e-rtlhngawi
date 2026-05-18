@@ -3117,13 +3117,31 @@ function renderSidebar(){
       </div>
     </div>
     <div class="kec-dashboard" id="kecDashboard"></div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
-      <span style="font-size:.68rem;font-weight:700;color:var(--gray-500)">Status:</span>
+
+    <!-- Search di dalam sidebar -->
+    <div style="position:relative;margin-bottom:8px">
+      <i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--gray-400);font-size:.72rem;pointer-events:none"></i>
+      <input id="sidebarSearchInput" type="text" placeholder="Cari nama / NIK / desa..."
+        autocomplete="off" spellcheck="false"
+        style="width:100%;padding:8px 32px 8px 30px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.78rem;font-family:inherit;outline:none;box-sizing:border-box;background:#fff"
+        oninput="clearTimeout(this._t);this._t=setTimeout(()=>searchSidebar(),300)"
+        onkeydown="if(event.key==='Escape'){this.value='';resetSidebarSearch();}">
+      <button onclick="document.getElementById('sidebarSearchInput').value='';resetSidebarSearch()"
+        style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:.72rem;padding:4px">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Filter chips -->
+    <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+      <span style="font-size:.65rem;font-weight:700;color:var(--gray-500)">Status:</span>
       <button class="filter-chip active" data-status-chip="all" onclick="setFilterStatus('all')">Semua</button>
       <button class="filter-chip" data-status-chip="RTLH" onclick="setFilterStatus('RTLH')" style="border-color:#DC2626;color:#DC2626">RTLH</button>
       <button class="filter-chip" data-status-chip="Layak Huni" onclick="setFilterStatus('Layak Huni')" style="border-color:#16A34A;color:#16A34A">Layak Huni</button>
-      <button class="filter-chip" data-status-chip="Dibatalkan" onclick="setFilterStatus('SK Dibatalkan')" style="border-color:#9CA3AF;color:#6B7280">SK Dibatalkan</button>
-      <span style="font-size:.68rem;font-weight:700;color:var(--gray-500);margin-left:6px">Desil:</span>
+      <button class="filter-chip" data-status-chip="Keterangan Lain" onclick="setFilterStatus('Keterangan Lain')" style="border-color:#7C3AED;color:#7C3AED">Ket. Lain</button>
+    </div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+      <span style="font-size:.65rem;font-weight:700;color:var(--gray-500)">Desil:</span>
       <button class="filter-chip active" data-desil-chip="all" onclick="setFilterDesil('all')">Semua</button>
       <button class="filter-chip" data-desil-chip="1" onclick="setFilterDesil('1')" style="color:#BE123C">D1</button>
       <button class="filter-chip" data-desil-chip="2" onclick="setFilterDesil('2')" style="color:#DC2626">D2</button>
@@ -3152,15 +3170,14 @@ function renderKecDashboard(data){
   const rtlh=src.filter(r=>isRTLH(r)).length;
   const batal=src.filter(r=>isKetLain(r)).length;
 
-  const modeBadge=''; // mode tidak ditampilkan
+  const modeBadge='';
 
   d.innerHTML=`
     <div class="kd-stat">
-      <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--success)">${layak}</div><div class="kdsi-lbl">Layak Huni</div></div>
-      <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--danger)">${rtlh}</div><div class="kdsi-lbl">RTLH</div></div>
-      <div class="kd-stat-item"><div class="kdsi-val" style="color:var(--gray-500)">${batal}</div><div class="kdsi-lbl">Dibatalkan</div></div>
+      <div class="kd-stat-item"><div class="kdsi-val" style="color:#16A34A">${layak}</div><div class="kdsi-lbl">Layak Huni</div></div>
+      <div class="kd-stat-item"><div class="kdsi-val" style="color:#DC2626">${rtlh}</div><div class="kdsi-lbl">RTLH</div></div>
+      <div class="kd-stat-item"><div class="kdsi-val" style="color:#7C3AED">${batal}</div><div class="kdsi-lbl">Ket. Lain</div></div>
     </div>
-    ${modeBadge?`<div style="margin-top:5px">${modeBadge} <span style="font-size:.6rem;color:var(--gray-400)">Mode tampil aktif</span></div>`:''}
     <div class="canvas-wrap"><canvas id="chartKecStatus"></canvas></div>`;
   setTimeout(()=>{
     const ctx=document.getElementById('chartKecStatus');
@@ -3168,8 +3185,27 @@ function renderKecDashboard(data){
     const existing=Chart.getChart(ctx);
     if(existing)existing.destroy();
     new Chart(ctx,{type:'doughnut',
-      data:{labels:['Layak Huni','RTLH','Dibatalkan'],datasets:[{data:[layak,rtlh,batal],backgroundColor:['#16A34A','#DC2626','#94A3B8'],borderWidth:2,cutout:'65%'}]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:9},boxWidth:10,padding:6}}}}
+      data:{labels:['Layak Huni','RTLH','Keterangan Lain'],
+        datasets:[{data:[layak,rtlh,batal],
+          backgroundColor:['#16A34A','#DC2626','#7C3AED'],
+          borderWidth:0,hoverOffset:4}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',
+          labels:{font:{size:9},boxWidth:10,padding:6,
+            generateLabels(chart){
+              return chart.data.labels.map((l,i)=>({
+                text:`${l}: ${chart.data.datasets[0].data[i]}`,
+                fillStyle:chart.data.datasets[0].backgroundColor[i],
+                hidden:false,index:i
+              }));
+            }
+          }},
+          tooltip:{callbacks:{label:c2=>{
+            const tot=c2.dataset.data.reduce((a,b)=>a+b,0);
+            return` ${c2.label}: ${c2.parsed} (${tot?Math.round(c2.parsed/tot*100):0}%)`;
+          }}}
+        }
+      }
     });
   },50);
 }
