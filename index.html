@@ -1812,6 +1812,17 @@ function togglePass(inputId,btn){
 // ══════════════════════════════════════════════════
 // GLOBAL STATS (BERANDA)
 // ══════════════════════════════════════════════════
+// ── Klasifikasi status ke 3 kategori resmi ──
+function statusKategori(s){
+  if(!s||s==='RTLH'||s==='Belum Ditangani')return 'RTLH';
+  if(s==='Layak Huni'||s==='Sudah Ditangani'||s==='Dalam Proses')return 'Layak Huni';
+  return 'Keterangan Lain';
+}
+function isLayakHuni(r){return statusKategori(r.status_rtlh)==='Layak Huni';}
+function isRTLH(r){return statusKategori(r.status_rtlh)==='RTLH';}
+function isKetLain(r){return statusKategori(r.status_rtlh)==='Keterangan Lain';}
+const STATUS_COLORS={'Layak Huni':'#16A34A','RTLH':'#DC2626','Keterangan Lain':'#7C3AED'};
+
 async function loadGlobalStats(){
   if(!user)return;
   try{
