@@ -804,10 +804,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
         <div style="font-size:.72rem;font-weight:700;color:var(--gray-700);margin-bottom:8px"><i class="fas fa-upload"></i> Import Excel</div>
         <div class="upload-zone" id="exUploadZone"
           onclick="document.getElementById('xlsxKabFile').click()"
-          ondragover="event.preventDefault();this.style.borderColor='var(--blue)'"
-          ondragleave="this.style.borderColor='var(--gray-300)'"
-          ondrop="event.preventDefault();this.style.borderColor='var(--gray-300)';importExcelKab({files:event.dataTransfer.files})"
-          style="padding:16px;border-radius:10px;border:2px dashed var(--gray-300);text-align:center;cursor:pointer">
+          style="padding:16px;border-radius:10px;border:2px dashed var(--gray-300);text-align:center;cursor:pointer;transition:all .2s">
           <i class="fas fa-file-excel" style="font-size:1.5rem;color:var(--success);margin-bottom:6px;display:block"></i>
           <p style="font-size:.78rem;color:var(--gray-500)">Klik atau seret <strong>satu atau lebih</strong> file Excel</p>
           <p style="font-size:.65rem;color:var(--gray-400);margin-top:3px">Multi-file: Ctrl+klik · Atau drag & drop</p>
@@ -4735,9 +4732,62 @@ window.addEventListener('DOMContentLoaded',async()=>{
   }
 });
 
-// ══════════════════════════════════════════════════
-// IMPORT EXCEL: COLUMN MAPPING + MULTI-FILE
-// ══════════════════════════════════════════════════
+// ── Drag & Drop global — cegah browser buka file ──
+(function(){
+  // Cegah browser buka file saat drop di luar zone
+  ['dragenter','dragover','dragleave','drop'].forEach(ev=>{
+    document.addEventListener(ev,e=>{
+      e.preventDefault();e.stopPropagation();
+    },false);
+  });
+
+  // Setup zona upload Excel kabupaten
+  function setupExcelDropZone(){
+    const zone=document.getElementById('exUploadZone');
+    if(!zone||zone._dropReady)return;
+    zone._dropReady=true;
+
+    zone.addEventListener('dragenter',e=>{
+      e.preventDefault();e.stopPropagation();
+      zone.style.borderColor='var(--blue)';
+      zone.style.background='var(--blue-bg)';
+    });
+    zone.addEventListener('dragover',e=>{
+      e.preventDefault();e.stopPropagation();
+      zone.style.borderColor='var(--blue)';
+      zone.style.background='var(--blue-bg)';
+    });
+    zone.addEventListener('dragleave',e=>{
+      e.preventDefault();e.stopPropagation();
+      zone.style.borderColor='var(--gray-300)';
+      zone.style.background='';
+    });
+    zone.addEventListener('drop',e=>{
+      e.preventDefault();e.stopPropagation();
+      zone.style.borderColor='var(--gray-300)';
+      zone.style.background='';
+      const files=e.dataTransfer?.files;
+      if(files&&files.length){
+        // Filter hanya .xlsx
+        const xlsx=[...files].filter(f=>f.name.toLowerCase().endsWith('.xlsx'));
+        if(!xlsx.length)return toast('Hanya file .xlsx yang didukung','error');
+        importExcelKab({files:xlsx});
+      }
+    });
+  }
+
+  // Jalankan saat modal Excel Kabupaten dibuka
+  document.addEventListener('DOMContentLoaded',()=>{
+    // Pasang setelah modal terbuka
+    const observer=new MutationObserver(()=>{
+      const zone=document.getElementById('exUploadZone');
+      if(zone&&!zone._dropReady)setupExcelDropZone();
+    });
+    observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+    // Pasang langsung juga
+    setupExcelDropZone();
+  });
+})();
 const CM_FIELDS=[
   {k:'nik',lb:'NIK',type:'nik'},
   {k:'no_kk',lb:'No. KK',type:'kk'},
