@@ -531,10 +531,29 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
     <!-- STAT CARDS -->
     <div class="section" style="margin-bottom:0;padding-bottom:6px;padding-top:12px">
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
-        <div class="mini-stat" onclick="navWithFilter('')" title="Lihat semua data"><div class="ms-icon" style="background:linear-gradient(135deg,var(--blue),var(--blue-light))"><i class="fas fa-database"></i></div><div class="ms-texts"><div class="ms-val" id="gs-total">-</div><div class="ms-label">Total Data</div></div></div>
-        <div class="mini-stat" onclick="navWithFilter('Layak Huni')" title="Lihat semua Layak Huni"><div class="ms-icon" style="background:linear-gradient(135deg,#16A34A,#22C55E)"><i class="fas fa-home"></i></div><div class="ms-texts"><div class="ms-val" id="gs-layak">-</div><div class="ms-label">Layak Huni</div></div></div>
-        <div class="mini-stat" onclick="navWithFilter('RTLH')" title="Lihat semua RTLH"><div class="ms-icon" style="background:linear-gradient(135deg,var(--danger),#F87171)"><i class="fas fa-house-damage"></i></div><div class="ms-texts"><div class="ms-val" id="gs-belum">-</div><div class="ms-label">RTLH</div></div></div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:8px">
+        <div class="mini-stat" onclick="navWithFilter('')" title="Lihat semua data" style="cursor:pointer">
+          <div class="ms-icon" style="background:linear-gradient(135deg,var(--blue),var(--blue-light))"><i class="fas fa-database"></i></div>
+          <div class="ms-texts"><div class="ms-val" id="gs-total">-</div><div class="ms-label">Total Data <i class="fas fa-arrow-right" style="font-size:.55rem;opacity:.4"></i></div></div>
+        </div>
+        <div class="mini-stat" onclick="showNonDbModal()" title="Lihat data Non-Database" style="cursor:pointer">
+          <div class="ms-icon" style="background:linear-gradient(135deg,#0891B2,#06B6D4)"><i class="fas fa-plus-circle"></i></div>
+          <div class="ms-texts"><div class="ms-val" id="gs-nondb">-</div><div class="ms-label">Data Baru <i class="fas fa-arrow-right" style="font-size:.55rem;opacity:.4"></i></div></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        <div class="mini-stat" onclick="navWithFilter('Layak Huni')" title="Lihat semua Layak Huni" style="cursor:pointer">
+          <div class="ms-icon" style="background:linear-gradient(135deg,#16A34A,#22C55E)"><i class="fas fa-home"></i></div>
+          <div class="ms-texts"><div class="ms-val" id="gs-layak">-</div><div class="ms-label">Layak Huni <i class="fas fa-arrow-right" style="font-size:.55rem;opacity:.4"></i></div></div>
+        </div>
+        <div class="mini-stat" onclick="navWithFilter('RTLH')" title="Lihat semua RTLH" style="cursor:pointer">
+          <div class="ms-icon" style="background:linear-gradient(135deg,var(--danger),#F87171)"><i class="fas fa-house-damage"></i></div>
+          <div class="ms-texts"><div class="ms-val" id="gs-belum">-</div><div class="ms-label">RTLH <i class="fas fa-arrow-right" style="font-size:.55rem;opacity:.4"></i></div></div>
+        </div>
+        <div class="mini-stat" onclick="navWithFilter('Keterangan Lain')" title="Lihat Keterangan Lain" style="cursor:pointer">
+          <div class="ms-icon" style="background:linear-gradient(135deg,#7C3AED,#A855F7)"><i class="fas fa-question-circle"></i></div>
+          <div class="ms-texts"><div class="ms-val" id="gs-lain">-</div><div class="ms-label">Ket. Lain <i class="fas fa-arrow-right" style="font-size:.55rem;opacity:.4"></i></div></div>
+        </div>
       </div>
     </div>
 
@@ -660,8 +679,15 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
     <!-- Header -->
     <div style="background:linear-gradient(135deg,#0C2340,#1B3A5C);padding:20px 16px 16px;color:#fff">
-      <h2 style="font-size:1rem;font-weight:800;margin-bottom:4px"><i class="fas fa-chart-bar" style="color:var(--gold)"></i> Laporan RTLH Kabupaten Ngawi</h2>
-      <p style="font-size:.72rem;color:rgba(255,255,255,.55)">Rekapitulasi per kecamatan dan per desa — database 10.379</p>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <button onclick="nav('beranda')" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:6px 12px;color:#fff;font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;flex-shrink:0">
+          <i class="fas fa-arrow-left" style="font-size:.65rem"></i> Beranda
+        </button>
+        <div>
+          <h2 style="font-size:1rem;font-weight:800;margin:0"><i class="fas fa-chart-bar" style="color:var(--gold)"></i> Laporan RTLH</h2>
+          <p style="font-size:.68rem;color:rgba(255,255,255,.55);margin:0">Rekapitulasi per kecamatan dan per desa</p>
+        </div>
+      </div>
       <!-- Toolbar laporan -->
       <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap">
         <div style="display:flex;background:rgba(255,255,255,.1);border-radius:8px;padding:3px;gap:2px">
@@ -722,8 +748,15 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 <!-- ═══════════════════════════════ PAGE: KECLIST ═══════════════════════════════ -->
 <div class="page" id="pgKecList">
   <div class="keclist-header">
-    <h2><i class="fas fa-map-marked-alt" style="color:var(--gold)"></i> Pilih Kecamatan</h2>
-    <p>WebGIS RTLH — Data BNBA per kecamatan</p>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <button onclick="nav('beranda')" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:6px 12px;color:#fff;font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px">
+        <i class="fas fa-arrow-left" style="font-size:.65rem"></i> Beranda
+      </button>
+      <div>
+        <h2 style="font-size:.95rem;margin:0"><i class="fas fa-map-marked-alt" style="color:var(--gold)"></i> Pilih Kecamatan</h2>
+        <p style="font-size:.65rem;margin:0;opacity:.6">WebGIS RTLH — Data BNBA per kecamatan</p>
+      </div>
+    </div>
     <div style="display:flex;gap:8px;margin-bottom:4px">
       <div style="flex:1;position:relative">
         <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.4);font-size:.8rem;pointer-events:none"></i>
@@ -755,38 +788,8 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
       <div id="keclistResult"></div>
     </div>
   </div>
-  <!-- Toggle Database / Non-Database -->
-  <div style="display:flex;gap:6px;padding:10px 16px 0;background:linear-gradient(180deg,rgba(12,35,64,.95),transparent)">
-    <button id="dbBtn_semua" onclick="setDbMode('semua')"
-      style="flex:1;padding:7px;border-radius:8px;border:1.5px solid rgba(255,255,255,.35);background:rgba(255,255,255,.2);color:#fff;font-size:.72rem;font-weight:800;cursor:pointer;font-family:inherit;transition:all .15s">
-      📋 Semua Data
-    </button>
-    <button id="dbBtn_database" onclick="setDbMode('database')"
-      style="flex:1;padding:7px;border-radius:8px;border:1.5px solid rgba(255,255,255,.15);background:transparent;color:rgba(255,255,255,.6);font-size:.72rem;font-weight:800;cursor:pointer;font-family:inherit;transition:all .15s">
-      ✅ Database (10.379)
-    </button>
-    <button id="dbBtn_nondatabase" onclick="setDbMode('nondatabase')"
-      style="flex:1;padding:7px;border-radius:8px;border:1.5px solid rgba(255,255,255,.15);background:transparent;color:rgba(255,255,255,.6);font-size:.72rem;font-weight:800;cursor:pointer;font-family:inherit;transition:all .15s">
-      🔵 Non-Database
-    </button>
-  </div>
-  <!-- Progress 10.379 baseline -->
-  <div id="progress10379Wrap" style="display:none;padding:8px 16px 4px">
-    <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:10px 12px;border:1px solid rgba(255,255,255,.12)">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <span style="font-size:.68rem;font-weight:800;color:rgba(255,255,255,.7)">Progress dari 10.379 RTLH Resmi</span>
-        <span style="font-size:.68rem;font-weight:800;color:#86EFAC" id="p10379pct">0%</span>
-      </div>
-      <div style="height:7px;background:rgba(255,255,255,.1);border-radius:99px;overflow:hidden;margin-bottom:6px">
-        <div id="p10379bar" style="height:100%;width:0%;background:linear-gradient(90deg,#16A34A,#22C55E);border-radius:99px;transition:width .6s"></div>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:.63rem;color:rgba(255,255,255,.5)">
-        <span>Sudah Layak Huni: <strong style="color:#86EFAC" id="p10379layak">0</strong></span>
-        <span>Masih RTLH: <strong style="color:#FCA5A5" id="p10379rtlh">0</strong></span>
-        <span>Belum di sistem: <strong style="color:#FDE68A" id="p10379missing">0</strong></span>
-      </div>
-    </div>
-  </div>
+
+
   <div class="keclist-grid" id="kecListGrid"></div>
 </div>
 
@@ -798,15 +801,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
     <span class="tb-title" id="tbTitle">WebGIS RTLH</span>
     <div class="tb-sep"></div>
     <button class="tb-btn" id="btnAddRtlh" onclick="openForm(null)" style="display:none"><i class="fas fa-plus"></i> <span class="tb-label">Tambah</span></button>
-    <div class="tb-sep"></div>
-    <div style="display:flex;gap:3px;background:var(--gray-100);border-radius:8px;padding:3px">
-      <button id="wgDbBtn_semua" onclick="setWgDbMode('semua')"
-        style="padding:4px 8px;border-radius:6px;border:none;background:var(--blue);color:#fff;font-size:.62rem;font-weight:700;cursor:pointer;font-family:inherit">Semua</button>
-      <button id="wgDbBtn_database" onclick="setWgDbMode('database')"
-        style="padding:4px 8px;border-radius:6px;border:none;background:transparent;color:var(--gray-500);font-size:.62rem;font-weight:700;cursor:pointer;font-family:inherit">DB 10379</button>
-      <button id="wgDbBtn_nondatabase" onclick="setWgDbMode('nondatabase')"
-        style="padding:4px 8px;border-radius:6px;border:none;background:transparent;color:var(--gray-500);font-size:.62rem;font-weight:700;cursor:pointer;font-family:inherit">Non-DB</button>
-    </div>
+
     <button class="tb-btn" id="btnDownload" onclick="openDownloadModal()"><i class="fas fa-download"></i></button>
     <button class="tb-btn danger" id="btnDelAll" onclick="deleteAllKec()" style="display:none"><i class="fas fa-trash-alt"></i></button>
   </div>
@@ -976,6 +971,27 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
         <button class="btn btn-ghost" onclick="cmAutoMap()"><i class="fas fa-magic"></i> Auto-detect</button>
         <button class="btn btn-primary" id="cmImportBtn" onclick="cmStartImport()"><i class="fas fa-upload"></i> Import</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NON-DATABASE -->
+<div class="overlay" id="ovNonDb">
+  <div class="modal" style="max-width:680px;max-height:90vh">
+    <div class="modal-head">
+      <div>
+        <h3><i class="fas fa-plus-circle" style="color:#0891B2"></i> Data Baru (Belum di 10.379)</h3>
+        <div class="sub">Data yang belum terdaftar dalam 10.379 data RTLH resmi</div>
+      </div>
+      <button class="modal-x" onclick="closeModal('ovNonDb')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" style="padding:0">
+      <div id="nonDbContent" style="padding:20px;text-align:center;color:var(--gray-400)">
+        <i class="fas fa-circle-notch fa-spin" style="font-size:1.5rem;display:block;margin-bottom:10px"></i> Memuat...
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ovNonDb')">Tutup</button>
     </div>
   </div>
 </div>
@@ -1197,7 +1213,7 @@ const SUPA_URL='https://oiygddbzugipepatswxi.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9peWdkZGJ6dWdpcGVwYXRzd3hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MTk3NTEsImV4cCI6MjA5MTM5NTc1MX0.MiGiTCuawuT0SCD7OzvEgBH4PqqdqCtl_njMqmX4Jzs';
 const LOGIN_FN_URL=SUPA_URL+'/functions/v1/login-username';
 const NIK_DB_TOTAL=10379;
-let _dbMode='semua'; // 'semua'|'database'|'nondatabase'
+let _dbMode='semua'; // selalu semua — mode tidak ditampilkan ke user
 
 let sb=null; // akan diinit di DOMContentLoaded
 
@@ -1337,8 +1353,20 @@ function restoreSession(){
 }
 
 // ══════════════════════════════════════════════════
-// NAVIGATION
+// NAVIGATION + BROWSER HISTORY
 // ══════════════════════════════════════════════════
+const PAGE_HASH={beranda:'#beranda',keclist:'#webgis',webgis:'#webgis',report:'#laporan'};
+const HASH_PAGE={'#beranda':'beranda','#webgis':'keclist','#laporan':'report'};
+let _navFromPop=false;
+
+window.addEventListener('popstate',()=>{
+  const hash=window.location.hash||'#beranda';
+  const pg=HASH_PAGE[hash]||'beranda';
+  _navFromPop=true;
+  nav(pg);
+  _navFromPop=false;
+});
+
 function nav(pg){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
@@ -1370,6 +1398,11 @@ function nav(pg){
     document.getElementById('ntReport')?.classList.add('active');
     document.getElementById('mnReport')?.classList.add('active');
     if(!_rpLoaded)loadReport();
+  }
+  // Push browser history
+  if(!_navFromPop){
+    const hash=PAGE_HASH[pg]||'#beranda';
+    if(window.location.hash!==hash)history.pushState({pg},document.title,hash);
   }
   saveSession();
 }
@@ -1464,7 +1497,7 @@ function renderReport(){
         <th style="padding:10px 12px;text-align:left;font-weight:700;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap">${_rpTab==='kec'?'Kecamatan':'Kecamatan / Desa'}</th>
         ${_rpTab==='desa'?'<th style="padding:10px 12px;text-align:left;font-weight:700;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap">Desa</th>':''}
         <th style="padding:10px 12px;text-align:center;font-weight:700;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em">Total</th>
-        <th style="padding:10px 12px;text-align:center;font-weight:700;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em;color:#86EFAC">Layak</th>
+        <th style="padding:10px 12px;text-align:center;font-weight:700;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em;color:#86EFAC">Layak Huni</th>
         <th style="padding:10px 12px;text-align:center;font-weight:700;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em;color:#FCA5A5">RTLH</th>
         ${!isMobile?'<th style="padding:10px 12px;text-align:center;font-weight:700;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em;color:#D1D5DB">Batal</th>':''}
         <th style="padding:10px 12px;text-align:left;font-weight:700;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em;min-width:${isMobile?'80':'120'}px">Progress</th>
@@ -1588,7 +1621,7 @@ async function initAuth(){
   if(window.location.hash.includes('access_token')){
     const{data:{session}}=await sb.auth.getSession();
     if(session)await setUser(session.user);
-    history.replaceState(null,'',window.location.pathname);
+    if(!window.location.hash||window.location.hash==='#')history.replaceState({pg:'beranda'},document.title,'#beranda');
   }
 }
 async function setUser(u){
@@ -1805,21 +1838,37 @@ async function loadGlobalStats(){
     document.getElementById('gs-total').textContent=total.toLocaleString('id');
     document.getElementById('gs-layak').textContent=layak.toLocaleString('id');
     document.getElementById('gs-belum').textContent=belum.toLocaleString('id');
+    const gsLain=document.getElementById('gs-lain');
+    if(gsLain)gsLain.textContent=lain.toLocaleString('id');
 
-    const playak=pct(layak,total),pb=pct(belum,total);
+    const playak=pct(layak,total),pb=pct(rtlh,total),pl=pct(lain,total);
     document.getElementById('pbSudah').style.width=playak+'%';
     document.getElementById('pbBelum').style.width=pb+'%';
+    const pbLain=document.getElementById('pbLain');if(pbLain)pbLain.style.width=pl+'%';
     document.getElementById('lgSudah').textContent=`Layak Huni: ${playak}% (${layak})`;
-    document.getElementById('lgBelum').textContent=`RTLH: ${pb}% (${belum})`;
+    document.getElementById('lgBelum').textContent=`RTLH: ${pb}% (${rtlh})`;
+    const lgLain=document.getElementById('lgLain');if(lgLain)lgLain.textContent=`Keterangan Lain: ${pl}% (${lain})`;
 
-    // Per kec counts
+    // Hitung non-database (lazy)
+    const gsNonDb=document.getElementById('gs-nondb');
+    if(gsNonDb){
+      gsNonDb.textContent='...';
+      ensureNikDB().then(()=>{
+        const nonDbCount=data.filter(r=>!isInDB(r)).length;
+        gsNonDb.textContent=nonDbCount.toLocaleString('id');
+      }).catch(()=>{gsNonDb.textContent='?';});
+    }
+
+    // Per kec counts — 3 kategori resmi
     kecCounts={};
     data.forEach(r=>{
       const k=(r.kec||'').toUpperCase().trim();
-      if(!kecCounts[k])kecCounts[k]={total:0,sudah:0,proses:0,belum:0};
+      if(!kecCounts[k])kecCounts[k]={total:0,sudah:0,belum:0,lain:0};
       kecCounts[k].total++;
-      if(r.status_rtlh==='Layak Huni'||r.status_rtlh==='Sudah Ditangani'||r.status_rtlh==='Dalam Proses')kecCounts[k].sudah++;
-      else if(r.status_rtlh!=='SK Dibatalkan')kecCounts[k].belum++;
+      const _kat=statusKategori(r.status_rtlh);
+      if(_kat==='Layak Huni')kecCounts[k].sudah++;
+      else if(_kat==='RTLH')kecCounts[k].belum++;
+      else kecCounts[k].lain++;
     });
 
     // Desil counts
@@ -2379,25 +2428,44 @@ async function applyGlobalFilter(){
   const cnt=document.getElementById('keclistResultCount');
   const res=document.getElementById('keclistResult');
   wrap.style.display='block';
-  cnt.innerHTML=`<span style="background:${_globalStatusFilter==='Layak Huni'?'#F0FDF4':'#FEF2F2'};color:${_globalStatusFilter==='Layak Huni'?'#16A34A':'#DC2626'};padding:2px 10px;border-radius:99px;font-weight:700;font-size:.72rem">${_globalStatusFilter}</span>`;
+  const _scol=_globalStatusFilter==='Layak Huni'?'#16A34A':_globalStatusFilter==='Keterangan Lain'?'#7C3AED':'#DC2626';const _sbg=_globalStatusFilter==='Layak Huni'?'#F0FDF4':_globalStatusFilter==='Keterangan Lain'?'#F5F3FF':'#FEF2F2';
+cnt.innerHTML=`<span style="background:${_sbg};color:${_scol};padding:2px 10px;border-radius:99px;font-weight:700;font-size:.72rem">${_globalStatusFilter}</span>`;
   res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>';
   // Fetch data berdasarkan status
   // Fetch semua data dengan parallel pagination
-  const{count:totalCnt}=await sb.from('rtlh').select('*',{count:'exact',head:true}).eq('status_rtlh',_globalStatusFilter);
-  const pages=Math.ceil((totalCnt||0)/1000);
-  cnt.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memuat ${totalCnt} data...`;
-  const results=await Promise.all(Array.from({length:pages},(_,p)=>
-    sb.from('rtlh').select('id,kec,desa,kep_kk,nik,status_rtlh,desil')
-      .eq('status_rtlh',_globalStatusFilter).order('kec').order('desa')
-      .range(p*1000,(p+1)*1000-1).limit(1000)
-  ));
+  // Keterangan Lain = semua yang bukan Layak Huni dan bukan RTLH
+  const isKetLainFilter=_globalStatusFilter==='Keterangan Lain';
+  let query;
+  if(isKetLainFilter){
+    // Fetch semua lalu filter client-side
+    const{count:totalAll}=await sb.from('rtlh').select('*',{count:'exact',head:true});
+    const pagesAll=Math.ceil((totalAll||0)/1000);
+    cnt.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memuat data...`;
+    const resAll=await Promise.all(Array.from({length:pagesAll},(_,p)=>
+      sb.from('rtlh').select('id,kec,desa,kep_kk,nik,status_rtlh,desil')
+        .order('kec').order('desa').range(p*1000,(p+1)*1000-1)
+    ));
+    const allData=resAll.flatMap(r=>r.data||[]);
+    const filteredData=allData.filter(r=>isKetLain(r));
+    const fakeResults=[{data:filteredData,error:null}];
+    var results=fakeResults;
+  } else {
+    const{count:totalCnt}=await sb.from('rtlh').select('*',{count:'exact',head:true}).eq('status_rtlh',_globalStatusFilter);
+    const pages=Math.ceil((totalCnt||0)/1000);
+    cnt.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memuat data...`;
+    var results=await Promise.all(Array.from({length:pages},(_,p)=>
+      sb.from('rtlh').select('id,kec,desa,kep_kk,nik,status_rtlh,desil')
+        .eq('status_rtlh',_globalStatusFilter).order('kec').order('desa')
+        .range(p*1000,(p+1)*1000-1).limit(1000)
+    ));
+  }
   const data=results.flatMap(r=>r.data||[]);
   const error=results.find(r=>r.error)?.error;
   if(error||!data?.length){
         res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:.78rem">Tidak ada data</div>';
         return;
       }
-      cnt.innerHTML=`<span style="font-weight:700">${data.length}</span> data ${_globalStatusFilter}`;
+      cnt.innerHTML=`<span style="font-weight:700">${data.length}</span> data dengan status <span style="font-weight:700;color:${isLayakFilter?'#16A34A':isKetFilter?'#7C3AED':'#DC2626'}">${_globalStatusFilter}</span>`;
       const byDesa={};
       data.forEach(r=>{
         const key=((r.desa||'-')+'|'+(r.kec||'-')).toUpperCase();
@@ -2405,7 +2473,8 @@ async function applyGlobalFilter(){
         byDesa[key].items.push(r);
       });
       const isLayakFilter=_globalStatusFilter==='Layak Huni';
-      const sc=isLayakFilter?'var(--success)':'var(--danger)';
+      const isKetFilter=_globalStatusFilter==='Keterangan Lain';
+      const sc=isLayakFilter?'#16A34A':isKetFilter?'#7C3AED':'#DC2626';
       res.innerHTML=Object.values(byDesa).map(g=>`
         <div style="border-bottom:2px solid var(--blue-bg)">
           <div style="padding:7px 12px;background:var(--blue-bg);display:flex;align-items:center;gap:6px">
@@ -2420,7 +2489,7 @@ async function applyGlobalFilter(){
               style="padding:10px 12px;border-bottom:1px solid var(--gray-100);cursor:pointer;display:flex;align-items:center;gap:10px"
               onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
               <div style="width:32px;height:32px;border-radius:50%;background:${sc}18;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                <i class="fas fa-${isLayakFilter?'home':'house-damage'}" style="color:${sc};font-size:.78rem"></i>
+                <i class="fas fa-${isLayakFilter?'home':isKetFilter?'question-circle':'house-damage'}" style="color:${sc};font-size:.78rem"></i>
               </div>
               <div style="flex:1;min-width:0">
                 <div style="font-weight:700;font-size:.8rem;color:var(--gray-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${showNama(r.kep_kk)}</div>
@@ -2672,13 +2741,84 @@ async function render10379Beranda(){
           <div style="font-size:1.1rem;font-weight:800;color:#D97706">${missing.toLocaleString('id')}</div>
           <div style="font-size:.6rem;font-weight:700;color:#B45309;text-transform:uppercase">Belum Input</div>
         </div>
-        <div style="text-align:center;padding:8px;background:#EFF6FF;border-radius:8px;border:1px solid #BFDBFE">
+        <div style="text-align:center;padding:8px;background:#EFF6FF;border-radius:8px;border:1px solid #BFDBFE;cursor:pointer" onclick="showNonDbModal()" title="Lihat data non-database">
           <div style="font-size:1.1rem;font-weight:800;color:#1D4ED8">${nonDB.toLocaleString('id')}</div>
-          <div style="font-size:.6rem;font-weight:700;color:#1E40AF;text-transform:uppercase">Non-Database</div>
+          <div style="font-size:.6rem;font-weight:700;color:#1E40AF;text-transform:uppercase">Non-Database <i class='fas fa-arrow-right' style='font-size:.5rem'></i></div>
         </div>
       </div>
     `;
   }catch(e){console.error('render10379Beranda',e);}
+}
+
+// ── Non-Database Modal ──
+async function showNonDbModal(){
+  document.getElementById('ovNonDb').classList.add('open');
+  const el=document.getElementById('nonDbContent');
+  el.innerHTML='<i class="fas fa-circle-notch fa-spin" style="font-size:1.5rem;display:block;margin-bottom:10px;color:var(--gray-400)"></i><div style="color:var(--gray-400)">Memuat...</div>';
+
+  try{
+    await ensureNikDB();
+    // Fetch semua data
+    const{count}=await sb.from('rtlh').select('*',{count:'exact',head:true});
+    const pages=Math.ceil((count||0)/1000);
+    const results=await Promise.all(
+      Array.from({length:pages},(_,p)=>
+        sb.from('rtlh').select('id,nik,kep_kk,kec,desa,status_rtlh,updated_at').range(p*1000,(p+1)*1000-1)
+      )
+    );
+    const all=results.flatMap(r=>r.data||[]);
+    const nonDB=all.filter(r=>!isInDB(r));
+
+    if(!nonDB.length){
+      el.innerHTML='<div style="padding:30px;text-align:center"><i class="fas fa-check-circle" style="font-size:2rem;color:var(--success);display:block;margin-bottom:10px"></i><div style="font-weight:700;color:var(--success)">Semua data sudah termasuk database 10.379!</div></div>';
+      return;
+    }
+
+    el.innerHTML=`
+      <div style="padding:10px 16px;background:var(--blue-bg);border-bottom:1px solid var(--gray-200);font-size:.72rem;color:#1D4ED8;font-weight:600">
+        <i class="fas fa-info-circle"></i> ${nonDB.length} data tidak ditemukan di database 10.379 resmi
+      </div>
+      <div style="overflow:auto;max-height:55vh">
+        <table style="width:100%;border-collapse:collapse;font-size:.75rem">
+          <thead>
+            <tr style="background:#1a2f4a;color:rgba(255,255,255,.8);position:sticky;top:0">
+              <th style="padding:8px 10px;text-align:left;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em">ID</th>
+              <th style="padding:8px 10px;text-align:left;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em">NIK</th>
+              <th style="padding:8px 10px;text-align:left;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em">Nama KK</th>
+              <th style="padding:8px 10px;text-align:left;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em">Desa / Kec</th>
+              <th style="padding:8px 10px;text-align:left;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${nonDB.map((r,i)=>`
+              <tr style="background:${i%2?'#F9FAFB':'#fff'};cursor:pointer" onclick="closeModal('ovNonDb');navWithNIK('${r.nik||r.id}')" onmouseover="this.style.background='#EFF6FF'" onmouseout="this.style.background='${i%2?'#F9FAFB':'#fff'}'">
+                <td style="padding:7px 10px;color:var(--gray-400);font-family:monospace;font-size:.68rem">${r.id}</td>
+                <td style="padding:7px 10px;font-family:monospace;font-size:.68rem">${r.nik||'-'}</td>
+                <td style="padding:7px 10px;font-weight:600">${r.kep_kk||'-'}</td>
+                <td style="padding:7px 10px;color:var(--gray-500);font-size:.7rem">${r.desa||'-'} / ${r.kec||'-'}</td>
+                <td style="padding:7px 10px"><span style="background:${STATUS_COLORS[statusKategori(r.status_rtlh)]||'#94A3B8'}20;color:${STATUS_COLORS[statusKategori(r.status_rtlh)]||'#94A3B8'};border-radius:99px;padding:2px 8px;font-size:.62rem;font-weight:700">${statusKategori(r.status_rtlh)}</span></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div style="padding:8px 16px;background:var(--gray-50);border-top:1px solid var(--gray-200);font-size:.68rem;color:var(--gray-500)">
+        Klik baris untuk melihat detail · Total: ${nonDB.length} data
+      </div>`;
+
+    // Update gs-nondb
+    const el2=document.getElementById('gs-nondb');
+    if(el2)el2.textContent=nonDB.length.toLocaleString('id');
+  }catch(e){
+    el.innerHTML=`<div style="padding:20px;text-align:center;color:var(--danger)">Gagal memuat: ${e.message}</div>`;
+  }
+}
+
+function navWithNIK(nik){
+  nav('keclist');
+  setTimeout(()=>{
+    const inp=document.getElementById('kecSearchList');
+    if(inp){inp.value=nik;searchKeclist();}
+  },300);
 }
 
 function clearKeclistSearch(){
@@ -3020,12 +3160,7 @@ function renderKecDashboard(data){
   const rtlh=src.filter(r=>r.status_rtlh==='RTLH'||r.status_rtlh==='Belum Ditangani'||!r.status_rtlh).length;
   const batal=src.filter(r=>r.status_rtlh==='SK Dibatalkan').length;
 
-  // Badge mode database
-  const modeBadge=_dbMode==='database'
-    ?`<span style="font-size:.58rem;background:var(--blue);color:#fff;border-radius:5px;padding:1px 6px;font-weight:700">DB 10.379</span>`
-    :_dbMode==='nondatabase'
-    ?`<span style="font-size:.58rem;background:#7C3AED;color:#fff;border-radius:5px;padding:1px 6px;font-weight:700">Non-DB</span>`
-    :'';
+  const modeBadge=''; // mode tidak ditampilkan
 
   d.innerHTML=`
     <div class="kd-stat">
@@ -3063,10 +3198,8 @@ function setFilterDesil(d){
   applyFilters();
 }
 function applyFilters(){
-  // Filter berdasarkan db mode DULU
-  const modeFiltered=getFilteredByMode(brAll);
-
-  brFeatures=modeFiltered.filter(r=>{
+  // Tampilkan semua data
+  brFeatures=brAll.filter(r=>{
     if(filterStatus!=='all'&&r.status_rtlh!==filterStatus)return false;
     if(filterDesil!=='all'){
       const m=String(r.desil||'').match(/\d+/);
@@ -3076,16 +3209,9 @@ function applyFilters(){
     return true;
   });
 
-  // Update count label
   const cnt=document.getElementById('sidebarCount');
-  if(cnt){
-    const modeLabel=_dbMode==='database'?'Database 10.379':_dbMode==='nondatabase'?'Non-Database':'Semua';
-    cnt.textContent=`${brFeatures.length} data (${modeLabel})`;
-    cnt.style.color=_dbMode==='database'?'var(--blue)':_dbMode==='nondatabase'?'var(--purple)':'var(--gray-500)';
-  }
-
-  // Update dashboard dengan data yang sudah difilter mode
-  renderKecDashboard(modeFiltered);
+  if(cnt){cnt.textContent=`${brFeatures.length} data terdaftar`;cnt.style.color='var(--gray-500)';}
+  renderKecDashboard(brAll);
   renderSidebarList();
   updateMap();
 }
