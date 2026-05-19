@@ -3258,34 +3258,49 @@ function applyFilters(){
   updateMap();
 }
 
-// Search inline di sidebar — client-side dari brAll (instant, tidak perlu fetch)
+// Search inline di sidebar — client-side dari brAll (instant)
 function searchSidebarInline(){
   const inp=document.getElementById('sidebarInlineSearch');
   const q=(inp?.value||'').trim().toLowerCase();
-  if(!q){resetSidebarSearch();return;}
+  if(!q){
+    applyFilters(); // reset ke filter normal
+    return;
+  }
+  if(!brAll.length){
+    const l=document.getElementById('sidebarList');
+    if(l)l.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:.78rem">Data belum dimuat</div>';
+    return;
+  }
 
   const isNum=/^\d+$/.test(q);
   brFeatures=brAll.filter(r=>{
     if(isNum){
       return String(r.nik||'').includes(q)||String(r.no_kk||'').includes(q);
     }
-    const nama=(r.kep_kk||'').toLowerCase();
-    const desa=(r.desa||'').toLowerCase();
-    const nik=String(r.nik||'');
-    return nama.includes(q)||desa.includes(q)||nik.includes(q)||
-      (r.alamat||'').toLowerCase().includes(q);
+    return (r.kep_kk||'').toLowerCase().includes(q)||
+           (r.desa||'').toLowerCase().includes(q)||
+           (r.alamat||'').toLowerCase().includes(q)||
+           String(r.nik||'').includes(q);
   });
 
-  // Update status filter chips (reset ke all saat search)
   const cnt=document.getElementById('sidebarCount');
-  if(cnt)cnt.textContent=`${brFeatures.length} hasil "${inp.value}"`;
+  if(cnt){
+    cnt.textContent=brFeatures.length
+      ?`${brFeatures.length} hasil untuk "${inp.value}"`
+      :`Tidak ditemukan: "${inp.value}"`;
+    cnt.style.color=brFeatures.length?'var(--blue)':'var(--danger)';
+  }
 
   renderSidebarList();
   updateMap();
 }
 
 function resetSidebarSearch(){
-  brFeatures=[...brAll];
+  // Clear both search inputs
+  const inp=document.getElementById('sidebarInlineSearch');
+  if(inp)inp.value='';
+  const cnt=document.getElementById('sidebarCount');
+  if(cnt){cnt.textContent=brAll.length+' data terdaftar';cnt.style.color='var(--gray-500)';}
   applyFilters();
 }
 
