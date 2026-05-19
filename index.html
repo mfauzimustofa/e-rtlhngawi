@@ -812,7 +812,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
       <div style="display:flex;flex-direction:column;gap:5px">
         <div style="display:flex;align-items:center;gap:6px;font-size:.72rem"><div style="width:12px;height:12px;border-radius:50%;background:#16A34A;flex-shrink:0"></div>Layak Huni</div>
         <div style="display:flex;align-items:center;gap:6px;font-size:.72rem"><div style="width:12px;height:12px;border-radius:50%;background:#DC2626;flex-shrink:0"></div>RTLH</div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:.72rem"><div style="width:12px;height:12px;border-radius:50%;background:#94A3B8;flex-shrink:0"></div>SK Dibatalkan</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:.72rem"><div style="width:12px;height:12px;border-radius:50%;background:#7C3AED;flex-shrink:0"></div>Ket. Lain</div>
       </div>
     </div>
   </div>
@@ -2204,7 +2204,7 @@ function renderChartStatus(data){
     type:'doughnut',
     data:{
       labels:['Layak Huni','RTLH','Keterangan Lain'],
-      datasets:[{data:[layak,belum,batal],backgroundColor:['#16A34A','#DC2626','#94A3B8'],borderWidth:3,borderColor:'#fff',hoverOffset:8}]
+      datasets:[{data:[layak,belum,batal],backgroundColor:['#16A34A','#DC2626','#7C3AED'],borderWidth:0,hoverOffset:6}]
     },
     options:{
       responsive:true,maintainAspectRatio:false,cutout:'70%',
@@ -2214,11 +2214,12 @@ function renderChartStatus(data){
       }
     }
   });
-  // Update legend manual
   const elL=document.getElementById('lgSudah');
   const elR=document.getElementById('lgBelum');
-  if(elL)elL.innerHTML=`<strong style="color:var(--success)">${layak}</strong> Layak Huni (${pct(layak,tot)}%)`;
-  if(elR)elR.innerHTML=`<strong style="color:var(--danger)">${belum}</strong> RTLH (${pct(belum,tot)}%)`;
+  const elK=document.getElementById('lgLain');
+  if(elL)elL.innerHTML=`<strong style="color:#16A34A">${layak}</strong> Layak Huni (${pct(layak,tot)}%)`;
+  if(elR)elR.innerHTML=`<strong style="color:#DC2626">${belum}</strong> RTLH (${pct(belum,tot)}%)`;
+  if(elK)elK.innerHTML=`<strong style="color:#7C3AED">${batal}</strong> Keterangan Lain (${pct(batal,tot)}%)`;
 }
 
 function renderChartDesil(counts){
@@ -2524,23 +2525,36 @@ async function showDesaStat(kecName){
     .ilike('kec',`%${kecName}%`)
     .limit(5000);
 
-  if(error||!data?.length){
-    res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:.78rem">Tidak ada data</div>';
+  if(error){
+    res.innerHTML=`<div style="padding:16px;text-align:center;color:var(--danger)">Error: ${error.message}</div>`;
     return;
   }
 
-  // Group by desa
+  // Ambil semua desa yang ada di KEC_CONFIG untuk kecamatan ini
+  // Sehingga desa dengan 0 data pun tampil
+  const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===kecName.toUpperCase())||'';
+  const allDesaKec=(KEC_CONFIG[kecKey]?.desa)||[];
+
+  // Group by desa dari data Supabase
   const byDesa={};
-  data.forEach(r=>{
-    const d=normCase(r.desa)||r.desa||'-';
-    if(!byDesa[d])byDesa[d]={desa:d,total:0,layak:0,rtlh:0,lain:0};
-    byDesa[d].total++;
-    if(r.status_rtlh==='Layak Huni')byDesa[d].layak++;
-    else if(r.status_rtlh==='RTLH'||!r.status_rtlh)byDesa[d].rtlh++;
-    else byDesa[d].lain++;
+  // Inisialisasi semua desa dari KEC_CONFIG dulu
+  allDesaKec.forEach(d=>{
+    const dn=normCase(d)||d;
+    byDesa[dn.toUpperCase()]={desa:dn,total:0,layak:0,rtlh:0,lain:0};
+  });
+  // Isi dari data
+  (data||[]).forEach(r=>{
+    const dn=normCase(r.desa)||r.desa||'-';
+    const key=dn.toUpperCase();
+    if(!byDesa[key])byDesa[key]={desa:dn,total:0,layak:0,rtlh:0,lain:0};
+    byDesa[key].total++;
+    const kat=statusKategori(r.status_rtlh);
+    if(kat==='Layak Huni')byDesa[key].layak++;
+    else if(kat==='RTLH')byDesa[key].rtlh++;
+    else byDesa[key].lain++;
   });
 
-  const desas=Object.values(byDesa).sort((a,b)=>b.total-a.total);
+  const desas=Object.values(byDesa).sort((a,b)=>b.total-a.total||a.desa.localeCompare(b.desa));
   cnt.innerHTML=`<strong>${kecName}</strong> · ${desas.length} desa · ${data.length.toLocaleString('id')} data`;
 
   res.innerHTML=`
@@ -3121,12 +3135,12 @@ function renderSidebar(){
     <!-- Search di dalam sidebar -->
     <div style="position:relative;margin-bottom:8px">
       <i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--gray-400);font-size:.72rem;pointer-events:none"></i>
-      <input id="sidebarSearchInput" type="text" placeholder="Cari nama / NIK / desa..."
+      <input id="sidebarInlineSearch" type="text" placeholder="Cari nama / NIK / desa..."
         autocomplete="off" spellcheck="false"
         style="width:100%;padding:8px 32px 8px 30px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.78rem;font-family:inherit;outline:none;box-sizing:border-box;background:#fff"
-        oninput="clearTimeout(this._t);this._t=setTimeout(()=>searchSidebar(),300)"
+        oninput="clearTimeout(this._t);this._t=setTimeout(()=>searchSidebarInline(),300)"
         onkeydown="if(event.key==='Escape'){this.value='';resetSidebarSearch();}">
-      <button onclick="document.getElementById('sidebarSearchInput').value='';resetSidebarSearch()"
+      <button onclick="document.getElementById('sidebarInlineSearch').value='';resetSidebarSearch()"
         style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:.72rem;padding:4px">
         <i class="fas fa-times"></i>
       </button>
@@ -3240,6 +3254,32 @@ function applyFilters(){
   const cnt=document.getElementById('sidebarCount');
   if(cnt){cnt.textContent=`${brFeatures.length} data terdaftar`;cnt.style.color='var(--gray-500)';}
   renderKecDashboard(brAll);
+  renderSidebarList();
+  updateMap();
+}
+
+// Search inline di sidebar — client-side dari brAll (instant, tidak perlu fetch)
+function searchSidebarInline(){
+  const inp=document.getElementById('sidebarInlineSearch');
+  const q=(inp?.value||'').trim().toLowerCase();
+  if(!q){resetSidebarSearch();return;}
+
+  const isNum=/^\d+$/.test(q);
+  brFeatures=brAll.filter(r=>{
+    if(isNum){
+      return String(r.nik||'').includes(q)||String(r.no_kk||'').includes(q);
+    }
+    const nama=(r.kep_kk||'').toLowerCase();
+    const desa=(r.desa||'').toLowerCase();
+    const nik=String(r.nik||'');
+    return nama.includes(q)||desa.includes(q)||nik.includes(q)||
+      (r.alamat||'').toLowerCase().includes(q);
+  });
+
+  // Update status filter chips (reset ke all saat search)
+  const cnt=document.getElementById('sidebarCount');
+  if(cnt)cnt.textContent=`${brFeatures.length} hasil "${inp.value}"`;
+
   renderSidebarList();
   updateMap();
 }
@@ -3738,7 +3778,7 @@ const FIELDS=[
   {key:'kondisi_at',label:'Kondisi Atap',type:'text'},
   {key:'material_l',label:'Material Lantai',type:'text'},
   {key:'kondisi_la',label:'Kondisi Lantai',type:'text'},
-  {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['RTLH','Layak Huni','SK Dibatalkan']},
+  {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['RTLH','Layak Huni','Keterangan Lain']},
   {key:'status_batal',label:'Alasan SK Dibatalkan',type:'select',opts:['','-','Meninggal Dunia','Tidak Bersedia Dibantu','Tidak Ada Biaya','Pindah Tempat Tinggal','Sudah Mampu Mandiri','Tidak Memenuhi Syarat','Lainnya'],onChange:'handleAlasanBatal(this)'},
 
   {key:'jenis_bantuan',label:'Jenis Bantuan',type:'select',opts:['','RTLH','BSPS','DD','CSR','Lainnya']},
