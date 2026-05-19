@@ -5642,28 +5642,156 @@ async function deleteDokLib(id,path){
   loadDokLib();
 }
 
+function updateEditDlDesaOpts(){
+  const kec=document.getElementById('editDlKec')?.value||'';
+  const desaSel=document.getElementById('editDlDesa');
+  if(!desaSel)return;
+  desaSel.innerHTML='<option value="">Seluruh Kecamatan</option>';
+  if(!kec)return;
+  const desas=(KEC_CONFIG[kec]?.desa)||[];
+  desas.forEach(d=>{
+    const o=document.createElement('option');o.value=d.nama;o.textContent=d.nama+' ('+d.kode+')';
+    desaSel.appendChild(o);
+  });
+}
+
 function openEditDokLib(id){
   const d=_dokLibData.find(x=>x.id===id);
   if(!d)return toast('Data tidak ditemukan','error');
-  // Isi dropdown kecamatan jika belum
+
+  // Isi dropdown kecamatan
   const kecSel=document.getElementById('editDlKec');
   if(kecSel&&kecSel.options.length<=1){
     Object.keys(KEC_CONFIG).sort().forEach(k=>{
       const o=document.createElement('option');o.value=k;o.textContent=k;kecSel.appendChild(o);
     });
   }
+
   document.getElementById('editDlId').value=d.id;
-  document.getElementById('editDlJenis').value=d.jenis;
-  document.getElementById('editDlJudul').value=d.judul;
+  document.getElementById('editDlJenis').value=d.jenis||'Lainnya';
+  document.getElementById('editDlJudul').value=d.judul||'';
   document.getElementById('editDlTahun').value=d.tahun||'';
   document.getElementById('editDlKec').value=d.kecamatan||'';
+  document.getElementById('editDlCurrentFile').textContent=d.path?.split('/').pop()||'';
   document.getElementById('editDlProgress').innerHTML='';
   document.getElementById('editDlFile').value='';
-  document.getElementById('editDlCurrentFile').textContent=d.path.split('/').pop();
-  document.getElementById('editDlJenisBantuan').value=d.jenis_bantuan||'';
-  if(document.getElementById('editDlTahunBantuan'))document.getElementById('editDlTahunBantuan').value=d.tahun_bantuan||'';
-  document.getElementById('autoLinkProgress').innerHTML='';
+  document.getElementById('editDlSearchResult').style.display='none';
+  document.getElementById('editDlSearch').value='';
+  document.getElementById('editDlLinkProgress').innerHTML='';
+
+  // Update desa dropdown
+  updateEditDlDesaOpts();
+  if(d.desa){
+    setTimeout(()=>{
+      const desaSel=document.getElementById('editDlDesa');
+      if(desaSel)[...desaSel.options].forEach(o=>{if(o.value===d.desa)o.selected=true;});
+    },50);
+  }
+
   document.getElementById('ovEditDokLib').classList.add('open');
+  // Load penerima terhubung
+  loadEditDlLinked(d.id);
+}
+
+async function loadEditDlLinked(docId){
+  const list=document.getElementById('editDlLinkedList');
+  const cnt=document.getElementById('editDlLinkedCount');
+  list.innerHTML='<div style="padding:12px;text-align:center;color:#94A3B8;font-size:.72rem"><i class="fas fa-circle-notch fa-spin"></i></div>';
+  const{data,error}=await sb.from('rtlh_dokumen_link')
+    .select('id,rtlh_id,rtlh(id,kep_kk,desa,kec,nik,status_rtlh)')
+    .eq('dokumen_id',docId).order('id').limit(500);
+  if(error||!data?.length){
+    cnt.textContent='0 penerima';
+    list.innerHTML='<div style="padding:14px;text-align:center;color:#94A3B8;font-size:.72rem">Belum ada penerima terhubung</div>';
+    return;
+  }
+  cnt.textContent=data.length+' penerima';
+  list.innerHTML=data.map(lnk=>{
+    const r=lnk.rtlh||{};
+    const kat=statusKategori(r.status_rtlh);
+    const sc=STATUS_COLORS[kat]||'#94A3B8';
+    return`<div style="padding:7px 10px;border-bottom:1px solid #F1F5F9;display:flex;align-items:center;gap:8px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:.73rem;font-weight:700;color:#1E293B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${showNama(r.kep_kk)}</div>
+        <div style="font-size:.62rem;color:#94A3B8">${r.desa||'-'} · ${r.kec||'-'} · <span style="color:${sc}">${kat}</span></div>
+      </div>
+      <button onclick="unlinkEditDl('${lnk.id}','${docId}')" title="Putus hubungan"
+        style="width:24px;height:24px;border-radius:6px;background:#FEE2E2;color:#DC2626;border:none;cursor:pointer;font-size:.65rem;flex-shrink:0">
+        <i class="fas fa-unlink"></i>
+      </button>
+    </div>`;
+  }).join('');
+}
+
+async function unlinkEditDl(linkId, docId){
+  const{error}=await sb.from('rtlh_dokumen_link').delete().eq('id',linkId);
+  if(error)return toast('Gagal memutus','error');
+  toast('Penerima dilepas','success');
+  loadEditDlLinked(docId);
+}
+
+async function searchEditDlPenerima(){
+  const q=document.getElementById('editDlSearch')?.value.trim();
+  const res=document.getElementById('editDlSearchResult');
+  if(!q||q.length<2){res.style.display='none';return;}
+  res.style.display='block';
+  res.innerHTML='<div style="padding:8px;text-align:center;color:#94A3B8;font-size:.72rem"><i class="fas fa-circle-notch fa-spin"></i></div>';
+  const isNum=/^\d+$/.test(q);
+  let qb=sb.from('rtlh').select('id,kep_kk,desa,kec,nik,status_rtlh').limit(20);
+  if(isNum)qb=qb.ilike('nik','%'+q+'%');
+  else qb=qb.or(`kep_kk.ilike.%${q}%,desa.ilike.%${q}%`);
+  const{data}=await qb;
+  if(!data?.length){res.innerHTML='<div style="padding:8px;text-align:center;color:#94A3B8;font-size:.72rem">Tidak ditemukan</div>';return;}
+  const docId=document.getElementById('editDlId').value;
+  res.innerHTML=data.map(r=>{
+    const kat=statusKategori(r.status_rtlh);
+    const sc=STATUS_COLORS[kat]||'#94A3B8';
+    return`<div style="padding:7px 10px;border-bottom:1px solid #F1F5F9;display:flex;align-items:center;gap:8px;cursor:pointer"
+      onmouseover="this.style.background='#EFF6FF'" onmouseout="this.style.background=''"
+      onclick="addEditDlLink('${r.id}','${docId}',this)">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:.73rem;font-weight:700;color:#1E293B">${showNama(r.kep_kk)}</div>
+        <div style="font-size:.62rem;color:#94A3B8">${r.desa||'-'} · ${r.kec||'-'} · <span style="color:${sc}">${kat}</span></div>
+      </div>
+      <button style="padding:3px 8px;border-radius:5px;background:#DBEAFE;color:#1D4ED8;border:none;cursor:pointer;font-size:.62rem;font-weight:700;font-family:inherit">
+        <i class="fas fa-link"></i> Hubungkan
+      </button>
+    </div>`;
+  }).join('');
+}
+
+async function addEditDlLink(rtlhId, docId, el){
+  el.style.opacity='.5';
+  const{error}=await sb.from('rtlh_dokumen_link').upsert(
+    [{rtlh_id:parseInt(rtlhId),dokumen_id:docId,linked_by:user?.email}],
+    {onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true}
+  );
+  if(error){el.style.opacity='1';return toast('Gagal','error');}
+  el.innerHTML='<i class="fas fa-check" style="color:var(--success)"></i> Terhubung';
+  el.style.opacity='1';
+  loadEditDlLinked(docId);
+}
+
+async function applyEditDlWilayah(){
+  const docId=document.getElementById('editDlId').value;
+  const kec=document.getElementById('editDlKec').value;
+  const desa=document.getElementById('editDlDesa')?.value;
+  if(!kec&&!desa)return toast('Pilih kecamatan atau desa dulu','error');
+  const prog=document.getElementById('editDlLinkProgress');
+  prog.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Menghubungkan...';
+  let qb=sb.from('rtlh').select('id');
+  if(desa)qb=qb.ilike('desa','%'+desa+'%');
+  else if(kec)qb=qb.ilike('kec','%'+kec+'%');
+  const{data}=await qb;
+  if(!data?.length){prog.innerHTML='<span style="color:var(--danger)">Tidak ada penerima ditemukan</span>';return;}
+  for(let i=0;i<data.length;i+=100){
+    const batch=data.slice(i,i+100).map(r=>({rtlh_id:r.id,dokumen_id:docId,linked_by:user?.email}));
+    await sb.from('rtlh_dokumen_link').upsert(batch,{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
+  }
+  const scope=desa?`Desa ${desa}`:`Kec. ${kec}`;
+  prog.innerHTML=`<span style="color:var(--success)"><i class="fas fa-check-circle"></i> ${data.length} penerima di ${scope} terhubung</span>`;
+  toast(data.length+' penerima terhubung','success');
+  loadEditDlLinked(docId);
 }
 
 async function saveEditDokLib(){
@@ -5672,14 +5800,12 @@ async function saveEditDokLib(){
   const judul=document.getElementById('editDlJudul').value.trim();
   const tahun=parseInt(document.getElementById('editDlTahun').value)||null;
   const kec=document.getElementById('editDlKec').value||null;
+  const desa=document.getElementById('editDlDesa')?.value||null;
   const file=document.getElementById('editDlFile').files[0];
   if(!judul)return toast('Isi judul dokumen','error');
   const prog=document.getElementById('editDlProgress');
   prog.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Menyimpan...';
-  const jenisBantuan=document.getElementById('editDlJenisBantuan')?.value||null;
-  const tahunBantuan=document.getElementById('editDlTahunBantuan')?.value||null;
-  const updateObj={jenis,judul,tahun,kecamatan:kec,jenis_bantuan:jenisBantuan||null,tahun_bantuan:tahunBantuan?parseInt(tahunBantuan):null};
-  // Kalau ada file baru — upload dulu, hapus yang lama
+  const updateObj={jenis,judul,tahun,kecamatan:kec,desa:desa||null};
   if(file){
     if(file.size>20*1024*1024){prog.innerHTML='<span style="color:var(--danger)">File terlalu besar (maks 20MB)</span>';return;}
     const d=_dokLibData.find(x=>x.id===id);
@@ -5688,16 +5814,16 @@ async function saveEditDokLib(){
     const newPath=`${jenis}/${tahun||'umum'}/${safeName}_${Date.now()}.${ext}`;
     const{error:upErr}=await sb.storage.from('dokumen-kab').upload(newPath,file,{upsert:false});
     if(upErr){prog.innerHTML=`<span style="color:var(--danger)">Gagal upload: ${upErr.message}</span>`;return;}
-    // Hapus file lama
     if(d?.path)await sb.storage.from('dokumen-kab').remove([d.path]);
     updateObj.path=newPath;
     updateObj.ukuran=file.size;
   }
   const{error}=await sb.from('rtlh_dokumen_kabupaten').update(updateObj).eq('id',id);
   if(error){prog.innerHTML=`<span style="color:var(--danger)">Gagal simpan: ${error.message}</span>`;return;}
+  prog.innerHTML='<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Tersimpan!</span>';
   toast('Dokumen berhasil diperbarui','success');
-  closeModal('ovEditDokLib');
-  loadDokLib();
+  ['all','SK','BA','Surat Pernyataan','Lainnya'].forEach(k=>cacheDel('doklib_'+k));
+  setTimeout(()=>{closeModal('ovEditDokLib');loadDokLib(true);},800);
 }
 
 // ══ Link dokumen ke penerima ══
@@ -6716,14 +6842,18 @@ async function cmStartImport(){
 
 <!-- ═══ MODAL EDIT DOKUMEN KABUPATEN ═══ -->
 <div class="overlay" id="ovEditDokLib">
-  <div class="modal" style="max-width:480px">
+  <div class="modal" style="max-width:600px;max-height:92vh">
     <div class="modal-head">
-      <div><h3><i class="fas fa-edit" style="color:#EA580C"></i> Edit Dokumen</h3></div>
+      <div><h3><i class="fas fa-edit" style="color:#EA580C"></i> Edit Dokumen</h3>
+        <div class="sub" id="editDlCurrentFile" style="font-size:.68rem"></div>
+      </div>
       <button class="modal-x" onclick="closeModal('ovEditDokLib')"><i class="fas fa-times"></i></button>
     </div>
-    <div class="modal-body">
+    <div class="modal-body" style="overflow-y:auto;max-height:75vh;padding:14px 16px">
       <input type="hidden" id="editDlId">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+
+      <!-- INFO DASAR -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
         <div class="form-group" style="margin:0">
           <label>Jenis Dokumen</label>
           <select id="editDlJenis">
@@ -6742,50 +6872,64 @@ async function cmStartImport(){
         <label>Judul Dokumen</label>
         <input type="text" id="editDlJudul">
       </div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label>Kecamatan (kosongkan jika seluruh kabupaten)</label>
-        <select id="editDlKec">
-          <option value="">Seluruh Kabupaten</option>
-        </select>
-      </div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label>Berlaku untuk Jenis Bantuan <span style="font-weight:400;color:var(--gray-400)">(auto-link)</span></label>
+
+      <!-- CAKUPAN WILAYAH -->
+      <div style="background:#F8FAFC;border-radius:9px;padding:10px 12px;border:1px solid #E2E8F0;margin-bottom:10px">
+        <div style="font-size:.65rem;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Cakupan Wilayah</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <select id="editDlJenisBantuan">
-            <option value="">Semua / Tidak spesifik</option>
-            <option value="RTLH">RTLH</option>
-            <option value="BSPS">BSPS</option>
-            <option value="Dana Desa">Dana Desa</option>
-            <option value="CSR">CSR</option>
-          </select>
-          <select id="editDlTahunBantuan">
-            <option value="">Semua Tahun</option>
-            <option value="2021">2021</option>
-            <option value="2022">2022</option>
-            <option value="2023">2023</option>
-            <option value="2024">2024</option>
-            <option value="2025">2025</option>
-            <option value="2026">2026</option>
-            <option value="2027">2027</option>
-          </select>
+          <div class="form-group" style="margin:0">
+            <label>Kecamatan</label>
+            <select id="editDlKec" onchange="updateEditDlDesaOpts()">
+              <option value="">Seluruh Kabupaten</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin:0" id="editDlDesaWrap">
+            <label>Desa</label>
+            <select id="editDlDesa">
+              <option value="">Seluruh Kecamatan</option>
+            </select>
+          </div>
         </div>
-        <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Contoh: RTLH + 2026 → semua penerima RTLH 2026 akan terhubung ke dokumen ini</div>
       </div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label style="font-size:.68rem;font-weight:700;color:var(--gray-600)">AUTO-LINK KE PENERIMA</label>
-        <button onclick="runAutoLinkFromLib(document.getElementById('editDlId').value)" 
-          style="width:100%;padding:9px;border-radius:8px;background:var(--success-bg);color:var(--success);border:1px solid var(--success);font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px">
-          <i class="fas fa-magic"></i> Terapkan ke semua penerima yang cocok
-        </button>
-        <div id="autoLinkProgress" style="font-size:.68rem;color:var(--gray-500);margin-top:6px;text-align:center"></div>
+
+      <!-- MANAGEMENT PENERIMA -->
+      <div style="background:#F8FAFC;border-radius:9px;padding:10px 12px;border:1px solid #E2E8F0;margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:.65rem;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:.05em">Penerima Terhubung</div>
+          <span id="editDlLinkedCount" style="font-size:.65rem;font-weight:700;color:var(--blue)">-</span>
+        </div>
+        <!-- Search tambah penerima -->
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <div style="flex:1;position:relative">
+            <i class="fas fa-search" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:#94A3B8;font-size:.65rem"></i>
+            <input id="editDlSearch" type="text" placeholder="Cari nama / NIK / desa untuk ditambahkan..."
+              style="width:100%;padding:7px 8px 7px 26px;border-radius:7px;border:1.5px solid #E2E8F0;font-size:.72rem;font-family:inherit;outline:none;box-sizing:border-box"
+              oninput="clearTimeout(this._t);this._t=setTimeout(()=>searchEditDlPenerima(),300)">
+          </div>
+          <button onclick="applyEditDlWilayah()" title="Hubungkan semua di wilayah terpilih"
+            style="padding:7px 12px;border-radius:7px;background:var(--success);color:#fff;border:none;cursor:pointer;font-size:.7rem;font-weight:700;font-family:inherit;white-space:nowrap">
+            <i class="fas fa-map-marker-alt"></i> Per Wilayah
+          </button>
+        </div>
+        <!-- Hasil search -->
+        <div id="editDlSearchResult" style="display:none;max-height:160px;overflow-y:auto;border:1px solid #E2E8F0;border-radius:7px;margin-bottom:8px;background:#fff"></div>
+        <!-- List penerima terhubung -->
+        <div id="editDlLinkedList" style="max-height:180px;overflow-y:auto;border:1px solid #E2E8F0;border-radius:7px;background:#fff">
+          <div style="padding:12px;text-align:center;color:#94A3B8;font-size:.72rem"><i class="fas fa-circle-notch fa-spin"></i></div>
+        </div>
+        <div id="editDlLinkProgress" style="font-size:.68rem;color:var(--gray-500);margin-top:6px"></div>
       </div>
-      <div class="form-group" style="margin-bottom:4px">
-        <label>Ganti File (opsional)</label>
-        <div style="font-size:.68rem;color:var(--gray-500);margin-bottom:4px">File saat ini: <span id="editDlCurrentFile" style="font-weight:600"></span></div>
-        <input type="file" id="editDlFile" accept=".pdf,.doc,.docx,.jpg,.png" style="font-size:.8rem">
-        <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Kosongkan jika tidak ingin ganti file. Maks 20 MB.</div>
+
+      <!-- GANTI FILE -->
+      <div style="background:#F8FAFC;border-radius:9px;padding:10px 12px;border:1px solid #E2E8F0;margin-bottom:10px">
+        <div style="font-size:.65rem;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Ganti File <span style="font-weight:400;color:#94A3B8;text-transform:none">(opsional)</span></div>
+        <input type="file" id="editDlFile"
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.zip,.rar"
+          style="font-size:.78rem;width:100%">
+        <div style="font-size:.6rem;color:#94A3B8;margin-top:4px">PDF · Word · Excel · PowerPoint · Gambar · ZIP — Maks 20 MB</div>
       </div>
-      <div id="editDlProgress" style="font-size:.72rem;margin-top:8px"></div>
+
+      <div id="editDlProgress" style="font-size:.72rem;margin-top:4px"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('ovEditDokLib')">Batal</button>
