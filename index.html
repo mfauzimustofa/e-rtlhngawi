@@ -6350,7 +6350,7 @@ function cmAutoMap(){
   scores.forEach(({fieldK,excelCol,score})=>{
     if(!usedExcel.has(excelCol)&&!usedField.has(fieldK)){
       _cmMapping[_cmCurFile][fieldK]=excelCol;
-      usedExcel.add(excelCol);
+      usedExcel.add(normCol);
       usedField.add(fieldK);
     }
   });
@@ -6442,13 +6442,20 @@ function renderCmRows(){
   const cleanHeaders=fd.headers.filter(h=>!String(h).startsWith('__EMPTY'));
 
   const reverseMap={};
-  Object.entries(mapping).forEach(([dbKey,exCol])=>{if(exCol)reverseMap[exCol]=dbKey;});
+  // Normalize key: trim + collapse whitespace (handle \n dari Excel)
+  Object.entries(mapping).forEach(([dbKey,exCol])=>{
+    if(exCol)reverseMap[String(exCol).replace(/\s+/g,' ').trim()]=dbKey;
+  });
 
-  const dbOpts='<option value="">(tidak diimport)</option>'+
-    CM_FIELDS.map(f=>`<option value="${f.k}">${f.lb}</option>`).join('');
-  const makeDbOpts=(selectedKey)=>dbOpts.replace(
-    `value="${selectedKey}"`,`value="${selectedKey}" selected`
-  );
+  // Build dropdown options menggunakan DOM proper (bukan string replace)
+  const makeDbOpts=(selectedKey)=>{
+    const opts=['<option value="">(tidak diimport)</option>'];
+    CM_FIELDS.forEach(f=>{
+      const sel=f.k===selectedKey?' selected':'';
+      opts.push(`<option value="${f.k}"${sel}>${f.lb}</option>`);
+    });
+    return opts.join('');
+  };
 
   const detectedCount=cleanHeaders.filter(h=>reverseMap[h]).length;
 
@@ -6508,11 +6515,12 @@ function renderCmRows(){
 
   // ── Baris per kolom Excel ──
   html+=cleanHeaders.map((h,idx)=>{
-    const dbKey=reverseMap[h]||'';
+    const hNorm=String(h).replace(/\s+/g,' ').trim(); // normalize whitespace/newline
+    const dbKey=reverseMap[hNorm]||'';
     const detected=!!dbKey;
     const hEsc=h.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
     return`<div id="cmrow_${_cmCurFile}_${idx}" style="display:grid;grid-template-columns:1fr 18px 1fr auto;align-items:center;gap:5px;padding:5px 8px;background:${detected?'#F0FDF4':'#fff'};border:${detected?'1px solid #BBF7D0':'1px solid var(--gray-200)'};border-radius:5px;margin-bottom:2px">
-      <div style="font-size:.72rem;font-weight:${detected?'700':'500'};color:${detected?'var(--gray-900)':'var(--gray-600)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${h.replace(/"/g,'&quot;')}">${h}</div>
+      <div style="font-size:.72rem;font-weight:${detected?'700':'500'};color:${detected?'var(--gray-900)':'var(--gray-600)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${h.replace(/"/g,'&quot;')}">${hNorm}</div>
       <i class="fas fa-arrow-right" style="color:${detected?'#16A34A':'var(--gray-300)'};font-size:.6rem;text-align:center"></i>
       <select onchange="cmUpdateMapByExcel(this.value,'${hEsc}')"
         style="padding:3px 6px;border-radius:5px;border:1px solid ${detected?'#86EFAC':'var(--gray-200)'};font-size:.7rem;font-family:var(--font);outline:none;background:#fff;width:100%;color:var(--gray-800)">
@@ -6531,10 +6539,13 @@ function renderCmRows(){
 }
 
 // Hapus mapping untuk kolom Excel tertentu (tombol X)
+function cmNormCol(s){return String(s||'').replace(/\s+/g,' ').trim();}
+
 function cmClearRow(excelCol){
   if(!_cmMapping[_cmCurFile])return;
+  const norm=cmNormCol(excelCol);
   Object.keys(_cmMapping[_cmCurFile]).forEach(k=>{
-    if(_cmMapping[_cmCurFile][k]===excelCol)
+    if(cmNormCol(_cmMapping[_cmCurFile][k])===norm)
       delete _cmMapping[_cmCurFile][k];
   });
   renderCmRows();
@@ -6544,15 +6555,15 @@ function cmClearRow(excelCol){
 // Update mapping: excelCol → dbKey
 function cmUpdateMapByExcel(dbKey, excelCol){
   if(!_cmMapping[_cmCurFile])_cmMapping[_cmCurFile]={};
+  const norm=cmNormCol(excelCol);
   // Hapus semua mapping yang menunjuk ke kolom Excel ini
   Object.keys(_cmMapping[_cmCurFile]).forEach(k=>{
-    if(_cmMapping[_cmCurFile][k]===excelCol)
+    if(cmNormCol(_cmMapping[_cmCurFile][k])===norm)
       delete _cmMapping[_cmCurFile][k];
   });
-  // Hapus juga jika dbKey sudah dipakai kolom Excel lain
   if(dbKey){
     delete _cmMapping[_cmCurFile][dbKey];
-    _cmMapping[_cmCurFile][dbKey]=excelCol;
+    _cmMapping[_cmCurFile][dbKey]=excelCol; // simpan nilai asli
   }
   renderCmRows();
   renderCmPreview();
