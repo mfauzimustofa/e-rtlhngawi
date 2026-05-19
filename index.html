@@ -717,7 +717,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
     <div style="padding:10px 14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px" id="rpSummary">
       <div style="background:#fff;border-radius:10px;border:1px solid #E2E8F0;padding:10px;text-align:center">
         <div style="font-size:1.2rem;font-weight:800;color:#1B6CA8" id="rpTotalKec">-</div>
-        <div style="font-size:.6rem;font-weight:700;color:#64748B;text-transform:uppercase;margin-top:2px">Kecamatan</div>
+        <div style="font-size:.6rem;font-weight:700;color:#64748B;text-transform:uppercase;margin-top:2px" id="rpKecLabel">Kecamatan</div>
       </div>
       <div style="background:#fff;border-radius:10px;border:1px solid #E2E8F0;padding:10px;text-align:center">
         <div style="font-size:1.2rem;font-weight:800;color:#1B6CA8" id="rpTotalAll">-</div>
@@ -1526,7 +1526,11 @@ function renderReport(){
   const gRtlh=filtered.reduce((s,r)=>s+r.rtlh,0);
   const gLain=filtered.reduce((s,r)=>s+(r.lain||0),0);
 
-  document.getElementById('rpTotalKec').textContent=Object.keys(byKec).length;
+  document.getElementById('rpTotalKec').textContent=_rpTab==='kec'
+    ?Object.keys(byKec).length
+    :Object.values(byDesa).filter(r=>r.total>0).length+' / '+Object.keys(byDesa).length;
+  const rpKecLabel=document.getElementById('rpKecLabel');
+  if(rpKecLabel)rpKecLabel.textContent=_rpTab==='kec'?'KECAMATAN':'DESA AKTIF / TOTAL';
   document.getElementById('rpTotalAll').textContent=gTotal.toLocaleString('id');
   document.getElementById('rpTotalLayak').textContent=gLayak.toLocaleString('id');
   document.getElementById('rpTotalRtlh').textContent=gRtlh.toLocaleString('id');
@@ -6143,36 +6147,37 @@ const CM_FIELDS=[
   {k:'longitude',lb:'Longitude',type:'num'},
 ];
 const CM_HINTS={
-  nik:['nik','nomor induk kependudukan','nik - angka','no nik','kependudukan','nik kepala','nik kk'],
-  no_kk:['no kk','nomor kk','nomor kartu keluarga','nokk','no. kk','kartu keluarga','nkk'],
-  kep_kk:['nama lengkap kepala','nama kepala rumah tangga','nama kk','nama kepala','kepala keluarga','nama lengkap','nama'],
+  nik:['nik','nomor induk kependudukan','nik - angka','no nik','kependudukan','nik kepala','nik kk','nik - angka 16 digit'],
+  no_kk:['no kk','nomor kk','nomor kartu keluarga','nokk','no. kk','kartu keluarga','nkk','nomor kartu keluarga- angka 16'],
+  kep_kk:['nama lengkap kepala','nama kepala rumah tangga','nama kk','nama kepala','kepala keluarga','nama lengkap kepala rumah tangga'],
   kec:['kecamatan','kec'],
-  desa:['desa','kelurahan','desa kelurahan'],
-  alamat:['alamat','alamat rumah','address','nama jalan'],
-  jen_kel:['jenis kelamin','gender','kelamin'],
-  umur:['umur','usia','age'],
-  pend_ter:['pendidikan','pend','sekolah','pendidikan terakhir'],
-  pekerjaan:['pekerjaan','profesi','job','mata pencaharian'],
-  pengh:['penghasilan','pendapatan','income','penghasilan per bulan'],
-  jml_peng:['jumlah kepala keluarga','jumlah penghuni','penghuni','anggota','anggota keluarga','jml'],
-  status_kep:['kepemilikan','status kepemilikan','status tanah'],
-  luas_rum:['luas rumah','luas bangunan','luas lantai'],
-  luas_tan:['luas tanah','luas lahan'],
-  material_d:['material dinding','mat dinding','bahan dinding','dinding'],
+  desa:['desa','kelurahan','desa kelurahan','kode wilayah'],
+  alamat:['alamat','alamat rumah','address','nama jalan','alamat rumah (nama jalan'],
+  jen_kel:['jenis kelamin','gender','kelamin','jenis kelamin  - pilihan'],
+  umur:['umur','usia','age','umur (tahun)','umur (tahun) - angka'],
+  pend_ter:['pendidikan','pend','sekolah','pendidikan terakhir','pendidikan terakhir - pilihan'],
+  pekerjaan:['pekerjaan','profesi','job','mata pencaharian','pekerjaan - pilihan'],
+  pengh:['penghasilan','pendapatan','income','penghasilan per bulan','penghasilan perbulan','penghasilan perbulan - pilihan'],
+  jml_peng:['jumlah penghuni','penghuni','anggota','jumlah kepala keluarga','jumlah kepala keluarga - angka'],
+  status_kep:['kepemilikan rumah','status kepemilikan rumah','status kepemilikan tanah','status kepemilikan'],
+  luas_rum:['luas rumah','luas bangunan','luas lantai','luas rumah (m'],
+  luas_tan:['luas tanah','luas lahan','luas tanah (m'],
+  material_d:['material dinding','mat dinding','bahan dinding','material\ndinding','material\r\ndinding'],
   kondisi_di:['kondisi dinding','kond dinding'],
-  material_a:['material atap','mat atap','bahan atap','atap'],
-  kondisi_at:['kondisi atap','kond atap'],
-  material_l:['material lantai','mat lantai','bahan lantai','lantai'],
+  material_a:['material atap','mat atap','bahan atap','material\natap','material\r\natap'],
+  kondisi_at:['kondisi atap','kond atap','kondisi\n atap','kondisi atap - pilihan'],
+  material_l:['material lantai','mat lantai','bahan lantai','material\nlantai','material\r\nlantai'],
   kondisi_la:['kondisi lantai','kond lantai'],
-  status_rtlh:['status rtlh','status rumah','kondisi','hasil verifikasi','status'],
-  status_batal:['alasan batal','batal','alasan','alasan dibatalkan'],
-  jenis_bantuan:['jenis bantuan','bantuan','program','jenis program'],
+  status_rtlh:['status rtlh','status rumah','kondisi','hasil verifikasi','bantuan perumahan','bantuan perumahan - pilihan'],
+  status_batal:['alasan batal','batal','alasan dibatalkan'],
+  jenis_bantuan:['jenis bantuan','bantuan','program'],
   tahun_bantuan:['tahun bantuan','tahun'],
   desil:['desil','desil dtks','dtks'],
   backlog:['backlog'],
-  keterangan:['keterangan','catatan','ket','notes','keterangan tidak layak','keterangan layak','keterangan rtlh','keterangan dibantu','ket rtlh'],
+  keterangan:['keterangan','catatan','ket','notes','keterangan tidak layak'],
   latitude:['latitude','lat'],
   longitude:['longitude','lng','lon','long'],
+  nama_foto:['nama file foto','foto','file foto','nama file foto - teks'],
 };
 let _cmFiles=[],_cmCurFile=0,_cmMapping={};
 
@@ -6399,6 +6404,38 @@ function cmSwitchFile(i){
   else{renderCmRows();renderCmPreview();}
 }
 
+function cmChangeHeaderRow(rowNum){
+  const fd=_cmFiles[_cmCurFile];
+  if(!fd||!fd.wb)return;
+  const ws=fd.wb.Sheets[fd.activeSheet||fd.wb.SheetNames[0]];
+  const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+  const idx=Math.max(0,(parseInt(rowNum)||1)-1);
+  if(idx>=raw.length)return;
+
+  // Rebuild dengan header row baru
+  const headerArr=raw[idx].map(v=>String(v===''||v==null?'':v).trim());
+  const seen=new Set();
+  const cleanHeaders=headerArr.filter(h=>{
+    if(!h||seen.has(h))return false;
+    seen.add(h);return true;
+  });
+  const dataRows=[];
+  for(let i=idx+1;i<raw.length;i++){
+    const row=raw[i];
+    if(row.every(v=>v===''||v==null))continue;
+    const obj={};
+    headerArr.forEach((h,j)=>{if(h)obj[h]=row[j]??'';});
+    dataRows.push(obj);
+  }
+  fd.headerRow=idx;
+  fd.headers=cleanHeaders;
+  fd.rows=dataRows;
+  delete _cmMapping[_cmCurFile];
+  cmAutoMap();
+  renderCmRows();
+  renderCmPreview();
+}
+
 function renderCmRows(){
   const fd=_cmFiles[_cmCurFile];if(!fd)return;
   const mapping=_cmMapping[_cmCurFile]||{};
@@ -6416,6 +6453,22 @@ function renderCmRows(){
   const detectedCount=cleanHeaders.filter(h=>reverseMap[h]).length;
 
   let html='';
+
+  // ── Header row picker ──
+  html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 12px;background:#FFFBEB;border-radius:8px;border:1px solid #FDE68A">
+    <i class="fas fa-list-ol" style="color:#D97706;font-size:.78rem;flex-shrink:0"></i>
+    <span style="font-size:.72rem;font-weight:700;color:#92400E;flex-shrink:0">Baris Header:</span>
+    <input type="number" id="cmHeaderRowInput" min="1" max="20" value="${(fd.headerRow||0)+1}"
+      style="width:60px;padding:4px 8px;border-radius:6px;border:1.5px solid #FCD34D;font-size:.78rem;font-family:inherit;font-weight:700;text-align:center;outline:none;background:#fff"
+      oninput="clearTimeout(this._ht);this._ht=setTimeout(()=>cmChangeHeaderRow(this.value),600)"
+      onkeydown="if(event.key==='Enter')cmChangeHeaderRow(this.value)">
+    <span style="font-size:.68rem;color:#92400E">dari file Excel</span>
+    <button onclick="cmChangeHeaderRow(document.getElementById('cmHeaderRowInput').value)"
+      style="padding:3px 10px;border-radius:6px;background:#F59E0B;color:#fff;border:none;cursor:pointer;font-size:.68rem;font-weight:700;font-family:inherit">
+      Terapkan
+    </button>
+    <span style="font-size:.62rem;color:#B45309;margin-left:auto">${fd.rows.length.toLocaleString('id')} baris data</span>
+  </div>`;
 
   // ── Sheet selector (jika lebih dari 1 sheet) ──
   if(fd.allSheets&&fd.allSheets.length>1){
