@@ -6348,7 +6348,8 @@ function cmAutoMap(){
   const usedExcel=new Set();
   const usedField=new Set();
   scores.forEach(({fieldK,excelCol,score})=>{
-    if(!usedExcel.has(excelCol)&&!usedField.has(fieldK)){
+    const normCol=cmNormCol(excelCol);
+    if(!usedExcel.has(normCol)&&!usedField.has(fieldK)){
       _cmMapping[_cmCurFile][fieldK]=excelCol;
       usedExcel.add(normCol);
       usedField.add(fieldK);
