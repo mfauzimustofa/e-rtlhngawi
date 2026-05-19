@@ -6507,16 +6507,21 @@ function renderCmRows(){
   </div>`;
 
   // ── Baris per kolom Excel ──
-  html+=cleanHeaders.map(h=>{
+  html+=cleanHeaders.map((h,idx)=>{
     const dbKey=reverseMap[h]||'';
     const detected=!!dbKey;
-    return`<div style="display:grid;grid-template-columns:1fr 18px 1fr;align-items:center;gap:6px;padding:5px 8px;background:${detected?'#F0FDF4':'#fff'};border:${detected?'1px solid #BBF7D0':'1px solid var(--gray-200)'};border-radius:5px;margin-bottom:2px">
+    const hEsc=h.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    return`<div id="cmrow_${_cmCurFile}_${idx}" style="display:grid;grid-template-columns:1fr 18px 1fr auto;align-items:center;gap:5px;padding:5px 8px;background:${detected?'#F0FDF4':'#fff'};border:${detected?'1px solid #BBF7D0':'1px solid var(--gray-200)'};border-radius:5px;margin-bottom:2px">
       <div style="font-size:.72rem;font-weight:${detected?'700':'500'};color:${detected?'var(--gray-900)':'var(--gray-600)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${h.replace(/"/g,'&quot;')}">${h}</div>
-      <i class="fas fa-arrow-right" style="color:${detected?'var(--success)':'var(--gray-300)'};font-size:.6rem;text-align:center"></i>
-      <select data-excelcol="${h.replace(/"/g,'&quot;')}" onchange="cmUpdateMapByExcel(this.value,'${h.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')"
+      <i class="fas fa-arrow-right" style="color:${detected?'#16A34A':'var(--gray-300)'};font-size:.6rem;text-align:center"></i>
+      <select onchange="cmUpdateMapByExcel(this.value,'${hEsc}')"
         style="padding:3px 6px;border-radius:5px;border:1px solid ${detected?'#86EFAC':'var(--gray-200)'};font-size:.7rem;font-family:var(--font);outline:none;background:#fff;width:100%;color:var(--gray-800)">
         ${makeDbOpts(dbKey)}
       </select>
+      <button onclick="cmClearRow('${hEsc}')" title="Hapus mapping"
+        style="width:22px;height:22px;border-radius:5px;background:${detected?'#FEE2E2':'var(--gray-100)'};border:none;cursor:pointer;color:${detected?'#DC2626':'var(--gray-400)'};font-size:.65rem;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <i class="fas fa-times"></i>
+      </button>
     </div>`;
   }).join('');
 
@@ -6525,27 +6530,29 @@ function renderCmRows(){
     `${fd.name} · Sheet: ${fd.activeSheet} · ${fd.rows.length.toLocaleString('id')} baris · ${cleanHeaders.length} kolom · header baris ke-${(fd.headerRow||0)+1}`;
 }
 
+// Hapus mapping untuk kolom Excel tertentu (tombol X)
+function cmClearRow(excelCol){
+  if(!_cmMapping[_cmCurFile])return;
+  Object.keys(_cmMapping[_cmCurFile]).forEach(k=>{
+    if(_cmMapping[_cmCurFile][k]===excelCol)
+      delete _cmMapping[_cmCurFile][k];
+  });
+  renderCmRows();
+  renderCmPreview();
+}
+
 // Update mapping: excelCol → dbKey
 function cmUpdateMapByExcel(dbKey, excelCol){
   if(!_cmMapping[_cmCurFile])_cmMapping[_cmCurFile]={};
-  // Hapus mapping lama untuk dbKey ini (hindari duplikat)
+  // Hapus semua mapping yang menunjuk ke kolom Excel ini
   Object.keys(_cmMapping[_cmCurFile]).forEach(k=>{
-    if(_cmMapping[_cmCurFile][k]===excelCol&&k!==dbKey)
-      _cmMapping[_cmCurFile][k]='';
+    if(_cmMapping[_cmCurFile][k]===excelCol)
+      delete _cmMapping[_cmCurFile][k];
   });
-  // Hapus juga jika dbKey sudah dipakai kolom lain
+  // Hapus juga jika dbKey sudah dipakai kolom Excel lain
   if(dbKey){
-    Object.keys(_cmMapping[_cmCurFile]).forEach(k=>{
-      if(k!==dbKey&&_cmMapping[_cmCurFile][k]===excelCol)
-        _cmMapping[_cmCurFile][k]='';
-    });
+    delete _cmMapping[_cmCurFile][dbKey];
     _cmMapping[_cmCurFile][dbKey]=excelCol;
-  }else{
-    // User pilih "(tidak diimport)" — hapus mapping untuk kolom ini
-    Object.keys(_cmMapping[_cmCurFile]).forEach(k=>{
-      if(_cmMapping[_cmCurFile][k]===excelCol)
-        _cmMapping[_cmCurFile][k]='';
-    });
   }
   renderCmRows();
   renderCmPreview();
