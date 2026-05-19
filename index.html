@@ -5217,15 +5217,29 @@ const DOK_JENIS_CONFIG={
   'Lainnya':{color:'#6B7280',bg:'#F3F4F6',icon:'fas fa-file'},
 };
 
+function updateDlDesaOpts(){
+  const kec=document.getElementById('dlKec')?.value||'';
+  const desaWrap=document.getElementById('dlDesaWrap');
+  const desaSel=document.getElementById('dlDesa');
+  if(!desaSel)return;
+  desaSel.innerHTML='<option value="">Seluruh Kecamatan</option>';
+  if(!kec){if(desaWrap)desaWrap.style.display='none';return;}
+  if(desaWrap)desaWrap.style.display='block';
+  const desas=(KEC_CONFIG[kec]?.desa)||[];
+  desas.forEach(d=>{
+    const o=document.createElement('option');
+    o.value=d.nama; o.textContent=d.nama+' ('+d.kode+')';
+    desaSel.appendChild(o);
+  });
+}
+
 async function openDokLib(){
-  // Isi dropdown kecamatan di form upload
   const kecSel=document.getElementById('dlKec');
   if(kecSel&&kecSel.options.length<=1){
     Object.keys(KEC_CONFIG).sort().forEach(k=>{
       const o=document.createElement('option');o.value=k;o.textContent=k;kecSel.appendChild(o);
     });
   }
-  // Tampilkan tombol upload hanya untuk admin
   const btnUp=document.getElementById('btnUploadDokLib');
   if(btnUp)btnUp.style.display=isAdmin?'inline-flex':'none';
   document.getElementById('ovDokLib').classList.add('open');
@@ -5270,13 +5284,28 @@ async function refreshDokLib(){
   toast('Sinkronisasi selesai: '+totalLinked+' link diperbarui','success');
 }
 
-async function loadDokLib(){
+async function loadDokLib(force=false){
   const el=document.getElementById('dokLibList');
-  el.innerHTML='<div style="text-align:center;color:var(--gray-400);padding:32px"><i class="fas fa-circle-notch fa-spin fa-2x"></i></div>';
+  const cacheKey='doklib_'+(_dokLibFilter||'all');
+
+  // Cek cache dulu
+  if(!force){
+    const cached=cacheGet(cacheKey);
+    if(cached){
+      _dokLibData=cached.data;
+      renderDokLib(_dokLibData);
+      // Refresh background kalau stale
+      if(cached.stale)loadDokLib(true);
+      return;
+    }
+  }
+
+  el.innerHTML='<div style="text-align:center;color:var(--gray-400);padding:24px"><i class="fas fa-circle-notch fa-spin fa-lg"></i></div>';
   let q=sb.from('rtlh_dokumen_kabupaten').select('*').order('tahun',{ascending:false}).order('created_at',{ascending:false});
   if(_dokLibFilter)q=q.eq('jenis',_dokLibFilter);
   const{data,error}=await q;
   _dokLibData=data||[];
+  if(!error)cacheSet(cacheKey, _dokLibData);
   if(error||!_dokLibData.length){
     el.innerHTML='<div style="text-align:center;color:var(--gray-400);padding:32px"><i class="fas fa-folder-open" style="font-size:2rem;display:block;margin-bottom:8px;opacity:.3"></i><div style="font-size:.82rem">Belum ada dokumen</div></div>';
     return;
@@ -5290,6 +5319,8 @@ function renderDokLib(docs){
     const cfg=DOK_JENIS_CONFIG[d.jenis]||DOK_JENIS_CONFIG['Lainnya'];
     const url=sb.storage.from('dokumen-kab').getPublicUrl(d.path).data.publicUrl;
     const kb=d.ukuran?Math.round(d.ukuran/1024)+'KB':'';
+    const scope=d.desa?`Desa ${d.desa}${d.kecamatan?', '+d.kecamatan:''}`:d.kecamatan?`Kec. ${d.kecamatan}`:'Kabupaten';
+    const scopeColor=d.desa?'#16A34A':d.kecamatan?'#1D4ED8':'#6B7280';
     return`<div class="dok-lib-card" style="margin-bottom:8px">
       <div class="dok-lib-icon" style="background:${cfg.bg};color:${cfg.color}"><i class="${cfg.icon}"></i></div>
       <div class="dok-lib-info">
@@ -5297,15 +5328,15 @@ function renderDokLib(docs){
         <div class="dok-lib-meta">
           <span style="background:${cfg.bg};color:${cfg.color};padding:1px 7px;border-radius:99px;font-weight:700;font-size:.6rem">${d.jenis}</span>
           ${d.tahun?` · ${d.tahun}`:''}
-          ${d.kecamatan?` · Kec. ${d.kecamatan}`:' · Kabupaten'}
+          <span style="color:${scopeColor};font-weight:600"> · ${scope}</span>
           ${kb?' · '+kb:''}
         </div>
       </div>
-      <div style="display:flex;gap:6px;flex-shrink:0">
-        <a href="${url}" target="_blank" title="Buka dokumen" style="width:32px;height:32px;border-radius:8px;background:var(--blue-bg);color:var(--blue);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:.8rem"><i class="fas fa-external-link-alt"></i></a>
-        <button onclick="lihatPenerimaDok('${d.id}','${d.judul.replace(/'/g,"\\'")}')" title="Lihat penerima" style="width:32px;height:32px;border-radius:8px;background:#F5F3FF;color:#7C3AED;border:none;cursor:pointer;font-size:.8rem"><i class="fas fa-users"></i></button>
-        ${isAdmin?`<button onclick="openEditDokLib('${d.id}')" title="Edit" style="width:32px;height:32px;border-radius:8px;background:#FFF7ED;color:#EA580C;border:none;cursor:pointer;font-size:.8rem"><i class="fas fa-edit"></i></button>`:''}
-        ${isSuperAdmin()?`<button onclick="deleteDokLib('${d.id}','${d.path}')" title="Hapus" style="width:32px;height:32px;border-radius:8px;background:var(--danger-bg);color:var(--danger);border:none;cursor:pointer;font-size:.8rem"><i class="fas fa-trash"></i></button>`:''}
+      <div style="display:flex;gap:5px;flex-shrink:0">
+        <a href="${url}" target="_blank" title="Buka" style="width:30px;height:30px;border-radius:7px;background:var(--blue-bg);color:var(--blue);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:.75rem"><i class="fas fa-external-link-alt"></i></a>
+        <button onclick="lihatPenerimaDok('${d.id}','${(d.judul||'').replace(/'/g,"\\'")}')" title="Lihat penerima" style="width:30px;height:30px;border-radius:7px;background:#F5F3FF;color:#7C3AED;border:none;cursor:pointer;font-size:.75rem"><i class="fas fa-users"></i></button>
+        ${isAdmin?`<button onclick="openEditDokLib('${d.id}')" title="Edit" style="width:30px;height:30px;border-radius:7px;background:#FFF7ED;color:#EA580C;border:none;cursor:pointer;font-size:.75rem"><i class="fas fa-edit"></i></button>`:''}
+        ${isSuperAdmin()?`<button onclick="deleteDokLib('${d.id}','${d.path}')" title="Hapus" style="width:30px;height:30px;border-radius:7px;background:var(--danger-bg);color:var(--danger);border:none;cursor:pointer;font-size:.75rem"><i class="fas fa-trash"></i></button>`:''}
       </div>
     </div>`;
   }).join('');
@@ -5338,6 +5369,7 @@ async function uploadDokLib(){
   const judul=document.getElementById('dlJudul').value.trim();
   const tahun=parseInt(document.getElementById('dlTahun').value)||null;
   const kec=document.getElementById('dlKec').value||null;
+  const desa=document.getElementById('dlDesa')?.value||null;
   const file=document.getElementById('dlFile').files[0];
   if(!judul)return toast('Isi judul dokumen','error');
   if(!file)return toast('Pilih file','error');
@@ -5352,30 +5384,37 @@ async function uploadDokLib(){
   const jenisBantuan=document.getElementById('dlJenisBantuan')?.value||null;
   const tahunBantuan=document.getElementById('dlTahunBantuan')?.value||null;
   const{error:dbErr}=await sb.from('rtlh_dokumen_kabupaten').insert({
-    jenis,judul,tahun,kecamatan:kec,path,ukuran:file.size,uploaded_by:user?.email,
+    jenis,judul,tahun,kecamatan:kec,desa:desa||null,path,ukuran:file.size,
+    uploaded_by:user?.email,
     jenis_bantuan:jenisBantuan||null,
     tahun_bantuan:tahunBantuan?parseInt(tahunBantuan):null
   });
   if(dbErr){prog.innerHTML=`<span style="color:var(--danger)">Gagal simpan: ${dbErr.message}</span>`;return;}
+
+  // Invalidate cache
+  ['all','SK','BA','Surat Pernyataan','Lainnya'].forEach(k=>cacheDel('doklib_'+k));
+
   prog.innerHTML='<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Berhasil diupload!</span>';
   toast('Dokumen berhasil diupload','success');
-  // Auto-link atau manual link
+
   const linkMode=document.querySelector('input[name="dlLinkMode"]:checked')?.value||'auto';
+  const{data:newDoc}=await sb.from('rtlh_dokumen_kabupaten').select('id').eq('path',path).single();
+
   if(linkMode==='manual'&&_dlSelectedIds.size){
     prog.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Menghubungkan '+_dlSelectedIds.size+' penerima...';
-    const{data:newDoc}=await sb.from('rtlh_dokumen_kabupaten').select('id').eq('path',path).single();
     if(newDoc){
       const batch=[..._dlSelectedIds].map(id=>({rtlh_id:id,dokumen_id:newDoc.id,linked_by:user?.email}));
       await sb.from('rtlh_dokumen_link').upsert(batch,{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
       prog.innerHTML='<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Upload selesai · '+_dlSelectedIds.size+' penerima terhubung!</span>';
     }
-  } else if(jenisBantuan){
-  } else if(jenisBantuan){
+  } else if(desa||kec||jenisBantuan){
+    // Auto-link: per desa → per kecamatan → per jenis bantuan
     prog.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Menghubungkan ke penerima...';
-    const{data:newDoc}=await sb.from('rtlh_dokumen_kabupaten').select('id').eq('path',path).single();
     if(newDoc){
       let qLink=sb.from('rtlh').select('id');
-      qLink=qLink.ilike('jenis_bantuan','%'+jenisBantuan+'%');
+      if(desa)qLink=qLink.ilike('desa','%'+desa+'%');
+      else if(kec)qLink=qLink.ilike('kec','%'+kec+'%');
+      if(jenisBantuan)qLink=qLink.ilike('jenis_bantuan','%'+jenisBantuan+'%');
       if(tahunBantuan)qLink=qLink.eq('tahun_bantuan',tahunBantuan);
       const{data:matched}=await qLink;
       if(matched?.length){
@@ -5383,7 +5422,10 @@ async function uploadDokLib(){
           const batch=matched.slice(i,i+100).map(r=>({rtlh_id:r.id,dokumen_id:newDoc.id,linked_by:user?.email}));
           await sb.from('rtlh_dokumen_link').upsert(batch,{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
         }
-        prog.innerHTML='<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Upload selesai · '+matched.length+' penerima terhubung!</span>';
+        const scope=desa?`Desa ${desa}`:kec?`Kec. ${kec}`:'semua penerima';
+        prog.innerHTML=`<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Upload selesai · ${matched.length} penerima di ${scope} terhubung!</span>`;
+      }else{
+        prog.innerHTML='<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Upload selesai (0 penerima cocok)</span>';
       }
     }
   }
@@ -6554,8 +6596,14 @@ async function cmStartImport(){
       </div>
       <div class="form-group" style="margin-bottom:10px">
         <label>Kecamatan (kosongkan jika berlaku seluruh kabupaten)</label>
-        <select id="dlKec">
+        <select id="dlKec" onchange="updateDlDesaOpts()">
           <option value="">Seluruh Kabupaten</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:10px" id="dlDesaWrap" style="display:none">
+        <label>Desa <span style="font-weight:400;color:var(--gray-400)">(kosongkan jika berlaku seluruh kecamatan)</span></label>
+        <select id="dlDesa">
+          <option value="">Seluruh Kecamatan</option>
         </select>
       </div>
       <div class="form-group" style="margin-bottom:10px">
