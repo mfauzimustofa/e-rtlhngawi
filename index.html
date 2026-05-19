@@ -433,7 +433,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 .popup-kec-stat .leaflet-popup-tip-container{display:none}
 
 /* SPINNING REFRESH ICON */
-@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 .spinning{animation:spin .7s linear infinite}
 
 /* SCORE SLIDERS removed - scoring now desil-only */
@@ -1422,6 +1422,12 @@ function nav(pg){
 let _rpData=null, _rpLoaded=false, _rpTab='kec';
 
 async function loadReport(){
+  const cached=cacheGet('report_data');
+  if(cached){
+    _rpData=cached.data; _rpLoaded=true; renderReport();
+    if(cached.stale)_refreshReportBackground();
+    return;
+  }
   document.getElementById('rpTable').innerHTML=
     '<div style="padding:40px;text-align:center;color:#94A3B8"><i class="fas fa-circle-notch fa-spin" style="font-size:1.5rem;display:block;margin-bottom:10px"></i>Memuat data...</div>';
   try{
@@ -1434,12 +1440,29 @@ async function loadReport(){
       )
     );
     _rpData=results.flatMap(r=>r.data||[]);
+    cacheSet('report_data', _rpData);
     _rpLoaded=true;
     renderReport();
   }catch(e){
     document.getElementById('rpTable').innerHTML=
       `<div style="padding:40px;text-align:center;color:#EF4444">Gagal memuat: ${e.message}</div>`;
   }
+}
+
+async function _refreshReportBackground(){
+  try{
+    const pageSize=1000;
+    const{count}=await sb.from('rtlh').select('*',{count:'exact',head:true});
+    const pages=Math.ceil((count||0)/pageSize);
+    const results=await Promise.all(
+      Array.from({length:pages},(_,p)=>
+        sb.from('rtlh').select('kec,desa,status_rtlh,desil,jenis_bantuan,tahun_bantuan').range(p*pageSize,(p+1)*pageSize-1)
+      )
+    );
+    _rpData=results.flatMap(r=>r.data||[]);
+    cacheSet('report_data', _rpData);
+    if(document.querySelector('.page.active')?.id==='pgReport')renderReport();
+  }catch(e){}
 }
 
 function switchReportTab(tab){
@@ -1742,13 +1765,16 @@ function startAutoRefresh(){
       const changed=payload.new||payload.old||{};
       const changedKec=(changed.kec||'').toUpperCase().trim();
 
-      // Hapus cache kecamatan yang berubah saja
+      // Invalidate cache
       if(changedKec){
         delete brCache[changedKec];
-        delete _kecCacheTime[changedKec];
+        cacheDel('kec_'+changedKec.toUpperCase());
       }else{
-        Object.keys(_kecCacheTime).forEach(k=>delete _kecCacheTime[k]);
+        Object.keys(brCache).forEach(k=>delete brCache[k]);
+        cacheClear();
       }
+      cacheDel('global_stats');
+      cacheDel('report_data');
 
       const activePage=document.querySelector('.page.active')?.id;
 
@@ -1840,83 +1866,91 @@ function isKetLain(r){return statusKategori(r.status_rtlh)==='Keterangan Lain';}
 const STATUS_COLORS={'Layak Huni':'#16A34A','RTLH':'#DC2626','Keterangan Lain':'#7C3AED'};
 
 async function loadGlobalStats(){
-  if(!user)return;
-  try{
-    // Fetch semua data dengan parallel pagination
+  // Stale-while-revalidate: tampilkan cache dulu, fetch di background
+  const CACHE_KEY='global_stats';
+  const cached=cacheGet(CACHE_KEY);
+
+  async function fetchAndRender(silent=false){
     const pageSize=1000;
-    // Ambil total dulu
-    const{count:totalCount}=await sb.from('rtlh').select('*',{count:'exact',head:true});
-    const pages=Math.ceil((totalCount||0)/pageSize);
-    // Fetch semua halaman parallel
-    const promises=[];
-    for(let p=0;p<pages;p++){
-      promises.push(
-        sb.from('rtlh').select('kec,status_rtlh,desil').range(p*pageSize,(p+1)*pageSize-1)
-      );
-    }
-    const results=await Promise.all(promises);
+    const{count}=await sb.from('rtlh').select('*',{count:'exact',head:true});
+    const pages=Math.ceil((count||0)/pageSize);
+    const results=await Promise.all(
+      Array.from({length:pages},(_,p)=>
+        sb.from('rtlh').select('kec,status_rtlh,desil,nik,jenis_bantuan').range(p*pageSize,(p+1)*pageSize-1)
+      )
+    );
     const data=results.flatMap(r=>r.data||[]);
-    const total=data.length;
-    const layak=data.filter(r=>isLayakHuni(r)).length;
-    const rtlh=data.filter(r=>isRTLH(r)).length;
-    const lain=data.filter(r=>isKetLain(r)).length;
-    const belum=rtlh;
+    cacheSet(CACHE_KEY, data);
+    _applyGlobalStats(data);
+  }
 
-    document.getElementById('gs-total').textContent=total.toLocaleString('id');
-    document.getElementById('gs-layak').textContent=layak.toLocaleString('id');
-    document.getElementById('gs-belum').textContent=belum.toLocaleString('id');
-    const gsLain=document.getElementById('gs-lain');
-    if(gsLain)gsLain.textContent=lain.toLocaleString('id');
+  if(cached){
+    _applyGlobalStats(cached.data);         // tampilkan cache instan
+    if(cached.stale)fetchAndRender(true);   // refresh background kalau stale
+  }else{
+    await fetchAndRender(false);
+  }
+}
 
-    const playak=pct(layak,total),pb=pct(rtlh,total),pl=pct(lain,total);
-    document.getElementById('pbSudah').style.width=playak+'%';
-    document.getElementById('pbBelum').style.width=pb+'%';
-    const pbLain=document.getElementById('pbLain');if(pbLain)pbLain.style.width=pl+'%';
-    document.getElementById('lgSudah').textContent=`Layak Huni: ${playak}% (${layak})`;
-    document.getElementById('lgBelum').textContent=`RTLH: ${pb}% (${rtlh})`;
-    const lgLain=document.getElementById('lgLain');if(lgLain)lgLain.textContent=`Keterangan Lain: ${pl}% (${lain})`;
+function _applyGlobalStats(data){
+  if(!data||!data.length)return;
+  const total=data.length;
+  const layak=data.filter(r=>isLayakHuni(r)).length;
+  const rtlh=data.filter(r=>isRTLH(r)).length;
+  const lain=data.filter(r=>isKetLain(r)).length;
+  const belum=rtlh;
 
-    // Hitung non-database (lazy)
-    const gsNonDb=document.getElementById('gs-nondb');
-    if(gsNonDb){
-      gsNonDb.textContent='...';
-      ensureNikDB().then(()=>{
-        const nonDbCount=data.filter(r=>!isInDB(r)).length;
-        gsNonDb.textContent=nonDbCount.toLocaleString('id');
-      }).catch(()=>{gsNonDb.textContent='?';});
-    }
+  document.getElementById('gs-total').textContent=total.toLocaleString('id');
+  document.getElementById('gs-layak').textContent=layak.toLocaleString('id');
+  document.getElementById('gs-belum').textContent=belum.toLocaleString('id');
+  const gsLain=document.getElementById('gs-lain');
+  if(gsLain)gsLain.textContent=lain.toLocaleString('id');
 
-    // Per kec counts — 3 kategori resmi
-    kecCounts={};
-    data.forEach(r=>{
-      const k=(r.kec||'').toUpperCase().trim();
-      if(!kecCounts[k])kecCounts[k]={total:0,sudah:0,belum:0,lain:0};
-      kecCounts[k].total++;
-      const _kat=statusKategori(r.status_rtlh);
-      if(_kat==='Layak Huni')kecCounts[k].sudah++;
-      else if(_kat==='RTLH')kecCounts[k].belum++;
-      else kecCounts[k].lain++;
-    });
+  const playak=pct(layak,total),pb=pct(rtlh,total),pl=pct(lain,total);
+  document.getElementById('pbSudah').style.width=playak+'%';
+  document.getElementById('pbBelum').style.width=pb+'%';
+  const pbLain=document.getElementById('pbLain');if(pbLain)pbLain.style.width=pl+'%';
+  document.getElementById('lgSudah').textContent=`Layak Huni: ${playak}% (${layak})`;
+  document.getElementById('lgBelum').textContent=`RTLH: ${pb}% (${rtlh})`;
+  const lgLain=document.getElementById('lgLain');if(lgLain)lgLain.textContent=`Keterangan Lain: ${pl}% (${lain})`;
 
-    // Desil counts
-    const desilCounts={};
-    for(let i=1;i<=8;i++)desilCounts[i]=0;
-    desilCounts[0]=0; // Tanpa Desil
-    data.forEach(r=>{
-      const m=(r.desil||'').match(/\d+/);
-      if(m){const d=parseInt(m[0]);if(d>=1&&d<=8)desilCounts[d]++;}
-      else desilCounts[0]++;
-    });
+  const gsNonDb=document.getElementById('gs-nondb');
+  if(gsNonDb){
+    gsNonDb.textContent='...';
+    ensureNikDB().then(()=>{
+      const nonDbCount=data.filter(r=>!isInDB(r)).length;
+      gsNonDb.textContent=nonDbCount.toLocaleString('id');
+    }).catch(()=>{gsNonDb.textContent='?';});
+  }
 
-    renderDesilGrid(desilCounts);
-    renderKecGrid();
-    renderKecTable();
-    renderChartStatus(data);
-    renderChartDesil(desilCounts);
-    initMapBeranda();
-    updateMapMarkers();
-    render10379Beranda(); // progress baseline 10.379
-  }catch(e){console.error(e)}
+  kecCounts={};
+  data.forEach(r=>{
+    const k=(r.kec||'').toUpperCase().trim();
+    if(!kecCounts[k])kecCounts[k]={total:0,sudah:0,belum:0,lain:0};
+    kecCounts[k].total++;
+    const _kat=statusKategori(r.status_rtlh);
+    if(_kat==='Layak Huni')kecCounts[k].sudah++;
+    else if(_kat==='RTLH')kecCounts[k].belum++;
+    else kecCounts[k].lain++;
+  });
+
+  const desilCounts={};
+  for(let i=1;i<=8;i++)desilCounts[i]=0;
+  desilCounts[0]=0;
+  data.forEach(r=>{
+    const m=(r.desil||'').match(/\d+/);
+    if(m){const d=parseInt(m[0]);if(d>=1&&d<=8)desilCounts[d]++;}
+    else desilCounts[0]++;
+  });
+
+  renderDesilGrid(desilCounts);
+  renderKecGrid();
+  renderKecTable();
+  renderChartStatus(data);
+  renderChartDesil(desilCounts);
+  initMapBeranda();
+  updateMapMarkers();
+  render10379Beranda();
 }
 
 function renderDesilGrid(counts){
@@ -3073,21 +3107,65 @@ function initMap(){
 }
 
 // Cache timestamp per kecamatan
+// ══════════════════════════════════════════════════
+// CACHE SYSTEM — localStorage + stale-while-revalidate
+// ══════════════════════════════════════════════════
+const CACHE_TTL = 5 * 60 * 1000; // 5 menit
+const CACHE_PREFIX = 'ertlh_v2_';
+
+function cacheSet(key, data){
+  try{
+    localStorage.setItem(CACHE_PREFIX+key, JSON.stringify({t:Date.now(),d:data}));
+  }catch(e){} // QuotaExceededError — skip
+}
+
+function cacheGet(key){
+  try{
+    const raw=localStorage.getItem(CACHE_PREFIX+key);
+    if(!raw)return null;
+    const{t,d}=JSON.parse(raw);
+    return{data:d, stale:Date.now()-t>CACHE_TTL, age:Date.now()-t};
+  }catch(e){return null;}
+}
+
+function cacheDel(key){try{localStorage.removeItem(CACHE_PREFIX+key);}catch(e){}}
+function cacheClear(){
+  try{
+    Object.keys(localStorage).filter(k=>k.startsWith(CACHE_PREFIX)).forEach(k=>localStorage.removeItem(k));
+  }catch(e){}
+}
+
+// Tampilkan data dari cache sambil fetch ulang di background
+async function loadWithCache(cacheKey, fetchFn, onData){
+  const cached=cacheGet(cacheKey);
+  if(cached){
+    onData(cached.data, false); // tampilkan cache dulu (instant)
+    if(!cached.stale)return;   // masih fresh — tidak perlu fetch
+    // Stale: fetch di background tanpa loading indicator
+    try{
+      const fresh=await fetchFn();
+      cacheSet(cacheKey, fresh);
+      onData(fresh, true); // update dengan data baru
+    }catch(e){console.warn('Background refresh failed:',e);}
+  }else{
+    // Tidak ada cache — fetch dengan loading
+    try{
+      const fresh=await fetchFn();
+      cacheSet(cacheKey, fresh);
+      onData(fresh, true);
+    }catch(e){throw e;}
+  }
+}
+
 const _kecCacheTime={};
 async function loadKec(){
-  if(!user)return; // Guard: harus login
-  // Tampilkan loading di sidebar
-  const sidebarList=document.getElementById('sidebarList');
-  if(sidebarList&&!brAll.length)sidebarList.innerHTML='<div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin" style="font-size:1.5rem;margin-bottom:8px;display:block"></i><div style="font-size:.78rem">Memuat data...</div></div>';
-  const now=Date.now();
-  const cacheKey=currentKec+'_'+currentDesa;
-  if(brAll.length&&_kecCacheTime[cacheKey]&&(now-_kecCacheTime[cacheKey])<120000){
-    renderSidebar();updateMap();return; // pakai cache, skip fetch
-  }
-  
+  if(!user)return;
   if(!currentKec)return;
+
   const kecName=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===currentKec);
-  // Ganti title jadi dropdown pilih kecamatan
+  const cacheKey='kec_'+currentKec;
+
+  // Setup toolbar
   const tbTitle=document.getElementById('tbTitle');
   if(tbTitle&&!document.getElementById('kecSelector')){
     tbTitle.innerHTML=`<select id="kecSelector" onchange="selectKec(this.value)"
@@ -3101,28 +3179,96 @@ async function loadKec(){
   document.getElementById('btnAddRtlh').style.display=canEdit()?'flex':'none';
   document.getElementById('btnDelAll').style.display=isSuperAdmin()?'flex':'none';
 
-  if(brCache[currentKec]){brAll=brCache[currentKec];brFeatures=[...brAll];renderSidebar();renderKecDashboard();updateMap();return;}
+  const sidebarList=document.getElementById('sidebarList');
 
+  // Cek memory cache dulu (tercepat)
+  if(brCache[currentKec]){
+    brAll=brCache[currentKec];
+    brFeatures=[...brAll];
+    renderSidebar();renderKecDashboard();updateMap();
+    loadBoundary(kecName);
+    // Cek apakah perlu refresh background
+    const cached=cacheGet(cacheKey);
+    if(cached?.stale)_refreshKecBackground(cacheKey, currentKec, kecName);
+    return;
+  }
+
+  // Cek localStorage cache
+  const cached=cacheGet(cacheKey);
+  if(cached){
+    // Tampilkan cache langsung — tidak ada loading
+    brAll=cached.data;
+    brAll=brAll.map(r=>{r._score=calcScore(r);r._cat=getCat(r._score);return r;});
+    brCache[currentKec]=brAll;
+    brFeatures=[...brAll];
+    renderSidebar();renderKecDashboard();updateMap();
+    loadBoundary(kecName);
+    if(cached.stale)_refreshKecBackground(cacheKey, currentKec, kecName);
+    return;
+  }
+
+  // Tidak ada cache — tampilkan skeleton loading
+  if(sidebarList)sidebarList.innerHTML=_skeletonLoading();
+
+  await _fetchKec(cacheKey, currentKec, kecName);
+}
+
+function _skeletonLoading(){
+  return Array(6).fill(0).map(()=>`
+    <div style="padding:10px 12px;border-bottom:1px solid #F1F5F9;display:flex;align-items:center;gap:10px">
+      <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.2s infinite"></div>
+      <div style="flex:1">
+        <div style="height:10px;background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;border-radius:5px;margin-bottom:6px;width:60%;animation:shimmer 1.2s infinite"></div>
+        <div style="height:8px;background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;border-radius:5px;width:40%;animation:shimmer 1.2s infinite"></div>
+      </div>
+    </div>`).join('');
+}
+
+async function _fetchKec(cacheKey, kecName, kecLabel){
   const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,backlog,desil,nik,no_kk,updated_at,keterangan';
-  // Fetch dengan pagination (antisipasi lebih dari 1000 data per kecamatan)
-  let allRows=[], pg=0, pgSize=1000, isDone=false;
+  let allRows=[],pg=0,pgSize=1000,isDone=false;
   while(!isDone){
     let q=sb.from('rtlh').select(cols).order('id').range(pg*pgSize,(pg+1)*pgSize-1).limit(pgSize);
-    if(currentKec)q=q.ilike('kec',currentKec);
+    if(kecName)q=q.ilike('kec',kecName);
     const{data,error}=await q;
-    if(error){toast('Gagal memuat data. Coba refresh halaman.','error');return;}
+    if(error){toast('Gagal memuat data','error');return;}
     allRows=[...allRows,...(data||[])];
     if(!data||data.length<pgSize)isDone=true;
     else pg++;
   }
+  // Simpan ke cache (tanpa _score karena itu computed)
+  cacheSet(cacheKey, allRows);
   brAll=allRows.map(r=>{r._score=calcScore(r);r._cat=getCat(r._score);return r;});
-  brCache[currentKec]=brAll;
+  brCache[kecName]=brAll;
   brFeatures=[...brAll];
-  renderSidebar();
-  renderKecDashboard();
-  updateMap();
-  // Load boundary
-  loadBoundary(kecName);
+  if(currentKec===kecName){
+    renderSidebar();renderKecDashboard();updateMap();
+    loadBoundary(Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===kecName));
+  }
+}
+
+async function _refreshKecBackground(cacheKey, kecName, kecLabel){
+  // Silent background refresh — tidak ganggu UI
+  try{
+    const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,backlog,desil,nik,no_kk,updated_at,keterangan';
+    let allRows=[],pg=0,pgSize=1000,isDone=false;
+    while(!isDone){
+      let q=sb.from('rtlh').select(cols).order('id').range(pg*pgSize,(pg+1)*pgSize-1).limit(pgSize);
+      if(kecName)q=q.ilike('kec',kecName);
+      const{data,error}=await q;
+      if(error)return;
+      allRows=[...allRows,...(data||[])];
+      if(!data||data.length<pgSize)isDone=true;
+      else pg++;
+    }
+    cacheSet(cacheKey, allRows);
+    brCache[kecName]=allRows.map(r=>{r._score=calcScore(r);r._cat=getCat(r._score);return r;});
+    // Update UI hanya kalau masih di kecamatan yang sama
+    if(currentKec===kecName){
+      brAll=brCache[kecName];brFeatures=[...brAll];
+      renderSidebar();renderKecDashboard();updateMap();
+    }
+  }catch(e){console.warn('Background refresh kec failed:',e);}
 }
 
 function loadBoundary(kecName){
