@@ -1218,16 +1218,25 @@ let _dbMode='semua'; // selalu semua — mode tidak ditampilkan ke user
 let sb=null; // akan diinit di DOMContentLoaded
 
 const KEC_CONFIG={
-  "Bringin":{lat:-7.4028,lng:111.5873},"Geneng":{lat:-7.4936,lng:111.4404},
-  "Gerih":{lat:-7.5398,lng:111.3837},"Jogorogo":{lat:-7.5319,lng:111.2579},
-  "Karanganyar":{lat:-7.3179,lng:111.2218},"Karangjati":{lat:-7.4551,lng:111.6075},
-  "Kasreman":{lat:-7.3905,lng:111.5175},"Kedunggalar":{lat:-7.4288,lng:111.3073},
-  "Kendal":{lat:-7.5828,lng:111.2816},"Kwadungan":{lat:-7.5170,lng:111.5139},
-  "Mantingan":{lat:-7.3849,lng:111.1635},"Ngawi":{lat:-7.4019,lng:111.4576},
-  "Ngrambe":{lat:-7.5018,lng:111.2123},"Padas":{lat:-7.4466,lng:111.5308},
-  "Pangkur":{lat:-7.4972,lng:111.5426},"Paron":{lat:-7.4627,lng:111.3661},
-  "Pitu":{lat:-7.3659,lng:111.3680},"Sine":{lat:-7.5159,lng:111.1713},
-  "Widodaren":{lat:-7.4065,lng:111.2304}
+  "SINE":{lat:-7.5159,lng:111.1713,desa:[{kode:'3521012001',nama:'WONOSARI'},{kode:'3521012002',nama:'PANDANSARI'},{kode:'3521012003',nama:'GIRIKERTO'},{kode:'3521012004',nama:'NGRENDENG'},{kode:'3521012005',nama:'HARGOSARI'},{kode:'3521012006',nama:'POCOL'},{kode:'3521012007',nama:'GENDOL'},{kode:'3521012008',nama:'SINE'},{kode:'3521012009',nama:'SUMBEREJO'},{kode:'3521012010',nama:'SUMBERSARI'},{kode:'3521012011',nama:'KUNIRAN'},{kode:'3521012012',nama:'TULAKAN'},{kode:'3521012013',nama:'KETANGGUNG'},{kode:'3521012014',nama:'JAGIR'},{kode:'3521012015',nama:'KAUMAN'}]},
+  "NGRAMBE":{lat:-7.5018,lng:111.2123,desa:[{kode:'3521022001',nama:'HARGOMULYO'},{kode:'3521022002',nama:'GIRIHARJO'},{kode:'3521022003',nama:'SETONO'},{kode:'3521022004',nama:'WAKAH'},{kode:'3521022005',nama:'TAWANGREJO'},{kode:'3521022006',nama:'SAMBIREJO'},{kode:'3521022007',nama:'MANISHARJO'},{kode:'3521022008',nama:'SIDOMULYO'},{kode:'3521022009',nama:'NGRAMBE'},{kode:'3521022010',nama:'BABADAN'},{kode:'3521022011',nama:'KRANDEGAN'},{kode:'3521022012',nama:'PUCANGAN'},{kode:'3521022013',nama:'CEPOKO'},{kode:'3521022014',nama:'MENDIRO'}]},
+  "JOGOROGO":{lat:-7.5319,lng:111.2579,desa:[{kode:'3521032001',nama:'UMBULREJO'},{kode:'3521032002',nama:'KLETEKAN'},{kode:'3521032003',nama:'JATEN'},{kode:'3521032004',nama:'GIRIMULYO'},{kode:'3521032005',nama:'NGRAYUDAN'},{kode:'3521032006',nama:'TALANG'},{kode:'3521032007',nama:'MACANAN'},{kode:'3521032008',nama:'BRUBUH'},{kode:'3521032009',nama:'JOGOROGO'},{kode:'3521032010',nama:'DAWUNG'},{kode:'3521032011',nama:'TANJUNGSARI'},{kode:'3521032012',nama:'SOCO'}]},
+  "KENDAL":{lat:-7.5828,lng:111.2816,desa:[{kode:'3521042001',nama:'KARANGGUPITO'},{kode:'3521042002',nama:'KARANGREJO'},{kode:'3521042003',nama:'SIMO'},{kode:'3521042004',nama:'PLOSO'},{kode:'3521042005',nama:'MAJASEM'},{kode:'3521042006',nama:'KENDAL'},{kode:'3521042007',nama:'SIDOREJO'},{kode:'3521042008',nama:'GAYAM'},{kode:'3521042009',nama:'DADAPAN'},{kode:'3521042010',nama:'PATALAN'}]},
+  "GENENG":{lat:-7.4936,lng:111.4404,desa:[{kode:'3521052005',nama:'KERASWETAN'},{kode:'3521052006',nama:'KENITEN'},{kode:'3521052007',nama:'TAMBAKROMO'},{kode:'3521052009',nama:'TEPAS'},{kode:'3521052010',nama:'GENENG'},{kode:'3521052011',nama:'SIDOREJO'},{kode:'3521052012',nama:'BADERAN'},{kode:'3521052013',nama:'KASREMAN'},{kode:'3521052014',nama:'KERSIKAN'},{kode:'3521052015',nama:'DEMPEL'},{kode:'3521052016',nama:'KLITIK'},{kode:'3521052017',nama:'KERSOHARJO'},{kode:'3521052018',nama:'KLAMPISAN'}]},
+  "KWADUNGAN":{lat:-7.517,lng:111.5139,desa:[{kode:'3521062001',nama:'KENDUNG'},{kode:'3521062002',nama:'DINDEN'},{kode:'3521062003',nama:'POJOK'},{kode:'3521062004',nama:'JENANGAN'},{kode:'3521062005',nama:'PURWOSARI'},{kode:'3521062006',nama:'TIRAK'},{kode:'3521062007',nama:'SUMENGKO'},{kode:'3521062008',nama:'SIMO'},{kode:'3521062009',nama:'WARUKKALONG'},{kode:'3521062010',nama:'KWADUNGAN'},{kode:'3521062011',nama:'BUDUG'},{kode:'3521062012',nama:'MOJOMANIS'},{kode:'3521062013',nama:'BANGET'},{kode:'3521062014',nama:'KARANGSONO'}]},
+  "KARANGJATI":{lat:-7.4551,lng:111.6075,desa:[{kode:'3521072001',nama:'CAMPURASRI'},{kode:'3521072002',nama:'DANGUK'},{kode:'3521072003',nama:'GEMPOL'},{kode:'3521072004',nama:'RINGINANOM'},{kode:'3521072005',nama:'SEMBUNG'},{kode:'3521072006',nama:'SIDOREJO'},{kode:'3521072007',nama:'DUNGMIRI'},{kode:'3521072008',nama:'BRANGOL'},{kode:'3521072009',nama:'SIDOKERTO'},{kode:'3521072010',nama:'JATIPURO'},{kode:'3521072011',nama:'PUHTI'},{kode:'3521072012',nama:'SAWO'},{kode:'3521072013',nama:'KARANGJATI'},{kode:'3521072014',nama:'LEGUNDI'},{kode:'3521072015',nama:'REJOMULYO'},{kode:'3521072016',nama:'REJUNO'},{kode:'3521072017',nama:'PLOSOLOR'}]},
+  "PADAS":{lat:-7.4466,lng:111.5308,desa:[{kode:'3521082001',nama:'BANJARANSARI'},{kode:'3521082002',nama:'BENDO'},{kode:'3521082003',nama:'TAMBAKROMO'},{kode:'3521082004',nama:'TUNGKULREJO'},{kode:'3521082005',nama:'BINTOYO'},{kode:'3521082006',nama:'SUKOWIYONO'},{kode:'3521082007',nama:'MUNGGUT'},{kode:'3521082011',nama:'PACING'},{kode:'3521082012',nama:'PADAS'},{kode:'3521082013',nama:'KEDUNGPRAHU'},{kode:'3521082014',nama:'SAMBIROTO'},{kode:'3521082015',nama:'KWADUNGAN LOR'}]},
+  "NGAWI":{lat:-7.4019,lng:111.4576,desa:[{kode:'3521091013',nama:'MARGOMULYO'},{kode:'3521091014',nama:'KARANGTENGAH'},{kode:'3521091015',nama:'KETANGGI'},{kode:'3521091016',nama:'PELEM'},{kode:'3521092001',nama:'MANGUNHARJO'},{kode:'3521092002',nama:'KANDANGAN'},{kode:'3521092003',nama:'KARTOHARJO'},{kode:'3521092004',nama:'KARANGASRI'},{kode:'3521092005',nama:'BANYUURIP'},{kode:'3521092006',nama:'BERAN'},{kode:'3521092007',nama:'JURUREJO'},{kode:'3521092008',nama:'GRUDO'},{kode:'3521092009',nama:'WATUALANG'},{kode:'3521092010',nama:'NGAWI'},{kode:'3521092011',nama:'KARANGTENGAH PRANDON'},{kode:'3521092012',nama:'KEREK'}]},
+  "PARON":{lat:-7.4627,lng:111.3661,desa:[{kode:'3521102001',nama:'GENTONG'},{kode:'3521102002',nama:'BABADAN'},{kode:'3521102003',nama:'SEMEN'},{kode:'3521102004',nama:'KEDUNGPUTRI'},{kode:'3521102005',nama:'TEMPURAN'},{kode:'3521102006',nama:'DAWU'},{kode:'3521102007',nama:'PARON'},{kode:'3521102008',nama:'JAMBANGAN'},{kode:'3521102009',nama:'TEGUHAN'},{kode:'3521102010',nama:'SIRIGAN'},{kode:'3521102011',nama:'JEBLOGAN'},{kode:'3521102012',nama:'NGALE'},{kode:'3521102013',nama:'GELUNG'},{kode:'3521102014',nama:'KEBON'}]},
+  "KEDUNGGALAR":{lat:-7.4288,lng:111.3073,desa:[{kode:'3521112001',nama:'BEGAL'},{kode:'3521112002',nama:'WONOREJO'},{kode:'3521112003',nama:'KATIKAN'},{kode:'3521112004',nama:'PELANG KIDUL'},{kode:'3521112005',nama:'KEDUNGGALAR'},{kode:'3521112006',nama:'JATIGEMBOL'},{kode:'3521112007',nama:'PELANG LOR'},{kode:'3521112008',nama:'BANGUNREJO KIDUL'},{kode:'3521112009',nama:'JENGGRIK'},{kode:'3521112010',nama:'WONOKERTO'},{kode:'3521112011',nama:'GEMARANG'},{kode:'3521112012',nama:'KAWU'}]},
+  "WIDODAREN":{lat:-7.4065,lng:111.2304,desa:[{kode:'3521122001',nama:'BANYUBIRU'},{kode:'3521122002',nama:'KEDUNGGUDEL'},{kode:'3521122003',nama:'SEKARALAS'},{kode:'3521122004',nama:'SEKARPUTIH'},{kode:'3521122005',nama:'KAYUTREJO'},{kode:'3521122006',nama:'SIDOLAJU'},{kode:'3521122007',nama:'KARANGBANYU'},{kode:'3521122008',nama:'WIDODAREN'},{kode:'3521122009',nama:'GENDINGAN'},{kode:'3521122010',nama:'KAUMAN'},{kode:'3521122011',nama:'SIDOMAKMUR'},{kode:'3521122012',nama:'WALIKUKUN'}]},
+  "MANTINGAN":{lat:-7.3849,lng:111.1635,desa:[{kode:'3521132001',nama:'SAMBIREJO'},{kode:'3521132002',nama:'MANTINGAN'},{kode:'3521132003',nama:'KEDUNGHARJO'},{kode:'3521132004',nama:'PAKAH'},{kode:'3521132005',nama:'TAMBAKBOYO'},{kode:'3521132006',nama:'PENGKOL'},{kode:'3521132007',nama:'JATIMULYO'}]},
+  "PANGKUR":{lat:-7.4972,lng:111.5426,desa:[{kode:'3521142001',nama:'BABADAN'},{kode:'3521142002',nama:'POHKONYAL'},{kode:'3521142003',nama:'SUMBER'},{kode:'3521142004',nama:'GANDRI'},{kode:'3521142005',nama:'PLESET'},{kode:'3521142006',nama:'WARUKTENGAH'},{kode:'3521142007',nama:'NGOMPRO'},{kode:'3521142008',nama:'PANGKUR'},{kode:'3521142009',nama:'PARAS'}]},
+  "BRINGIN":{lat:-7.4028,lng:111.5873,desa:[{kode:'3521152001',nama:'SUMBERBENING'},{kode:'3521152002',nama:'MOJO'},{kode:'3521152003',nama:'KROMPOL'},{kode:'3521152004',nama:'BRINGIN'},{kode:'3521152005',nama:'DERO'},{kode:'3521152006',nama:'LEGO WETAN'},{kode:'3521152007',nama:'GANDONG'},{kode:'3521152008',nama:'DAMPIT'},{kode:'3521152009',nama:'SURUH'},{kode:'3521152010',nama:'KENONGOREJO'}]},
+  "PITU":{lat:-7.3659,lng:111.368,desa:[{kode:'3521162001',nama:'KALANG'},{kode:'3521162002',nama:'PITU'},{kode:'3521162003',nama:'DUMPLENGAN'},{kode:'3521162004',nama:'SELOPURO'},{kode:'3521162005',nama:'KARANGGENENG'},{kode:'3521162006',nama:'NGANCAR'},{kode:'3521162007',nama:'CANTEL'},{kode:'3521162008',nama:'PAPUNGAN'},{kode:'3521162009',nama:'BANJARBANGGI'},{kode:'3521162010',nama:'BANGUNREJO LOR'}]},
+  "KARANGANYAR":{lat:-7.3179,lng:111.2218,desa:[{kode:'3521172001',nama:'KARANGANYAR'},{kode:'3521172002',nama:'MENGGER'},{kode:'3521172003',nama:'GEMBOL'},{kode:'3521172004',nama:'SRIWEDARI'},{kode:'3521172005',nama:'BANGUNREJO'},{kode:'3521172006',nama:'PANDEAN'},{kode:'3521172007',nama:'SEKARJATI'}]},
+  "GERIH":{lat:-7.5398,lng:111.3837,desa:[{kode:'3521182001',nama:'RANDUSONGO'},{kode:'3521182002',nama:'WIDODAREN'},{kode:'3521182003',nama:'GERIH'},{kode:'3521182004',nama:'KERASKULON'},{kode:'3521182005',nama:'GUYUNG'}]},
+  "KASREMAN":{lat:-7.3905,lng:111.5175,desa:[{kode:'3521192001',nama:'JATIREJO'},{kode:'3521192002',nama:'CANGAKAN'},{kode:'3521192003',nama:'KARANGMALANG'},{kode:'3521192004',nama:'GUNUNGSARI'},{kode:'3521192005',nama:'KASREMAN'},{kode:'3521192006',nama:'LEGOKULON'},{kode:'3521192007',nama:'TAWUN'},{kode:'3521192008',nama:'KIYONTEN'}]}
 };
 
 // Normalize helpers (diperlukan sebelum FIELDS)
@@ -1446,16 +1455,34 @@ function renderReport(){
   if(!_rpData)return;
   const q=(document.getElementById('rpSearch')?.value||'').toLowerCase().trim();
 
-  // Group data
+  // Inisialisasi semua 217 desa dari KEC_CONFIG (agar desa 0 pun tampil)
   const byKec={}, byDesa={};
+  Object.entries(KEC_CONFIG).forEach(([kn,kv])=>{
+    const kec=normCase(kn)||kn;
+    (kv.desa||[]).forEach(d=>{
+      const desa=normCase(d.nama)||d.nama;
+      const key=kec+'|'+desa;
+      byDesa[key]={kec,desa,kode:d.kode,total:0,layak:0,rtlh:0,lain:0};
+    });
+    byKec[kec]={kec,total:0,layak:0,rtlh:0,lain:0};
+  });
+
+  const DESA_ALIAS={'PONCOL':'POCOL'};
+
   _rpData.forEach(r=>{
     const kec=normCase(r.kec)||r.kec||'-';
-    const desa=normCase(r.desa)||r.desa||'-';
-    const key=kec+'|'+desa;
+    const desaRaw=(r.desa||'').trim();
+    const desaUp=DESA_ALIAS[desaRaw.toUpperCase()]||desaRaw.toUpperCase();
+    // Match case-insensitive ke byDesa yang sudah diinisialisasi dari KEC_CONFIG
+    const matchKey=Object.keys(byDesa).find(k=>{
+      const [kk,dk]=k.split('|');
+      return kk.toUpperCase()===kec.toUpperCase()&&dk.toUpperCase()===desaUp;
+    });
+    const key=matchKey||(kec+'|'+desaRaw);
     const _rk=statusKategori(r.status_rtlh);
     if(!byKec[kec])byKec[kec]={kec,total:0,layak:0,rtlh:0,lain:0};
     byKec[kec].total++;if(_rk==='Layak Huni')byKec[kec].layak++;else if(_rk==='RTLH')byKec[kec].rtlh++;else byKec[kec].lain++;
-    if(!byDesa[key])byDesa[key]={kec,desa,total:0,layak:0,rtlh:0,lain:0};
+    if(!byDesa[key])byDesa[key]={kec,desa:normCase(desaRaw)||desaRaw,kode:'',total:0,layak:0,rtlh:0,lain:0};
     byDesa[key].total++;if(_rk==='Layak Huni')byDesa[key].layak++;else if(_rk==='RTLH')byDesa[key].rtlh++;else byDesa[key].lain++;
   });
 
@@ -1476,18 +1503,19 @@ function renderReport(){
   document.getElementById('rpTotalRtlh').textContent=gRtlh.toLocaleString('id');
 
   // Build table
-  const isMobile=window.innerWidth<600;
-  let html=`<table style="width:100%;border-collapse:collapse;font-size:${isMobile?'.72rem':'.78rem'}">
+  const isMobile=window.innerWidth<640;
+  const colsDesa=_rpTab==='desa'?(isMobile?2:3):1;
+  let html=`<table style="width:100%;border-collapse:collapse;font-size:${isMobile?'.7rem':'.78rem'}">
     <thead>
       <tr style="background:#1a2f4a;color:rgba(255,255,255,.85);position:sticky;top:0;z-index:10">
-        <th style="padding:10px 12px;text-align:left;font-weight:700;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap">${_rpTab==='kec'?'Kecamatan':'Kecamatan / Desa'}</th>
-        ${_rpTab==='desa'?'<th style="padding:10px 12px;text-align:left;font-weight:700;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap">Desa</th>':''}
-        <th style="padding:10px 12px;text-align:center;font-weight:700;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em">Total</th>
-        <th style="padding:10px 12px;text-align:center;font-weight:700;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em;color:#86EFAC">Layak Huni</th>
-        <th style="padding:10px 12px;text-align:center;font-weight:700;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em;color:#FCA5A5">RTLH</th>
-        ${!isMobile?'<th style="padding:10px 12px;text-align:center;font-weight:700;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em;color:#D1D5DB">Batal</th>':''}
-        <th style="padding:10px 12px;text-align:left;font-weight:700;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em;min-width:${isMobile?'80':'120'}px">Progress</th>
-        ${!isMobile?'<th style="padding:10px 12px;text-align:center;font-weight:700;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em">%</th>':''}
+        <th style="padding:8px 10px;text-align:left;font-weight:700;font-size:.6rem;text-transform:uppercase;white-space:nowrap">${_rpTab==='kec'?'Kecamatan':'Kec.'}</th>
+        ${_rpTab==='desa'?`<th style="padding:8px 8px;text-align:left;font-weight:700;font-size:.6rem;text-transform:uppercase">Desa</th>${!isMobile?'<th style="padding:8px 6px;text-align:left;font-weight:700;font-size:.55rem;text-transform:uppercase;color:rgba(255,255,255,.4)">Kode</th>':''}`:'' }
+        <th style="padding:8px 8px;text-align:center;font-weight:700;font-size:.6rem;text-transform:uppercase">Total</th>
+        <th style="padding:8px 8px;text-align:center;font-weight:700;font-size:.6rem;text-transform:uppercase;color:#86EFAC">Layak Huni</th>
+        <th style="padding:8px 8px;text-align:center;font-weight:700;font-size:.6rem;text-transform:uppercase;color:#FCA5A5">RTLH</th>
+        ${!isMobile?'<th style="padding:8px 8px;text-align:center;font-weight:700;font-size:.6rem;text-transform:uppercase;color:#C4B5FD">Ket.Lain</th>':''}
+        <th style="padding:8px 8px;text-align:left;font-weight:700;font-size:.6rem;text-transform:uppercase;min-width:50px">Progress</th>
+        <th style="padding:8px 8px;text-align:center;font-weight:700;font-size:.6rem;text-transform:uppercase">%</th>
       </tr>
     </thead>
     <tbody>`;
@@ -1495,43 +1523,47 @@ function renderReport(){
   filtered.forEach((r,i)=>{
     const pLayak=r.total?Math.round(r.layak/r.total*100):0;
     const pRtlh=r.total?Math.round(r.rtlh/r.total*100):0;
+    const pLain=r.total?Math.round((r.lain||0)/r.total*100):0;
     const bg=i%2===0?'#fff':'#F9FAFB';
     const kecKey=Object.keys(KEC_CONFIG||{}).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
-    html+=`<tr style="background:${bg};cursor:pointer;transition:background .1s"
+    html+=`<tr style="background:${bg};cursor:pointer"
       onclick="${kecKey?`selectKec('${kecKey}');nav('webgis')`:'void(0)'}"
       onmouseover="this.style.background='#EFF6FF'" onmouseout="this.style.background='${bg}'">
-      <td style="padding:9px 12px;font-weight:700;color:#1E293B;white-space:nowrap">
-        ${_rpTab==='kec'?`<i class="fas fa-map-marker-alt" style="color:#1B6CA8;font-size:.65rem;margin-right:5px"></i>${r.kec}`:`<span style="font-size:.62rem;color:#94A3B8">${r.kec}</span>`}
+      <td style="padding:7px 10px;font-weight:700;color:#1E293B;white-space:nowrap;font-size:.7rem">
+        ${_rpTab==='kec'?`<i class="fas fa-map-marker-alt" style="color:#1B6CA8;font-size:.6rem;margin-right:4px"></i>${r.kec}`:`<span style="font-size:.6rem;color:#94A3B8">${r.kec}</span>`}
       </td>
-      ${_rpTab==='desa'?`<td style="padding:9px 12px;font-weight:600;color:#1E293B">${r.desa}</td>`:''}
-      <td style="padding:9px 12px;text-align:center;font-weight:800;color:#1B6CA8">${r.total.toLocaleString('id')}</td>
-      <td style="padding:9px 12px;text-align:center;font-weight:700;color:#16A34A">${r.layak.toLocaleString('id')}</td>
-      <td style="padding:9px 12px;text-align:center;font-weight:700;color:#DC2626">${r.rtlh.toLocaleString('id')}</td>
-      ${!isMobile?`<td style="padding:9px 12px;text-align:center;color:#94A3B8">${r.batal||'-'}</td>`:''}
-      <td style="padding:9px 12px">
-        <div style="height:6px;background:#F1F5F9;border-radius:99px;overflow:hidden;min-width:60px">
-          <div style="height:100%;width:${pLayak}%;background:#16A34A;border-radius:99px;float:left"></div>
-          <div style="height:100%;width:${pRtlh}%;background:#DC2626;border-radius:99px;float:left"></div>
+      ${_rpTab==='desa'?`<td style="padding:7px 8px;font-weight:600;color:#1E293B">${r.desa}</td>${!isMobile?`<td style="padding:7px 6px;font-family:monospace;font-size:.62rem;color:#94A3B8">${r.kode||'-'}</td>`:''}`:''}
+      <td style="padding:7px 8px;text-align:center;font-weight:800;color:#1B6CA8">${r.total.toLocaleString('id')}</td>
+      <td style="padding:7px 8px;text-align:center;font-weight:700;color:#16A34A">${r.layak.toLocaleString('id')}</td>
+      <td style="padding:7px 8px;text-align:center;font-weight:700;color:#DC2626">${r.rtlh.toLocaleString('id')}</td>
+      ${!isMobile?`<td style="padding:7px 8px;text-align:center;font-weight:600;color:#7C3AED">${(r.lain||0).toLocaleString('id')}</td>`:''}
+      <td style="padding:7px 8px">
+        <div style="height:5px;background:#F1F5F9;border-radius:99px;overflow:hidden;min-width:40px;display:flex">
+          <div style="width:${pLayak}%;background:#16A34A"></div>
+          <div style="width:${pRtlh}%;background:#DC2626"></div>
+          <div style="width:${pLain}%;background:#7C3AED"></div>
         </div>
       </td>
-      ${!isMobile?`<td style="padding:9px 12px;text-align:center;font-weight:800;color:${pLayak>=50?'#16A34A':'#DC2626'};font-size:.82rem">${pLayak}%</td>`:''}
+      <td style="padding:7px 8px;text-align:center;font-weight:800;color:${pLayak>=50?'#16A34A':'#DC2626'};font-size:.76rem">${pLayak}%</td>
     </tr>`;
   });
 
   // Footer grand total
   const gpLayak=gTotal?Math.round(gLayak/gTotal*100):0;
+  const gpRtlh=gTotal?Math.round(gRtlh/gTotal*100):0;
   html+=`<tr style="background:#1a2f4a;color:#fff;font-weight:800;position:sticky;bottom:0">
-    <td style="padding:10px 12px;font-size:.8rem" colspan="${_rpTab==='desa'?2:1}">TOTAL ${_rpTab==='kec'?'KABUPATEN':'('+filtered.length+' desa)'}</td>
-    <td style="padding:10px 12px;text-align:center;color:#FDE68A;font-size:.88rem">${gTotal.toLocaleString('id')}</td>
-    <td style="padding:10px 12px;text-align:center;color:#86EFAC;font-size:.88rem">${gLayak.toLocaleString('id')}</td>
-    <td style="padding:10px 12px;text-align:center;color:#FCA5A5;font-size:.88rem">${gRtlh.toLocaleString('id')}</td>
+    <td style="padding:9px 10px;font-size:.75rem" colspan="${colsDesa}">TOTAL ${_rpTab==='kec'?'KABUPATEN':'('+filtered.length+' desa)'}</td>
+    <td style="padding:9px 8px;text-align:center;color:#FDE68A">${gTotal.toLocaleString('id')}</td>
+    <td style="padding:9px 8px;text-align:center;color:#86EFAC">${gLayak.toLocaleString('id')}</td>
+    <td style="padding:9px 8px;text-align:center;color:#FCA5A5">${gRtlh.toLocaleString('id')}</td>
     ${!isMobile?'<td></td>':''}
-    <td style="padding:10px 12px">
-      <div style="height:6px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden">
-        <div style="height:100%;width:${gpLayak}%;background:#86EFAC;border-radius:99px"></div>
+    <td style="padding:9px 8px">
+      <div style="height:5px;background:rgba(255,255,255,.2);border-radius:99px;overflow:hidden;display:flex">
+        <div style="width:${gpLayak}%;background:#86EFAC"></div>
+        <div style="width:${gpRtlh}%;background:#FCA5A5"></div>
       </div>
     </td>
-    ${!isMobile?`<td style="padding:10px 12px;text-align:center;color:#86EFAC;font-size:.88rem">${gpLayak}%</td>`:''}
+    <td style="padding:9px 8px;text-align:center;color:#86EFAC">${gpLayak}%</td>
   </tr>`;
 
   html+='</tbody></table>';
@@ -2531,28 +2563,44 @@ async function showDesaStat(kecName){
     return;
   }
 
-  // Ambil semua desa yang ada di KEC_CONFIG untuk kecamatan ini
-  // Sehingga desa dengan 0 data pun tampil
-  const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===kecName.toUpperCase())||'';
-  const allDesaKec=(KEC_CONFIG[kecKey]?.desa)||[];
+  // Ambil semua 217 desa dari KEC_CONFIG — termasuk yang 0 data
+  const kecKey2=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===kecName.toUpperCase())||'';
+  const allDesaKec=(KEC_CONFIG[kecKey2]?.desa)||[];
 
-  // Group by desa dari data Supabase
+  // Inisialisasi semua desa dengan 0
   const byDesa={};
-  // Inisialisasi semua desa dari KEC_CONFIG dulu
   allDesaKec.forEach(d=>{
-    const dn=normCase(d)||d;
-    byDesa[dn.toUpperCase()]={desa:dn,total:0,layak:0,rtlh:0,lain:0};
+    const dn=normCase(d.nama)||d.nama;
+    byDesa[d.kode]={desa:dn,kode:d.kode,total:0,layak:0,rtlh:0,lain:0};
   });
-  // Isi dari data
+
+  // Isi dari data Supabase
   (data||[]).forEach(r=>{
-    const dn=normCase(r.desa)||r.desa||'-';
-    const key=dn.toUpperCase();
-    if(!byDesa[key])byDesa[key]={desa:dn,total:0,layak:0,rtlh:0,lain:0};
-    byDesa[key].total++;
-    const kat=statusKategori(r.status_rtlh);
-    if(kat==='Layak Huni')byDesa[key].layak++;
-    else if(kat==='RTLH')byDesa[key].rtlh++;
-    else byDesa[key].lain++;
+    const dn=(r.desa||'').trim();
+    const dnUp=dn.toUpperCase();
+    // Alias Supabase → Excel
+    const ALIAS={'PONCOL':'POCOL'};
+    const lookupKey=ALIAS[dnUp]||dnUp;
+    // Cari berdasarkan nama desa case-insensitive
+    const found=Object.values(byDesa).find(x=>
+      x.desa.toUpperCase()===lookupKey||x.desa.toUpperCase()===dnUp
+    );
+    if(found){
+      found.total++;
+      const kat=statusKategori(r.status_rtlh);
+      if(kat==='Layak Huni')found.layak++;
+      else if(kat==='RTLH')found.rtlh++;
+      else found.lain++;
+    } else {
+      // Desa tidak ada di KEC_CONFIG — tetap tampilkan
+      const key='extra_'+dn.toUpperCase();
+      if(!byDesa[key])byDesa[key]={desa:dn,kode:'-',total:0,layak:0,rtlh:0,lain:0};
+      byDesa[key].total++;
+      const kat=statusKategori(r.status_rtlh);
+      if(kat==='Layak Huni')byDesa[key].layak++;
+      else if(kat==='RTLH')byDesa[key].rtlh++;
+      else byDesa[key].lain++;
+    }
   });
 
   const desas=Object.values(byDesa).sort((a,b)=>b.total-a.total||a.desa.localeCompare(b.desa));
@@ -2563,25 +2611,28 @@ async function showDesaStat(kecName){
       <span style="font-size:.7rem;font-weight:800;color:var(--blue)"><i class="fas fa-map-marker-alt"></i> ${kecName} — ${desas.length} Desa</span>
       <button onclick="clearKeclistSearch()" style="background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:.78rem"><i class="fas fa-times"></i></button>
     </div>
-    ${desas.map(({desa,total,layak,rtlh,lain})=>{
+    ${desas.map(({desa,kode,total,layak,rtlh,lain})=>{
       const pLayak=total?Math.round(layak/total*100):0;
       const pRtlh=total?Math.round(rtlh/total*100):0;
+      const pLain=total?Math.round(lain/total*100):0;
       const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===kecName.toUpperCase())||'';
-      return`<div style="padding:10px 12px;border-bottom:1px solid var(--gray-100);cursor:pointer"
+      return`<div style="padding:8px 12px;border-bottom:1px solid var(--gray-100);cursor:pointer;${total===0?'opacity:.5':''}"
         onclick="clearKeclistSearch();selectKec('${kecKey}')"
-        onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
-          <span style="font-size:.78rem;font-weight:700;color:var(--gray-900)">${desa}</span>
-          <span style="font-size:.65rem;font-weight:700;color:var(--gray-500)">${total} data</span>
+        onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background=''">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+          <span style="font-size:.75rem;font-weight:700;color:var(--gray-900);flex:1">${desa}</span>
+          <span style="font-size:.58rem;color:var(--gray-400);font-family:monospace">${kode||''}</span>
+          <span style="font-size:.7rem;font-weight:800;color:${total?'var(--blue)':'var(--gray-300)'};min-width:24px;text-align:right">${total}</span>
         </div>
-        <div style="height:5px;background:var(--gray-100);border-radius:99px;overflow:hidden;margin-bottom:4px">
-          <div style="height:100%;width:${pLayak}%;background:var(--success);border-radius:99px;float:left"></div>
-          <div style="height:100%;width:${pRtlh}%;background:var(--danger);border-radius:99px;float:left"></div>
+        <div style="height:4px;background:var(--gray-100);border-radius:99px;overflow:hidden;margin-bottom:3px;display:flex">
+          <div style="width:${pLayak}%;background:#16A34A"></div>
+          <div style="width:${pRtlh}%;background:#DC2626"></div>
+          <div style="width:${pLain}%;background:#7C3AED"></div>
         </div>
-        <div style="display:flex;gap:10px">
-          <span style="font-size:.62rem;color:var(--success);font-weight:700"><i class="fas fa-home" style="font-size:.55rem"></i> ${layak} layak (${pLayak}%)</span>
-          <span style="font-size:.62rem;color:var(--danger);font-weight:700"><i class="fas fa-house-damage" style="font-size:.55rem"></i> ${rtlh} RTLH (${pRtlh}%)</span>
-          ${lain?`<span style="font-size:.62rem;color:var(--purple);font-weight:700">${lain} lain</span>`:''}
+        <div style="display:flex;gap:8px">
+          <span style="font-size:.6rem;color:#16A34A;font-weight:700">${layak} Layak</span>
+          <span style="font-size:.6rem;color:#DC2626;font-weight:700">${rtlh} RTLH</span>
+          ${lain?`<span style="font-size:.6rem;color:#7C3AED;font-weight:700">${lain} Lain</span>`:''}
         </div>
       </div>`;
     }).join('')}`;
