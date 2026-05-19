@@ -714,7 +714,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
     </div>
 
     <!-- Summary cards -->
-    <div style="padding:12px 14px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px" id="rpSummary">
+    <div style="padding:10px 14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px" id="rpSummary">
       <div style="background:#fff;border-radius:10px;border:1px solid #E2E8F0;padding:10px;text-align:center">
         <div style="font-size:1.2rem;font-weight:800;color:#1B6CA8" id="rpTotalKec">-</div>
         <div style="font-size:.6rem;font-weight:700;color:#64748B;text-transform:uppercase;margin-top:2px">Kecamatan</div>
@@ -730,6 +730,10 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
       <div style="background:#FEF2F2;border-radius:10px;border:1px solid #FECACA;padding:10px;text-align:center">
         <div style="font-size:1.2rem;font-weight:800;color:#DC2626" id="rpTotalRtlh">-</div>
         <div style="font-size:.6rem;font-weight:700;color:#B91C1C;text-transform:uppercase;margin-top:2px">RTLH</div>
+      </div>
+      <div style="background:#F5F3FF;border-radius:10px;border:1px solid #DDD6FE;padding:10px;text-align:center">
+        <div style="font-size:1.2rem;font-weight:800;color:#7C3AED" id="rpTotalLain">-</div>
+        <div style="font-size:.6rem;font-weight:700;color:#6D28D9;text-transform:uppercase;margin-top:2px">Ket. Lain</div>
       </div>
     </div>
 
@@ -1407,6 +1411,7 @@ function nav(pg){
     document.getElementById('ntReport')?.classList.add('active');
     document.getElementById('mnReport')?.classList.add('active');
     if(!_rpLoaded)loadReport();
+    else renderReport(); // sudah ada data, render langsung
   }
   // Push browser history
   if(!_navFromPop){
@@ -1519,11 +1524,14 @@ function renderReport(){
   const gTotal=filtered.reduce((s,r)=>s+r.total,0);
   const gLayak=filtered.reduce((s,r)=>s+r.layak,0);
   const gRtlh=filtered.reduce((s,r)=>s+r.rtlh,0);
+  const gLain=filtered.reduce((s,r)=>s+(r.lain||0),0);
 
   document.getElementById('rpTotalKec').textContent=Object.keys(byKec).length;
   document.getElementById('rpTotalAll').textContent=gTotal.toLocaleString('id');
   document.getElementById('rpTotalLayak').textContent=gLayak.toLocaleString('id');
   document.getElementById('rpTotalRtlh').textContent=gRtlh.toLocaleString('id');
+  const rpLain=document.getElementById('rpTotalLain');
+  if(rpLain)rpLain.textContent=gLain.toLocaleString('id');
 
   // Build table
   const isMobile=window.innerWidth<640;
@@ -1579,7 +1587,7 @@ function renderReport(){
     <td style="padding:9px 8px;text-align:center;color:#FDE68A">${gTotal.toLocaleString('id')}</td>
     <td style="padding:9px 8px;text-align:center;color:#86EFAC">${gLayak.toLocaleString('id')}</td>
     <td style="padding:9px 8px;text-align:center;color:#FCA5A5">${gRtlh.toLocaleString('id')}</td>
-    ${!isMobile?'<td></td>':''}
+    ${!isMobile?`<td style="padding:9px 8px;text-align:center;color:#C4B5FD">${gLain.toLocaleString('id')}</td>`:''}
     <td style="padding:9px 8px">
       <div style="height:5px;background:rgba(255,255,255,.2);border-radius:99px;overflow:hidden;display:flex">
         <div style="width:${gpLayak}%;background:#86EFAC"></div>
@@ -1856,8 +1864,14 @@ function togglePass(inputId,btn){
 // ══════════════════════════════════════════════════
 // ── Klasifikasi status ke 3 kategori resmi ──
 function statusKategori(s){
-  if(!s||s==='RTLH'||s==='Belum Ditangani')return 'RTLH';
-  if(s==='Layak Huni'||s==='Sudah Ditangani'||s==='Dalam Proses')return 'Layak Huni';
+  if(!s)return 'RTLH';
+  const su=String(s).toUpperCase().trim();
+  // RTLH variants
+  if(su==='RTLH'||su==='BELUM DITANGANI'||su==='BELUM'||su==='TIDAK LAYAK')return 'RTLH';
+  // Layak Huni variants (termasuk dari Excel caps)
+  if(su==='LAYAK HUNI'||su==='LAYAK'||su==='SUDAH DITANGANI'||su==='DALAM PROSES'||
+     su==='SUDAH'||su==='DIBANTU'||su.startsWith('LAYAK'))return 'Layak Huni';
+  // Keterangan Lain — semua yang tidak cocok di atas
   return 'Keterangan Lain';
 }
 function isLayakHuni(r){return statusKategori(r.status_rtlh)==='Layak Huni';}
@@ -4519,7 +4533,7 @@ async function importExcelKab(input){
         if(hasCol(['Status RTLH','status_rtlh'])){
           const v=xlVal(getCol(row,'Status RTLH','status_rtlh'));
           if(v){const u=v.toUpperCase().trim();
-            obj.status_rtlh=u==='LAYAK HUNI'||u==='SUDAH DITANGANI'||u==='SUDAH'?'Layak Huni':u==='RTLH'||u==='BELUM DITANGANI'||u==='BELUM'?'RTLH':u==='DIBATALKAN'||u==='BATAL'||u==='SK DIBATALKAN'?'SK Dibatalkan':v;
+            obj.status_rtlh=u==='LAYAK HUNI'||u==='SUDAH DITANGANI'||u==='SUDAH'||u.startsWith('LAYAK')?'Layak Huni':u==='RTLH'||u==='BELUM DITANGANI'||u==='BELUM'||u==='TIDAK LAYAK'?'RTLH':'Keterangan Lain';
           }
         }
         if(hasCol(['Alasan Batal','status_batal']))obj.status_batal=xlVal(getCol(row,'Alasan SK Dibatalkan','Alasan Batal','status_batal'));
