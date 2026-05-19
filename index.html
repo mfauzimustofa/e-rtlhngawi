@@ -3137,10 +3137,8 @@ function renderSidebar(){
       <i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--gray-400);font-size:.72rem;pointer-events:none"></i>
       <input id="sidebarInlineSearch" type="text" placeholder="Cari nama / NIK / desa..."
         autocomplete="off" spellcheck="false"
-        style="width:100%;padding:8px 32px 8px 30px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.78rem;font-family:inherit;outline:none;box-sizing:border-box;background:#fff"
-        oninput="clearTimeout(this._t);this._t=setTimeout(()=>searchSidebarInline(),300)"
-        onkeydown="if(event.key==='Escape'){this.value='';resetSidebarSearch();}">
-      <button onclick="document.getElementById('sidebarInlineSearch').value='';resetSidebarSearch()"
+        style="width:100%;padding:8px 32px 8px 30px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.78rem;font-family:inherit;outline:none;box-sizing:border-box;background:#fff">
+      <button id="sidebarInlineClear"
         style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:.72rem;padding:4px">
         <i class="fas fa-times"></i>
       </button>
@@ -3168,11 +3166,29 @@ function renderSidebar(){
     </div>
     <div class="sidebar-list" id="sidebarList"></div>`;
     renderKecDashboard();
+    // Pasang event listener search inline via JS (bukan inline handler)
+    _attachSidebarSearch();
   } else {
     const cnt=document.getElementById('sidebarCount');
     if(cnt)cnt.textContent=brAll.length+' data terdaftar';
   }
   renderSidebarList();
+}
+
+function _attachSidebarSearch(){
+  const inp=document.getElementById('sidebarInlineSearch');
+  const clr=document.getElementById('sidebarInlineClear');
+  if(!inp)return;
+  let _t=null;
+  inp.addEventListener('input',()=>{
+    clearTimeout(_t);
+    _t=setTimeout(()=>searchSidebarInline(),250);
+  });
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){inp.value='';resetSidebarSearch();}
+    if(e.key==='Enter'){clearTimeout(_t);searchSidebarInline();}
+  });
+  if(clr)clr.addEventListener('click',()=>{inp.value='';resetSidebarSearch();inp.focus();});
 }
 
 function renderKecDashboard(data){
