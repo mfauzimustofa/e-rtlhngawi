@@ -5486,17 +5486,38 @@ async function lihatPenerimaDok(dokId, judul){
   document.getElementById('penerimaDokList').innerHTML='<div style="padding:20px;text-align:center;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin fa-2x"></i></div>';
   document.getElementById('penerimaDokSearch').value='';
   document.getElementById('ovPenerimaDok').classList.add('open');
-  const{data,error}=await sb.from('rtlh_dokumen_link')
-    .select('rtlh_id, rtlh(id,kec,desa,kep_kk,nik,status_rtlh,desil,jenis_bantuan,tahun_bantuan)')
-    .eq('dokumen_id',dokId);
-  if(error||!data?.length){
-    document.getElementById('penerimaDokCount').textContent='Belum ada penerima terhubung';
-    document.getElementById('penerimaDokList').innerHTML='<div style="padding:24px;text-align:center;color:var(--gray-400)"><i class="fas fa-user-slash" style="font-size:1.5rem;display:block;margin-bottom:8px;opacity:.4"></i><div style="font-size:.78rem">Belum ada penerima yang dihubungkan</div></div>';
-    return;
+
+  try{
+    // Step 1: ambil rtlh_id dari link table (ringan)
+    const{data:links,error:le}=await sb.from('rtlh_dokumen_link')
+      .select('rtlh_id').eq('dokumen_id',dokId).limit(5000);
+    if(le||!links?.length){
+      document.getElementById('penerimaDokCount').textContent='Belum ada penerima terhubung';
+      document.getElementById('penerimaDokList').innerHTML='<div style="padding:24px;text-align:center;color:var(--gray-400)"><i class="fas fa-user-slash" style="font-size:1.5rem;display:block;margin-bottom:8px;opacity:.4"></i><div style="font-size:.78rem">Belum ada penerima yang dihubungkan</div></div>';
+      return;
+    }
+
+    // Step 2: fetch data rtlh secara parallel batch
+    const ids=links.map(l=>l.rtlh_id).filter(Boolean);
+    document.getElementById('penerimaDokCount').innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memuat ${ids.length} penerima...`;
+
+    const BATCH=500;
+    const batches=[];
+    for(let i=0;i<ids.length;i+=BATCH){
+      batches.push(sb.from('rtlh')
+        .select('id,kec,desa,kep_kk,nik,status_rtlh,desil,jenis_bantuan,tahun_bantuan')
+        .in('id',ids.slice(i,i+BATCH)));
+    }
+    const results=await Promise.all(batches);
+    _penerimaDokAll=results.flatMap(r=>r.data||[]);
+
+    document.getElementById('penerimaDokCount').innerHTML=
+      `<strong>${_penerimaDokAll.length}</strong> penerima terhubung`;
+    renderPenerimaDok(_penerimaDokAll);
+  }catch(e){
+    document.getElementById('penerimaDokCount').textContent='Gagal memuat';
+    document.getElementById('penerimaDokList').innerHTML=`<div style="padding:16px;text-align:center;color:var(--danger);font-size:.78rem">${e.message}</div>`;
   }
-  _penerimaDokAll=data.map(lnk=>lnk.rtlh).filter(Boolean);
-  document.getElementById('penerimaDokCount').innerHTML='<strong>'+_penerimaDokAll.length+'</strong> penerima terhubung';
-  renderPenerimaDok(_penerimaDokAll);
 }
 
 function renderPenerimaDok(list){
@@ -5508,35 +5529,36 @@ function renderPenerimaDok(list){
     if(!byDesa[key])byDesa[key]={desa:normCase(r.desa)||'-',kec:normCase(r.kec)||'-',items:[]};
     byDesa[key].items.push(r);
   });
-  el.innerHTML=Object.values(byDesa).map(g=>{
+  el.innerHTML=Object.values(byDesa).sort((a,b)=>a.kec.localeCompare(b.kec)||a.desa.localeCompare(b.desa)).map(g=>{
     const itemsHtml=g.items.map(r=>{
-      const isLayak=r.status_rtlh==='Layak Huni';
-      const sc=isLayak?'var(--success)':r.status_rtlh==='SK Dibatalkan'?'var(--gray-400)':'var(--danger)';
+      const kat=statusKategori(r.status_rtlh);
+      const sc=STATUS_COLORS[kat]||'#94A3B8';
+      const ico=kat==='Layak Huni'?'home':kat==='Keterangan Lain'?'question-circle':'house-damage';
       const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
-      return '<div onclick="closeModal(&quot;ovPenerimaDok&quot;);closeModal(&quot;ovDokLib&quot;);bukaDetailDariSearch(&quot;'+r.id+'&quot;,&quot;'+kecKey+'&quot;)"'+
-        ' style="padding:8px 10px;border-radius:8px;border:1px solid var(--gray-100);margin-bottom:4px;cursor:pointer;display:flex;align-items:center;gap:8px;background:#fff"'+
-        ' onmouseover="this.style.background=\'var(--gray-50)\'" onmouseout="this.style.background=\'#fff\'">'+
-        '<div style="width:28px;height:28px;border-radius:50%;background:'+sc+'18;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+
-        '<i class="fas fa-'+(isLayak?'home':'house-damage')+'" style="color:'+sc+';font-size:.72rem"></i></div>'+
-        '<div style="flex:1;min-width:0">'+
-        '<div style="font-weight:700;font-size:.78rem;color:var(--gray-900)">'+showNama(r.kep_kk)+'</div>'+
-        '<div style="font-size:.63rem;color:var(--gray-400)">'+showNIK(r.nik)+(r.desil?' · '+r.desil:'')+(r.jenis_bantuan?' · '+r.jenis_bantuan+(r.tahun_bantuan?' '+r.tahun_bantuan:''):'')+'</div>'+
-        '</div>'+
-        '<span style="font-size:.6rem;font-weight:700;color:'+sc+';background:'+sc+'15;padding:2px 7px;border-radius:99px;flex-shrink:0">'+(r.status_rtlh||'RTLH')+'</span>'+
-        '<i class="fas fa-chevron-right" style="color:var(--gray-300);font-size:.65rem;flex-shrink:0"></i>'+
-      (isAdmin?'<button onclick="event.stopPropagation();unlinkPenerimaDok('+r.id+',\"'+_currentDokId+'\")" title="Hapus link" style="background:none;border:none;color:var(--gray-300);cursor:pointer;font-size:.75rem;padding:3px 4px;flex-shrink:0"><i class="fas fa-unlink"></i></button>':'')+
-      '</div>';
+      return `<div onclick="closeModal('ovPenerimaDok');closeModal('ovDokLib');bukaDetailDariSearch('${r.id}','${kecKey}')"
+        style="padding:7px 10px;border-radius:7px;border:1px solid var(--gray-100);margin-bottom:3px;cursor:pointer;display:flex;align-items:center;gap:8px;background:#fff"
+        onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='#fff'">
+        <div style="width:26px;height:26px;border-radius:50%;background:${sc}18;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <i class="fas fa-${ico}" style="color:${sc};font-size:.65rem"></i>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:.75rem;color:var(--gray-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${showNama(r.kep_kk)}</div>
+          <div style="font-size:.6rem;color:var(--gray-400)">${showNIK(r.nik)}${r.desil?' · '+r.desil:''}${r.jenis_bantuan?' · '+r.jenis_bantuan+(r.tahun_bantuan?' '+r.tahun_bantuan:''):''}</div>
+        </div>
+        <span style="font-size:.58rem;font-weight:700;color:${sc};background:${sc}15;padding:2px 6px;border-radius:99px;flex-shrink:0;white-space:nowrap">${kat}</span>
+        ${isAdmin?`<button onclick="event.stopPropagation();unlinkPenerimaDok(${r.id},'${_currentDokId}')" title="Hapus link" style="background:none;border:none;color:var(--gray-300);cursor:pointer;font-size:.72rem;padding:2px 4px;flex-shrink:0"><i class="fas fa-unlink"></i></button>`:''}
+      </div>`;
     }).join('');
-    return '<div style="margin-bottom:12px">'+
-      '<div style="padding:5px 8px;background:var(--blue-bg);border-radius:6px;display:flex;align-items:center;gap:6px;margin-bottom:4px">'+
-      '<i class="fas fa-map-marker-alt" style="color:var(--blue);font-size:.68rem"></i>'+
-      '<span style="font-size:.72rem;font-weight:800;color:var(--blue)">'+g.desa+'</span>'+
-      '<span style="font-size:.65rem;color:var(--gray-500)"> · '+g.kec+'</span>'+
-      '<span style="margin-left:auto;font-size:.62rem;background:var(--blue);color:#fff;border-radius:99px;padding:1px 7px">'+g.items.length+'</span></div>'+
-      itemsHtml+'</div>';
+    return `<div style="margin-bottom:10px">
+      <div style="font-size:.62rem;font-weight:800;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;padding:0 2px">
+        ${g.desa} · <span style="color:var(--gray-400)">${g.kec}</span>
+        <span style="float:right;font-weight:600;color:var(--blue)">${g.items.length}</span>
+      </div>
+      ${itemsHtml}
+    </div>`;
   }).join('');
-}
-
+}      '<div style="padding:5px 8px;background:var(--blue-bg);border-radius:6px;display:flex;align-items:center;gap:6px;margin-bottom:4px">'+
+      '<i class="fas fa-map-marker-alt" style="color:var(--blue);font-size:.68rem"></i>'+
 async function unlinkPenerimaDok(rtlhId, dokId){
   if(!confirm('Hapus link dokumen ini dari penerima?'))return;
   const{error}=await sb.from('rtlh_dokumen_link').delete()
