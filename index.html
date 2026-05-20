@@ -3710,16 +3710,41 @@ function toggleDesaGroup(id){
 function updateMap(){
   if(!map||!mcg)return;
   mcg.clearLayers();
+  let added=0;
   brFeatures.forEach(r=>{
-    if(!r.latitude||!r.longitude)return;
-        const _mk=statusKategori(r.status_rtlh);
-        // isBatal removed
-    const markerColor=isLayak?'#16A34A':isBatal?'#94A3B8':'#DC2626';
-    const mk=L.circleMarker([r.latitude,r.longitude],{radius:7,fillColor:markerColor,color:'#fff',weight:1.5,fillOpacity:.85});
+    const lat=parseFloat(r.latitude);
+    const lng=parseFloat(r.longitude);
+    if(!lat||!lng||isNaN(lat)||isNaN(lng))return;
+    if(lat<-90||lat>90||lng<-180||lng>180)return;
+
+    const kat=statusKategori(r.status_rtlh);
+    const markerColor=STATUS_COLORS[kat]||'#94A3B8';
+    const mk=L.circleMarker([lat,lng],{
+      radius:7,
+      fillColor:markerColor,
+      color:'#fff',
+      weight:1.5,
+      fillOpacity:.85,
+    });
     mk.on('click',()=>selectItem(r.id));
-    mk.bindTooltip(`<b>${showNama(r.kep_kk)}</b><br>${dn(r.desa)} · ${r.status_rtlh||'RTLH'}`,{direction:'top',offset:[0,-8]});
+    mk.bindTooltip(
+      `<b>${showNama(r.kep_kk)}</b><br>${dn(r.desa)} · <span style="color:${markerColor}">${kat}</span>`,
+      {direction:'top',offset:[0,-8]}
+    );
     mcg.addLayer(mk);
+    added++;
   });
+
+  // Fit bounds kalau ada marker
+  if(added>0){
+    try{
+      const bounds=mcg.getBounds();
+      if(bounds.isValid())map.fitBounds(bounds,{padding:[20,20],maxZoom:14});
+    }catch(e){}
+  }
+
+  // Pastikan map ter-render dengan benar
+  setTimeout(()=>{if(map)map.invalidateSize();},100);
 }
 
 function selectItem(id){
