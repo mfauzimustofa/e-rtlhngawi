@@ -1756,7 +1756,30 @@ async function doLogout(){
   if(MAINTENANCE_MODE)setTimeout(()=>showMaintenanceOverlay(),600);
 }
 
-// Auto-refresh via Supabase Realtime
+// Auto-refresh stats saat tab browser kembali aktif
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden&&user){
+    const activePg=document.querySelector('.page.active')?.id;
+    if(activePg==='pgBeranda'||activePg==='pgKecList'){
+      cacheDel('global_stats');
+      loadGlobalStats();
+    }
+  }
+});
+
+// Sinkronisasi antar tab browser (pakai localStorage event)
+window.addEventListener('storage',e=>{
+  if(e.key==='ertlh_data_changed'&&user){
+    cacheDel('global_stats');
+    Object.keys(brCache||{}).forEach(k=>delete brCache[k]);
+    const activePg=document.querySelector('.page.active')?.id;
+    if(activePg==='pgBeranda')loadGlobalStats();
+  }
+});
+
+function notifyDataChanged(){
+  try{localStorage.setItem('ertlh_data_changed',Date.now());}catch(e){}
+}
 let _realtimeChannel=null;
 let _pollTimer=null;
 let _rtPending=false; // debounce rapid changes
@@ -1791,6 +1814,8 @@ function startAutoRefresh(){
       const activePage=document.querySelector('.page.active')?.id;
 
       try{
+        // Selalu invalidate stats cache saat ada realtime event
+        cacheDel('global_stats');
         if(activePage==='pgBeranda'){
           await loadGlobalStats();
         }
@@ -1843,7 +1868,7 @@ function startAutoRefresh(){
     if(document.hidden)return;
     const activePage=document.querySelector('.page.active')?.id;
     try{
-      if(activePage==='pgBeranda')await loadGlobalStats();
+      if(activePage==='pgBeranda'){cacheDel('global_stats');await loadGlobalStats();}
       else if(activePage==='pgWebgis'&&currentKec){
         Object.keys(_kecCacheTime).forEach(k=>delete _kecCacheTime[k]);
         brAll=[];await loadKec();
@@ -1903,11 +1928,20 @@ async function loadGlobalStats(){
   }
 
   if(cached){
-    _applyGlobalStats(cached.data);         // tampilkan cache instan
-    if(cached.stale)fetchAndRender(true);   // refresh background kalau stale
+    _applyGlobalStats(cached.data); // tampilkan cache instan
+    // Stats beranda: stale setelah 60 detik (lebih agresif dari cache biasa)
+    const isStale=Date.now()-cached.age > (CACHE_TTL_STATS||60000);
+    if(isStale||cached.stale)fetchAndRender(true);
   }else{
     await fetchAndRender(false);
   }
+}
+
+// Force refresh stats tanpa cache (dipanggil setelah import/update)
+async function forceRefreshStats(){
+  cacheDel('global_stats');
+  Object.keys(brCache||{}).forEach(k=>delete brCache[k]);
+  await loadGlobalStats();
 }
 
 function _applyGlobalStats(data){
@@ -3133,6 +3167,7 @@ function initMap(){
 // CACHE SYSTEM — localStorage + stale-while-revalidate
 // ══════════════════════════════════════════════════
 const CACHE_TTL = 5 * 60 * 1000; // 5 menit
+const CACHE_TTL_STATS = 60 * 1000; // 60 detik untuk stats beranda
 const CACHE_PREFIX = 'ertlh_v2_';
 
 function cacheSet(key, data){
@@ -3141,12 +3176,13 @@ function cacheSet(key, data){
   }catch(e){} // QuotaExceededError — skip
 }
 
-function cacheGet(key){
+function cacheGet(key, ttl){
   try{
     const raw=localStorage.getItem(CACHE_PREFIX+key);
     if(!raw)return null;
     const{t,d}=JSON.parse(raw);
-    return{data:d, stale:Date.now()-t>CACHE_TTL, age:Date.now()-t};
+    const useTTL=ttl||(key==='global_stats'?CACHE_TTL_STATS:CACHE_TTL);
+    return{data:d, stale:Date.now()-t>useTTL, age:Date.now()-t};
   }catch(e){return null;}
 }
 
@@ -6789,13 +6825,14 @@ async function cmStartImport(){
   // ── Tutup modal & reload data ──
   setTimeout(()=>closeModal('ovColMap'),totalFail?2000:800);
 
-  // Reload halaman aktif
+  notifyDataChanged(); // Beritahu tab lain
+  // Force refresh semua data setelah import
   const activePg=document.querySelector('.page.active')?.id;
   try{
-    if(activePg==='pgBeranda')await loadGlobalStats();
-    else if(activePg==='pgWebgis'&&currentKec){brAll=[];await loadKec();}
-    else if(activePg==='pgKecList'){await loadGlobalStats();renderKecList();}
-    // Background reload WebGIS kalau tidak sedang di sana
+    // Selalu refresh stats beranda
+    await forceRefreshStats();
+    if(activePg==='pgWebgis'&&currentKec){brAll=[];await loadKec();}
+    else if(activePg==='pgKecList')renderKecList();
     if(activePg!=='pgWebgis'&&currentKec){brAll=[];loadKec();}
   }catch(e){console.warn('Post-import reload:',e);}
 
