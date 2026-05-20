@@ -3629,74 +3629,64 @@ async function searchSidebar(){
 function renderSidebarList(){
   const l=document.getElementById('sidebarList');
   if(!l)return;
-  if(!brFeatures.length){l.innerHTML='<div style="padding:24px;text-align:center;color:var(--gray-400);font-size:.78rem"><i class="fas fa-inbox" style="font-size:1.5rem;display:block;margin-bottom:8px"></i>Tidak ada data sesuai filter</div>';return;}
+  if(!brFeatures.length){
+    l.innerHTML='<div style="padding:24px;text-align:center;color:var(--gray-400);font-size:.78rem"><i class="fas fa-inbox" style="font-size:1.5rem;display:block;margin-bottom:8px"></i>Tidak ada data sesuai filter</div>';
+    return;
+  }
   const sorted=[...brFeatures].sort((a,b)=>{
     const da=(a.desa||'').toUpperCase().localeCompare((b.desa||'').toUpperCase());
     if(da!==0)return da;
     const sa=parseInt(String(a.desil||'99').match(/\d+/)?.[0]||'99');
-    const sb=parseInt(String(b.desil||'99').match(/\d+/)?.[0]||'99');
-    return sa-sb;
+    const sb2=parseInt(String(b.desil||'99').match(/\d+/)?.[0]||'99');
+    return sa-sb2;
   });
-  // Kelompokkan per desa
   const byDesa={};
   sorted.forEach(r=>{
     const desaKey=(r.desa||'Tanpa Desa').toUpperCase();
     const desaLabel=normCase(r.desa)||'Tanpa Desa';
-    if(!byDesa[desaKey]){byDesa[desaKey]={desa:desaLabel,items:[]};}
+    if(!byDesa[desaKey])byDesa[desaKey]={desa:desaLabel,items:[]};
     byDesa[desaKey].items.push(r);
   });
+
   l.innerHTML=Object.values(byDesa).map(group=>{
-    const desa=group.desa;
-    const items=group.items;
-    const layak=items.filter(r=>r.status_rtlh==='Layak Huni').length;
+    const {desa,items}=group;
+    const layak=items.filter(r=>isLayakHuni(r)).length;
     const rtlh=items.filter(r=>isRTLH(r)).length;
+    const lain=items.filter(r=>isKetLain(r)).length;
+    const dgId='dg_'+desa.replace(/[^a-zA-Z0-9]/g,'_');
     return`<div class="desa-group">
-      <div class="desa-header" onclick="toggleDesaGroup('dg_${desa.replace(/\s/g,'_')}')" style="padding:8px 14px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);border-top:2px solid var(--blue-bg);display:flex;align-items:center;gap:8px;cursor:pointer;position:sticky;top:0;z-index:5">
-        <i class="fas fa-map-marker-alt" style="color:var(--blue);font-size:.72rem;flex-shrink:0"></i>
-        <span style="font-size:.75rem;font-weight:800;color:var(--gray-800);flex:1">${desa}</span>
-        <span style="font-size:.62rem;color:var(--success);font-weight:700">${layak} LH</span>
-        <span style="font-size:.62rem;color:var(--danger);font-weight:700;margin-left:4px">${rtlh} RTLH</span>
-        <span style="font-size:.6rem;background:var(--blue);color:#fff;border-radius:99px;padding:1px 7px;margin-left:4px">${items.length}</span>
-        <i class="fas fa-chevron-down" id="ico_dg_${desa.replace(/\s/g,'_')}" style="color:var(--gray-400);font-size:.65rem;transition:.2s"></i>
+      <div class="desa-header" onclick="toggleDesaGroup('${dgId}')"
+        style="padding:7px 12px;background:linear-gradient(90deg,#EFF6FF,#F8FAFC);border-bottom:1px solid #DBEAFE;border-top:2px solid #BFDBFE;display:flex;align-items:center;gap:6px;cursor:pointer;position:sticky;top:0;z-index:5">
+        <i class="fas fa-map-marker-alt" style="color:#1B6CA8;font-size:.68rem;flex-shrink:0"></i>
+        <span style="font-size:.73rem;font-weight:800;color:#1E3A5F;flex:1">${desa}</span>
+        ${layak?`<span style="font-size:.58rem;color:#16A34A;font-weight:700;background:#DCFCE7;padding:1px 6px;border-radius:99px">${layak} LH</span>`:''}
+        ${rtlh?`<span style="font-size:.58rem;color:#DC2626;font-weight:700;background:#FEE2E2;padding:1px 6px;border-radius:99px">${rtlh} RTLH</span>`:''}
+        ${lain?`<span style="font-size:.58rem;color:#7C3AED;font-weight:700;background:#EDE9FE;padding:1px 6px;border-radius:99px">${lain}</span>`:''}
+        <span style="font-size:.58rem;background:#1B6CA8;color:#fff;border-radius:99px;padding:1px 7px">${items.length}</span>
+        <i class="fas fa-chevron-down" id="ico_${dgId}" style="color:#94A3B8;font-size:.6rem;transition:.2s"></i>
       </div>
-      <div id="dg_${desa.replace(/\s/g,'_')}">
-        ${items.map((r,i)=>{
+      <div id="${dgId}" style="padding:4px 6px">
+        ${items.map(r=>{
+          const kat=statusKategori(r.status_rtlh);
+          const sc=STATUS_COLORS[kat]||'#94A3B8';
+          const ico=kat==='Layak Huni'?'home':kat==='Keterangan Lain'?'question-circle':'house-damage';
           const desilNum=String(r.desil||'').match(/\d+/)?.[0]||'';
-          const color=desilNum?getDesilColor(desilNum):'#94A3B8';
-          const statusCls=isLayakHuni(r)?'sudah':isKetLain(r)?'lain':'belum';
-          return`<div class="rtlh-item" id="ri_${r.id}" onclick="selectItem(${r.id})">
+          const desilColor=desilNum?getDesilColor(desilNum):'#94A3B8';
+          return`<div class="rtlh-item" id="ri_${r.id}"
+            onclick="selectItem(${r.id})"
+            style="margin:3px 0;border-radius:8px;border:1px solid #E2E8F0;background:#fff;padding:8px 10px;cursor:pointer;transition:all .15s">
             <div style="display:flex;align-items:center;gap:8px">
-              <div style="width:22px;height:22px;border-radius:6px;background:${color}18;color:${color};font-size:.6rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div>
+              <div style="width:32px;height:32px;border-radius:8px;background:${sc}18;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <i class="fas fa-${ico}" style="color:${sc};font-size:.78rem"></i>
+              </div>
               <div style="flex:1;min-width:0">
-                <div class="ri-name">${showNama(r.kep_kk)}</div>
-                <div class="ri-sub" style="font-size:.65rem;color:var(--gray-400)">${showNIK(r.nik)}</div>
+                <div style="font-weight:700;font-size:.78rem;color:#1E293B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${showNama(r.kep_kk)}</div>
+                <div style="font-size:.62rem;color:#94A3B8;margin-top:1px">${showNIK(r.nik)}${desilNum?` · <span style="color:${desilColor}">D${desilNum}</span>`:''}</div>
               </div>
-              <div style="font-size:.62rem;color:var(--gray-400);flex-shrink:0"><i class="fas fa-chevron-down" id="ico_${r.id}"></i></div>
-            </div>
-            <div class="ri-badges">
-              <span class="badge ${statusCls}">${r.status_rtlh||'RTLH'}</span>
-              ${desilNum?`<span class="badge desil" style="background:${getDesilColor(desilNum)}22;color:${getDesilColor(desilNum)}">Desil ${desilNum}</span>`:''}
-              
-            </div>
-            <div class="ri-detail" id="det_${r.id}">
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
-                ${[
-                  ['NIK',showNIK(r.nik)],['No. KK',showKK(r.no_kk)],
-                  ['Alamat',showAlamat(r.alamat)],['Jenis Kelamin',dn(r.jen_kel)],
-                  ['Umur',dn(r.umur)+' thn'],['Pekerjaan',dn(r.pekerjaan)],
-                  ['Penghasilan',dn(r.pengh)],['Jml Penghuni',dn(r.jml_peng)],
-                  ['Luas Rumah',dn(r.luas_rum)+' m²'],['Desil',dn(r.desil)],
-                  ['Jenis Bantuan',dn(r.jenis_bantuan)],['Tahun Bantuan',dn(r.tahun_bantuan)],
-                  ['Material Dinding',dn(r.material_d)],
-                  ['Kondisi Dinding',dn(r.kondisi_di)],['Material Atap',dn(r.material_a)],
-                  ['Kondisi Atap',dn(r.kondisi_at)],['Material Lantai',dn(r.material_l)],
-                  ['Kondisi Lantai',dn(r.kondisi_la)],
-                ].map(([lbl,val])=>`<div style="padding:5px 0;border-bottom:1px solid var(--gray-100)"><div style="font-size:.58rem;font-weight:700;color:var(--gray-400);text-transform:uppercase">${lbl}</div><div style="font-size:.75rem;font-weight:600;color:var(--gray-800);margin-top:1px">${val}</div></div>`).join('')}
+              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">
+                <span style="font-size:.58rem;font-weight:700;color:${sc};background:${sc}18;padding:2px 7px;border-radius:99px;white-space:nowrap">${kat}</span>
+                ${r.jenis_bantuan?`<span style="font-size:.55rem;color:#64748B;background:#F1F5F9;padding:1px 5px;border-radius:99px">${r.jenis_bantuan}${r.tahun_bantuan?' '+r.tahun_bantuan:''}</span>`:''}
               </div>
-              ${canEdit()?`<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
-                <button class="btn btn-primary" style="font-size:.7rem;padding:5px 12px" onclick="event.stopPropagation();openForm(String(${r.id}))"><i class="fas fa-edit"></i> Edit</button>
-                <button class="btn btn-danger" style="font-size:.7rem;padding:5px 12px" onclick="event.stopPropagation();deleteItem(${r.id})"><i class="fas fa-trash"></i> Hapus</button>
-              </div>`:''}
             </div>
           </div>`;
         }).join('')}
@@ -3733,23 +3723,37 @@ function updateMap(){
 }
 
 function selectItem(id){
-  const wasSelected=document.getElementById('ri_'+id)?.classList.contains('selected');
+  // Highlight item yang dipilih
   document.querySelectorAll('.rtlh-item').forEach(el=>{
-    el.classList.remove('selected');
-    const ico=el.querySelector('[id^="ico_"]');
-    if(ico){ico.className='fas fa-chevron-down';}
+    el.style.background='#fff';
+    el.style.borderColor='#E2E8F0';
+    el.style.boxShadow='none';
   });
-  if(wasSelected)return; // toggle off
   const el=document.getElementById('ri_'+id);
   if(el){
-    el.classList.add('selected');
-    const ico=document.getElementById('ico_'+id);
-    if(ico)ico.className='fas fa-chevron-up';
+    el.style.background='#EFF6FF';
+    el.style.borderColor='#93C5FD';
+    el.style.boxShadow='0 0 0 2px #BFDBFE';
     el.scrollIntoView({block:'nearest',behavior:'smooth'});
   }
-  const r=brAll.find(x=>x.id===id);
+
+  const r=brAll.find(x=>String(x.id)===String(id)||x.id===id);
   if(!r)return;
-  if(r.latitude&&r.longitude)map.setView([r.latitude,r.longitude],15);
+
+  // Zoom peta ke lokasi
+  if(r.latitude&&r.longitude)map.setView([r.latitude,r.longitude],17);
+
+  // Buka detail panel (sama seperti dari search)
+  const p=document.getElementById('detailPanel');
+  if(p){
+    p.classList.add('open');
+    showDetail(r);
+    // Load data async
+    loadDokLink(r.id);
+    loadVerifList(r.id);
+    loadDokList(r.id);
+    loadRiwayatList(r.id);
+  }
 }
 
 function showDetail(r){
