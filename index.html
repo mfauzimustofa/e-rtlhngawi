@@ -6626,111 +6626,178 @@ async function cmStartImport(){
   const btn=document.getElementById('cmImportBtn');
   if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Mengimport...';}
   const log=document.getElementById('exImportLog');
-  let totalOk=0,totalFail=0,allErrors=[];
-  const BATCH=10;
+
+  // Helper: set log
+  const setLog=(html)=>{if(log)log.innerHTML=html;};
+
+  let totalOk=0,totalSkip=0,totalFail=0,allErrors=[];
 
   for(let fi=0;fi<_cmFiles.length;fi++){
     const fd=_cmFiles[fi];
     const mapping=_cmMapping[fi]||_cmMapping[0]||{};
-    log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> File ${fi+1}/${_cmFiles.length}: ${fd.name} (${fd.rows.length} baris)...`;
 
-    const toUpdate=[],toUpsertByNIK=[],toInsert=[];
-    fd.rows.forEach(row=>{
+    setLog(`<i class="fas fa-circle-notch fa-spin"></i> Membaca file ${fi+1}/${_cmFiles.length}: <strong>${fd.name}</strong> (${fd.rows.length} baris)...`);
+
+    // ── Build rows dari mapping ──
+    // Key di row bisa punya whitespace berbeda → buat lookup map yang normalized
+    const toProcess=[];
+
+    fd.rows.forEach((row,rowIdx)=>{
+      // Buat normalized lookup dari row keys
+      const rowNorm={};
+      Object.entries(row).forEach(([k,v])=>{
+        rowNorm[cmNormCol(k)]=v;
+      });
+
       const obj={};
+      let nikVal='', hasData=false;
+
       CM_FIELDS.forEach(field=>{
         const exCol=mapping[field.k];
         if(!exCol)return;
-        const val=cmConvertVal(row[exCol],field.type);
-        if(val!=null)obj[field.k]=val;
+        const exColNorm=cmNormCol(exCol);
+        // Coba exact dulu, lalu normalized
+        let rawVal=row[exCol];
+        if(rawVal===undefined||rawVal===null||rawVal==='')
+          rawVal=rowNorm[exColNorm];
+        if(rawVal===undefined||rawVal===null||rawVal==='')return;
+
+        const val=cmConvertVal(rawVal, field.type);
+        if(val==null||val==='')return;
+        obj[field.k]=val;
+        hasData=true;
+
+        if(field.k==='nik')nikVal=String(val).replace(/\D/g,'');
       });
+
+      // Fallback: cari NIK dari row langsung (semua variasi key)
+      if(!nikVal){
+        const nikKeys=['NIK','nik','NIK - Angka 16 Digit','NIK - ANGKA 16 DIGIT','NIK- Angka 16 Digit'];
+        for(const k of nikKeys){
+          const v=row[k]||rowNorm[cmNormCol(k)];
+          if(v){nikVal=String(v).replace(/\D/g,'');if(nikVal.length>=10)break;}
+        }
+        if(nikVal)obj.nik=nikVal;
+      }
+
+      // Skip baris kosong
+      if(!hasData&&!nikVal)return;
+      if(!nikVal&&!obj.kep_kk)return;
+
       obj.updated_at=new Date().toISOString();
-      const id=parseInt(row['ID']||row['id']||0);
-      const nik=obj.nik||String(row['NIK']||row['nik']||'').replace(/[^0-9]/g,'');
-      if(nik&&!obj.nik)obj.nik=nik;
-
-      // Skip baris tidak valid
-      if(!id&&!nik&&!obj.kep_kk){return;}
-
-      // PRIORITAS: selalu cocokkan by NIK jika ada
-      // Hanya insert baru jika ada nama KK (data valid)
-      if(id) toUpdate.push({id,obj});
-      else if(nik) toUpsertByNIK.push({nik,obj}); // update if exists, insert if not
-      else if(obj.kep_kk) toInsert.push(obj); // insert baru hanya jika ada nama
-      // else: skip - tidak ada identifier sama sekali
+      toProcess.push({nik:nikVal,obj,rowIdx});
     });
 
-    // Update by ID
-    for(let i=0;i<toUpdate.length;i+=BATCH){
-      const batch=toUpdate.slice(i,i+BATCH);
-      log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> File ${fi+1}: update ${Math.min(i+BATCH,toUpdate.length)}/${toUpdate.length}...`;
-      const res=await Promise.all(batch.map(({id,obj})=>sb.from('rtlh').update(obj).eq('id',id)));
-      res.forEach((r,j)=>{if(r.error){totalFail++;allErrors.push(`ID ${batch[j].id}: ${r.error.message}`);}else totalOk++;});
+    setLog(`<i class="fas fa-circle-notch fa-spin"></i> ${toProcess.length} baris valid dari ${fd.rows.length}. Cek NIK di database...`);
+
+    if(!toProcess.length){
+      setLog(`<span style="color:var(--danger)">❌ Tidak ada baris valid di file ${fd.name}. Cek mapping kolom NIK.</span>`);
+      totalFail+=fd.rows.length;
+      continue;
     }
 
-    // Upsert by NIK
-    if(toUpsertByNIK.length){
-      log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> File ${fi+1}: upsert NIK ${toUpsertByNIK.length}...`;
-      const niks=toUpsertByNIK.map(x=>x.nik);
-      const{data:ex}=await sb.from('rtlh').select('id,nik').in('nik',niks);
-      const exMap=Object.fromEntries((ex||[]).map(r=>[r.nik,r.id]));
-      const ups=toUpsertByNIK.filter(x=>exMap[x.nik]);
-      const ins=toUpsertByNIK.filter(x=>!exMap[x.nik]);
-      for(let i=0;i<ups.length;i+=BATCH){
-        const batch=ups.slice(i,i+BATCH);
-        const res=await Promise.all(batch.map(({nik,obj})=>sb.from('rtlh').update(obj).eq('nik',nik)));
-        res.forEach((r,j)=>{if(r.error){totalFail++;allErrors.push(`NIK ${batch[j].nik}: ${r.error.message}`);}else totalOk++;});
-      }
-      for(let i=0;i<ins.length;i+=50){
-        const batch=ins.slice(i,i+50);
-        const{error}=await sb.from('rtlh').insert(batch.map(x=>x.obj));
-        if(error){totalFail+=batch.length;allErrors.push(`Insert: ${error.message}`);}else totalOk+=batch.length;
+    // ── Fetch NIK yang sudah ada di DB (batch 1000) ──
+    const allNiks=toProcess.filter(x=>x.nik).map(x=>x.nik);
+    const existingNikMap={}; // nik → id
+
+    if(allNiks.length){
+      for(let i=0;i<allNiks.length;i+=1000){
+        const chunk=allNiks.slice(i,i+1000);
+        const{data:ex,error}=await sb.from('rtlh').select('id,nik').in('nik',chunk);
+        if(error){allErrors.push('Fetch NIK: '+error.message);continue;}
+        (ex||[]).forEach(r=>existingNikMap[String(r.nik).replace(/\D/g,'')]=r.id);
       }
     }
 
-    // Insert baru
-    for(let i=0;i<toInsert.length;i+=50){
-      const batch=toInsert.slice(i,i+50);
-      log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> File ${fi+1}: insert ${Math.min(i+50,toInsert.length)}/${toInsert.length}...`;
+    setLog(`<i class="fas fa-circle-notch fa-spin"></i> ${Object.keys(existingNikMap).length} NIK sudah ada di DB. Memproses update/insert...`);
+
+    // Pisah: update (NIK ada) vs insert (NIK baru)
+    const toUpdate=[]; // {id, obj}
+    const toInsert=[]; // obj
+
+    toProcess.forEach(({nik,obj})=>{
+      if(nik&&existingNikMap[nik]){
+        toUpdate.push({id:existingNikMap[nik],obj});
+      } else if(obj.kep_kk||nik){
+        // Hanya insert kalau ada nama KK atau minimal NIK
+        if(nik&&!obj.nik)obj.nik=nik;
+        toInsert.push(obj);
+      } else {
+        totalSkip++;
+      }
+    });
+
+    // ── UPDATE existing records (batch 50 parallel) ──
+    const BATCH_UPDATE=50;
+    for(let i=0;i<toUpdate.length;i+=BATCH_UPDATE){
+      const batch=toUpdate.slice(i,i+BATCH_UPDATE);
+      const pct=Math.round((i+batch.length)/toUpdate.length*100);
+      setLog(`<i class="fas fa-circle-notch fa-spin"></i> Update: ${i+batch.length}/${toUpdate.length} (${pct}%)...`);
+      const results=await Promise.all(
+        batch.map(({id,obj})=>sb.from('rtlh').update(obj).eq('id',id))
+      );
+      results.forEach((r,j)=>{
+        if(r.error){
+          totalFail++;
+          allErrors.push(`Update ID ${batch[j].id}: ${r.error.message}`);
+        } else {
+          totalOk++;
+        }
+      });
+    }
+
+    // ── INSERT new records (batch 100) ──
+    const BATCH_INSERT=100;
+    for(let i=0;i<toInsert.length;i+=BATCH_INSERT){
+      const batch=toInsert.slice(i,i+BATCH_INSERT);
+      setLog(`<i class="fas fa-circle-notch fa-spin"></i> Insert baru: ${i+batch.length}/${toInsert.length}...`);
       const{error}=await sb.from('rtlh').insert(batch);
-      if(error){totalFail+=batch.length;allErrors.push(`Insert: ${error.message}`);}else totalOk+=batch.length;
+      if(error){
+        totalFail+=batch.length;
+        allErrors.push(`Insert batch: ${error.message}`);
+      } else {
+        totalOk+=batch.length;
+      }
     }
+
+    setLog(`<span style="color:var(--success)">✓ File ${fi+1} selesai — ${toUpdate.length} update, ${toInsert.length} insert baru</span>`);
   }
 
-  Object.keys(_kecCacheTime||{}).forEach(k=>delete _kecCacheTime[k]);
+  // ── Invalidate semua cache ──
+  cacheClear(); // localStorage
   Object.keys(brCache||{}).forEach(k=>delete brCache[k]);
+  _rpLoaded=false;
+  _rpData=null;
 
-  let logHtml=`<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Selesai: <strong>${totalOk}</strong> berhasil`;
-  if(totalFail)logHtml+=` · <span style="color:var(--danger)">${totalFail} gagal</span>`;
+  // ── Tampilkan hasil ──
+  const okColor='var(--success)',failColor='var(--danger)';
+  let logHtml=`<span style="color:${okColor}"><i class="fas fa-check-circle"></i> Selesai: <strong>${totalOk}</strong> berhasil`;
+  if(totalSkip)logHtml+=` · ${totalSkip} dilewati`;
+  if(totalFail)logHtml+=` · <span style="color:${failColor}"><strong>${totalFail}</strong> gagal</span>`;
   logHtml+='</span>';
-  if(allErrors.length)logHtml+=`<div style="margin-top:6px;max-height:60px;overflow-y:auto;font-size:.65rem;color:var(--danger)">${allErrors.slice(0,5).join('<br>')}</div>`;
-  log.innerHTML=logHtml;
-  closeModal('ovColMap');
-  toast(`Import: ${totalOk} berhasil${totalFail?', '+totalFail+' gagal':''}`,totalFail?'warning':'success');
+  if(allErrors.length){
+    logHtml+=`<div style="margin-top:6px;max-height:80px;overflow-y:auto;font-size:.63rem;color:${failColor};background:#FEF2F2;padding:6px 8px;border-radius:6px">`;
+    logHtml+=allErrors.slice(0,10).join('<br>');
+    if(allErrors.length>10)logHtml+=`<br>...dan ${allErrors.length-10} error lainnya`;
+    logHtml+='</div>';
+  }
+  if(log)log.innerHTML=logHtml;
 
-  // Hapus semua cache
-  Object.keys(_kecCacheTime||{}).forEach(k=>delete _kecCacheTime[k]);
-  Object.keys(brCache||{}).forEach(k=>delete brCache[k]);
+  const msgType=totalFail&&!totalOk?'error':totalFail?'warning':'success';
+  toast(`Import: ${totalOk} berhasil${totalFail?', '+totalFail+' gagal':''}${totalSkip?', '+totalSkip+' dilewati':''}`,msgType);
 
-  // Reload data sesuai halaman aktif
+  // ── Tutup modal & reload data ──
+  setTimeout(()=>closeModal('ovColMap'),totalFail?2000:800);
+
+  // Reload halaman aktif
   const activePg=document.querySelector('.page.active')?.id;
-  if(activePg==='pgBeranda'||!activePg){
-    // Reload stats beranda + allData
-    if(typeof loadGlobalStats==='function')await loadGlobalStats();
-  }
-  if(activePg==='pgWebgis'&&currentKec){
-    brAll=[];
-    if(typeof loadKec==='function')await loadKec();
-  }
-  if(activePg==='pgKecList'){
-    // Reload keclist stats
-    if(typeof loadGlobalStats==='function')await loadGlobalStats();
-    if(typeof renderKecList==='function')renderKecList();
-  }
-  // Kalau modal Excel masih dari WebGIS dan currentKec ada, reload juga
-  if(activePg!=='pgWebgis'&&currentKec){
-    brAll=[];
-    if(typeof loadKec==='function')loadKec(); // non-blocking
-  }
+  try{
+    if(activePg==='pgBeranda')await loadGlobalStats();
+    else if(activePg==='pgWebgis'&&currentKec){brAll=[];await loadKec();}
+    else if(activePg==='pgKecList'){await loadGlobalStats();renderKecList();}
+    // Background reload WebGIS kalau tidak sedang di sana
+    if(activePg!=='pgWebgis'&&currentKec){brAll=[];loadKec();}
+  }catch(e){console.warn('Post-import reload:',e);}
 
   if(btn){btn.disabled=false;btn.innerHTML='<i class="fas fa-upload"></i> Import';}
 }
