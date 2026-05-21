@@ -1908,9 +1908,11 @@ function togglePass(inputId,btn){
 function statusKategori(s){
   if(!s)return 'RTLH';
   const su=String(s).toUpperCase().trim();
-  // RTLH variants
-  if(su==='RTLH'||su==='BELUM DITANGANI'||su==='BELUM'||su==='TIDAK LAYAK')return 'RTLH';
-  // Layak Huni variants (termasuk dari Excel caps)
+  // RTLH variants — termasuk "Tidak Layak Huni" dan "Rumah Tidak Layak Huni"
+  if(su==='RTLH'||su==='BELUM DITANGANI'||su==='BELUM'||
+     su==='TIDAK LAYAK'||su==='TIDAK LAYAK HUNI'||
+     su==='RUMAH TIDAK LAYAK HUNI'||su==='RTLH (BELUM DITANGANI)')return 'RTLH';
+  // Layak Huni variants
   if(su==='LAYAK HUNI'||su==='LAYAK'||su==='SUDAH DITANGANI'||su==='DALAM PROSES'||
      su==='SUDAH'||su==='DIBANTU'||su.startsWith('LAYAK'))return 'Layak Huni';
   // Keterangan Lain — semua yang tidak cocok di atas
@@ -4733,12 +4735,18 @@ async function importExcelKab(input){
         if(hasCol(['Kondisi Atap','kondisi_at']))obj.kondisi_at=xlVal(getCol(row,'Kondisi Atap','kondisi_at'));
         if(hasCol(['Material Lantai','material_l']))obj.material_l=xlVal(getCol(row,'Material Lantai','material_l'));
         if(hasCol(['Kondisi Lantai','kondisi_la']))obj.kondisi_la=xlVal(getCol(row,'Kondisi Lantai','kondisi_la'));
-        if(hasCol(['Status RTLH','status_rtlh'])){
-          const v=xlVal(getCol(row,'Status RTLH','status_rtlh'));
-          if(v){const u=v.toUpperCase().trim();
-            obj.status_rtlh=u==='LAYAK HUNI'||u==='SUDAH DITANGANI'||u==='SUDAH'||u.startsWith('LAYAK')?'Layak Huni':u==='RTLH'||u==='BELUM DITANGANI'||u==='BELUM'||u==='TIDAK LAYAK'?'RTLH':'Keterangan Lain';
+            const _sRaw=xlVal(getCol(row,'Status RTLH','status_rtlh'));
+          if(_sRaw){
+            const _sU=_sRaw.toUpperCase().trim();
+            obj.status_rtlh=
+              (_sU==='LAYAK HUNI'||_sU==='SUDAH DITANGANI'||_sU==='SUDAH'||_sU.startsWith('LAYAK'))
+                ?'Layak Huni'
+              :(_sU==='RTLH'||_sU==='BELUM DITANGANI'||_sU==='BELUM'||
+                _sU==='TIDAK LAYAK'||_sU==='TIDAK LAYAK HUNI'||
+                _sU==='RUMAH TIDAK LAYAK HUNI'||_sU==='RTLH (BELUM DITANGANI)')
+                ?'RTLH'
+              :'Keterangan Lain';
           }
-        }
         if(hasCol(['Alasan Batal','status_batal']))obj.status_batal=xlVal(getCol(row,'Alasan SK Dibatalkan','Alasan Batal','status_batal'));
         if(hasCol(['Jenis Bantuan','jenis_bantuan'])){
           const v=xlVal(getCol(row,'Jenis Bantuan','jenis_bantuan'));
