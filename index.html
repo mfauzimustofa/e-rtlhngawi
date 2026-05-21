@@ -625,10 +625,12 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
           <div class="prog-bar-track" id="statusBar">
             <div class="prog-bar-seg" id="pbSudah" style="background:var(--success)"></div>
             <div class="prog-bar-seg" id="pbBelum" style="background:var(--danger)"></div>
+            <div class="prog-bar-seg" id="pbLain" style="background:#7C3AED"></div>
           </div>
           <div class="status-legend" style="margin-top:10px">
             <div class="sl-item"><div class="sl-dot" style="background:var(--success)"></div><span id="lgSudah">Layak Huni: 0%</span></div>
             <div class="sl-item"><div class="sl-dot" style="background:var(--danger)"></div><span id="lgBelum">RTLH: 0%</span></div>
+            <div class="sl-item"><div class="sl-dot" style="background:#7C3AED"></div><span id="lgLain">Ket. Lain: 0%</span></div>
           </div>
         </div>
 
@@ -1957,63 +1959,77 @@ async function forceRefreshStats(){
 
 function _applyGlobalStats(data){
   if(!data||!data.length)return;
+
+  // ── Satu kali hitung, semua pakai nilai yang sama ──
   const total=data.length;
-  const layak=data.filter(r=>isLayakHuni(r)).length;
-  const rtlh=data.filter(r=>isRTLH(r)).length;
-  const lain=data.filter(r=>isKetLain(r)).length;
-  const belum=rtlh;
-
-  document.getElementById('gs-total').textContent=total.toLocaleString('id');
-  document.getElementById('gs-layak').textContent=layak.toLocaleString('id');
-  document.getElementById('gs-belum').textContent=belum.toLocaleString('id');
-  const gsLain=document.getElementById('gs-lain');
-  if(gsLain)gsLain.textContent=lain.toLocaleString('id');
-
-  const playak=pct(layak,total),pb=pct(rtlh,total),pl=pct(lain,total);
-  document.getElementById('pbSudah').style.width=playak+'%';
-  document.getElementById('pbBelum').style.width=pb+'%';
-  const pbLain=document.getElementById('pbLain');if(pbLain)pbLain.style.width=pl+'%';
-  document.getElementById('lgSudah').textContent=`Layak Huni: ${playak}% (${layak})`;
-  document.getElementById('lgBelum').textContent=`RTLH: ${pb}% (${rtlh})`;
-  const lgLain=document.getElementById('lgLain');if(lgLain)lgLain.textContent=`Keterangan Lain: ${pl}% (${lain})`;
-
-  const gsNonDb=document.getElementById('gs-nondb');
-  if(gsNonDb){
-    gsNonDb.textContent='...';
-    ensureNikDB().then(()=>{
-      const nonDbCount=data.filter(r=>!isInDB(r)).length;
-      gsNonDb.textContent=nonDbCount.toLocaleString('id');
-    }).catch(()=>{gsNonDb.textContent='?';});
-  }
-
+  let layak=0,rtlh=0,lain=0;
   kecCounts={};
+  const desilCounts={0:0};
+  for(let i=1;i<=10;i++)desilCounts[i]=0;
+
   data.forEach(r=>{
+    // Status
+    const kat=statusKategori(r.status_rtlh);
+    if(kat==='Layak Huni')layak++;
+    else if(kat==='RTLH')rtlh++;
+    else lain++;
+
+    // Per kecamatan
     const k=(r.kec||'').toUpperCase().trim();
     if(!kecCounts[k])kecCounts[k]={total:0,sudah:0,belum:0,lain:0};
     kecCounts[k].total++;
-    const _kat=statusKategori(r.status_rtlh);
-    if(_kat==='Layak Huni')kecCounts[k].sudah++;
-    else if(_kat==='RTLH')kecCounts[k].belum++;
+    if(kat==='Layak Huni')kecCounts[k].sudah++;
+    else if(kat==='RTLH')kecCounts[k].belum++;
     else kecCounts[k].lain++;
-  });
 
-  const desilCounts={};
-  for(let i=1;i<=8;i++)desilCounts[i]=0;
-  desilCounts[0]=0;
-  data.forEach(r=>{
-    const m=(r.desil||'').match(/\d+/);
-    if(m){const d=parseInt(m[0]);if(d>=1&&d<=8)desilCounts[d]++;}
+    // Desil
+    const m=(r.desil||'').toString().match(/\d+/);
+    if(m){const d=parseInt(m[0]);if(d>=1&&d<=10)desilCounts[d]++;else desilCounts[0]++;}
     else desilCounts[0]++;
   });
 
+  const playak=pct(layak,total), prtlh=pct(rtlh,total), plain=pct(lain,total);
+
+  // ── Angka ringkasan (mini-stat) ──
+  const el=id=>document.getElementById(id);
+  if(el('gs-total'))el('gs-total').textContent=total.toLocaleString('id');
+  if(el('gs-layak'))el('gs-layak').textContent=layak.toLocaleString('id');
+  if(el('gs-belum'))el('gs-belum').textContent=rtlh.toLocaleString('id');
+  if(el('gs-lain'))el('gs-lain').textContent=lain.toLocaleString('id');
+
+  // ── Progress bar — semua 3 segmen sinkron dengan chart ──
+  if(el('pbSudah'))el('pbSudah').style.width=playak+'%';
+  if(el('pbBelum'))el('pbBelum').style.width=prtlh+'%';
+  if(el('pbLain'))el('pbLain').style.width=plain+'%';
+
+  // ── Legend teks — format seragam ──
+  if(el('lgSudah'))el('lgSudah').innerHTML='<strong style="color:#16A34A">'+layak.toLocaleString('id')+'</strong> Layak Huni ('+playak+'%)';
+  if(el('lgBelum'))el('lgBelum').innerHTML='<strong style="color:#DC2626">'+rtlh.toLocaleString('id')+'</strong> RTLH ('+prtlh+'%)';
+  if(el('lgLain'))el('lgLain').innerHTML='<strong style="color:#7C3AED">'+lain.toLocaleString('id')+'</strong> Ket. Lain ('+plain+'%)';
+
+  // ── Chart status — pakai nilai yang sudah dihitung (bukan filter ulang) ──
+  _renderChartStatusFromCounts(layak,rtlh,lain,total);
+
+  // ── Desil grid + chart ──
   renderDesilGrid(desilCounts);
+  _renderChartDesilFromCounts(desilCounts);
+
+  // ── Kec grid ──
   renderKecGrid();
-  renderKecTable();
-  renderChartStatus(data);
-  renderChartDesil(desilCounts);
+
+  // ── Map & progress ──
   initMapBeranda();
   updateMapMarkers();
   render10379Beranda();
+
+  // ── gs-nondb async (tidak blokir render utama) ──
+  if(el('gs-nondb')){
+    el('gs-nondb').textContent='...';
+    ensureNikDB().then(()=>{
+      const nonDbCount=data.filter(r=>!isInDB(r)).length;
+      el('gs-nondb').textContent=nonDbCount.toLocaleString('id');
+    }).catch(()=>{el('gs-nondb').textContent='?';});
+  }
 }
 
 function renderDesilGrid(counts){
@@ -2320,54 +2336,59 @@ function toggleKecLayer(){
 }
 
 
-function renderChartStatus(data){
+// Chart status — pakai nilai pre-computed, tidak filter ulang data
+function _renderChartStatusFromCounts(layak,rtlh,lain,total){
   const ctx=document.getElementById('chartStatus');
   if(!ctx)return;
   if(chartStatus){chartStatus.destroy();chartStatus=null;}
   const existing=Chart.getChart(ctx);if(existing)existing.destroy();
-  const layak=data.filter(r=>isLayakHuni(r)).length;
-  const belum=data.filter(r=>isRTLH(r)).length;
-  const batal=data.filter(r=>isKetLain(r)).length;
-  const tot=layak+belum+batal;
   chartStatus=new Chart(ctx,{
     type:'doughnut',
     data:{
       labels:['Layak Huni','RTLH','Keterangan Lain'],
-      datasets:[{data:[layak,belum,batal],backgroundColor:['#16A34A','#DC2626','#7C3AED'],borderWidth:0,hoverOffset:6}]
+      datasets:[{data:[layak,rtlh,lain],backgroundColor:['#16A34A','#DC2626','#7C3AED'],borderWidth:0,hoverOffset:6}]
     },
     options:{
       responsive:true,maintainAspectRatio:false,cutout:'70%',
       plugins:{
         legend:{display:false},
-        tooltip:{callbacks:{label:c=>` ${c.label}: ${c.parsed} (${pct(c.parsed,tot)}%)`}}
+        tooltip:{callbacks:{label:c=>' '+c.label+': '+c.parsed.toLocaleString('id')+' ('+pct(c.parsed,total)+'%)'}}
       }
     }
   });
-  const elL=document.getElementById('lgSudah');
-  const elR=document.getElementById('lgBelum');
-  const elK=document.getElementById('lgLain');
-  if(elL)elL.innerHTML=`<strong style="color:#16A34A">${layak}</strong> Layak Huni (${pct(layak,tot)}%)`;
-  if(elR)elR.innerHTML=`<strong style="color:#DC2626">${belum}</strong> RTLH (${pct(belum,tot)}%)`;
-  if(elK)elK.innerHTML=`<strong style="color:#7C3AED">${batal}</strong> Keterangan Lain (${pct(batal,tot)}%)`;
+}
+// Legacy wrapper — bisa dipanggil dengan array data
+function renderChartStatus(data){
+  if(!data||!data.length)return;
+  let layak=0,rtlh=0,lain=0;
+  data.forEach(r=>{const k=statusKategori(r.status_rtlh);if(k==='Layak Huni')layak++;else if(k==='RTLH')rtlh++;else lain++;});
+  _renderChartStatusFromCounts(layak,rtlh,lain,data.length);
 }
 
-function renderChartDesil(counts){
+// Chart desil — hanya tampilkan desil yang ada datanya
+function _renderChartDesilFromCounts(counts){
   const ctx=document.getElementById('chartDesil');
   if(!ctx)return;
   if(chartDesil){chartDesil.destroy();chartDesil=null;}
   const existing=Chart.getChart(ctx);if(existing)existing.destroy();
-  const labels=['D1','D2','D3','D4','D5','D6','D7','D8'];
-  const vals=[1,2,3,4,5,6,7,8].map(i=>counts[i]||0);
-  const colors=['#BE123C','#DC2626','#EA580C','#D97706','#84CC16','#16A34A','#0891B2','#7C3AED'];
-  // Tambah Tanpa Desil jika ada
-  if(counts[0]>0){labels.push('Tdk Ada');vals.push(counts[0]);colors.push('#9CA3AF');}
+  const labels=[],vals=[],colors=[];
+  const palette=['#BE123C','#DC2626','#EA580C','#D97706','#84CC16','#16A34A','#0891B2','#7C3AED','#0D9488','#F59E0B'];
+  for(let i=1;i<=10;i++){
+    if((counts[i]||0)>0){labels.push('D'+i);vals.push(counts[i]);colors.push(palette[i-1]||'#6B7280');}
+  }
+  if((counts[0]||0)>0){labels.push('Tdk');vals.push(counts[0]);colors.push('#9CA3AF');}
+  if(!vals.length)return;
   chartDesil=new Chart(ctx,{
     type:'bar',
-    data:{labels,datasets:[{data:vals,backgroundColor:colors.map(c=>c+'99'),borderColor:colors,borderWidth:1}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{x:{ticks:{font:{size:8}}},y:{ticks:{font:{size:8}}}}}
+    data:{labels,datasets:[{data:vals,backgroundColor:colors.map(c=>c+'BB'),borderColor:colors,borderWidth:1.5,borderRadius:4}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.parsed.toLocaleString('id')+' data'}}},
+      scales:{x:{ticks:{font:{size:9},color:'#6B7280'},grid:{display:false}},y:{ticks:{font:{size:9},color:'#6B7280'},grid:{color:'#F3F4F6'}}}
+    }
   });
 }
+function renderChartDesil(counts){_renderChartDesilFromCounts(counts);}
 
 // ══════════════════════════════════════════════════
 // NIK SEARCH
