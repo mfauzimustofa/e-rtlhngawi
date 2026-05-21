@@ -1953,6 +1953,8 @@ async function loadGlobalStats(){
 // Force refresh stats tanpa cache (dipanggil setelah import/update)
 async function forceRefreshStats(){
   cacheDel('global_stats');
+  cacheDel('report_data');
+  Object.keys(_kecCacheTime||{}).forEach(k=>delete _kecCacheTime[k]);
   Object.keys(brCache||{}).forEach(k=>delete brCache[k]);
   await loadGlobalStats();
 }
@@ -4457,7 +4459,10 @@ async function importExcel(input){
       error?fail++:ok++;
     }
     brCache[currentKec]=null;
-    await loadKec();
+    cacheDel('global_stats');
+    cacheDel('report_data');
+    Object.keys(_kecCacheTime).forEach(k=>delete _kecCacheTime[k]);
+    await Promise.all([loadKec(), loadGlobalStats()]);
     closeModal('ovDownload');
     toast(`Import: ${ok} berhasil, ${fail} gagal`,'success');
   };
@@ -4926,8 +4931,12 @@ async function importExcelKab(input){
         }
       }
 
+      // ── Bersihkan SEMUA cache ──
+      cacheDel('global_stats');
+      cacheDel('report_data');
       Object.keys(_kecCacheTime).forEach(k=>delete _kecCacheTime[k]);
       Object.keys(brCache).forEach(k=>delete brCache[k]);
+
       let logHtml=`<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Selesai: <strong>${ok}</strong> berhasil`;
       if(fail)logHtml+=` · <span style="color:var(--danger)">${fail} gagal</span>`;
       logHtml+='</span>';
@@ -4935,7 +4944,13 @@ async function importExcelKab(input){
       log.innerHTML=logHtml;
       input.value='';
       toast(`Import selesai: ${ok} berhasil${fail?', '+fail+' gagal':''}`,fail?'error':'success');
-      if(currentKec){brAll=[];await loadKec();}
+
+      // ── Refresh beranda stats (selalu) ──
+      await loadGlobalStats();
+
+      // ── Refresh WebGIS kalau sedang aktif ──
+      if(currentKec){ brAll=[]; await loadKec(); }
+
     }catch(err){
       log.innerHTML=`<span style="color:var(--danger)"><i class="fas fa-times-circle"></i> Error: ${err.message}</span>`;
     }
