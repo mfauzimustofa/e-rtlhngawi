@@ -893,8 +893,14 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
         <div class="form-group" style="margin:0">
           <label>Kecamatan</label>
-          <select id="exKec" style="font-size:.78rem">
+          <select id="exKec" style="font-size:.78rem" onchange="updateExDesaList()">
             <option value="">Semua Kecamatan</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Desa</label>
+          <select id="exDesa" style="font-size:.78rem">
+            <option value="">Semua Desa</option>
           </select>
         </div>
         <div class="form-group" style="margin:0">
@@ -910,16 +916,16 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
           <label>Desil</label>
           <select id="exDesil" style="font-size:.78rem">
             <option value="">Semua Desil</option>
-            <option>Desil 1</option>
-            <option>Desil 2</option>
-            <option>Desil 3</option>
-            <option>Desil 4</option>
-            <option>Desil 5</option>
-            <option>Desil 6</option>
-            <option>Desil 7</option>
-            <option>Desil 8</option>
-            <option>Desil 9</option>
-            <option>Desil 10</option>
+            <option value="1">Desil 1</option>
+            <option value="2">Desil 2</option>
+            <option value="3">Desil 3</option>
+            <option value="4">Desil 4</option>
+            <option value="5">Desil 5</option>
+            <option value="6">Desil 6</option>
+            <option value="7">Desil 7</option>
+            <option value="8">Desil 8</option>
+            <option value="9">Desil 9</option>
+            <option value="10">Desil 10</option>
           </select>
         </div>
         <div class="form-group" style="margin:0">
@@ -4441,54 +4447,95 @@ async function importExcel(input){
 // EXCEL KABUPATEN
 // ══════════════════════════════════════════════════
 function openExcelKab(){
-  // Isi dropdown kecamatan
+  // Isi dropdown kecamatan (sekali saja)
   const exKec=document.getElementById('exKec');
   if(exKec&&exKec.options.length<=1){
-    Object.keys(KEC_CONFIG).forEach(k=>{
+    Object.keys(KEC_CONFIG).sort().forEach(k=>{
       const o=document.createElement('option');
       o.value=k;o.textContent=k;
       exKec.appendChild(o);
     });
   }
+  // Reset semua filter
+  if(exKec) exKec.value='';
+  const exDesa=document.getElementById('exDesa');
+  if(exDesa){exDesa.innerHTML='<option value="">Semua Desa</option>';}
+  const exStatus=document.getElementById('exStatus');
+  if(exStatus) exStatus.value='';
+  const exDesil=document.getElementById('exDesil');
+  if(exDesil) exDesil.value='';
+  const exTahun=document.getElementById('exTahun');
+  if(exTahun) exTahun.value='';
   document.getElementById('btnDlKabFull').style.display=isSuperAdmin()?'flex':'none';
   document.getElementById('exImportLog').style.display='none';
   document.getElementById('ovExcelKab').classList.add('open');
 }
 
+// Update desa dropdown saat kecamatan berubah di modal Excel Kab
+function updateExDesaList(){
+  const kec=(document.getElementById('exKec')?.value||'').toUpperCase();
+  const desaSel=document.getElementById('exDesa');
+  if(!desaSel)return;
+  desaSel.innerHTML='<option value="">Semua Desa</option>';
+  if(!kec)return;
+  const cfg=KEC_CONFIG[kec]||KEC_CONFIG[Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===kec)||''];
+  if(!cfg||!cfg.desa)return;
+  cfg.desa.forEach(d=>{
+    const o=document.createElement('option');
+    o.value=d.nama; o.textContent=d.nama;
+    desaSel.appendChild(o);
+  });
+}
+
 async function downloadExcelKab(withNIK){
   const superAdmin=isSuperAdmin();
-  const kec=document.getElementById('exKec')?.value||'';
-  const status=document.getElementById('exStatus')?.value||'';
-  const desil=document.getElementById('exDesil')?.value||'';
-  const tahun=document.getElementById('exTahun')?.value||'';
+  const kec=(document.getElementById('exKec')?.value||'').trim();
+  const desa=(document.getElementById('exDesa')?.value||'').trim();
+  const status=(document.getElementById('exStatus')?.value||'').trim();
+  const desil=(document.getElementById('exDesil')?.value||'').trim(); // now value is just "1".."10"
+  const tahun=(document.getElementById('exTahun')?.value||'').trim();
   const btn=document.querySelector('#ovExcelKab .btn-success');
-  if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Mengambil data...';}
+  const setBtn=(txt)=>{if(btn){btn.disabled=!!txt;btn.innerHTML=txt||'<i class="fas fa-download"></i> Unduh Excel'+(withNIK?' + NIK/KK':'');}};
+  setBtn('<i class="fas fa-circle-notch fa-spin"></i> Mengambil data...');
   try{
-    let allRows2=[],pg2=0,done2=false;
-    while(!done2){
+    // ── 1. Fetch data rtlh dengan pagination ──
+    let allData=[],pg=0;
+    while(true){
       let q=sb.from('rtlh').select('*').order('kec').order('desa').order('id')
-        .range(pg2*1000,(pg2+1)*1000-1);
-      if(kec)q=q.eq('kec',kec);
-      if(status)q=q.eq('status_rtlh',status);
-      if(desil)q=q.eq('desil',desil.replace('Desil ',''));
-      if(tahun)q=q.eq('tahun_bantuan',tahun);
+        .range(pg*1000,(pg+1)*1000-1);
+      if(kec)  q=q.eq('kec',kec);
+      if(desa) q=q.eq('desa',desa);
+      if(status) q=q.eq('status_rtlh',status);
+      if(desil)  q=q.eq('desil',desil); // value sudah "1"/"2"/dst
+      if(tahun)  q=q.eq('tahun_bantuan',parseInt(tahun)||tahun);
       const{data:chunk,error}=await q;
-      if(error)return toast('Gagal ambil data: '+error.message,'error');
-      allRows2=[...allRows2,...(chunk||[])];
-      if(!chunk||chunk.length<1000)done2=true;
-      else pg2++;
+      if(error)throw new Error('Gagal ambil data: '+error.message);
+      allData=[...allData,...(chunk||[])];
+      if(!chunk||chunk.length<1000)break;
+      pg++;
+      setBtn(`<i class="fas fa-circle-notch fa-spin"></i> Mengambil data... (${allData.length})`);
     }
-    const data=allRows2;
-    if(!data||!data.length)return toast('Tidak ada data','error');
-    // Fetch verifikasi kabupaten
-    const kabIds=data.map(r=>r.id);
-    let verifMapKab={};
-    for(let vi=0;vi<kabIds.length;vi+=500){
-      const chunk=kabIds.slice(vi,vi+500);
-      const{data:vd}=await sb.from('rtlh_verifikasi').select('*').in('rtlh_id',chunk).order('tahun',{ascending:true});
-      (vd||[]).forEach(v=>{if(!verifMapKab[v.rtlh_id])verifMapKab[v.rtlh_id]=[];verifMapKab[v.rtlh_id].push(v);});
-    }
-    const rows=data.map(r=>{
+    if(!allData.length)return toast('Tidak ada data dengan filter tersebut','error');
+
+    // ── 2. Fetch verifikasi — parallel per batch 500, lebih cepat ──
+    setBtn(`<i class="fas fa-circle-notch fa-spin"></i> Memuat verifikasi...`);
+    const allIds=allData.map(r=>r.id);
+    const batches=[];
+    for(let i=0;i<allIds.length;i+=500) batches.push(allIds.slice(i,i+500));
+    const verifResults=await Promise.all(
+      batches.map(b=>sb.from('rtlh_verifikasi').select('*').in('rtlh_id',b).order('tahun',{ascending:true}))
+    );
+    const verifMapKab={};
+    verifResults.forEach(({data:vd})=>{
+      (vd||[]).forEach(v=>{
+        if(!verifMapKab[v.rtlh_id])verifMapKab[v.rtlh_id]=[];
+        verifMapKab[v.rtlh_id].push(v);
+      });
+    });
+
+    // ── 3. Build rows ──
+    setBtn(`<i class="fas fa-circle-notch fa-spin"></i> Menyusun Excel...`);
+    const rows=allData.map(r=>{
       const vList=verifMapKab[r.id]||[];
       const verifCols={};
       vList.forEach((v,i)=>{
@@ -4499,22 +4546,22 @@ async function downloadExcelKab(withNIK){
         verifCols[`Verif${n}_Petugas`]=v.petugas||'';
       });
       return{
-      ID:r.id,Kecamatan:r.kec,Desa:r.desa,'Nama KK':r.kep_kk,
-      NIK:withNIK&&superAdmin?(r.nik||''):'***',
-      'No. KK':withNIK&&superAdmin?(r.no_kk||''):'***',
-      Alamat:r.alamat,'Jenis Kelamin':r.jen_kel,Umur:r.umur,
-      Pendidikan:r.pend_ter,Pekerjaan:r.pekerjaan,Penghasilan:r.pengh,
-      'Luas Rumah (m²)':r.luas_rum,'Luas Tanah (m²)':r.luas_tan,
-      'Jml Penghuni':r.jml_peng,'Status Kepemilikan':r.status_kep,
-      'Material Dinding':r.material_d,'Kondisi Dinding':r.kondisi_di,
-      'Material Atap':r.material_a,'Kondisi Atap':r.kondisi_at,
-      'Material Lantai':r.material_l,'Kondisi Lantai':r.kondisi_la,
-      'Status RTLH':r.status_rtlh,'Alasan SK Dibatalkan':r.status_batal,
-      'Jenis Bantuan':r.jenis_bantuan,'Tahun Bantuan':r.tahun_bantuan,
-      Backlog:r.backlog,Desil:r.desil,Keterangan:r.keterangan||'',
-      Latitude:r.latitude,Longitude:r.longitude,
-      'Terakhir Update':r.updated_at?new Date(r.updated_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'-',
-      ...verifCols,
+        ID:r.id,Kecamatan:r.kec,Desa:r.desa,'Nama KK':r.kep_kk,
+        NIK:withNIK&&superAdmin?(r.nik||''):'***',
+        'No. KK':withNIK&&superAdmin?(r.no_kk||''):'***',
+        Alamat:r.alamat,'Jenis Kelamin':r.jen_kel,Umur:r.umur,
+        Pendidikan:r.pend_ter,Pekerjaan:r.pekerjaan,Penghasilan:r.pengh,
+        'Luas Rumah (m²)':r.luas_rum,'Luas Tanah (m²)':r.luas_tan,
+        'Jml Penghuni':r.jml_peng,'Status Kepemilikan':r.status_kep,
+        'Material Dinding':r.material_d,'Kondisi Dinding':r.kondisi_di,
+        'Material Atap':r.material_a,'Kondisi Atap':r.kondisi_at,
+        'Material Lantai':r.material_l,'Kondisi Lantai':r.kondisi_la,
+        'Status RTLH':r.status_rtlh,'Alasan SK Dibatalkan':r.status_batal,
+        'Jenis Bantuan':r.jenis_bantuan,'Tahun Bantuan':r.tahun_bantuan,
+        Backlog:r.backlog,Desil:r.desil,Keterangan:r.keterangan||'',
+        Latitude:r.latitude,Longitude:r.longitude,
+        'Terakhir Update':r.updated_at?new Date(r.updated_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'-',
+        ...verifCols,
       };
     });
     const ws=XLSX.utils.json_to_sheet(rows);
@@ -4522,11 +4569,20 @@ async function downloadExcelKab(withNIK){
     addExcelDropdowns(ws,rows);
     const wb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb,ws,'RTLH');
-    const fname=`RTLH_Kabupaten${kec?'_'+kec:''}_${new Date().toISOString().slice(0,10)}.xlsx`;
-    XLSX.writeFile(wb,fname);
-    toast(`${data.length} data berhasil diunduh`,'success');
+    // Nama file informatif sesuai filter
+    const parts=['RTLH'];
+    if(kec)parts.push(kec);
+    if(desa)parts.push(desa.replace(/\s+/g,'_'));
+    if(status)parts.push(status.replace(/\s+/g,'_'));
+    if(desil)parts.push('Desil'+desil);
+    if(tahun)parts.push(tahun);
+    parts.push(new Date().toISOString().slice(0,10));
+    XLSX.writeFile(wb,parts.join('_')+'.xlsx');
+    toast(`✅ ${allData.length} data berhasil diunduh`,'success');
+  }catch(e){
+    toast(e.message||'Gagal download','error');
   }finally{
-    if(btn){btn.disabled=false;btn.innerHTML='<i class="fas fa-download"></i> Unduh Excel'+(withNIK?' + NIK/KK':'');}
+    setBtn('');
   }
 }
 
@@ -4639,119 +4695,169 @@ async function importExcelKab(input){
         else{toInsert.push(obj);}
       }
 
-      log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Mengirim data ke server...`;
       let ok=0,fail=0,errors=[];
+      const PBATCH=25; // parallel batch size
 
-      // ── Batch update by ID (parallel 10) ──
-      const BATCH=10;
-      for(let i=0;i<toUpdate.length;i+=BATCH){
-        const batch=toUpdate.slice(i,i+BATCH);
-        const results=await Promise.all(batch.map(({id,obj})=>sb.from('rtlh').update(obj).eq('id',id)));
-        results.forEach((r,j)=>{if(r.error){fail++;errors.push(`ID ${batch[j].id}: ${r.error.message}`);}else ok++;});
-        log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Update by ID: ${Math.min(i+BATCH,toUpdate.length)}/${toUpdate.length}`;
+      // helper: jalankan array promise dengan concurrency terbatas
+      async function runBatched(items,fn,batchSize,label){
+        for(let i=0;i<items.length;i+=batchSize){
+          const batch=items.slice(i,i+batchSize);
+          const results=await Promise.all(batch.map(fn));
+          results.forEach((r,j)=>{
+            if(r&&r.error){fail++;errors.push(`${label} [${i+j}]: ${r.error.message}`);}
+            else ok++;
+          });
+          log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> ${label}: ${Math.min(i+batchSize,items.length)}/${items.length}`;
+        }
       }
 
-      // ── Batch upsert by NIK — cek existing dulu dalam satu query ──
+      // ── 1. Update by ID (paralel 25) ──
+      if(toUpdate.length){
+        await runBatched(toUpdate,({id,obj})=>sb.from('rtlh').update(obj).eq('id',id),PBATCH,'Update ID');
+      }
+
+      // ── 2. Upsert by NIK — satu query cek existing, lalu batch update/insert ──
       if(toUpsertByNIK.length){
-        log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Upsert by NIK: ${toUpsertByNIK.length} baris...`;
+        log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Cek NIK existing...`;
+        // Batch lookup semua NIK sekaligus (chunk 500)
         const niks=toUpsertByNIK.map(x=>x.nik);
-        const{data:existingRows}=await sb.from('rtlh').select('id,nik').in('nik',niks);
-        const existMap=Object.fromEntries((existingRows||[]).map(r=>[r.nik,r.id]));
-        const updates=toUpsertByNIK.filter(x=>existMap[x.nik]);
-        const inserts=toUpsertByNIK.filter(x=>!existMap[x.nik]);
-        // Update existing
-        for(let i=0;i<updates.length;i+=BATCH){
-          const batch=updates.slice(i,i+BATCH);
-          const results=await Promise.all(batch.map(({nik,obj})=>sb.from('rtlh').update(obj).eq('nik',nik)));
-          results.forEach((r,j)=>{if(r.error){fail++;errors.push(`NIK ${batch[j].nik}: ${r.error.message}`);}else ok++;});
-        }
-        // Insert baru dalam satu batch
-        if(inserts.length){
-          const{error}=await sb.from('rtlh').insert(inserts.map(x=>x.obj));
-          if(error){fail+=inserts.length;errors.push(`Insert baru: ${error.message}`);}
-          else ok+=inserts.length;
+        const nikResults=await Promise.all(
+          Array.from({length:Math.ceil(niks.length/500)},(_,i)=>
+            sb.from('rtlh').select('id,nik').in('nik',niks.slice(i*500,(i+1)*500))
+          )
+        );
+        const existMap={};
+        nikResults.forEach(({data})=>(data||[]).forEach(r=>existMap[r.nik]=r.id));
+        const nikUpdates=toUpsertByNIK.filter(x=>existMap[x.nik]);
+        const nikInserts=toUpsertByNIK.filter(x=>!existMap[x.nik]).map(x=>x.obj);
+        if(nikUpdates.length)
+          await runBatched(nikUpdates,({nik,obj})=>sb.from('rtlh').update(obj).eq('nik',nik),PBATCH,'Update NIK');
+        // Insert baru sekaligus bulk
+        if(nikInserts.length){
+          for(let i=0;i<nikInserts.length;i+=100){
+            const{error}=await sb.from('rtlh').insert(nikInserts.slice(i,i+100));
+            if(error){fail+=Math.min(100,nikInserts.length-i);errors.push('Insert NIK baru: '+error.message);}
+            else ok+=Math.min(100,nikInserts.length-i);
+          }
         }
       }
 
-      // ── Insert baru ──
+      // ── 3. Insert baru (bulk 100) ──
       if(toInsert.length){
-        for(let i=0;i<toInsert.length;i+=50){
-          const batch=toInsert.slice(i,i+50);
-          const{error}=await sb.from('rtlh').insert(batch);
-          if(error){fail+=batch.length;errors.push(`Insert: ${error.message}`);}
-          else ok+=batch.length;
+        log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Insert baru: ${toInsert.length} baris...`;
+        for(let i=0;i<toInsert.length;i+=100){
+          const{error}=await sb.from('rtlh').insert(toInsert.slice(i,i+100));
+          if(error){fail+=Math.min(100,toInsert.length-i);errors.push('Insert: '+error.message);}
+          else ok+=Math.min(100,toInsert.length-i);
         }
       }
-      // ── Import verifikasi lapangan dari kolom Verif*_* ──
+
+      // ── 4. Verifikasi — kumpulkan semua, resolve NIK→ID secara paralel, upsert bulk ──
       const verifInserts=[];
       rows.forEach(row=>{
         const id=parseInt(getCol(row,'ID','id')||0);
         const nik=String(getCol(row,'NIK','nik')||'').replace(/[^0-9]/g,'');
         if(!id&&!nik)return;
-        // Cari kolom Verif1_Tahun, Verif2_Tahun, dst
-        const allKeys=Object.keys(row);
-        const verifNums=[...new Set(allKeys.map(k=>{const m=k.match(/^[Vv]erif(\d+)_/);return m?m[1]:null}).filter(Boolean))];
+        const verifNums=[...new Set(Object.keys(row).map(k=>{const m=k.match(/^[Vv]erif(\d+)_/);return m?m[1]:null}).filter(Boolean))];
         verifNums.forEach(n=>{
           const tahun=parseInt(getCol(row,`Verif${n}_Tahun`,`verif${n}_tahun`)||0);
           const hasil=xlVal(getCol(row,`Verif${n}_Hasil`,`verif${n}_hasil`));
-          const ket=xlVal(getCol(row,`Verif${n}_Keterangan`,`verif${n}_keterangan`));
-          const petugas=xlVal(getCol(row,`Verif${n}_Petugas`,`verif${n}_petugas`));
-          if(tahun&&hasil)verifInserts.push({_ref:id||nik,_type:id?'id':'nik',tahun,hasil,keterangan:ket,petugas,created_by:user?.email});
+          if(tahun&&hasil)verifInserts.push({
+            _ref:id||nik,_type:id?'id':'nik',tahun,hasil,
+            keterangan:xlVal(getCol(row,`Verif${n}_Keterangan`,`verif${n}_keterangan`)),
+            petugas:xlVal(getCol(row,`Verif${n}_Petugas`,`verif${n}_petugas`)),
+            created_by:user?.email
+          });
         });
       });
       if(verifInserts.length){
-        // Resolve rtlh_id dari ID atau NIK
-        const verifWithId=[];
-        for(const v of verifInserts){
-          let rtlhId=null;
-          if(v._type==='id'){rtlhId=v._ref;}
-          else{
-            const{data:found}=await sb.from('rtlh').select('id').eq('nik',v._ref).single();
-            if(found)rtlhId=found.id;
+        log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memproses ${verifInserts.length} verifikasi...`;
+        // Resolve NIK → ID paralel (hanya yg type='nik')
+        const nikRefs=[...new Set(verifInserts.filter(v=>v._type==='nik').map(v=>v._ref))];
+        const nikIdMap={};
+        if(nikRefs.length){
+          const res=await Promise.all(
+            Array.from({length:Math.ceil(nikRefs.length/500)},(_,i)=>
+              sb.from('rtlh').select('id,nik').in('nik',nikRefs.slice(i*500,(i+1)*500))
+            )
+          );
+          res.forEach(({data})=>(data||[]).forEach(r=>nikIdMap[r.nik]=r.id));
+        }
+        // Build rtlh_id list
+        const resolved=verifInserts.map(v=>({
+          ...v,rtlh_id:v._type==='id'?v._ref:nikIdMap[v._ref]
+        })).filter(v=>v.rtlh_id);
+        // Cek existing verif dalam satu query per batch
+        const rtlhIds=[...new Set(resolved.map(v=>v.rtlh_id))];
+        const existVerifRes=await Promise.all(
+          Array.from({length:Math.ceil(rtlhIds.length/500)},(_,i)=>
+            sb.from('rtlh_verifikasi').select('id,rtlh_id,tahun').in('rtlh_id',rtlhIds.slice(i*500,(i+1)*500))
+          )
+        );
+        const existVerifMap={};
+        existVerifRes.forEach(({data})=>(data||[]).forEach(v=>{
+          existVerifMap[`${v.rtlh_id}_${v.tahun}`]=v.id;
+        }));
+        const verifToUpdate=[], verifToInsert=[];
+        resolved.forEach(v=>{
+          const key=`${v.rtlh_id}_${v.tahun}`;
+          if(existVerifMap[key]){
+            verifToUpdate.push({eid:existVerifMap[key],hasil:v.hasil,keterangan:v.keterangan,petugas:v.petugas});
+          }else{
+            verifToInsert.push({rtlh_id:v.rtlh_id,tahun:v.tahun,hasil:v.hasil,keterangan:v.keterangan,petugas:v.petugas,created_by:v.created_by});
           }
-          if(rtlhId){
-            // Cek apakah sudah ada verif untuk tahun ini
-            const{data:existing}=await sb.from('rtlh_verifikasi').select('id').eq('rtlh_id',rtlhId).eq('tahun',v.tahun).maybeSingle();
-            if(existing){
-              await sb.from('rtlh_verifikasi').update({hasil:v.hasil,keterangan:v.keterangan,petugas:v.petugas}).eq('id',existing.id);
-            }else{
-              verifWithId.push({rtlh_id:rtlhId,tahun:v.tahun,hasil:v.hasil,keterangan:v.keterangan,petugas:v.petugas,created_by:v.created_by});
-            }
+        });
+        // Update existing verif paralel
+        if(verifToUpdate.length)
+          await runBatched(verifToUpdate,({eid,hasil,keterangan,petugas})=>
+            sb.from('rtlh_verifikasi').update({hasil,keterangan,petugas}).eq('id',eid),PBATCH,'Update Verif');
+        // Insert verif baru bulk
+        if(verifToInsert.length){
+          for(let i=0;i<verifToInsert.length;i+=100){
+            await sb.from('rtlh_verifikasi').insert(verifToInsert.slice(i,i+100));
           }
         }
-        if(verifWithId.length)await sb.from('rtlh_verifikasi').insert(verifWithId);
       }
 
-      // Auto-link dokumen untuk data yang punya jenis bantuan
-      const autoLinkBatch=rows.filter(row=>{
-        const jb=xlVal(getCol(row,'Jenis Bantuan','jenis_bantuan'));
-        return !!jb;
-      });
-      if(autoLinkBatch.length){
-        // Ambil semua dokumen library sekali
-        const{data:allDocs}=await sb.from('rtlh_dokumen_kabupaten').select('id,jenis,judul,tahun');
-        for(const row of autoLinkBatch){
-          const id=parseInt(getCol(row,'ID','id')||0);
-          const nik=String(getCol(row,'NIK','nik')||'').replace(/[^0-9]/g,'');
-          const jb=xlVal(getCol(row,'Jenis Bantuan','jenis_bantuan'));
-          const tahun=parseInt(String(getCol(row,'Tahun Bantuan','tahun_bantuan')||'').replace(/[^0-9]/g,''))||null;
-          if(!id&&!nik)continue;
-          // Resolve rtlh_id
-          let rtlhId=id;
-          if(!rtlhId&&nik){const{data:found}=await sb.from('rtlh').select('id').eq('nik',nik).single();if(found)rtlhId=found.id;}
-          if(!rtlhId)continue;
-          const jbUpper=(jb||'').toUpperCase();
-          const matches=(allDocs||[]).filter(d=>{
+      // ── 5. Auto-link dokumen — ambil semua docs sekali, resolve ID paralel, upsert bulk ──
+      const autoLinkRows=rows.filter(row=>!!xlVal(getCol(row,'Jenis Bantuan','jenis_bantuan')));
+      if(autoLinkRows.length){
+        log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Auto-link dokumen...`;
+        const{data:allDocs}=await sb.from('rtlh_dokumen_kabupaten').select('id,judul,tahun');
+        // Resolve ID untuk semua row sekaligus
+        const rowMeta=autoLinkRows.map(row=>({
+          id:parseInt(getCol(row,'ID','id')||0),
+          nik:String(getCol(row,'NIK','nik')||'').replace(/[^0-9]/g,''),
+          jb:xlVal(getCol(row,'Jenis Bantuan','jenis_bantuan')),
+          tahun:parseInt(String(getCol(row,'Tahun Bantuan','tahun_bantuan')||'').replace(/[^0-9]/g,''))||null
+        })).filter(r=>r.id||r.nik);
+        // Bulk lookup NIK yang belum ada ID
+        const needNikLookup=rowMeta.filter(r=>!r.id&&r.nik).map(r=>r.nik);
+        const nikRtlhMap={};
+        if(needNikLookup.length){
+          const res=await Promise.all(
+            Array.from({length:Math.ceil(needNikLookup.length/500)},(_,i)=>
+              sb.from('rtlh').select('id,nik').in('nik',needNikLookup.slice(i*500,(i+1)*500))
+            )
+          );
+          res.forEach(({data})=>(data||[]).forEach(r=>nikRtlhMap[r.nik]=r.id));
+        }
+        const allLinks=[];
+        rowMeta.forEach(r=>{
+          const rtlhId=r.id||(r.nik&&nikRtlhMap[r.nik]);
+          if(!rtlhId)return;
+          const jbUpper=(r.jb||'').toUpperCase();
+          (allDocs||[]).filter(d=>{
             const judul=(d.judul||'').toUpperCase();
-            const tahunMatch=!tahun||!d.tahun||d.tahun===tahun;
-            const jenisMatch=judul.includes(jbUpper)||judul.includes('RTLH')||
+            const tahunOk=!r.tahun||!d.tahun||d.tahun===r.tahun;
+            return tahunOk&&(judul.includes(jbUpper)||
               (jbUpper==='BSPS'&&judul.includes('BSPS'))||
-              (jbUpper==='DANA DESA'&&(judul.includes('DD')||judul.includes('DANA DESA')));
-            return jenisMatch&&tahunMatch;
-          });
-          if(matches.length){
-            const links=matches.map(d=>({rtlh_id:rtlhId,dokumen_id:d.id,linked_by:user?.email}));
-            await sb.from('rtlh_dokumen_link').upsert(links,{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
+              (jbUpper==='DANA DESA'&&(judul.includes('DD')||judul.includes('DANA DESA'))));
+          }).forEach(d=>allLinks.push({rtlh_id:rtlhId,dokumen_id:d.id,linked_by:user?.email}));
+        });
+        if(allLinks.length){
+          for(let i=0;i<allLinks.length;i+=200){
+            await sb.from('rtlh_dokumen_link').upsert(allLinks.slice(i,i+200),{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
           }
         }
       }
