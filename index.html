@@ -4447,12 +4447,13 @@ async function importExcel(input){
 // EXCEL KABUPATEN
 // ══════════════════════════════════════════════════
 function openExcelKab(){
-  // Isi dropdown kecamatan (sekali saja)
+  // Isi dropdown kecamatan (sekali saja) — value pakai normCase agar match DB
   const exKec=document.getElementById('exKec');
   if(exKec&&exKec.options.length<=1){
     Object.keys(KEC_CONFIG).sort().forEach(k=>{
       const o=document.createElement('option');
-      o.value=k;o.textContent=k;
+      o.value=normCase(k)||k; // DB simpan normCase
+      o.textContent=normCase(k)||k;
       exKec.appendChild(o);
     });
   }
@@ -4473,16 +4474,20 @@ function openExcelKab(){
 
 // Update desa dropdown saat kecamatan berubah di modal Excel Kab
 function updateExDesaList(){
-  const kec=(document.getElementById('exKec')?.value||'').toUpperCase();
+  const rawVal=(document.getElementById('exKec')?.value||'');
   const desaSel=document.getElementById('exDesa');
   if(!desaSel)return;
   desaSel.innerHTML='<option value="">Semua Desa</option>';
-  if(!kec)return;
-  const cfg=KEC_CONFIG[kec]||KEC_CONFIG[Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===kec)||''];
+  if(!rawVal)return;
+  // KEC_CONFIG keys are UPPERCASE, match case-insensitively
+  const cfgKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===rawVal.toUpperCase())||rawVal.toUpperCase();
+  const cfg=KEC_CONFIG[cfgKey];
   if(!cfg||!cfg.desa)return;
   cfg.desa.forEach(d=>{
     const o=document.createElement('option');
-    o.value=d.nama; o.textContent=d.nama;
+    // Store normCase value (matches DB storage)
+    o.value=normCase(d.nama)||d.nama;
+    o.textContent=normCase(d.nama)||d.nama;
     desaSel.appendChild(o);
   });
 }
@@ -4492,66 +4497,98 @@ async function downloadExcelKab(withNIK){
   const kec=(document.getElementById('exKec')?.value||'').trim();
   const desa=(document.getElementById('exDesa')?.value||'').trim();
   const status=(document.getElementById('exStatus')?.value||'').trim();
-  const desil=(document.getElementById('exDesil')?.value||'').trim(); // now value is just "1".."10"
+  const desil=(document.getElementById('exDesil')?.value||'').trim();
   const tahun=(document.getElementById('exTahun')?.value||'').trim();
   const btn=document.querySelector('#ovExcelKab .btn-success');
-  const setBtn=(txt)=>{if(btn){btn.disabled=!!txt;btn.innerHTML=txt||'<i class="fas fa-download"></i> Unduh Excel'+(withNIK?' + NIK/KK':'');}};
-  setBtn('<i class="fas fa-circle-notch fa-spin"></i> Mengambil data...');
-  try{
-    // ── 1. Fetch data rtlh dengan pagination ──
-    let allData=[],pg=0;
-    while(true){
-      let q=sb.from('rtlh').select('*').order('kec').order('desa').order('id')
-        .range(pg*1000,(pg+1)*1000-1);
-      if(kec)  q=q.eq('kec',kec);
-      if(desa) q=q.eq('desa',desa);
-      if(status) q=q.eq('status_rtlh',status);
-      if(desil)  q=q.eq('desil',desil); // value sudah "1"/"2"/dst
-      if(tahun)  q=q.eq('tahun_bantuan',parseInt(tahun)||tahun);
-      const{data:chunk,error}=await q;
-      if(error)throw new Error('Gagal ambil data: '+error.message);
-      allData=[...allData,...(chunk||[])];
-      if(!chunk||chunk.length<1000)break;
-      pg++;
-      setBtn(`<i class="fas fa-circle-notch fa-spin"></i> Mengambil data... (${allData.length})`);
-    }
-    if(!allData.length)return toast('Tidak ada data dengan filter tersebut','error');
+  const log=document.getElementById('exImportLog');
 
-    // ── 2. Fetch verifikasi — parallel per batch 500, lebih cepat ──
-    setBtn(`<i class="fas fa-circle-notch fa-spin"></i> Memuat verifikasi...`);
+  const setBtn=(txt)=>{
+    if(btn){btn.disabled=!!txt;btn.innerHTML=txt||'<i class="fas fa-download"></i> Unduh Excel'+(withNIK?' + NIK/KK':'');}
+  };
+  const setLog=(txt)=>{
+    if(log){log.style.display='block';log.innerHTML=txt;}
+  };
+
+  setBtn('<i class="fas fa-circle-notch fa-spin"></i> Memulai...');
+  setLog('<i class="fas fa-circle-notch fa-spin"></i> Menyiapkan query...');
+
+  try{
+    // 1. Count dulu agar bisa parallel fetch
+    let countQ=sb.from('rtlh').select('id',{count:'exact',head:true});
+    if(kec)    countQ=countQ.ilike('kec',kec);
+    if(desa)   countQ=countQ.ilike('desa',desa);
+    if(status) countQ=countQ.eq('status_rtlh',status);
+    if(desil)  countQ=countQ.eq('desil',desil);
+    if(tahun)  countQ=countQ.eq('tahun_bantuan',parseInt(tahun)||tahun);
+    const{count,error:cErr}=await countQ;
+    if(cErr) throw new Error('Gagal cek data: '+cErr.message);
+    if(!count||count===0){
+      setLog('<span style="color:var(--danger)"><i class="fas fa-exclamation-circle"></i> Tidak ada data dengan filter tersebut</span>');
+      return toast('Tidak ada data','error');
+    }
+
+    setLog('<i class="fas fa-circle-notch fa-spin"></i> Mengambil '+count+' data...');
+
+    // 2. Fetch paralel (5 page sekaligus)
+    const PAGE=1000;
+    const totalPages=Math.ceil(count/PAGE);
+    const CONCUR=5;
+    let allData=[];
+    for(let i=0;i<totalPages;i+=CONCUR){
+      const batch=Array.from({length:Math.min(CONCUR,totalPages-i)},(_,j)=>i+j);
+      const results=await Promise.all(batch.map(pg=>{
+        let q=sb.from('rtlh').select('*').order('kec').order('desa').order('id')
+          .range(pg*PAGE,(pg+1)*PAGE-1);
+        if(kec)    q=q.ilike('kec',kec);
+        if(desa)   q=q.ilike('desa',desa);
+        if(status) q=q.eq('status_rtlh',status);
+        if(desil)  q=q.eq('desil',desil);
+        if(tahun)  q=q.eq('tahun_bantuan',parseInt(tahun)||tahun);
+        return q;
+      }));
+      results.forEach(({data,error})=>{
+        if(error) throw new Error('Gagal ambil data: '+error.message);
+        allData=[...allData,...(data||[])];
+      });
+      setLog('<i class="fas fa-circle-notch fa-spin"></i> Mengambil data... '+allData.length+'/'+count);
+    }
+    if(!allData.length) return toast('Tidak ada data','error');
+
+    // 3. Fetch verifikasi paralel
+    setLog('<i class="fas fa-circle-notch fa-spin"></i> Memuat verifikasi...');
     const allIds=allData.map(r=>r.id);
-    const batches=[];
-    for(let i=0;i<allIds.length;i+=500) batches.push(allIds.slice(i,i+500));
     const verifResults=await Promise.all(
-      batches.map(b=>sb.from('rtlh_verifikasi').select('*').in('rtlh_id',b).order('tahun',{ascending:true}))
+      Array.from({length:Math.ceil(allIds.length/500)},(_,i)=>
+        sb.from('rtlh_verifikasi').select('*').in('rtlh_id',allIds.slice(i*500,(i+1)*500)).order('tahun',{ascending:true})
+      )
     );
-    const verifMapKab={};
+    const verifMap={};
     verifResults.forEach(({data:vd})=>{
       (vd||[]).forEach(v=>{
-        if(!verifMapKab[v.rtlh_id])verifMapKab[v.rtlh_id]=[];
-        verifMapKab[v.rtlh_id].push(v);
+        if(!verifMap[v.rtlh_id])verifMap[v.rtlh_id]=[];
+        verifMap[v.rtlh_id].push(v);
       });
     });
 
-    // ── 3. Build rows ──
-    setBtn(`<i class="fas fa-circle-notch fa-spin"></i> Menyusun Excel...`);
+    // 4. Build rows
+    setLog('<i class="fas fa-circle-notch fa-spin"></i> Menyusun Excel ('+allData.length+' baris)...');
     const rows=allData.map(r=>{
-      const vList=verifMapKab[r.id]||[];
+      const vList=verifMap[r.id]||[];
       const verifCols={};
       vList.forEach((v,i)=>{
         const n=i+1;
-        verifCols[`Verif${n}_Tahun`]=v.tahun||'';
-        verifCols[`Verif${n}_Hasil`]=v.hasil||'';
-        verifCols[`Verif${n}_Keterangan`]=v.keterangan||'';
-        verifCols[`Verif${n}_Petugas`]=v.petugas||'';
+        verifCols['Verif'+n+'_Tahun']=v.tahun||'';
+        verifCols['Verif'+n+'_Hasil']=v.hasil||'';
+        verifCols['Verif'+n+'_Keterangan']=v.keterangan||'';
+        verifCols['Verif'+n+'_Petugas']=v.petugas||'';
       });
-      return{
+      return Object.assign({
         ID:r.id,Kecamatan:r.kec,Desa:r.desa,'Nama KK':r.kep_kk,
         NIK:withNIK&&superAdmin?(r.nik||''):'***',
         'No. KK':withNIK&&superAdmin?(r.no_kk||''):'***',
         Alamat:r.alamat,'Jenis Kelamin':r.jen_kel,Umur:r.umur,
         Pendidikan:r.pend_ter,Pekerjaan:r.pekerjaan,Penghasilan:r.pengh,
-        'Luas Rumah (m²)':r.luas_rum,'Luas Tanah (m²)':r.luas_tan,
+        'Luas Rumah (m\u00b2)':r.luas_rum,'Luas Tanah (m\u00b2)':r.luas_tan,
         'Jml Penghuni':r.jml_peng,'Status Kepemilikan':r.status_kep,
         'Material Dinding':r.material_d,'Kondisi Dinding':r.kondisi_di,
         'Material Atap':r.material_a,'Kondisi Atap':r.kondisi_at,
@@ -4561,25 +4598,31 @@ async function downloadExcelKab(withNIK){
         Backlog:r.backlog,Desil:r.desil,Keterangan:r.keterangan||'',
         Latitude:r.latitude,Longitude:r.longitude,
         'Terakhir Update':r.updated_at?new Date(r.updated_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'-',
-        ...verifCols,
-      };
+      },verifCols);
     });
+
     const ws=XLSX.utils.json_to_sheet(rows);
     ws['!cols']=Object.keys(rows[0]).map(k=>({wch:Math.max(k.length+2,14)}));
     addExcelDropdowns(ws,rows);
     const wb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb,ws,'RTLH');
-    // Nama file informatif sesuai filter
+
     const parts=['RTLH'];
-    if(kec)parts.push(kec);
+    if(kec)parts.push(kec.replace(/\s+/g,'_'));
     if(desa)parts.push(desa.replace(/\s+/g,'_'));
     if(status)parts.push(status.replace(/\s+/g,'_'));
     if(desil)parts.push('Desil'+desil);
     if(tahun)parts.push(tahun);
     parts.push(new Date().toISOString().slice(0,10));
-    XLSX.writeFile(wb,parts.join('_')+'.xlsx');
-    toast(`✅ ${allData.length} data berhasil diunduh`,'success');
+    const fname=parts.join('_')+'.xlsx';
+
+    setLog('<i class="fas fa-circle-notch fa-spin"></i> Mengunduh file...');
+    XLSX.writeFile(wb,fname);
+    setLog('<span style="color:var(--success)"><i class="fas fa-check-circle"></i> <strong>'+allData.length+'</strong> data diunduh \u2192 <em>'+fname+'</em></span>');
+    toast('\u2705 '+allData.length+' data diunduh','success');
+
   }catch(e){
+    setLog('<span style="color:var(--danger)"><i class="fas fa-times-circle"></i> '+(e.message||'Gagal download')+'</span>');
     toast(e.message||'Gagal download','error');
   }finally{
     setBtn('');
