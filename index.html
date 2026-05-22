@@ -951,6 +951,35 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
         </div>
         <div id="exImportLog" style="display:none;margin-top:10px;font-size:.72rem;max-height:150px;overflow-y:auto"></div>
       </div>
+
+      <!-- BULK FOTO UPLOAD -->
+      <div style="border-top:1px solid var(--gray-200);padding-top:14px;margin-top:4px">
+        <div style="font-size:.72rem;font-weight:700;color:var(--gray-700);margin-bottom:4px">
+          <i class="fas fa-images" style="color:#7C3AED"></i> Upload Foto Massal
+        </div>
+        <div style="font-size:.65rem;color:var(--gray-400);margin-bottom:8px;line-height:1.5">
+          Format nama file: <code style="background:#F3F4F6;padding:1px 5px;border-radius:4px;color:#4B5563">7. CAMPURASRI SUPRAPTO.jpg</code><br>
+          Sistem otomatis match ke data berdasarkan <strong>desa + nama</strong>.
+        </div>
+        <div class="upload-zone" id="fotoZone"
+          onclick="document.getElementById('fotoFolderInput').click()"
+          style="padding:14px;border-radius:10px;border:2px dashed #C4B5FD;text-align:center;cursor:pointer;transition:all .2s;background:#FAFAFF">
+          <i class="fas fa-folder-open" style="font-size:1.4rem;color:#7C3AED;margin-bottom:5px;display:block"></i>
+          <p style="font-size:.78rem;color:#6D28D9;font-weight:600">Klik untuk pilih foto (bisa pilih banyak)</p>
+          <p style="font-size:.63rem;color:#A78BFA;margin-top:2px">Pilih semua foto sekaligus (Ctrl+A di dialog)</p>
+          <input type="file" id="fotoFolderInput" accept="image/*" multiple style="display:none" onchange="bulkUploadFoto(this)">
+        </div>
+        <div id="fotoUploadWrap" style="display:none;margin-top:10px">
+          <div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--gray-500);margin-bottom:4px">
+            <span id="fotoUploadStatus">Memproses...</span>
+            <span id="fotoUploadPct">0%</span>
+          </div>
+          <div style="height:6px;background:#EDE9FE;border-radius:99px;overflow:hidden">
+            <div id="fotoUploadBar" style="height:100%;background:#7C3AED;border-radius:99px;width:0;transition:width .3s"></div>
+          </div>
+          <div id="fotoUploadLog" style="margin-top:8px;font-size:.65rem;max-height:120px;overflow-y:auto;background:#F9FAFB;border-radius:8px;padding:6px 8px;border:1px solid var(--gray-200)"></div>
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('ovExcelKab')">Tutup</button>
@@ -4657,6 +4686,152 @@ async function downloadExcelKab(withNIK){
     toast(e.message||'Gagal download','error');
   }finally{
     setBtn('');
+  }
+}
+
+// ══════════════════════════════════════════════════
+// BULK UPLOAD FOTO MASSAL
+// Format nama file: "7. CAMPURASRI SUPRAPTO.jpg"
+// Parse: nomor. DESA NAMA → match DB by desa+nama
+// ══════════════════════════════════════════════════
+async function bulkUploadFoto(input){
+  const files=[...input.files];
+  if(!files.length)return;
+
+  const wrap=document.getElementById('fotoUploadWrap');
+  const bar=document.getElementById('fotoUploadBar');
+  const status=document.getElementById('fotoUploadStatus');
+  const pct=document.getElementById('fotoUploadPct');
+  const log=document.getElementById('fotoUploadLog');
+
+  wrap.style.display='block';
+  log.innerHTML='';
+  bar.style.width='0';
+  status.textContent='Memuat data dari server...';
+  pct.textContent='0%';
+
+  const addLog=(msg,color='#374151')=>{
+    const d=document.createElement('div');
+    d.style.cssText=`color:${color};padding:1px 0;border-bottom:1px solid #F3F4F6`;
+    d.innerHTML=msg;
+    log.prepend(d);
+  };
+
+  try{
+    // 1. Ambil semua data rtlh (id, desa, nama) sekali saja
+    status.textContent='Mengambil data dari server...';
+    const pageSize=1000;
+    const{count}=await sb.from('rtlh').select('id',{count:'exact',head:true});
+    const pages=Math.ceil((count||0)/pageSize);
+    const results=await Promise.all(
+      Array.from({length:pages},(_,p)=>
+        sb.from('rtlh').select('id,desa,kep_kk').range(p*pageSize,(p+1)*pageSize-1)
+      )
+    );
+    const allRecords=results.flatMap(r=>r.data||[]);
+
+    // 2. Buat index: "DESA|NAMA" → id (uppercase, trim)
+    const idx={};
+    allRecords.forEach(r=>{
+      const k=normKey(r.desa)+'|'+normKey(r.kep_kk);
+      idx[k]=r.id;
+    });
+
+    // 3. Parse nama file & upload
+    const total=files.length;
+    let done=0,ok=0,notFound=0,errCount=0;
+
+    status.textContent=`Ditemukan ${total} foto. Memulai upload...`;
+
+    // Helper normalize
+    function normKey(s){
+      return String(s||'').toUpperCase().trim().replace(/\s+/g,' ');
+    }
+
+    // Parse "7. CAMPURASRI SUPRAPTO.jpg" → {no, desa, nama}
+    function parseFileName(filename){
+      // Hapus ekstensi
+      const base=filename.replace(/\.[^.]+$/,'').trim();
+      // Match pola: angka titik spasi KATA_PERTAMA sisanya_nama
+      // "7. CAMPURASRI SUPRAPTO" atau "7.CAMPURASRI SUPRAPTO"
+      const m=base.match(/^\d+\.?\s+([A-Z0-9]+)\s+(.+)$/i);
+      if(!m)return null;
+      return{desa:m[1].trim(), nama:m[2].trim()};
+    }
+
+    // Upload paralel max 5 sekaligus
+    const CONCUR=5;
+    const queue=[...files];
+    const workers=Array.from({length:CONCUR},async()=>{
+      while(queue.length){
+        const file=queue.shift();
+        if(!file)continue;
+
+        const parsed=parseFileName(file.name);
+        if(!parsed){
+          addLog(`⚠️ Format tidak dikenal: <em>${file.name}</em>`,'#D97706');
+          notFound++;
+        }else{
+          const key=normKey(parsed.desa)+'|'+normKey(parsed.nama);
+          const rtlhId=idx[key];
+
+          if(!rtlhId){
+            // Coba match parsial — nama saja tanpa desa (fallback)
+            const keyNamaOnly=normKey(parsed.nama);
+            const fallback=allRecords.find(r=>normKey(r.kep_kk)===keyNamaOnly);
+            if(fallback){
+              // Upload dengan fallback
+              const path=`${fallback.id}.jpg`;
+              const{error}=await sb.storage.from('rtlh-photos').upload(path,file,{upsert:true});
+              if(error){
+                addLog(`❌ ${file.name} → Error: ${error.message}`,'#DC2626');
+                errCount++;
+              }else{
+                await sb.from('rtlh').update({nama_foto:path}).eq('id',fallback.id);
+                addLog(`✅ ${file.name} → <strong>${fallback.kep_kk}</strong> (${fallback.desa}) [match nama]`,'#16A34A');
+                ok++;
+              }
+            }else{
+              addLog(`🔍 Tidak ditemukan: <em>${parsed.desa} / ${parsed.nama}</em>`,'#6B7280');
+              notFound++;
+            }
+          }else{
+            const path=`${rtlhId}.jpg`;
+            const{error}=await sb.storage.from('rtlh-photos').upload(path,file,{upsert:true});
+            if(error){
+              addLog(`❌ ${file.name} → Error: ${error.message}`,'#DC2626');
+              errCount++;
+            }else{
+              await sb.from('rtlh').update({nama_foto:path}).eq('id',rtlhId);
+              addLog(`✅ ${file.name} → ID ${rtlhId}`,'#16A34A');
+              ok++;
+            }
+          }
+        }
+
+        done++;
+        const p=Math.round(done/total*100);
+        bar.style.width=p+'%';
+        pct.textContent=p+'%';
+        status.textContent=`Upload ${done}/${total} · ✅ ${ok} berhasil · 🔍 ${notFound} tidak ditemukan`;
+      }
+    });
+
+    await Promise.all(workers);
+
+    // Summary
+    const summaryColor=errCount?'#DC2626':notFound?'#D97706':'#16A34A';
+    status.innerHTML=`<strong style="color:${summaryColor}">Selesai!</strong> ✅ ${ok} berhasil · 🔍 ${notFound} tidak ditemukan · ❌ ${errCount} error`;
+    pct.textContent='100%';
+    bar.style.width='100%';
+    bar.style.background=errCount?'#DC2626':notFound?'#D97706':'#16A34A';
+    toast(`Upload foto: ${ok} berhasil, ${notFound} tidak ditemukan`,notFound||errCount?'warning':'success');
+
+  }catch(e){
+    status.textContent='Error: '+e.message;
+    addLog('❌ Fatal: '+e.message,'#DC2626');
+  }finally{
+    input.value='';
   }
 }
 
