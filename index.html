@@ -3686,9 +3686,11 @@ function renderSidebarList(){
 
   l.innerHTML=Object.values(byDesa).map(group=>{
     const {desa,items}=group;
-    const layak=items.filter(r=>isLayakHuni(r)).length;
-    const rtlh=items.filter(r=>isRTLH(r)).length;
-    const lain=items.filter(r=>isKetLain(r)).length;
+    // Sort A-Z berdasarkan nama KK
+    const sortedItems=[...items].sort((a,b)=>(a.kep_kk||'').localeCompare(b.kep_kk||'','id'));
+    const layak=sortedItems.filter(r=>isLayakHuni(r)).length;
+    const rtlh=sortedItems.filter(r=>isRTLH(r)).length;
+    const lain=sortedItems.filter(r=>isKetLain(r)).length;
     const dgId='dg_'+desa.replace(/[^a-zA-Z0-9]/g,'_');
     return`<div class="desa-group">
       <div class="desa-header" onclick="toggleDesaGroup('${dgId}')"
@@ -3698,11 +3700,11 @@ function renderSidebarList(){
         ${layak?`<span style="font-size:.58rem;color:#16A34A;font-weight:700;background:#DCFCE7;padding:1px 6px;border-radius:99px">${layak} LH</span>`:''}
         ${rtlh?`<span style="font-size:.58rem;color:#DC2626;font-weight:700;background:#FEE2E2;padding:1px 6px;border-radius:99px">${rtlh} RTLH</span>`:''}
         ${lain?`<span style="font-size:.58rem;color:#7C3AED;font-weight:700;background:#EDE9FE;padding:1px 6px;border-radius:99px">${lain}</span>`:''}
-        <span style="font-size:.58rem;background:#1B6CA8;color:#fff;border-radius:99px;padding:1px 7px">${items.length}</span>
+        <span style="font-size:.58rem;background:#1B6CA8;color:#fff;border-radius:99px;padding:1px 7px">${sortedItems.length}</span>
         <i class="fas fa-chevron-down" id="ico_${dgId}" style="color:#94A3B8;font-size:.6rem;transition:.2s"></i>
       </div>
       <div id="${dgId}" style="padding:4px 6px">
-        ${items.map(r=>{
+        ${sortedItems.map((r,idx)=>{
           const kat=statusKategori(r.status_rtlh);
           const sc=STATUS_COLORS[kat]||'#94A3B8';
           const ico=kat==='Layak Huni'?'home':kat==='Keterangan Lain'?'question-circle':'house-damage';
@@ -3712,8 +3714,9 @@ function renderSidebarList(){
             onclick="selectItem(${r.id})"
             style="margin:3px 0;border-radius:8px;border:1px solid #E2E8F0;background:#fff;padding:8px 10px;cursor:pointer;transition:all .15s">
             <div style="display:flex;align-items:center;gap:8px">
-              <div style="width:32px;height:32px;border-radius:8px;background:${sc}18;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <div style="width:32px;height:32px;border-radius:8px;background:${sc}18;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative">
                 <i class="fas fa-${ico}" style="color:${sc};font-size:.78rem"></i>
+                <span style="position:absolute;top:-5px;left:-5px;background:#1B6CA8;color:#fff;font-size:.48rem;font-weight:800;min-width:15px;height:15px;border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0 3px;line-height:1">${idx+1}</span>
               </div>
               <div style="flex:1;min-width:0">
                 <div style="font-weight:700;font-size:.78rem;color:#1E293B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${showNama(r.kep_kk)}</div>
