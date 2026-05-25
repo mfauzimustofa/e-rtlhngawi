@@ -498,6 +498,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
     <button class="nav-tab active" id="ntBeranda" onclick="nav('beranda')"><i class="fas fa-home"></i> Beranda</button>
     <button class="nav-tab" id="ntWebgis" onclick="nav('keclist')"><i class="fas fa-map-marked-alt"></i> WebGIS</button>
     <button class="nav-tab" id="ntReport" onclick="nav('report')"><i class="fas fa-chart-bar"></i> Laporan</button>
+    <button class="nav-tab" id="ntDtsen" onclick="nav('dtsen')"><i class="fas fa-layer-group"></i> DTSEN</button>
   </nav>
   <div class="header-right">
     <button class="btn-icon-sm" id="btnDokLib" onclick="openDokLib()" title="Library Dokumen Kabupaten" style="display:none"><i class="fas fa-folder-open"></i></button>
@@ -511,6 +512,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
   <button class="mob-nav-btn active" id="mnBeranda" onclick="nav('beranda')"><i class="fas fa-home"></i>Beranda</button>
   <button class="mob-nav-btn" id="mnWebgis" onclick="nav('keclist')"><i class="fas fa-map-marked-alt"></i>WebGIS</button>
   <button class="mob-nav-btn" id="mnReport" onclick="nav('report')"><i class="fas fa-chart-bar"></i>Laporan</button>
+  <button class="mob-nav-btn" id="mnDtsen" onclick="nav('dtsen')"><i class="fas fa-layer-group"></i>DTSEN</button>
 </nav>
 
 <!-- TOAST -->
@@ -636,7 +638,9 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
         <!-- Distribusi Desil -->
         <div class="status-bar-wrap">
-          <div class="status-bar-title"><i class="fas fa-layer-group"></i> Distribusi Desil DTSEN / MyPKP</div>
+          <div class="status-bar-title"><i class="fas fa-layer-group"></i> Distribusi Desil DTSEN / MyPKP
+            <button onclick="nav('dtsen')" style="margin-left:auto;padding:3px 10px;border-radius:6px;background:var(--blue-bg);border:1px solid var(--blue);color:var(--blue);font-size:.62rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px"><i class="fas fa-table" style="font-size:.58rem"></i> Detail</button>
+          </div>
           <div class="desil-grid" id="desilGrid">
             <div class="empty-state" style="grid-column:1/-1"><i class="fas fa-circle-notch fa-spin"></i><p>Memuat...</p></div>
           </div>
@@ -668,6 +672,80 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
       </div>
       <div class="grid-kec" id="kecGrid">
         <div class="empty-state" style="grid-column:1/-1"><i class="fas fa-circle-notch fa-spin"></i><p>Memuat data...</p></div>
+      </div>
+    </div>
+
+    <div style="height:20px"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ PAGE: DTSEN ═══════════════════════════════ -->
+<div class="page" id="pgDTSEN">
+  <div class="page-scroll" style="background:#F8FAFC">
+
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#0C2340,#1B3A5C);padding:20px 16px 16px;color:#fff">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <button onclick="nav('beranda')" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:6px 12px;color:#fff;font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;flex-shrink:0">
+          <i class="fas fa-arrow-left" style="font-size:.65rem"></i> Beranda
+        </button>
+        <div>
+          <h2 style="font-size:1rem;font-weight:800;margin:0"><i class="fas fa-layer-group" style="color:var(--gold)"></i> Data DTSEN / MyPKP</h2>
+          <p style="font-size:.68rem;color:rgba(255,255,255,.55);margin:0">Distribusi desil per kecamatan dan desa</p>
+        </div>
+      </div>
+
+      <!-- Tab & Search Bar -->
+      <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;align-items:center">
+        <div style="display:flex;background:rgba(255,255,255,.1);border-radius:8px;padding:3px;gap:2px">
+          <button id="dtTabKec" onclick="switchDtsenTab('kec')"
+            style="padding:6px 14px;border-radius:6px;border:none;background:rgba(255,255,255,.9);color:#0C2340;font-size:.72rem;font-weight:800;cursor:pointer;font-family:inherit">
+            Per Kecamatan
+          </button>
+          <button id="dtTabDesa" onclick="switchDtsenTab('desa')"
+            style="padding:6px 14px;border-radius:6px;border:none;background:transparent;color:rgba(255,255,255,.6);font-size:.72rem;font-weight:800;cursor:pointer;font-family:inherit">
+            Per Desa
+          </button>
+        </div>
+        <div style="flex:1;position:relative;min-width:150px">
+          <i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.4);font-size:.72rem;pointer-events:none"></i>
+          <input id="dtSearch" type="text" placeholder="Cari kecamatan / desa..."
+            oninput="renderDtsen()"
+            style="width:100%;padding:7px 10px 7px 30px;border-radius:7px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;font-size:.75rem;font-family:inherit;outline:none;box-sizing:border-box">
+        </div>
+        <!-- Filter desil -->
+        <select id="dtFilterDesil" onchange="renderDtsen()"
+          style="padding:7px 10px;border-radius:7px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;font-size:.72rem;font-family:inherit;outline:none;cursor:pointer">
+          <option value="">Semua Desil</option>
+          <option value="1">Desil 1</option>
+          <option value="2">Desil 2</option>
+          <option value="3">Desil 3</option>
+          <option value="4">Desil 4</option>
+          <option value="5">Desil 5</option>
+          <option value="6">Desil 6</option>
+          <option value="7">Desil 7</option>
+          <option value="8">Desil 8</option>
+          <option value="0">Tanpa Desil</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Summary Desil Cards -->
+    <div style="padding:12px 14px;background:#fff;border-bottom:1px solid var(--gray-200)">
+      <div style="font-size:.7rem;font-weight:800;color:var(--gray-600);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em"><i class="fas fa-layer-group" style="color:var(--gold)"></i> Ringkasan Distribusi Desil</div>
+      <div id="dtDesilSummary" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none">
+        <div style="font-size:.75rem;color:var(--gray-400);padding:12px 0"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
+      </div>
+      <!-- Chart Distribusi Desil -->
+      <div style="margin-top:12px;position:relative;height:100px">
+        <canvas id="chartDtsenDesil"></canvas>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div style="padding:12px 14px">
+      <div id="dtTable" style="background:#fff;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--gray-200)">
+        <div style="padding:40px;text-align:center;color:#94A3B8"><i class="fas fa-circle-notch fa-spin" style="font-size:1.5rem;display:block;margin-bottom:10px"></i>Memuat data...</div>
       </div>
     </div>
 
@@ -1441,8 +1519,8 @@ function restoreSession(){
 // ══════════════════════════════════════════════════
 // NAVIGATION + BROWSER HISTORY
 // ══════════════════════════════════════════════════
-const PAGE_HASH={beranda:'#beranda',keclist:'#webgis',webgis:'#webgis',report:'#laporan'};
-const HASH_PAGE={'#beranda':'beranda','#webgis':'keclist','#laporan':'report'};
+const PAGE_HASH={beranda:'#beranda',keclist:'#webgis',webgis:'#webgis',report:'#laporan',dtsen:'#dtsen'};
+const HASH_PAGE={'#beranda':'beranda','#webgis':'keclist','#laporan':'report','#dtsen':'dtsen'};
 let _navFromPop=false;
 
 window.addEventListener('popstate',()=>{
@@ -1485,6 +1563,12 @@ function nav(pg){
     document.getElementById('mnReport')?.classList.add('active');
     if(!_rpLoaded)loadReport();
     else renderReport(); // sudah ada data, render langsung
+  } else if(pg==='dtsen'){
+    document.getElementById('pgDTSEN').classList.add('active');
+    document.getElementById('ntDtsen')?.classList.add('active');
+    document.getElementById('mnDtsen')?.classList.add('active');
+    if(!_dtLoaded)loadDtsen();
+    else renderDtsen();
   }
   // Push browser history
   if(!_navFromPop){
@@ -1847,6 +1931,8 @@ window.addEventListener('storage',e=>{
     Object.keys(brCache||{}).forEach(k=>delete brCache[k]);
     const activePg=document.querySelector('.page.active')?.id;
     if(activePg==='pgBeranda')loadGlobalStats();
+    // Invalidate DTSEN cache juga
+    cacheDel('dtsen_data');_dtLoaded=false;_dtData=null;
   }
 });
 
@@ -1883,6 +1969,7 @@ function startAutoRefresh(){
       }
       cacheDel('global_stats');
       cacheDel('report_data');
+      if(typeof invalidateDtsenCache==='function')invalidateDtsenCache();
 
       const activePage=document.querySelector('.page.active')?.id;
 
@@ -1927,6 +2014,9 @@ function startAutoRefresh(){
         }
         else if(activePage==='pgKecList'){
           await ensureKecCounts(true);renderKecList();
+        }
+        else if(activePage==='pgDTSEN'){
+          await loadDtsen();
         }
       }catch(e){console.warn('Realtime update error:',e);}
     })
@@ -2016,6 +2106,7 @@ async function loadGlobalStats(){
 async function forceRefreshStats(){
   cacheDel('global_stats');
   cacheDel('report_data');
+  invalidateDtsenCache();
   Object.keys(_kecCacheTime||{}).forEach(k=>delete _kecCacheTime[k]);
   Object.keys(brCache||{}).forEach(k=>delete brCache[k]);
   await loadGlobalStats();
@@ -2101,17 +2192,17 @@ function renderDesilGrid(counts){
   const colors=['#BE123C','#DC2626','#EA580C','#D97706','#84CC16','#16A34A','#0891B2','#7C3AED'];
   const bgs=['#FFF1F2','#FEF2F2','#FFF7ED','#FFFBEB','#F7FEE7','#F0FDF4','#ECFEFF','#F5F3FF'];
   const g=document.getElementById('desilGrid');
-  const desilCards=labels.map((l,i)=>`<div class="desil-chip" style="background:${bgs[i]};border-color:${colors[i]}30" onclick="document.getElementById('kecGrid').scrollIntoView({behavior:'smooth'})">
+  const desilCards=labels.map((l,i)=>`<div class="desil-chip" style="background:${bgs[i]};border-color:${colors[i]}30;cursor:pointer" title="Klik untuk lihat detail di DTSEN" onclick="nav('dtsen');setTimeout(()=>{const s=document.getElementById('dtFilterDesil');if(s){s.value='${i+1}';renderDtsen();}},300)">
       <div class="dc-label" style="color:${colors[i]};font-size:.7rem;font-weight:800">${l}</div>
       <div class="dc-count" style="color:var(--gray-800);font-size:1.3rem;font-weight:900;line-height:1.1">${counts[i+1]||0}</div>
-      <div style="font-size:.55rem;color:var(--gray-500)">data</div>
+      <div style="font-size:.55rem;color:var(--gray-500)">data <i class="fas fa-arrow-right" style="font-size:.5rem;opacity:.4"></i></div>
     </div>`);
   // Tambah kartu Tanpa Desil jika ada
   if(counts[0]>0){
-    desilCards.push(`<div class="desil-chip" style="background:#F9FAFB;border-color:#9CA3AF30">
+    desilCards.push(`<div class="desil-chip" style="background:#F9FAFB;border-color:#9CA3AF30;cursor:pointer" title="Klik untuk lihat Tanpa Desil di DTSEN" onclick="nav('dtsen');setTimeout(()=>{const s=document.getElementById('dtFilterDesil');if(s){s.value='0';renderDtsen();}},300)">
       <div class="dc-label" style="color:#6B7280;font-size:.7rem;font-weight:800">Tanpa Desil</div>
       <div class="dc-count" style="color:var(--gray-800);font-size:1.3rem;font-weight:900;line-height:1.1">${counts[0]}</div>
-      <div style="font-size:.55rem;color:var(--gray-500)">data</div>
+      <div style="font-size:.55rem;color:var(--gray-500)">data <i class="fas fa-arrow-right" style="font-size:.5rem;opacity:.4"></i></div>
     </div>`);
   }
   g.innerHTML=desilCards.join('');
@@ -7334,6 +7425,265 @@ async function cmStartImport(){
   }catch(e){console.warn('Post-import reload:',e);}
 
   if(btn){btn.disabled=false;btn.innerHTML='<i class="fas fa-upload"></i> Import';}
+}
+
+// ══════════════════════════════════════════════════
+// DTSEN — Data per Desil, per Kecamatan & Desa
+// ══════════════════════════════════════════════════
+let _dtData=null, _dtLoaded=false, _dtTab='kec';
+let _chartDtsenDesil=null;
+
+// Label dan warna desil — konsisten dengan beranda
+const DESIL_COLORS_DT=['#BE123C','#DC2626','#EA580C','#D97706','#84CC16','#16A34A','#0891B2','#7C3AED'];
+const DESIL_BGS_DT=['#FFF1F2','#FEF2F2','#FFF7ED','#FFFBEB','#F7FEE7','#F0FDF4','#ECFEFF','#F5F3FF'];
+
+async function loadDtsen(){
+  const cached=cacheGet('dtsen_data');
+  if(cached){
+    _dtData=cached.data; _dtLoaded=true; renderDtsen();
+    if(cached.stale)_refreshDtsenBg();
+    return;
+  }
+  document.getElementById('dtTable').innerHTML=
+    '<div style="padding:40px;text-align:center;color:#94A3B8"><i class="fas fa-circle-notch fa-spin" style="font-size:1.5rem;display:block;margin-bottom:10px"></i>Memuat data DTSEN...</div>';
+  try{
+    const pageSize=1000;
+    const{count}=await sb.from('rtlh').select('*',{count:'exact',head:true});
+    const pages=Math.ceil((count||0)/pageSize);
+    const results=await Promise.all(
+      Array.from({length:pages},(_,p)=>
+        sb.from('rtlh').select('kec,desa,desil,status_rtlh').range(p*pageSize,(p+1)*pageSize-1)
+      )
+    );
+    _dtData=results.flatMap(r=>r.data||[]);
+    cacheSet('dtsen_data',_dtData);
+    _dtLoaded=true;
+    renderDtsen();
+  }catch(e){
+    document.getElementById('dtTable').innerHTML=
+      `<div style="padding:40px;text-align:center;color:#EF4444">Gagal memuat: ${e.message}</div>`;
+  }
+}
+
+async function _refreshDtsenBg(){
+  try{
+    const pageSize=1000;
+    const{count}=await sb.from('rtlh').select('*',{count:'exact',head:true});
+    const pages=Math.ceil((count||0)/pageSize);
+    const results=await Promise.all(
+      Array.from({length:pages},(_,p)=>
+        sb.from('rtlh').select('kec,desa,desil,status_rtlh').range(p*pageSize,(p+1)*pageSize-1)
+      )
+    );
+    _dtData=results.flatMap(r=>r.data||[]);
+    cacheSet('dtsen_data',_dtData);
+    if(document.querySelector('.page.active')?.id==='pgDTSEN')renderDtsen();
+  }catch(e){}
+}
+
+function switchDtsenTab(tab){
+  _dtTab=tab;
+  const btnKec=document.getElementById('dtTabKec');
+  const btnDesa=document.getElementById('dtTabDesa');
+  if(btnKec){btnKec.style.background=tab==='kec'?'rgba(255,255,255,.9)':'transparent';btnKec.style.color=tab==='kec'?'#0C2340':'rgba(255,255,255,.6)';}
+  if(btnDesa){btnDesa.style.background=tab==='desa'?'rgba(255,255,255,.9)':'transparent';btnDesa.style.color=tab==='desa'?'#0C2340':'rgba(255,255,255,.6)';}
+  renderDtsen();
+}
+
+function parseDt(v){
+  if(!v&&v!==0)return 0;
+  const m=String(v).match(/\d+/);
+  if(!m)return 0;
+  const d=parseInt(m[0]);
+  return(d>=1&&d<=10)?d:0;
+}
+
+function renderDtsen(){
+  if(!_dtData)return;
+  const q=(document.getElementById('dtSearch')?.value||'').toLowerCase().trim();
+  const filterDesil=document.getElementById('dtFilterDesil')?.value||'';
+
+  // Hitung global desil
+  const globalDC={0:0};for(let i=1;i<=8;i++)globalDC[i]=0;
+
+  // Init dari KEC_CONFIG
+  const byKec={},byDesa={};
+  Object.entries(KEC_CONFIG||{}).forEach(([kn,kv])=>{
+    const kec=normCase(kn)||kn;
+    const dm={0:0};for(let i=1;i<=8;i++)dm[i]=0;
+    byKec[kec]={kec,total:0,desil:dm,rtlh:0,layak:0};
+    (kv.desa||[]).forEach(d=>{
+      const desa=normCase(d.nama)||d.nama;
+      const key=kec+'|'+desa;
+      const dm2={0:0};for(let i=1;i<=8;i++)dm2[i]=0;
+      byDesa[key]={kec,desa,kode:d.kode,total:0,desil:dm2};
+    });
+  });
+
+  _dtData.forEach(r=>{
+    const kec=normCase(r.kec)||r.kec||'-';
+    const desaRaw=(r.desa||'').trim();
+    const desaUp=desaRaw.toUpperCase();
+    const matchKey=Object.keys(byDesa).find(k=>{
+      const[kk,dk]=k.split('|');
+      return kk.toUpperCase()===kec.toUpperCase()&&dk.toUpperCase()===desaUp;
+    });
+    const desaKey=matchKey||(kec+'|'+desaRaw);
+    const d=parseDt(r.desil);
+    const kat=statusKategori(r.status_rtlh);
+
+    globalDC[d]=(globalDC[d]||0)+1;
+
+    if(!byKec[kec])byKec[kec]={kec,total:0,desil:{0:0,1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0},rtlh:0,layak:0};
+    byKec[kec].total++;byKec[kec].desil[d]=(byKec[kec].desil[d]||0)+1;
+    if(kat==='RTLH')byKec[kec].rtlh++;else if(kat==='Layak Huni')byKec[kec].layak++;
+
+    if(!byDesa[desaKey])byDesa[desaKey]={kec,desa:normCase(desaRaw)||desaRaw,kode:'',total:0,desil:{0:0,1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0}};
+    byDesa[desaKey].total++;byDesa[desaKey].desil[d]=(byDesa[desaKey].desil[d]||0)+1;
+  });
+
+  _renderDtDesilSummary(globalDC);
+  _renderChartDtsenDesil(globalDC);
+
+  const allRows=_dtTab==='kec'?Object.values(byKec):Object.values(byDesa);
+  const filtered=allRows.filter(r=>{
+    const match=!q||(r.kec||'').toLowerCase().includes(q)||(r.desa||'').toLowerCase().includes(q);
+    const dMatch=!filterDesil||((r.desil[parseInt(filterDesil)]||0)>0);
+    return match&&dMatch;
+  }).sort((a,b)=>_dtTab==='desa'?a.kec.localeCompare(b.kec)||a.desa.localeCompare(b.desa):a.kec.localeCompare(b.kec));
+
+  const isMobile=window.innerWidth<640;
+  const visD=[1,2,3,4,5,6,7,8].filter(d=>globalDC[d]>0);
+  const grandDC={0:0};for(let i=1;i<=8;i++)grandDC[i]=0;
+  let grandTotal=0;
+
+  let rows='';
+  filtered.forEach((r,i)=>{
+    const bg=i%2===0?'#fff':'#F9FAFB';
+    const kecKey=Object.keys(KEC_CONFIG||{}).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
+    grandTotal+=r.total;
+    for(let d=0;d<=8;d++)grandDC[d]=(grandDC[d]||0)+(r.desil[d]||0);
+
+    const barSegs=visD.map(d=>{
+      const p=r.total?Math.round((r.desil[d]||0)/r.total*100):0;
+      return p?`<div style="width:${p}%;background:${DESIL_COLORS_DT[d-1]};height:100%;flex-shrink:0"></div>`:'';
+    }).join('')+(
+      (r.desil[0]||0)>0&&r.total?`<div style="width:${Math.round((r.desil[0]||0)/r.total*100)}%;background:#CBD5E1;height:100%"></div>`:''
+    );
+
+    rows+=`<tr style="background:${bg};cursor:pointer"
+      onclick="${kecKey&&_dtTab==='kec'?`selectKec('${kecKey}');nav('webgis')`:'void(0)'}"
+      onmouseover="this.style.background='#EFF6FF'" onmouseout="this.style.background='${bg}'">
+      <td style="padding:7px 10px;font-weight:700;color:#1E293B;white-space:nowrap;font-size:.68rem">
+        ${_dtTab==='kec'?`<i class="fas fa-map-marker-alt" style="color:#1B6CA8;font-size:.58rem;margin-right:4px"></i>${r.kec}`:`<span style="font-size:.6rem;color:#94A3B8">${r.kec}</span>`}
+      </td>
+      ${_dtTab==='desa'?`<td style="padding:7px 8px;font-weight:600;color:#1E293B">${r.desa||'-'}</td>`:''}
+      <td style="padding:7px 8px;text-align:center;font-weight:800;color:#1B6CA8">${r.total.toLocaleString('id')}</td>
+      ${visD.map(d=>{
+        const cnt=r.desil[d]||0;
+        return`<td style="padding:7px 5px;text-align:center;font-weight:${cnt>0?700:400};color:${cnt>0?DESIL_COLORS_DT[d-1]:'#CBD5E1'}">${cnt>0?cnt.toLocaleString('id'):'-'}</td>`;
+      }).join('')}
+      <td style="padding:7px 5px;text-align:center;color:${(r.desil[0]||0)>0?'#94A3B8':'#CBD5E1'}">${(r.desil[0]||0)>0?(r.desil[0]||0).toLocaleString('id'):'-'}</td>
+      <td style="padding:7px 8px"><div style="height:7px;background:#F1F5F9;border-radius:99px;overflow:hidden;min-width:50px;display:flex">${barSegs}</div></td>
+    </tr>`;
+  });
+
+  if(!filtered.length)rows=`<tr><td colspan="20" style="padding:32px;text-align:center;color:#94A3B8">
+    <i class="fas fa-search" style="font-size:1.5rem;display:block;margin-bottom:8px"></i>Tidak ada data
+  </td></tr>`;
+
+  const footer=`<tr style="background:#1a2f4a;color:#fff;font-weight:800;position:sticky;bottom:0">
+    <td style="padding:8px 10px;color:var(--gold-light);font-size:.68rem" colspan="${_dtTab==='desa'?2:1}">
+      TOTAL ${_dtTab==='kec'?Object.values(byKec).length+' KEC':filtered.length+' DESA'}
+    </td>
+    <td style="padding:8px 8px;text-align:center;color:var(--gold-light)">${grandTotal.toLocaleString('id')}</td>
+    ${visD.map(d=>`<td style="padding:8px 5px;text-align:center;color:${DESIL_COLORS_DT[d-1]}">${(grandDC[d]||0).toLocaleString('id')}</td>`).join('')}
+    <td style="padding:8px 5px;text-align:center;color:rgba(255,255,255,.4)">${(grandDC[0]||0).toLocaleString('id')}</td>
+    <td style="padding:8px 8px"><div style="height:7px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden;min-width:50px;display:flex">
+      ${visD.map(d=>{const p=grandTotal?Math.round((grandDC[d]||0)/grandTotal*100):0;return p?`<div style="width:${p}%;background:${DESIL_COLORS_DT[d-1]};height:100%"></div>`:''}).join('')}
+    </div></td>
+  </tr>`;
+
+  const infoBar=`<div style="padding:8px 12px;border-bottom:1px solid var(--gray-200);font-size:.7rem;color:var(--gray-500);display:flex;justify-content:space-between;align-items:center;background:#fff">
+    <span><strong style="color:var(--gray-800)">${filtered.length}</strong> ${_dtTab==='kec'?'kecamatan':'desa'}${q||filterDesil?' (filtered)':''}</span>
+    <span>Total data: <strong style="color:var(--blue)">${grandTotal.toLocaleString('id')}</strong></span>
+  </div>`;
+
+  const thead=`<thead><tr style="background:#1a2f4a;color:rgba(255,255,255,.85);position:sticky;top:0;z-index:10">
+    <th style="padding:8px 10px;text-align:left;font-weight:700;font-size:.58rem;text-transform:uppercase;white-space:nowrap">${_dtTab==='kec'?'Kecamatan':'Kec.'}</th>
+    ${_dtTab==='desa'?'<th style="padding:8px 8px;text-align:left;font-weight:700;font-size:.58rem;text-transform:uppercase">Desa</th>':''}
+    <th style="padding:8px 8px;text-align:center;font-weight:700;font-size:.58rem;text-transform:uppercase">Total</th>
+    ${visD.map(d=>`<th style="padding:8px 5px;text-align:center;font-weight:700;font-size:.55rem;text-transform:uppercase;color:${DESIL_COLORS_DT[d-1]}">${isMobile?'D'+d:'Dsil '+d}</th>`).join('')}
+    <th style="padding:8px 5px;text-align:center;font-weight:700;font-size:.55rem;text-transform:uppercase;color:rgba(255,255,255,.35)">Tanpa</th>
+    <th style="padding:8px 8px;text-align:left;font-weight:700;font-size:.55rem;text-transform:uppercase;min-width:55px">Grafik</th>
+  </tr></thead>`;
+
+  document.getElementById('dtTable').innerHTML=infoBar+
+    `<div style="overflow-x:auto;max-height:60vh"><table style="width:100%;border-collapse:collapse;font-size:${isMobile?'.67rem':'.75rem'};min-width:${isMobile?'480px':'640px'}">${thead}<tbody>${rows}${footer}</tbody></table></div>`;
+}
+
+function _renderDtDesilSummary(counts){
+  const el=document.getElementById('dtDesilSummary');
+  if(!el)return;
+  const total=Object.values(counts).reduce((a,b)=>a+b,0)||1;
+  let html='';
+  for(let i=1;i<=8;i++){
+    const cnt=counts[i]||0;if(!cnt)continue;
+    const pct=Math.round(cnt/total*100);
+    html+=`<div onclick="document.getElementById('dtFilterDesil').value='${i}';renderDtsen()"
+      style="flex-shrink:0;min-width:70px;text-align:center;cursor:pointer;background:${DESIL_BGS_DT[i-1]};border:2px solid ${DESIL_COLORS_DT[i-1]}33;border-radius:9px;padding:8px 6px;transition:all .2s"
+      onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+      <div style="font-size:.6rem;font-weight:800;color:${DESIL_COLORS_DT[i-1]};text-transform:uppercase">Desil ${i}</div>
+      <div style="font-size:1.1rem;font-weight:900;color:#1E293B;line-height:1.1;margin-top:2px">${cnt.toLocaleString('id')}</div>
+      <div style="font-size:.55rem;color:${DESIL_COLORS_DT[i-1]};margin-top:1px">${pct}%</div>
+    </div>`;
+  }
+  if((counts[0]||0)>0){
+    const pct=Math.round((counts[0]||0)/total*100);
+    html+=`<div onclick="document.getElementById('dtFilterDesil').value='0';renderDtsen()"
+      style="flex-shrink:0;min-width:70px;text-align:center;cursor:pointer;background:#F9FAFB;border:2px solid #9CA3AF33;border-radius:9px;padding:8px 6px;transition:all .2s"
+      onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+      <div style="font-size:.6rem;font-weight:800;color:#6B7280;text-transform:uppercase">Tanpa Desil</div>
+      <div style="font-size:1.1rem;font-weight:900;color:#1E293B;line-height:1.1;margin-top:2px">${(counts[0]||0).toLocaleString('id')}</div>
+      <div style="font-size:.55rem;color:#6B7280;margin-top:1px">${pct}%</div>
+    </div>`;
+  }
+  html+=`<div onclick="document.getElementById('dtFilterDesil').value='';renderDtsen()"
+    style="flex-shrink:0;display:flex;align-items:center;justify-content:center;min-width:52px;cursor:pointer;background:#F1F5F9;border:2px solid #CBD5E1;border-radius:9px;padding:8px 6px;font-size:.65rem;font-weight:700;color:#64748B;transition:all .2s"
+    title="Reset filter">
+    <i class="fas fa-times"></i>
+  </div>`;
+  el.innerHTML=html;
+}
+
+function _renderChartDtsenDesil(counts){
+  const canvas=document.getElementById('chartDtsenDesil');
+  if(!canvas||!window.Chart)return;
+  if(_chartDtsenDesil){try{_chartDtsenDesil.destroy();}catch(e){}  _chartDtsenDesil=null;}
+  const labels=[],data=[],colors=[];
+  for(let i=1;i<=8;i++){
+    if((counts[i]||0)>0){labels.push('D'+i);data.push(counts[i]);colors.push(DESIL_COLORS_DT[i-1]);}
+  }
+  if(!data.length)return;
+  _chartDtsenDesil=new Chart(canvas,{
+    type:'bar',
+    data:{labels,datasets:[{data,backgroundColor:colors,borderRadius:4,borderSkipped:false}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.raw.toLocaleString('id')+' data'}}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:9},color:'#64748B'}},
+        y:{display:false,beginAtZero:true}
+      }
+    }
+  });
+}
+
+// Invalidate DTSEN cache saat data berubah (dari import, edit, realtime)
+function invalidateDtsenCache(){
+  cacheDel('dtsen_data');
+  _dtLoaded=false;
+  _dtData=null;
 }
 
 </script>
