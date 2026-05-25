@@ -7495,7 +7495,8 @@ function parseDt(v){
   const m=String(v).match(/\d+/);
   if(!m)return 0;
   const d=parseInt(m[0]);
-  return(d>=1&&d<=10)?d:0;
+  // Cap desil ke 1-8 (sesuai skema DTSEN), lebih dari itu → 0 (tanpa desil valid)
+  return(d>=1&&d<=8)?d:0;
 }
 
 function renderDtsen(){
@@ -7503,20 +7504,26 @@ function renderDtsen(){
   const q=(document.getElementById('dtSearch')?.value||'').toLowerCase().trim();
   const filterDesil=document.getElementById('dtFilterDesil')?.value||'';
 
-  // Hitung global desil
+  // Struktur per desil: { total, rtlh, layak, lain }
+  function mkDesilStat(){
+    const o={0:{t:0,r:0,l:0,k:0}};
+    for(let i=1;i<=8;i++)o[i]={t:0,r:0,l:0,k:0};
+    return o;
+  }
+
+  // Hitung global desil (untuk summary cards & chart)
   const globalDC={0:0};for(let i=1;i<=8;i++)globalDC[i]=0;
+  // Global breakdown per desil
+  const globalDS=mkDesilStat(); // {desil: {t,r,l,k}}
 
   // Init dari KEC_CONFIG
   const byKec={},byDesa={};
   Object.entries(KEC_CONFIG||{}).forEach(([kn,kv])=>{
     const kec=normCase(kn)||kn;
-    const dm={0:0};for(let i=1;i<=8;i++)dm[i]=0;
-    byKec[kec]={kec,total:0,desil:dm,rtlh:0,layak:0};
+    byKec[kec]={kec,total:0,rtlh:0,layak:0,lain:0,desil:mkDesilStat()};
     (kv.desa||[]).forEach(d=>{
       const desa=normCase(d.nama)||d.nama;
-      const key=kec+'|'+desa;
-      const dm2={0:0};for(let i=1;i<=8;i++)dm2[i]=0;
-      byDesa[key]={kec,desa,kode:d.kode,total:0,desil:dm2};
+      byDesa[kec+'|'+desa]={kec,desa,kode:d.kode,total:0,rtlh:0,layak:0,lain:0,desil:mkDesilStat()};
     });
   });
 
@@ -7531,60 +7538,94 @@ function renderDtsen(){
     const desaKey=matchKey||(kec+'|'+desaRaw);
     const d=parseDt(r.desil);
     const kat=statusKategori(r.status_rtlh);
+    const isR=kat==='RTLH', isL=kat==='Layak Huni', isK=kat==='Keterangan Lain';
 
+    // Global
     globalDC[d]=(globalDC[d]||0)+1;
+    globalDS[d].t++;
+    if(isR)globalDS[d].r++;else if(isL)globalDS[d].l++;else globalDS[d].k++;
 
-    if(!byKec[kec])byKec[kec]={kec,total:0,desil:{0:0,1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0},rtlh:0,layak:0};
-    byKec[kec].total++;byKec[kec].desil[d]=(byKec[kec].desil[d]||0)+1;
-    if(kat==='RTLH')byKec[kec].rtlh++;else if(kat==='Layak Huni')byKec[kec].layak++;
+    // Per kec
+    if(!byKec[kec])byKec[kec]={kec,total:0,rtlh:0,layak:0,lain:0,desil:mkDesilStat()};
+    byKec[kec].total++;
+    if(isR)byKec[kec].rtlh++;else if(isL)byKec[kec].layak++;else byKec[kec].lain=(byKec[kec].lain||0)+1;
+    byKec[kec].desil[d].t++;
+    if(isR)byKec[kec].desil[d].r++;else if(isL)byKec[kec].desil[d].l++;else byKec[kec].desil[d].k++;
 
-    if(!byDesa[desaKey])byDesa[desaKey]={kec,desa:normCase(desaRaw)||desaRaw,kode:'',total:0,desil:{0:0,1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0}};
-    byDesa[desaKey].total++;byDesa[desaKey].desil[d]=(byDesa[desaKey].desil[d]||0)+1;
+    // Per desa
+    if(!byDesa[desaKey])byDesa[desaKey]={kec,desa:normCase(desaRaw)||desaRaw,kode:'',total:0,rtlh:0,layak:0,lain:0,desil:mkDesilStat()};
+    byDesa[desaKey].total++;
+    if(isR)byDesa[desaKey].rtlh++;else if(isL)byDesa[desaKey].layak++;else byDesa[desaKey].lain=(byDesa[desaKey].lain||0)+1;
+    byDesa[desaKey].desil[d].t++;
+    if(isR)byDesa[desaKey].desil[d].r++;else if(isL)byDesa[desaKey].desil[d].l++;else byDesa[desaKey].desil[d].k++;
   });
 
-  _renderDtDesilSummary(globalDC);
+  _renderDtDesilSummary(globalDC, globalDS);
   _renderChartDtsenDesil(globalDC);
 
   const allRows=_dtTab==='kec'?Object.values(byKec):Object.values(byDesa);
   const filtered=allRows.filter(r=>{
     const match=!q||(r.kec||'').toLowerCase().includes(q)||(r.desa||'').toLowerCase().includes(q);
-    const dMatch=!filterDesil||((r.desil[parseInt(filterDesil)]||0)>0);
+    const dMatch=!filterDesil||((r.desil[parseInt(filterDesil)]?.t||0)>0);
     return match&&dMatch;
   }).sort((a,b)=>_dtTab==='desa'?a.kec.localeCompare(b.kec)||a.desa.localeCompare(b.desa):a.kec.localeCompare(b.kec));
 
   const isMobile=window.innerWidth<640;
   const visD=[1,2,3,4,5,6,7,8].filter(d=>globalDC[d]>0);
-  const grandDC={0:0};for(let i=1;i<=8;i++)grandDC[i]=0;
-  let grandTotal=0;
 
+  // Grand total accumulator
+  const grandDS=mkDesilStat();
+  let grandTotal=0,grandRtlh=0,grandLayak=0,grandLain=0;
+
+  // Helper: render status mini-chips per desil dalam satu sel
+  function cellDesil(ds){
+    if(!ds||!ds.t||ds.t===0)return`<td style="padding:4px 5px;text-align:center;color:#CBD5E1;font-size:.65rem">-</td>`;
+    return`<td style="padding:4px 5px;min-width:76px">
+      <div style="font-size:.72rem;font-weight:800;color:#1E293B;text-align:center;line-height:1">${ds.t.toLocaleString('id')}</div>
+      <div style="display:flex;gap:2px;justify-content:center;margin-top:3px;flex-wrap:wrap">
+        ${ds.r>0?`<span style="font-size:.55rem;font-weight:700;background:#FEF2F2;color:#DC2626;border-radius:4px;padding:1px 4px">R:${ds.r}</span>`:''}
+        ${ds.l>0?`<span style="font-size:.55rem;font-weight:700;background:#F0FDF4;color:#16A34A;border-radius:4px;padding:1px 4px">L:${ds.l}</span>`:''}
+        ${ds.k>0?`<span style="font-size:.55rem;font-weight:700;background:#F5F3FF;color:#7C3AED;border-radius:4px;padding:1px 4px">K:${ds.k}</span>`:''}
+      </div>
+    </td>`;
+  }
+
+  // Header sub-row untuk desil columns (R/L/K legend)
   let rows='';
   filtered.forEach((r,i)=>{
     const bg=i%2===0?'#fff':'#F9FAFB';
     const kecKey=Object.keys(KEC_CONFIG||{}).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
-    grandTotal+=r.total;
-    for(let d=0;d<=8;d++)grandDC[d]=(grandDC[d]||0)+(r.desil[d]||0);
+    grandTotal+=r.total;grandRtlh+=r.rtlh;grandLayak+=r.layak;grandLain+=r.lain;
+    for(let d=0;d<=8;d++){
+      const s=r.desil[d]||{t:0,r:0,l:0,k:0};
+      if(!grandDS[d])grandDS[d]={t:0,r:0,l:0,k:0};
+      grandDS[d].t+=(s.t||0);grandDS[d].r+=(s.r||0);grandDS[d].l+=(s.l||0);grandDS[d].k+=(s.k||0);
+    }
 
-    const barSegs=visD.map(d=>{
-      const p=r.total?Math.round((r.desil[d]||0)/r.total*100):0;
-      return p?`<div style="width:${p}%;background:${DESIL_COLORS_DT[d-1]};height:100%;flex-shrink:0"></div>`:'';
-    }).join('')+(
-      (r.desil[0]||0)>0&&r.total?`<div style="width:${Math.round((r.desil[0]||0)/r.total*100)}%;background:#CBD5E1;height:100%"></div>`:''
-    );
+    // Bar komposisi: RTLH merah, Layak hijau, Lain ungu
+    const pR=r.total?Math.round(r.rtlh/r.total*100):0;
+    const pL=r.total?Math.round(r.layak/r.total*100):0;
+    const pK=r.total?Math.round(r.lain/r.total*100):0;
+    const barSegs=`${pR?`<div style="width:${pR}%;background:#DC2626;height:100%"></div>`:''}${pL?`<div style="width:${pL}%;background:#16A34A;height:100%"></div>`:''}${pK?`<div style="width:${pK}%;background:#7C3AED;height:100%"></div>`:''}`;
 
-    rows+=`<tr style="background:${bg};cursor:pointer"
-      onclick="${kecKey&&_dtTab==='kec'?`selectKec('${kecKey}');nav('webgis')`:'void(0)'}"
+    rows+=`<tr style="background:${bg}"
       onmouseover="this.style.background='#EFF6FF'" onmouseout="this.style.background='${bg}'">
-      <td style="padding:7px 10px;font-weight:700;color:#1E293B;white-space:nowrap;font-size:.68rem">
-        ${_dtTab==='kec'?`<i class="fas fa-map-marker-alt" style="color:#1B6CA8;font-size:.58rem;margin-right:4px"></i>${r.kec}`:`<span style="font-size:.6rem;color:#94A3B8">${r.kec}</span>`}
+      <td style="padding:6px 10px;font-weight:700;color:#1E293B;white-space:nowrap;font-size:.68rem;cursor:${kecKey&&_dtTab==='kec'?'pointer':'default'}"
+        onclick="${kecKey&&_dtTab==='kec'?`selectKec('${kecKey}');nav('webgis')`:'void(0)'}">
+        ${_dtTab==='kec'?`<i class="fas fa-map-marker-alt" style="color:#1B6CA8;font-size:.55rem;margin-right:4px"></i>${r.kec}`:`<span style="font-size:.6rem;color:#94A3B8">${r.kec}</span>`}
       </td>
-      ${_dtTab==='desa'?`<td style="padding:7px 8px;font-weight:600;color:#1E293B">${r.desa||'-'}</td>`:''}
-      <td style="padding:7px 8px;text-align:center;font-weight:800;color:#1B6CA8">${r.total.toLocaleString('id')}</td>
-      ${visD.map(d=>{
-        const cnt=r.desil[d]||0;
-        return`<td style="padding:7px 5px;text-align:center;font-weight:${cnt>0?700:400};color:${cnt>0?DESIL_COLORS_DT[d-1]:'#CBD5E1'}">${cnt>0?cnt.toLocaleString('id'):'-'}</td>`;
-      }).join('')}
-      <td style="padding:7px 5px;text-align:center;color:${(r.desil[0]||0)>0?'#94A3B8':'#CBD5E1'}">${(r.desil[0]||0)>0?(r.desil[0]||0).toLocaleString('id'):'-'}</td>
-      <td style="padding:7px 8px"><div style="height:7px;background:#F1F5F9;border-radius:99px;overflow:hidden;min-width:50px;display:flex">${barSegs}</div></td>
+      ${_dtTab==='desa'?`<td style="padding:6px 8px;font-weight:600;color:#1E293B;font-size:.7rem">${r.desa||'-'}</td>`:''}
+      <td style="padding:6px 8px;vertical-align:middle">
+        <div style="font-size:.78rem;font-weight:800;color:#1B6CA8;text-align:center">${r.total.toLocaleString('id')}</div>
+        <div style="display:flex;gap:2px;margin-top:3px;flex-wrap:wrap;justify-content:center">
+          ${r.rtlh>0?`<span style="font-size:.56rem;font-weight:700;background:#FEF2F2;color:#DC2626;border-radius:4px;padding:1px 5px">R:${r.rtlh}</span>`:''}
+          ${r.layak>0?`<span style="font-size:.56rem;font-weight:700;background:#F0FDF4;color:#16A34A;border-radius:4px;padding:1px 5px">L:${r.layak}</span>`:''}
+          ${r.lain>0?`<span style="font-size:.56rem;font-weight:700;background:#F5F3FF;color:#7C3AED;border-radius:4px;padding:1px 5px">K:${r.lain}</span>`:''}
+        </div>
+        <div style="height:4px;background:#F1F5F9;border-radius:99px;overflow:hidden;margin-top:3px;display:flex">${barSegs}</div>
+      </td>
+      ${visD.map(d=>cellDesil(r.desil[d]||null)).join('')}
+      ${cellDesil(r.desil[0]||null)}
     </tr>`;
   });
 
@@ -7592,37 +7633,59 @@ function renderDtsen(){
     <i class="fas fa-search" style="font-size:1.5rem;display:block;margin-bottom:8px"></i>Tidak ada data
   </td></tr>`;
 
+  // Footer grand total
+  function footerCell(ds){
+    if(!ds||!ds.t)return`<td style="padding:6px 5px;text-align:center;color:rgba(255,255,255,.3)">-</td>`;
+    return`<td style="padding:6px 5px;vertical-align:middle">
+      <div style="font-size:.72rem;font-weight:800;color:rgba(255,255,255,.9);text-align:center">${ds.t.toLocaleString('id')}</div>
+      <div style="display:flex;gap:2px;justify-content:center;margin-top:2px;flex-wrap:wrap">
+        ${ds.r>0?`<span style="font-size:.52rem;font-weight:700;background:rgba(220,38,38,.25);color:#FCA5A5;border-radius:3px;padding:1px 3px">R:${ds.r}</span>`:''}
+        ${ds.l>0?`<span style="font-size:.52rem;font-weight:700;background:rgba(22,163,74,.25);color:#86EFAC;border-radius:3px;padding:1px 3px">L:${ds.l}</span>`:''}
+        ${ds.k>0?`<span style="font-size:.52rem;font-weight:700;background:rgba(124,58,237,.25);color:#C4B5FD;border-radius:3px;padding:1px 3px">K:${ds.k}</span>`:''}
+      </div>
+    </td>`;
+  }
+
   const footer=`<tr style="background:#1a2f4a;color:#fff;font-weight:800;position:sticky;bottom:0">
     <td style="padding:8px 10px;color:var(--gold-light);font-size:.68rem" colspan="${_dtTab==='desa'?2:1}">
       TOTAL ${_dtTab==='kec'?Object.values(byKec).length+' KEC':filtered.length+' DESA'}
     </td>
-    <td style="padding:8px 8px;text-align:center;color:var(--gold-light)">${grandTotal.toLocaleString('id')}</td>
-    ${visD.map(d=>`<td style="padding:8px 5px;text-align:center;color:${DESIL_COLORS_DT[d-1]}">${(grandDC[d]||0).toLocaleString('id')}</td>`).join('')}
-    <td style="padding:8px 5px;text-align:center;color:rgba(255,255,255,.4)">${(grandDC[0]||0).toLocaleString('id')}</td>
-    <td style="padding:8px 8px"><div style="height:7px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden;min-width:50px;display:flex">
-      ${visD.map(d=>{const p=grandTotal?Math.round((grandDC[d]||0)/grandTotal*100):0;return p?`<div style="width:${p}%;background:${DESIL_COLORS_DT[d-1]};height:100%"></div>`:''}).join('')}
-    </div></td>
+    <td style="padding:6px 8px;vertical-align:middle">
+      <div style="font-size:.78rem;font-weight:800;color:var(--gold-light);text-align:center">${grandTotal.toLocaleString('id')}</div>
+      <div style="display:flex;gap:2px;justify-content:center;margin-top:2px;flex-wrap:wrap">
+        ${grandRtlh>0?`<span style="font-size:.52rem;font-weight:700;background:rgba(220,38,38,.25);color:#FCA5A5;border-radius:3px;padding:1px 3px">R:${grandRtlh}</span>`:''}
+        ${grandLayak>0?`<span style="font-size:.52rem;font-weight:700;background:rgba(22,163,74,.25);color:#86EFAC;border-radius:3px;padding:1px 3px">L:${grandLayak}</span>`:''}
+        ${grandLain>0?`<span style="font-size:.52rem;font-weight:700;background:rgba(124,58,237,.25);color:#C4B5FD;border-radius:3px;padding:1px 3px">K:${grandLain}</span>`:''}
+      </div>
+    </td>
+    ${visD.map(d=>footerCell(grandDS[d])).join('')}
+    ${footerCell(grandDS[0])}
   </tr>`;
 
-  const infoBar=`<div style="padding:8px 12px;border-bottom:1px solid var(--gray-200);font-size:.7rem;color:var(--gray-500);display:flex;justify-content:space-between;align-items:center;background:#fff">
+  const infoBar=`<div style="padding:8px 12px 6px;border-bottom:1px solid var(--gray-200);font-size:.68rem;color:var(--gray-500);display:flex;justify-content:space-between;align-items:center;background:#fff;flex-wrap:wrap;gap:4px">
     <span><strong style="color:var(--gray-800)">${filtered.length}</strong> ${_dtTab==='kec'?'kecamatan':'desa'}${q||filterDesil?' (filtered)':''}</span>
-    <span>Total data: <strong style="color:var(--blue)">${grandTotal.toLocaleString('id')}</strong></span>
+    <span style="display:flex;gap:8px;align-items:center">
+      <span style="display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:2px;background:#DC2626;display:inline-block"></span><b style="color:#DC2626">R</b> = RTLH</span>
+      <span style="display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:2px;background:#16A34A;display:inline-block"></span><b style="color:#16A34A">L</b> = Layak Huni</span>
+      <span style="display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:2px;background:#7C3AED;display:inline-block"></span><b style="color:#7C3AED">K</b> = Ket. Lain</span>
+    </span>
   </div>`;
 
-  const thead=`<thead><tr style="background:#1a2f4a;color:rgba(255,255,255,.85);position:sticky;top:0;z-index:10">
-    <th style="padding:8px 10px;text-align:left;font-weight:700;font-size:.58rem;text-transform:uppercase;white-space:nowrap">${_dtTab==='kec'?'Kecamatan':'Kec.'}</th>
-    ${_dtTab==='desa'?'<th style="padding:8px 8px;text-align:left;font-weight:700;font-size:.58rem;text-transform:uppercase">Desa</th>':''}
-    <th style="padding:8px 8px;text-align:center;font-weight:700;font-size:.58rem;text-transform:uppercase">Total</th>
-    ${visD.map(d=>`<th style="padding:8px 5px;text-align:center;font-weight:700;font-size:.55rem;text-transform:uppercase;color:${DESIL_COLORS_DT[d-1]}">${isMobile?'D'+d:'Dsil '+d}</th>`).join('')}
-    <th style="padding:8px 5px;text-align:center;font-weight:700;font-size:.55rem;text-transform:uppercase;color:rgba(255,255,255,.35)">Tanpa</th>
-    <th style="padding:8px 8px;text-align:left;font-weight:700;font-size:.55rem;text-transform:uppercase;min-width:55px">Grafik</th>
-  </tr></thead>`;
+  const thead=`<thead>
+    <tr style="background:#1a2f4a;color:rgba(255,255,255,.85);position:sticky;top:0;z-index:10">
+      <th style="padding:8px 10px;text-align:left;font-weight:700;font-size:.58rem;text-transform:uppercase;white-space:nowrap">${_dtTab==='kec'?'Kecamatan':'Kec.'}</th>
+      ${_dtTab==='desa'?'<th style="padding:8px 8px;text-align:left;font-weight:700;font-size:.58rem;text-transform:uppercase">Desa</th>':''}
+      <th style="padding:8px 8px;text-align:center;font-weight:700;font-size:.58rem;text-transform:uppercase;min-width:80px">Total<br><span style="font-size:.5rem;opacity:.6;font-weight:500">R / L / K</span></th>
+      ${visD.map(d=>`<th style="padding:8px 5px;text-align:center;font-weight:700;font-size:.55rem;text-transform:uppercase;color:${DESIL_COLORS_DT[d-1]};min-width:76px">${isMobile?'D'+d:'Desil '+d}<br><span style="font-size:.48rem;opacity:.6;font-weight:500">R / L / K</span></th>`).join('')}
+      <th style="padding:8px 5px;text-align:center;font-weight:700;font-size:.55rem;text-transform:uppercase;color:rgba(255,255,255,.35);min-width:76px">Tanpa Desil<br><span style="font-size:.48rem;font-weight:500">R / L / K</span></th>
+    </tr>
+  </thead>`;
 
   document.getElementById('dtTable').innerHTML=infoBar+
-    `<div style="overflow-x:auto;max-height:60vh"><table style="width:100%;border-collapse:collapse;font-size:${isMobile?'.67rem':'.75rem'};min-width:${isMobile?'480px':'640px'}">${thead}<tbody>${rows}${footer}</tbody></table></div>`;
+    `<div style="overflow-x:auto;max-height:60vh"><table style="width:100%;border-collapse:collapse;font-size:${isMobile?'.67rem':'.75rem'};min-width:${isMobile?'520px':'700px'}">${thead}<tbody>${rows}${footer}</tbody></table></div>`;
 }
 
-function _renderDtDesilSummary(counts){
+function _renderDtDesilSummary(counts,ds){
   const el=document.getElementById('dtDesilSummary');
   if(!el)return;
   const total=Object.values(counts).reduce((a,b)=>a+b,0)||1;
@@ -7630,27 +7693,39 @@ function _renderDtDesilSummary(counts){
   for(let i=1;i<=8;i++){
     const cnt=counts[i]||0;if(!cnt)continue;
     const pct=Math.round(cnt/total*100);
+    const s=ds?ds[i]:{t:cnt,r:0,l:0,k:0};
     html+=`<div onclick="document.getElementById('dtFilterDesil').value='${i}';renderDtsen()"
-      style="flex-shrink:0;min-width:70px;text-align:center;cursor:pointer;background:${DESIL_BGS_DT[i-1]};border:2px solid ${DESIL_COLORS_DT[i-1]}33;border-radius:9px;padding:8px 6px;transition:all .2s"
+      style="flex-shrink:0;min-width:76px;text-align:center;cursor:pointer;background:${DESIL_BGS_DT[i-1]};border:2px solid ${DESIL_COLORS_DT[i-1]}33;border-radius:9px;padding:8px 6px;transition:all .2s"
       onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
       <div style="font-size:.6rem;font-weight:800;color:${DESIL_COLORS_DT[i-1]};text-transform:uppercase">Desil ${i}</div>
       <div style="font-size:1.1rem;font-weight:900;color:#1E293B;line-height:1.1;margin-top:2px">${cnt.toLocaleString('id')}</div>
-      <div style="font-size:.55rem;color:${DESIL_COLORS_DT[i-1]};margin-top:1px">${pct}%</div>
+      <div style="font-size:.52rem;color:${DESIL_COLORS_DT[i-1]};margin-top:1px">${pct}%</div>
+      <div style="display:flex;gap:2px;justify-content:center;margin-top:4px;flex-wrap:wrap">
+        ${s.r>0?`<span style="font-size:.52rem;font-weight:700;background:#FEF2F2;color:#DC2626;border-radius:3px;padding:1px 3px">R:${s.r}</span>`:''}
+        ${s.l>0?`<span style="font-size:.52rem;font-weight:700;background:#F0FDF4;color:#16A34A;border-radius:3px;padding:1px 3px">L:${s.l}</span>`:''}
+        ${s.k>0?`<span style="font-size:.52rem;font-weight:700;background:#F5F3FF;color:#7C3AED;border-radius:3px;padding:1px 3px">K:${s.k}</span>`:''}
+      </div>
     </div>`;
   }
   if((counts[0]||0)>0){
     const pct=Math.round((counts[0]||0)/total*100);
+    const s=ds?ds[0]:{t:counts[0],r:0,l:0,k:0};
     html+=`<div onclick="document.getElementById('dtFilterDesil').value='0';renderDtsen()"
-      style="flex-shrink:0;min-width:70px;text-align:center;cursor:pointer;background:#F9FAFB;border:2px solid #9CA3AF33;border-radius:9px;padding:8px 6px;transition:all .2s"
+      style="flex-shrink:0;min-width:76px;text-align:center;cursor:pointer;background:#F9FAFB;border:2px solid #9CA3AF33;border-radius:9px;padding:8px 6px;transition:all .2s"
       onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
       <div style="font-size:.6rem;font-weight:800;color:#6B7280;text-transform:uppercase">Tanpa Desil</div>
       <div style="font-size:1.1rem;font-weight:900;color:#1E293B;line-height:1.1;margin-top:2px">${(counts[0]||0).toLocaleString('id')}</div>
-      <div style="font-size:.55rem;color:#6B7280;margin-top:1px">${pct}%</div>
+      <div style="font-size:.52rem;color:#6B7280;margin-top:1px">${pct}%</div>
+      <div style="display:flex;gap:2px;justify-content:center;margin-top:4px;flex-wrap:wrap">
+        ${s.r>0?`<span style="font-size:.52rem;font-weight:700;background:#FEF2F2;color:#DC2626;border-radius:3px;padding:1px 3px">R:${s.r}</span>`:''}
+        ${s.l>0?`<span style="font-size:.52rem;font-weight:700;background:#F0FDF4;color:#16A34A;border-radius:3px;padding:1px 3px">L:${s.l}</span>`:''}
+        ${s.k>0?`<span style="font-size:.52rem;font-weight:700;background:#F5F3FF;color:#7C3AED;border-radius:3px;padding:1px 3px">K:${s.k}</span>`:''}
+      </div>
     </div>`;
   }
   html+=`<div onclick="document.getElementById('dtFilterDesil').value='';renderDtsen()"
-    style="flex-shrink:0;display:flex;align-items:center;justify-content:center;min-width:52px;cursor:pointer;background:#F1F5F9;border:2px solid #CBD5E1;border-radius:9px;padding:8px 6px;font-size:.65rem;font-weight:700;color:#64748B;transition:all .2s"
-    title="Reset filter">
+    style="flex-shrink:0;display:flex;align-items:center;justify-content:center;min-width:40px;cursor:pointer;background:#F1F5F9;border:2px solid #CBD5E1;border-radius:9px;padding:8px 6px;font-size:.7rem;color:#64748B;transition:all .2s"
+    title="Reset filter desil">
     <i class="fas fa-times"></i>
   </div>`;
   el.innerHTML=html;
