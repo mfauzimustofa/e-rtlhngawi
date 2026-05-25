@@ -8713,7 +8713,7 @@ async function cnRunCheck(){
   for(let i=0; i<totalBatches; i++){
     const batch = nikList.slice(i*BATCH, (i+1)*BATCH);
     const {data, error} = await sb.from('rtlh')
-      .select('id,nik,no_kk,kep_kk,kec,desa,alamat,jen_kel,umur,pekerjaan,pengh,status_rtlh,desil,jenis_bantuan,tahun_bantuan,keterangan,backlog')
+      .select('id,nik,no_kk,kep_kk,kec,desa,alamat,jen_kel,umur,pend_ter,pekerjaan,pengh,luas_rum,luas_tan,jml_peng,status_kep,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,backlog,desil,keterangan,latitude,longitude')
       .in('nik', batch);
     if(data) data.forEach(r => { if(r.nik) dbMap[r.nik.trim()] = r; });
     const pct = Math.round(((i+1)/totalBatches)*100);
@@ -8784,17 +8784,36 @@ function cnRenderTable(){
     <th style="width:36px">#</th>
     <th>NIK Input</th>
     ${extraCols.map(c=>`<th>${c}</th>`).join('')}
-    <th>Status</th>
-    <th>Nama (DB)</th>
+    <th>Status Cek</th>
+    <th>Nama KK (DB)</th>
+    <th>No. KK</th>
     <th>Kecamatan</th>
     <th>Desa</th>
     <th>Alamat</th>
+    <th>Jen. Kelamin</th>
+    <th>Umur</th>
+    <th>Pendidikan</th>
+    <th>Pekerjaan</th>
+    <th>Penghasilan</th>
+    <th>Luas Rumah</th>
+    <th>Luas Tanah</th>
+    <th>Jml Penghuni</th>
+    <th>Status Kepemilikan</th>
+    <th>Material Dinding</th>
+    <th>Kondisi Dinding</th>
+    <th>Material Atap</th>
+    <th>Kondisi Atap</th>
+    <th>Material Lantai</th>
+    <th>Kondisi Lantai</th>
     <th>Status RTLH</th>
+    <th>Alasan Batal</th>
     <th>Desil</th>
     <th>Jenis Bantuan</th>
-    <th>Tahun</th>
+    <th>Tahun Bantuan</th>
     <th>Backlog</th>
     <th>Keterangan</th>
+    <th>Latitude</th>
+    <th>Longitude</th>
   </tr>`;
 
   tbody.innerHTML = filtered.map((r,i)=>{
@@ -8816,15 +8835,34 @@ function cnRenderTable(){
       ${extraCols.map(c=>`<td>${r.row[c]??''}</td>`).join('')}
       <td>${badge}</td>
       <td style="font-weight:700">${d?.kep_kk||'-'}</td>
+      <td style="font-family:monospace">${d?.no_kk||'-'}</td>
       <td>${d?.kec||'-'}</td>
       <td>${d?.desa||'-'}</td>
       <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis">${d?.alamat||'-'}</td>
+      <td>${d?.jen_kel||'-'}</td>
+      <td>${d?.umur||'-'}</td>
+      <td>${d?.pend_ter||'-'}</td>
+      <td>${d?.pekerjaan||'-'}</td>
+      <td>${d?.pengh||'-'}</td>
+      <td>${d?.luas_rum||'-'}</td>
+      <td>${d?.luas_tan||'-'}</td>
+      <td>${d?.jml_peng||'-'}</td>
+      <td>${d?.status_kep||'-'}</td>
+      <td>${d?.material_d||'-'}</td>
+      <td>${d?.kondisi_di||'-'}</td>
+      <td>${d?.material_a||'-'}</td>
+      <td>${d?.kondisi_at||'-'}</td>
+      <td>${d?.material_l||'-'}</td>
+      <td>${d?.kondisi_la||'-'}</td>
       <td>${statusBadge||'-'}</td>
+      <td>${d?.status_batal||'-'}</td>
       <td>${d?.desil||'-'}</td>
       <td>${d?.jenis_bantuan||'-'}</td>
       <td>${d?.tahun_bantuan||'-'}</td>
       <td>${d?.backlog||'-'}</td>
       <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis">${d?.keterangan||'-'}</td>
+      <td>${d?.latitude||'-'}</td>
+      <td>${d?.longitude||'-'}</td>
     </tr>`;
   }).join('');
 
@@ -8853,14 +8891,28 @@ function cnDownloadExcel(){
     base['Alamat'] = d?.alamat||'';
     base['Jenis Kelamin'] = d?.jen_kel||'';
     base['Umur'] = d?.umur||'';
+    base['Pendidikan'] = d?.pend_ter||'';
     base['Pekerjaan'] = d?.pekerjaan||'';
     base['Penghasilan'] = d?.pengh||'';
+    base['Luas Rumah (m²)'] = d?.luas_rum||'';
+    base['Luas Tanah (m²)'] = d?.luas_tan||'';
+    base['Jml Penghuni'] = d?.jml_peng||'';
+    base['Status Kepemilikan'] = d?.status_kep||'';
+    base['Material Dinding'] = d?.material_d||'';
+    base['Kondisi Dinding'] = d?.kondisi_di||'';
+    base['Material Atap'] = d?.material_a||'';
+    base['Kondisi Atap'] = d?.kondisi_at||'';
+    base['Material Lantai'] = d?.material_l||'';
+    base['Kondisi Lantai'] = d?.kondisi_la||'';
     base['Status RTLH'] = d?.status_rtlh||'';
+    base['Alasan SK Dibatalkan'] = d?.status_batal||'';
     base['Desil'] = d?.desil||'';
     base['Jenis Bantuan'] = d?.jenis_bantuan||'';
     base['Tahun Bantuan'] = d?.tahun_bantuan||'';
     base['Backlog'] = d?.backlog||'';
     base['Keterangan'] = d?.keterangan||'';
+    base['Latitude'] = d?.latitude||'';
+    base['Longitude'] = d?.longitude||'';
     return base;
   });
 
