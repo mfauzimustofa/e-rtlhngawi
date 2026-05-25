@@ -1017,10 +1017,10 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
     <!-- Summary Badges -->
     <div id="cnSummary" style="display:none;margin-bottom:16px">
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:14px">
         <div style="background:#fff;border-radius:var(--radius-sm);padding:12px;border:1px solid var(--gray-200);text-align:center">
           <div id="cnTotNik" style="font-size:1.3rem;font-weight:800;color:var(--navy)">0</div>
-          <div style="font-size:.65rem;color:var(--gray-500);font-weight:600;text-transform:uppercase;margin-top:2px">Total NIK</div>
+          <div style="font-size:.65rem;color:var(--gray-500);font-weight:600;text-transform:uppercase;margin-top:2px">Total Baris</div>
         </div>
         <div style="background:var(--success-bg);border-radius:var(--radius-sm);padding:12px;border:1px solid #bbf7d0;text-align:center">
           <div id="cnFoundNik" style="font-size:1.3rem;font-weight:800;color:var(--success)">0</div>
@@ -1038,6 +1038,32 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
           <div id="cnLayakCount" style="font-size:1.3rem;font-weight:800;color:var(--success)">0</div>
           <div style="font-size:.65rem;color:var(--success);font-weight:600;text-transform:uppercase;margin-top:2px">Layak Huni</div>
         </div>
+        <div style="background:#FFF7ED;border-radius:var(--radius-sm);padding:12px;border:1px solid #fed7aa;text-align:center">
+          <div id="cnSkCount" style="font-size:1.3rem;font-weight:800;color:#C2410C">0</div>
+          <div style="font-size:.65rem;color:#C2410C;font-weight:600;text-transform:uppercase;margin-top:2px">SK Dibatalkan</div>
+        </div>
+        <div style="background:var(--gray-100);border-radius:var(--radius-sm);padding:12px;border:1px solid var(--gray-200);text-align:center">
+          <div id="cnLainCount" style="font-size:1.3rem;font-weight:800;color:var(--gray-600)">0</div>
+          <div style="font-size:.65rem;color:var(--gray-500);font-weight:600;text-transform:uppercase;margin-top:2px">Ket. Lain</div>
+        </div>
+      </div>
+      <!-- Grafik -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px">
+        <div style="background:#fff;border-radius:var(--radius-sm);border:1px solid var(--gray-200);padding:14px">
+          <div style="font-size:.72rem;font-weight:800;color:var(--gray-700);margin-bottom:10px"><i class="fas fa-chart-pie" style="color:var(--blue)"></i> Status Temuan</div>
+          <canvas id="cnChartFound" height="160"></canvas>
+        </div>
+        <div style="background:#fff;border-radius:var(--radius-sm);border:1px solid var(--gray-200);padding:14px">
+          <div style="font-size:.72rem;font-weight:800;color:var(--gray-700);margin-bottom:10px"><i class="fas fa-chart-bar" style="color:var(--blue)"></i> Status RTLH</div>
+          <canvas id="cnChartStatus" height="160"></canvas>
+        </div>
+        <div style="background:#fff;border-radius:var(--radius-sm);border:1px solid var(--gray-200);padding:14px">
+          <div style="font-size:.72rem;font-weight:800;color:var(--gray-700);margin-bottom:10px"><i class="fas fa-chart-bar" style="color:var(--blue)"></i> Jenis Bantuan</div>
+          <canvas id="cnChartBantuan" height="160"></canvas>
+        </div>
+      </div>
+      <div style="margin-top:8px;font-size:.65rem;color:var(--gray-400);text-align:right" id="cnSyncNote">
+        <i class="fas fa-sync-alt"></i> Angka, grafik, dan Excel selalu sinkron dengan filter aktif
       </div>
     </div>
 
@@ -8641,7 +8667,9 @@ function exportDtsenWord(){
 // ══════════════════════════════════════════════════
 let _cnRows = [];      // raw rows dari Excel
 let _cnResults = [];   // [{inputNik, row, dbData, found}]
+let _cnFiltered = [];  // subset setelah filter — SATU SUMBER KEBENARAN untuk card, grafik, tabel, Excel
 let _cnNikColKey = ''; // nama kolom NIK dari file
+let _cnChartFound = null, _cnChartStatus = null, _cnChartBantuan = null;
 
 function cnHandleDrop(e){
   e.preventDefault();
@@ -8662,15 +8690,12 @@ function cnHandleFile(file){
       const ws = wb.Sheets[wb.SheetNames[0]];
       _cnRows = XLSX.utils.sheet_to_json(ws, {defval:''});
       if(!_cnRows.length){ toast('Sheet kosong atau tidak terbaca','error'); return; }
-      // Populate kolom dropdown
       const cols = Object.keys(_cnRows[0]);
       const sel = document.getElementById('cnNikCol');
-      sel.innerHTML = cols.map(c=>`<option value="${c}"${c.toLowerCase().includes('nik')?'':''}">${c}</option>`).join('');
-      // Auto-pilih kolom yang mengandung 'nik'
+      sel.innerHTML = cols.map(c=>`<option value="${c}">${c}</option>`).join('');
       const autoNik = cols.find(c=>c.toLowerCase().includes('nik'));
       if(autoNik) sel.value = autoNik;
       document.getElementById('cnMappingPanel').style.display = 'block';
-      // Reset result area
       document.getElementById('cnSummary').style.display = 'none';
       document.getElementById('cnTableWrap').style.display = 'none';
       document.getElementById('cnToolbar').style.display = 'none';
@@ -8688,41 +8713,34 @@ async function cnRunCheck(){
   _cnNikColKey = document.getElementById('cnNikCol').value;
   if(!_cnNikColKey){ toast('Pilih kolom NIK terlebih dahulu','error'); return; }
 
-  // Ambil list NIK unik (string 16 digit)
   const nikList = [...new Set(
     _cnRows.map(r => String(r[_cnNikColKey]||'').replace(/\D/g,'').trim()).filter(n=>n.length>=10)
   )];
-
   if(!nikList.length){ toast('Tidak ada NIK valid ditemukan di kolom tersebut','error'); return; }
 
-  // Tampilkan progress
   const progWrap = document.getElementById('cnProgress');
-  const progBar = document.getElementById('cnProgBar');
+  const progBar  = document.getElementById('cnProgBar');
   const progLabel = document.getElementById('cnProgLabel');
-  const progPct = document.getElementById('cnProgPct');
+  const progPct  = document.getElementById('cnProgPct');
   progWrap.style.display = 'block';
   progBar.style.width = '0%';
-  progLabel.textContent = 'Menghubungi database...';
-  progPct.textContent = '0%';
 
-  // Batch query ke Supabase (500 NIK per batch)
   const BATCH = 500;
-  const dbMap = {}; // nik -> record
+  const dbMap = {};
   const totalBatches = Math.ceil(nikList.length / BATCH);
 
   for(let i=0; i<totalBatches; i++){
     const batch = nikList.slice(i*BATCH, (i+1)*BATCH);
-    const {data, error} = await sb.from('rtlh')
+    const {data} = await sb.from('rtlh')
       .select('id,nik,no_kk,kep_kk,kec,desa,alamat,jen_kel,umur,pend_ter,pekerjaan,pengh,luas_rum,luas_tan,jml_peng,status_kep,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,backlog,desil,keterangan,latitude,longitude')
       .in('nik', batch);
     if(data) data.forEach(r => { if(r.nik) dbMap[r.nik.trim()] = r; });
     const pct = Math.round(((i+1)/totalBatches)*100);
     progBar.style.width = pct+'%';
     progPct.textContent = pct+'%';
-    progLabel.textContent = `Batch ${i+1}/${totalBatches} selesai (${Object.keys(dbMap).length} ditemukan)`;
+    progLabel.textContent = `Batch ${i+1}/${totalBatches} — ${Object.keys(dbMap).length} ditemukan`;
   }
 
-  // Gabungkan: 1 row output per baris input Excel
   _cnResults = _cnRows.map(row => {
     const inputNik = String(row[_cnNikColKey]||'').replace(/\D/g,'').trim();
     const dbData = inputNik ? (dbMap[inputNik]||null) : null;
@@ -8730,45 +8748,34 @@ async function cnRunCheck(){
   });
 
   progWrap.style.display = 'none';
-
-  // Hitung summary
-  const found = _cnResults.filter(r=>r.found).length;
-  const notFound = _cnResults.length - found;
-  const rtlhCnt = _cnResults.filter(r=>r.dbData?.status_rtlh==='RTLH').length;
-  const layakCnt = _cnResults.filter(r=>r.dbData?.status_rtlh==='Layak Huni').length;
-
-  document.getElementById('cnTotNik').textContent = _cnResults.length;
-  document.getElementById('cnFoundNik').textContent = found;
-  document.getElementById('cnNotFound').textContent = notFound;
-  document.getElementById('cnRtlhCount').textContent = rtlhCnt;
-  document.getElementById('cnLayakCount').textContent = layakCnt;
   document.getElementById('cnSummary').style.display = 'block';
   document.getElementById('cnToolbar').style.display = 'flex';
   document.getElementById('cnTableWrap').style.display = 'block';
 
-  cnRenderTable();
-  toast(`Selesai! ${found} dari ${_cnResults.length} NIK ditemukan`, found>0?'success':'error');
+  // Reset filter sebelum render pertama kali
+  document.getElementById('cnFilterInput').value = '';
+  document.getElementById('cnFilterStatus').value = '';
+
+  cnRenderAll();
+  toast(`Selesai! ${_cnResults.filter(r=>r.found).length} dari ${_cnResults.length} NIK ditemukan`,
+    _cnResults.some(r=>r.found)?'success':'error');
 }
 
-function cnRenderTable(){
-  if(!_cnResults.length) return;
-  const q = (document.getElementById('cnFilterInput')?.value||'').toLowerCase();
+// ─── FUNGSI UTAMA: hitung filtered → update card + grafik + tabel (semuanya dari satu sumber) ───
+function cnRenderAll(){
+  const q  = (document.getElementById('cnFilterInput')?.value||'').toLowerCase().trim();
   const sf = document.getElementById('cnFilterStatus')?.value||'';
-
-  // Kolom dari file asli (exclude NIK kolom karena akan digabung)
   const extraCols = Object.keys(_cnRows[0]||{}).filter(c=>c!==_cnNikColKey);
 
-  const filtered = _cnResults.filter(r=>{
-    if(sf==='found' && !r.found) return false;
-    if(sf==='notfound' && r.found) return false;
+  _cnFiltered = _cnResults.filter(r=>{
+    if(sf==='found'    && !r.found) return false;
+    if(sf==='notfound' &&  r.found) return false;
     if(sf && sf!=='found' && sf!=='notfound' && r.dbData?.status_rtlh!==sf) return false;
     if(q){
       const hay = [
         r.inputNik,
-        r.dbData?.kep_kk||'',
-        r.dbData?.desa||'',
-        r.dbData?.kec||'',
-        r.dbData?.status_rtlh||'',
+        r.dbData?.kep_kk||'', r.dbData?.desa||'', r.dbData?.kec||'',
+        r.dbData?.status_rtlh||'', r.dbData?.jenis_bantuan||'',
         ...extraCols.map(c=>String(r.row[c]||''))
       ].join(' ').toLowerCase();
       if(!hay.includes(q)) return false;
@@ -8776,9 +8783,119 @@ function cnRenderTable(){
     return true;
   });
 
-  // Build header
+  cnUpdateCards();
+  cnUpdateCharts();
+  cnUpdateTable(extraCols);
+}
+
+// Alias agar oninput/onchange di HTML tetap bisa panggil cnRenderTable()
+function cnRenderTable(){ cnRenderAll(); }
+
+// ─── CARD ───
+function cnUpdateCards(){
+  const f = _cnFiltered;
+  const found    = f.filter(r=>r.found).length;
+  const notFound = f.length - found;
+  const rtlh     = f.filter(r=>r.dbData?.status_rtlh==='RTLH').length;
+  const layak    = f.filter(r=>r.dbData?.status_rtlh==='Layak Huni').length;
+  const sk       = f.filter(r=>r.dbData?.status_rtlh==='SK Dibatalkan').length;
+  const lain     = f.filter(r=>r.dbData?.status_rtlh==='Keterangan Lain').length;
+
+  document.getElementById('cnTotNik').textContent    = f.length;
+  document.getElementById('cnFoundNik').textContent  = found;
+  document.getElementById('cnNotFound').textContent  = notFound;
+  document.getElementById('cnRtlhCount').textContent = rtlh;
+  document.getElementById('cnLayakCount').textContent= layak;
+  document.getElementById('cnSkCount').textContent   = sk;
+  document.getElementById('cnLainCount').textContent = lain;
+}
+
+// ─── GRAFIK ───
+function cnUpdateCharts(){
+  const f = _cnFiltered;
+  const found    = f.filter(r=>r.found).length;
+  const notFound = f.length - found;
+  const rtlh     = f.filter(r=>r.dbData?.status_rtlh==='RTLH').length;
+  const layak    = f.filter(r=>r.dbData?.status_rtlh==='Layak Huni').length;
+  const sk       = f.filter(r=>r.dbData?.status_rtlh==='SK Dibatalkan').length;
+  const lain     = f.filter(r=>r.dbData?.status_rtlh==='Keterangan Lain').length;
+
+  // Grafik 1: Ditemukan vs Tidak
+  const c1 = document.getElementById('cnChartFound');
+  if(c1){
+    if(_cnChartFound) _cnChartFound.destroy();
+    _cnChartFound = new Chart(c1, {
+      type:'doughnut',
+      data:{
+        labels:['Ditemukan','Tidak Ditemukan'],
+        datasets:[{data:[found,notFound],backgroundColor:['#16A34A','#DC2626'],borderWidth:2,borderColor:'#fff'}]
+      },
+      options:{plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:10}}},cutout:'62%',responsive:true}
+    });
+  }
+
+  // Grafik 2: Status RTLH (bar)
+  const c2 = document.getElementById('cnChartStatus');
+  if(c2){
+    if(_cnChartStatus) _cnChartStatus.destroy();
+    _cnChartStatus = new Chart(c2, {
+      type:'bar',
+      data:{
+        labels:['RTLH','Layak Huni','SK Dibatalkan','Ket. Lain'],
+        datasets:[{
+          data:[rtlh,layak,sk,lain],
+          backgroundColor:['#DC2626','#16A34A','#C2410C','#64748B'],
+          borderRadius:6, borderWidth:0
+        }]
+      },
+      options:{
+        plugins:{legend:{display:false}},
+        scales:{y:{beginAtZero:true,ticks:{precision:0,font:{size:10}},grid:{color:'#F1F5F9'}},
+                x:{ticks:{font:{size:10}},grid:{display:false}}},
+        responsive:true
+      }
+    });
+  }
+
+  // Grafik 3: Jenis Bantuan (bar)
+  const c3 = document.getElementById('cnChartBantuan');
+  if(c3){
+    const bantuanMap = {};
+    f.filter(r=>r.found).forEach(r=>{
+      const jb = r.dbData?.jenis_bantuan||'Tidak Ada';
+      const tb = r.dbData?.tahun_bantuan;
+      const key = tb ? `${jb} ${tb}` : jb;
+      bantuanMap[key] = (bantuanMap[key]||0)+1;
+    });
+    const sorted = Object.entries(bantuanMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    const COLORS = ['#1B6CA8','#16A34A','#F59E0B','#DC2626','#7C3AED','#0891B2','#C2410C','#64748B'];
+    if(_cnChartBantuan) _cnChartBantuan.destroy();
+    _cnChartBantuan = new Chart(c3, {
+      type:'bar',
+      data:{
+        labels: sorted.map(([k])=>k)||['(kosong)'],
+        datasets:[{
+          data: sorted.map(([,v])=>v)||[0],
+          backgroundColor: sorted.map((_,i)=>COLORS[i%COLORS.length]),
+          borderRadius:6, borderWidth:0
+        }]
+      },
+      options:{
+        indexAxis:'y',
+        plugins:{legend:{display:false}},
+        scales:{x:{beginAtZero:true,ticks:{precision:0,font:{size:10}},grid:{color:'#F1F5F9'}},
+                y:{ticks:{font:{size:10}},grid:{display:false}}},
+        responsive:true
+      }
+    });
+  }
+}
+
+// ─── TABEL ───
+function cnUpdateTable(extraCols){
+  const f = _cnFiltered;
   const thead = document.getElementById('cnThead');
-  const tbody = document.getElementById('cnTbody');
+  const tbody  = document.getElementById('cnTbody');
 
   thead.innerHTML = `<tr>
     <th style="width:36px">#</th>
@@ -8816,18 +8933,18 @@ function cnRenderTable(){
     <th>Longitude</th>
   </tr>`;
 
-  tbody.innerHTML = filtered.map((r,i)=>{
+  tbody.innerHTML = f.map((r,i)=>{
     const d = r.dbData;
-    let badge = r.found
+    const badge = r.found
       ? `<span class="cn-badge-found">✓ Ada</span>`
       : `<span class="cn-badge-notfound">✗ Tidak Ada</span>`;
-    let statusBadge = '';
+    let statusBadge = '-';
     if(d){
       const s = d.status_rtlh||'-';
-      if(s==='RTLH') statusBadge=`<span class="cn-badge-rtlh">RTLH</span>`;
-      else if(s==='Layak Huni') statusBadge=`<span class="cn-badge-layak">Layak Huni</span>`;
-      else if(s==='SK Dibatalkan') statusBadge=`<span class="cn-badge-sk">SK Dibatalkan</span>`;
-      else statusBadge=`<span class="cn-badge-lain">${s}</span>`;
+      if(s==='RTLH')              statusBadge=`<span class="cn-badge-rtlh">RTLH</span>`;
+      else if(s==='Layak Huni')   statusBadge=`<span class="cn-badge-layak">Layak Huni</span>`;
+      else if(s==='SK Dibatalkan')statusBadge=`<span class="cn-badge-sk">SK Dibatalkan</span>`;
+      else if(s!=='-')            statusBadge=`<span class="cn-badge-lain">${s}</span>`;
     }
     return `<tr>
       <td style="color:var(--gray-400);font-size:.65rem">${i+1}</td>
@@ -8840,13 +8957,13 @@ function cnRenderTable(){
       <td>${d?.desa||'-'}</td>
       <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis">${d?.alamat||'-'}</td>
       <td>${d?.jen_kel||'-'}</td>
-      <td>${d?.umur||'-'}</td>
+      <td>${d?.umur??'-'}</td>
       <td>${d?.pend_ter||'-'}</td>
       <td>${d?.pekerjaan||'-'}</td>
       <td>${d?.pengh||'-'}</td>
-      <td>${d?.luas_rum||'-'}</td>
-      <td>${d?.luas_tan||'-'}</td>
-      <td>${d?.jml_peng||'-'}</td>
+      <td>${d?.luas_rum??'-'}</td>
+      <td>${d?.luas_tan??'-'}</td>
+      <td>${d?.jml_peng??'-'}</td>
       <td>${d?.status_kep||'-'}</td>
       <td>${d?.material_d||'-'}</td>
       <td>${d?.kondisi_di||'-'}</td>
@@ -8854,77 +8971,73 @@ function cnRenderTable(){
       <td>${d?.kondisi_at||'-'}</td>
       <td>${d?.material_l||'-'}</td>
       <td>${d?.kondisi_la||'-'}</td>
-      <td>${statusBadge||'-'}</td>
+      <td>${statusBadge}</td>
       <td>${d?.status_batal||'-'}</td>
       <td>${d?.desil||'-'}</td>
       <td>${d?.jenis_bantuan||'-'}</td>
       <td>${d?.tahun_bantuan||'-'}</td>
       <td>${d?.backlog||'-'}</td>
       <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis">${d?.keterangan||'-'}</td>
-      <td>${d?.latitude||'-'}</td>
-      <td>${d?.longitude||'-'}</td>
+      <td>${d?.latitude??'-'}</td>
+      <td>${d?.longitude??'-'}</td>
     </tr>`;
   }).join('');
 
   document.getElementById('cnTableFooter').textContent =
-    `Menampilkan ${filtered.length} dari ${_cnResults.length} data`;
+    `Menampilkan ${f.length} dari ${_cnResults.length} data`;
 }
 
+// ─── DOWNLOAD EXCEL — selalu dari _cnFiltered (sama dengan yang tampil di tabel) ───
 function cnDownloadExcel(){
-  if(!_cnResults.length){ toast('Belum ada data hasil','error'); return; }
+  if(!_cnFiltered.length){ toast('Belum ada data untuk diunduh','error'); return; }
   if(!window.XLSX){ toast('Library XLSX tidak tersedia','error'); return; }
 
   const extraCols = Object.keys(_cnRows[0]||{}).filter(c=>c!==_cnNikColKey);
 
-  const rows = _cnResults.map((r,i)=>{
+  const rows = _cnFiltered.map((r,i)=>{
     const d = r.dbData;
-    const base = {
-      'No': i+1,
-      'NIK (Input)': r.inputNik,
-    };
+    const base = { 'No': i+1, 'NIK (Input)': r.inputNik };
     extraCols.forEach(c=>{ base[c] = r.row[c]??''; });
-    base['Status Cek'] = r.found ? 'Ditemukan' : 'Tidak Ditemukan';
-    base['Nama KK (DB)'] = d?.kep_kk||'';
-    base['No. KK'] = d?.no_kk||'';
-    base['Kecamatan'] = d?.kec||'';
-    base['Desa'] = d?.desa||'';
-    base['Alamat'] = d?.alamat||'';
-    base['Jenis Kelamin'] = d?.jen_kel||'';
-    base['Umur'] = d?.umur||'';
-    base['Pendidikan'] = d?.pend_ter||'';
-    base['Pekerjaan'] = d?.pekerjaan||'';
-    base['Penghasilan'] = d?.pengh||'';
-    base['Luas Rumah (m²)'] = d?.luas_rum||'';
-    base['Luas Tanah (m²)'] = d?.luas_tan||'';
-    base['Jml Penghuni'] = d?.jml_peng||'';
-    base['Status Kepemilikan'] = d?.status_kep||'';
-    base['Material Dinding'] = d?.material_d||'';
-    base['Kondisi Dinding'] = d?.kondisi_di||'';
-    base['Material Atap'] = d?.material_a||'';
-    base['Kondisi Atap'] = d?.kondisi_at||'';
-    base['Material Lantai'] = d?.material_l||'';
-    base['Kondisi Lantai'] = d?.kondisi_la||'';
-    base['Status RTLH'] = d?.status_rtlh||'';
-    base['Alasan SK Dibatalkan'] = d?.status_batal||'';
-    base['Desil'] = d?.desil||'';
-    base['Jenis Bantuan'] = d?.jenis_bantuan||'';
-    base['Tahun Bantuan'] = d?.tahun_bantuan||'';
-    base['Backlog'] = d?.backlog||'';
-    base['Keterangan'] = d?.keterangan||'';
-    base['Latitude'] = d?.latitude||'';
-    base['Longitude'] = d?.longitude||'';
+    base['Status Cek']          = r.found ? 'Ditemukan' : 'Tidak Ditemukan';
+    base['Nama KK (DB)']        = d?.kep_kk||'';
+    base['No. KK']              = d?.no_kk||'';
+    base['Kecamatan']           = d?.kec||'';
+    base['Desa']                = d?.desa||'';
+    base['Alamat']              = d?.alamat||'';
+    base['Jenis Kelamin']       = d?.jen_kel||'';
+    base['Umur']                = d?.umur??'';
+    base['Pendidikan']          = d?.pend_ter||'';
+    base['Pekerjaan']           = d?.pekerjaan||'';
+    base['Penghasilan']         = d?.pengh||'';
+    base['Luas Rumah (m²)']     = d?.luas_rum??'';
+    base['Luas Tanah (m²)']     = d?.luas_tan??'';
+    base['Jml Penghuni']        = d?.jml_peng??'';
+    base['Status Kepemilikan']  = d?.status_kep||'';
+    base['Material Dinding']    = d?.material_d||'';
+    base['Kondisi Dinding']     = d?.kondisi_di||'';
+    base['Material Atap']       = d?.material_a||'';
+    base['Kondisi Atap']        = d?.kondisi_at||'';
+    base['Material Lantai']     = d?.material_l||'';
+    base['Kondisi Lantai']      = d?.kondisi_la||'';
+    base['Status RTLH']         = d?.status_rtlh||'';
+    base['Alasan SK Dibatalkan']= d?.status_batal||'';
+    base['Desil']               = d?.desil||'';
+    base['Jenis Bantuan']       = d?.jenis_bantuan||'';
+    base['Tahun Bantuan']       = d?.tahun_bantuan||'';
+    base['Backlog']             = d?.backlog||'';
+    base['Keterangan']          = d?.keterangan||'';
+    base['Latitude']            = d?.latitude??'';
+    base['Longitude']           = d?.longitude??'';
     return base;
   });
 
   const ws = XLSX.utils.json_to_sheet(rows);
-  // Warna header (tidak support styling di xlsx.full.min, tapi struktur ok)
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Hasil Cek NIK');
-
-  const d = new Date();
-  const tgl = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
-  XLSX.writeFile(wb, `CekNIK_RTLH_Ngawi_${tgl}.xlsx`);
-  toast('Excel berhasil diunduh!','success');
+  const tgl = new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const suffix = _cnFiltered.length < _cnResults.length ? `_filtered${_cnFiltered.length}` : '';
+  XLSX.writeFile(wb, `CekNIK_RTLH_Ngawi_${tgl}${suffix}.xlsx`);
+  toast(`Excel diunduh: ${_cnFiltered.length} baris`, 'success');
 }
 </script>
 
