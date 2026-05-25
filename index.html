@@ -727,6 +727,21 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
           <option value="8">Desil 8</option>
           <option value="0">Tanpa Desil</option>
         </select>
+        <!-- Export buttons -->
+        <div style="display:flex;gap:4px;flex-shrink:0">
+          <button onclick="exportDtsenExcel()" title="Export Excel"
+            style="padding:7px 11px;border-radius:7px;border:none;background:#16A34A;color:#fff;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;white-space:nowrap">
+            <i class="fas fa-file-excel"></i> Excel
+          </button>
+          <button onclick="exportDtsenPDF()" title="Cetak / Export PDF"
+            style="padding:7px 11px;border-radius:7px;border:none;background:#DC2626;color:#fff;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;white-space:nowrap">
+            <i class="fas fa-file-pdf"></i> PDF
+          </button>
+          <button onclick="exportDtsenWord()" title="Export Word"
+            style="padding:7px 11px;border-radius:7px;border:none;background:#2563EB;color:#fff;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;white-space:nowrap">
+            <i class="fas fa-file-word"></i> Word
+          </button>
+        </div>
       </div>
     </div>
 
@@ -7760,6 +7775,397 @@ function invalidateDtsenCache(){
   _dtLoaded=false;
   _dtData=null;
 }
+
+// ══════════════════════════════════════════════════
+// DTSEN EXPORT — Excel, PDF, Word
+// ══════════════════════════════════════════════════
+
+// Ambil data tabel DTSEN yang sedang aktif (sudah terfilter)
+function _getDtsenExportData(){
+  if(!_dtData)return null;
+  const q=(document.getElementById('dtSearch')?.value||'').toLowerCase().trim();
+  const filterDesil=document.getElementById('dtFilterDesil')?.value||'';
+
+  function mkDesilStat2(){const o={0:{t:0,r:0,l:0,k:0}};for(let i=1;i<=8;i++)o[i]={t:0,r:0,l:0,k:0};return o;}
+
+  const byKec={},byDesa={};
+  Object.entries(KEC_CONFIG||{}).forEach(([kn,kv])=>{
+    const kec=normCase(kn)||kn;
+    byKec[kec]={kec,total:0,rtlh:0,layak:0,lain:0,desil:mkDesilStat2()};
+    (kv.desa||[]).forEach(d=>{
+      const desa=normCase(d.nama)||d.nama;
+      byDesa[kec+'|'+desa]={kec,desa,kode:d.kode,total:0,rtlh:0,layak:0,lain:0,desil:mkDesilStat2()};
+    });
+  });
+
+  _dtData.forEach(r=>{
+    const kec=normCase(r.kec)||r.kec||'-';
+    const desaRaw=(r.desa||'').trim();
+    const matchKey=Object.keys(byDesa).find(k=>{
+      const[kk,dk]=k.split('|');
+      return kk.toUpperCase()===kec.toUpperCase()&&dk.toUpperCase()===desaRaw.toUpperCase();
+    });
+    const desaKey=matchKey||(kec+'|'+desaRaw);
+    const d=parseDt(r.desil);
+    const kat=statusKategori(r.status_rtlh);
+    const isR=kat==='RTLH',isL=kat==='Layak Huni',isK=kat==='Keterangan Lain';
+
+    if(!byKec[kec])byKec[kec]={kec,total:0,rtlh:0,layak:0,lain:0,desil:mkDesilStat2()};
+    byKec[kec].total++;if(isR)byKec[kec].rtlh++;else if(isL)byKec[kec].layak++;else byKec[kec].lain=(byKec[kec].lain||0)+1;
+    const kds=byKec[kec].desil[d]||{t:0,r:0,l:0,k:0};kds.t++;if(isR)kds.r++;else if(isL)kds.l++;else kds.k++;byKec[kec].desil[d]=kds;
+
+    if(!byDesa[desaKey])byDesa[desaKey]={kec,desa:normCase(desaRaw)||desaRaw,kode:'',total:0,rtlh:0,layak:0,lain:0,desil:mkDesilStat2()};
+    byDesa[desaKey].total++;if(isR)byDesa[desaKey].rtlh++;else if(isL)byDesa[desaKey].layak++;else byDesa[desaKey].lain=(byDesa[desaKey].lain||0)+1;
+    const dds=byDesa[desaKey].desil[d]||{t:0,r:0,l:0,k:0};dds.t++;if(isR)dds.r++;else if(isL)dds.l++;else dds.k++;byDesa[desaKey].desil[d]=dds;
+  });
+
+  const allRows=_dtTab==='kec'?Object.values(byKec):Object.values(byDesa);
+  const filtered=allRows.filter(r=>{
+    const match=!q||(r.kec||'').toLowerCase().includes(q)||(r.desa||'').toLowerCase().includes(q);
+    const dMatch=!filterDesil||((r.desil[parseInt(filterDesil)]?.t||0)>0);
+    return match&&dMatch;
+  }).sort((a,b)=>_dtTab==='desa'?a.kec.localeCompare(b.kec)||a.desa.localeCompare(b.desa):a.kec.localeCompare(b.kec));
+
+  // Desil yg aktif (ada data)
+  const globalDC={};_dtData.forEach(r=>{const d=parseDt(r.desil);globalDC[d]=(globalDC[d]||0)+1;});
+  const visD=[1,2,3,4,5,6,7,8].filter(d=>globalDC[d]>0);
+
+  const tab=_dtTab;
+  const filterLabel=filterDesil?(filterDesil==='0'?'Tanpa Desil':'Desil '+filterDesil):'Semua Desil';
+  const searchLabel=q?`Pencarian: "${q}"`:null;
+  return{filtered,visD,tab,filterLabel,searchLabel};
+}
+
+// ── EXPORT EXCEL ──
+function exportDtsenExcel(){
+  if(!_dtData){toast('Data belum dimuat','error');return;}
+  if(!window.XLSX){toast('Library Excel belum siap','error');return;}
+  const{filtered,visD,tab}=_getDtsenExportData();
+  if(!filtered.length){toast('Tidak ada data untuk diekspor','error');return;}
+
+  const desil_labels={1:'Desil 1',2:'Desil 2',3:'Desil 3',4:'Desil 4',5:'Desil 5',6:'Desil 6',7:'Desil 7',8:'Desil 8',0:'Tanpa Desil'};
+
+  const rows=filtered.map(r=>{
+    const obj={};
+    if(tab==='kec'){obj['Kecamatan']=r.kec;}
+    else{obj['Kecamatan']=r.kec;obj['Desa']=r.desa||'-';}
+    obj['Total']=r.total;
+    obj['RTLH']=r.rtlh;
+    obj['Layak Huni']=r.layak;
+    obj['Ket. Lain']=r.lain;
+    visD.forEach(d=>{
+      const s=r.desil[d]||{t:0,r:0,l:0,k:0};
+      const lbl=desil_labels[d]||'D'+d;
+      obj[lbl+' (Total)']=s.t||0;
+      obj[lbl+' (RTLH)']=s.r||0;
+      obj[lbl+' (Layak)']=s.l||0;
+      obj[lbl+' (Ket.Lain)']=s.k||0;
+    });
+    // Tanpa desil
+    if(visD.length>0){
+      const s0=r.desil[0]||{t:0,r:0,l:0,k:0};
+      obj['Tanpa Desil (Total)']=s0.t||0;
+      obj['Tanpa Desil (RTLH)']=s0.r||0;
+      obj['Tanpa Desil (Layak)']=s0.l||0;
+      obj['Tanpa Desil (Ket.Lain)']=s0.k||0;
+    }
+    return obj;
+  });
+
+  // Grand total footer
+  const grand={};
+  if(tab==='kec')grand['Kecamatan']='TOTAL';
+  else{grand['Kecamatan']='TOTAL';grand['Desa']='';}
+  grand['Total']=filtered.reduce((s,r)=>s+r.total,0);
+  grand['RTLH']=filtered.reduce((s,r)=>s+r.rtlh,0);
+  grand['Layak Huni']=filtered.reduce((s,r)=>s+r.layak,0);
+  grand['Ket. Lain']=filtered.reduce((s,r)=>s+r.lain,0);
+  visD.forEach(d=>{
+    const lbl=desil_labels[d]||'D'+d;
+    grand[lbl+' (Total)']=filtered.reduce((s,r)=>s+(r.desil[d]?.t||0),0);
+    grand[lbl+' (RTLH)']=filtered.reduce((s,r)=>s+(r.desil[d]?.r||0),0);
+    grand[lbl+' (Layak)']=filtered.reduce((s,r)=>s+(r.desil[d]?.l||0),0);
+    grand[lbl+' (Ket.Lain)']=filtered.reduce((s,r)=>s+(r.desil[d]?.k||0),0);
+  });
+  if(visD.length>0){
+    grand['Tanpa Desil (Total)']=filtered.reduce((s,r)=>s+(r.desil[0]?.t||0),0);
+    grand['Tanpa Desil (RTLH)']=filtered.reduce((s,r)=>s+(r.desil[0]?.r||0),0);
+    grand['Tanpa Desil (Layak)']=filtered.reduce((s,r)=>s+(r.desil[0]?.l||0),0);
+    grand['Tanpa Desil (Ket.Lain)']=filtered.reduce((s,r)=>s+(r.desil[0]?.k||0),0);
+  }
+  rows.push(grand);
+
+  const ws=XLSX.utils.json_to_sheet(rows);
+  // Lebar kolom otomatis
+  const colW=Object.keys(rows[0]).map(k=>({wch:Math.max(k.length+2,10)}));
+  ws['!cols']=colW;
+
+  // Style header baris pertama (warna navy) — SheetJS community tidak support rich style,
+  // tapi bisa tambah baris judul di atas
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,tab==='kec'?'Per Kecamatan':'Per Desa');
+
+  const tgl=new Date().toISOString().slice(0,10);
+  const fn=`DTSEN_${tab==='kec'?'Kecamatan':'Desa'}_${tgl}.xlsx`;
+  XLSX.writeFile(wb,fn);
+  toast('Excel berhasil diunduh','success');
+}
+
+// ── EXPORT PDF (via browser print) ──
+function exportDtsenPDF(){
+  if(!_dtData){toast('Data belum dimuat','error');return;}
+  const{filtered,visD,tab,filterLabel,searchLabel}=_getDtsenExportData();
+  if(!filtered.length){toast('Tidak ada data','error');return;}
+
+  const tgl=new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
+  const judulTab=tab==='kec'?'Per Kecamatan':'Per Desa';
+  const desil_labels={1:'D1',2:'D2',3:'D3',4:'D4',5:'D5',6:'D6',7:'D7',8:'D8',0:'Tanpa'};
+  const DESIL_COLORS_PDF=['#BE123C','#DC2626','#EA580C','#D97706','#84CC16','#16A34A','#0891B2','#7C3AED'];
+
+  // Build tabel HTML untuk print
+  let thead=`<tr>
+    ${tab==='kec'?'<th>Kecamatan</th>':'<th>Kecamatan</th><th>Desa</th>'}
+    <th>Total</th><th style="color:#DC2626">RTLH</th><th style="color:#16A34A">Layak</th><th style="color:#7C3AED">Ket.Lain</th>
+    ${visD.map(d=>`<th style="color:${DESIL_COLORS_PDF[d-1]||'#64748B'}">${desil_labels[d]||'D'+d}<br><span style="font-size:7px">R/L/K</span></th>`).join('')}
+    <th style="color:#64748B">Tanpa<br><span style="font-size:7px">R/L/K</span></th>
+  </tr>`;
+
+  let tbody='';
+  filtered.forEach((r,i)=>{
+    const bg=i%2===0?'#fff':'#F9FAFB';
+    const s0=r.desil[0]||{t:0,r:0,l:0,k:0};
+    tbody+=`<tr style="background:${bg}">
+      ${tab==='kec'?`<td style="font-weight:700">${r.kec}</td>`:`<td style="font-size:8px;color:#64748B">${r.kec}</td><td style="font-weight:600">${r.desa||'-'}</td>`}
+      <td style="text-align:center;font-weight:700;color:#1B6CA8">${r.total}</td>
+      <td style="text-align:center;color:#DC2626;font-weight:${r.rtlh?700:400}">${r.rtlh||'-'}</td>
+      <td style="text-align:center;color:#16A34A;font-weight:${r.layak?700:400}">${r.layak||'-'}</td>
+      <td style="text-align:center;color:#7C3AED;font-weight:${r.lain?700:400}">${r.lain||'-'}</td>
+      ${visD.map(d=>{
+        const s=r.desil[d]||{t:0,r:0,l:0,k:0};
+        if(!s.t)return`<td style="text-align:center;color:#CBD5E1">-</td>`;
+        return`<td style="text-align:center;font-size:8px">
+          <div style="font-weight:700;color:${DESIL_COLORS_PDF[d-1]||'#333'}">${s.t}</div>
+          <div style="color:#666">${[s.r?'R:'+s.r:'',s.l?'L:'+s.l:'',s.k?'K:'+s.k:''].filter(Boolean).join(' ')}</div>
+        </td>`;
+      }).join('')}
+      <td style="text-align:center;font-size:8px">
+        ${s0.t?`<div style="font-weight:700;color:#6B7280">${s0.t}</div><div style="color:#999">${[s0.r?'R:'+s0.r:'',s0.l?'L:'+s0.l:'',s0.k?'K:'+s0.k:''].filter(Boolean).join(' ')}</div>`:'<span style="color:#CBD5E1">-</span>'}
+      </td>
+    </tr>`;
+  });
+
+  // Footer total
+  const gTotal=filtered.reduce((s,r)=>s+r.total,0);
+  const gRtlh=filtered.reduce((s,r)=>s+r.rtlh,0);
+  const gLayak=filtered.reduce((s,r)=>s+r.layak,0);
+  const gLain=filtered.reduce((s,r)=>s+r.lain,0);
+  tbody+=`<tr style="background:#0C2340;color:#fff;font-weight:800">
+    ${tab==='kec'?`<td>TOTAL (${filtered.length} Kec)</td>`:`<td colspan="2">TOTAL (${filtered.length} Desa)</td>`}
+    <td style="text-align:center">${gTotal}</td>
+    <td style="text-align:center;color:#FCA5A5">${gRtlh}</td>
+    <td style="text-align:center;color:#86EFAC">${gLayak}</td>
+    <td style="text-align:center;color:#C4B5FD">${gLain}</td>
+    ${visD.map(d=>{
+      const t=filtered.reduce((s,r)=>s+(r.desil[d]?.t||0),0);
+      const rv=filtered.reduce((s,r)=>s+(r.desil[d]?.r||0),0);
+      const lv=filtered.reduce((s,r)=>s+(r.desil[d]?.l||0),0);
+      const kv=filtered.reduce((s,r)=>s+(r.desil[d]?.k||0),0);
+      return`<td style="text-align:center;font-size:8px">
+        <div style="color:${DESIL_COLORS_PDF[d-1]||'#fff'}">${t}</div>
+        <div style="color:rgba(255,255,255,.6)">${[rv?'R:'+rv:'',lv?'L:'+lv:'',kv?'K:'+kv:''].filter(Boolean).join(' ')||'-'}</div>
+      </td>`;
+    }).join('')}
+    <td style="text-align:center;font-size:8px">
+      ${(()=>{const t=filtered.reduce((s,r)=>s+(r.desil[0]?.t||0),0);const rv=filtered.reduce((s,r)=>s+(r.desil[0]?.r||0),0);const lv=filtered.reduce((s,r)=>s+(r.desil[0]?.l||0),0);const kv=filtered.reduce((s,r)=>s+(r.desil[0]?.k||0),0);return t?`<div style="color:rgba(255,255,255,.7)">${t}</div><div style="color:rgba(255,255,255,.5)">${[rv?'R:'+rv:'',lv?'L:'+lv:'',kv?'K:'+kv:''].filter(Boolean).join(' ')}</div>`:'<span style="opacity:.4">-</span>';})()}
+    </td>
+  </tr>`;
+
+  const html=`<!DOCTYPE html>
+<html lang="id"><head>
+<meta charset="UTF-8">
+<title>DTSEN ${judulTab} — Ngawi ${tgl}</title>
+<style>
+  @page{size:A3 landscape;margin:15mm 10mm}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;font-size:9px;color:#1E293B;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .cover{margin-bottom:14px;border-bottom:3px solid #0C2340;padding-bottom:10px;display:flex;align-items:flex-end;justify-content:space-between}
+  .cover h1{font-size:16px;font-weight:800;color:#0C2340;margin-bottom:3px}
+  .cover h2{font-size:12px;font-weight:700;color:#1B6CA8}
+  .cover .meta{font-size:8px;color:#64748B;text-align:right}
+  .legend{display:flex;gap:12px;margin:6px 0 10px;flex-wrap:wrap;font-size:8px;font-weight:600}
+  .leg-item{display:flex;align-items:center;gap:4px}
+  .leg-dot{width:8px;height:8px;border-radius:2px}
+  table{width:100%;border-collapse:collapse;font-size:8px}
+  th{background:#0C2340;color:#fff;padding:5px 4px;text-align:center;font-weight:700;font-size:7.5px;border:1px solid #1B3A5C;white-space:nowrap}
+  td{padding:4px 4px;border:1px solid #E2E8F0;vertical-align:middle}
+  tr:nth-child(even) td{background:#F9FAFB}
+  @media print{
+    .no-print{display:none}
+    body{font-size:8px}
+  }
+  .print-btn{position:fixed;top:12px;right:12px;padding:8px 18px;background:#0C2340;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px}
+  .print-btn:hover{background:#1B3A5C}
+  .filter-info{font-size:8px;color:#64748B;margin-bottom:8px;display:flex;gap:12px;flex-wrap:wrap}
+  .filter-info span{background:#F1F5F9;padding:2px 8px;border-radius:4px}
+</style>
+</head><body>
+<button class="print-btn no-print" onclick="window.print()"><i>🖨️</i> Cetak / Save PDF</button>
+<div class="cover">
+  <div>
+    <div style="font-size:8px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">DPRKP Kabupaten Ngawi</div>
+    <h1>Data DTSEN / MyPKP — ${judulTab}</h1>
+    <h2>Distribusi Desil per ${tab==='kec'?'Kecamatan':'Desa'} dengan Breakdown Status RTLH</h2>
+  </div>
+  <div class="meta">
+    <div style="font-weight:700;font-size:9px;color:#0C2340">e-RTLH Kabupaten Ngawi</div>
+    <div>Dicetak: ${tgl}</div>
+    <div>Sumber: e-rtlhngawi.id</div>
+  </div>
+</div>
+<div class="filter-info">
+  <span>Filter Desil: <strong>${filterLabel}</strong></span>
+  ${searchLabel?`<span>Pencarian: <strong>${searchLabel}</strong></span>`:''}
+  <span>Tampilan: <strong>${judulTab}</strong></span>
+  <span>Jumlah data: <strong>${filtered.length} ${tab==='kec'?'Kecamatan':'Desa'}</strong></span>
+</div>
+<div class="legend">
+  <span style="font-weight:800;color:#334155">Keterangan:</span>
+  <span class="leg-item"><span class="leg-dot" style="background:#DC2626"></span> R = RTLH</span>
+  <span class="leg-item"><span class="leg-dot" style="background:#16A34A"></span> L = Layak Huni</span>
+  <span class="leg-item"><span class="leg-dot" style="background:#7C3AED"></span> K = Keterangan Lain</span>
+  <span class="leg-item"><span class="leg-dot" style="background:#64748B"></span> D1–D8 = Desil DTSEN</span>
+</div>
+<table>
+  <thead>${thead}</thead>
+  <tbody>${tbody}</tbody>
+</table>
+</body></html>`;
+
+  const w=window.open('','_blank','width=1200,height=800');
+  if(!w){toast('Popup diblokir browser — izinkan popup untuk halaman ini','error');return;}
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+}
+
+// ── EXPORT WORD (HTML-to-DOCX via Blob) ──
+function exportDtsenWord(){
+  if(!_dtData){toast('Data belum dimuat','error');return;}
+  const{filtered,visD,tab,filterLabel,searchLabel}=_getDtsenExportData();
+  if(!filtered.length){toast('Tidak ada data','error');return;}
+
+  const tgl=new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
+  const judulTab=tab==='kec'?'Per Kecamatan':'Per Desa';
+  const DCOL={1:'#BE123C',2:'#DC2626',3:'#EA580C',4:'#D97706',5:'#84CC16',6:'#16A34A',7:'#0891B2',8:'#7C3AED'};
+
+  const thStyle='border:1pt solid #1B3A5C;background:#0C2340;color:#fff;padding:4pt 5pt;text-align:center;font-size:8pt;font-weight:bold';
+  const tdStyle='border:1pt solid #CBD5E1;padding:3pt 4pt;font-size:8pt';
+
+  let thead=`<tr>
+    ${tab==='kec'?`<th style="${thStyle};text-align:left">Kecamatan</th>`:`<th style="${thStyle};text-align:left">Kecamatan</th><th style="${thStyle};text-align:left">Desa</th>`}
+    <th style="${thStyle}">Total</th>
+    <th style="${thStyle};color:#FCA5A5">RTLH</th>
+    <th style="${thStyle};color:#86EFAC">Layak</th>
+    <th style="${thStyle};color:#C4B5FD">Ket.Lain</th>
+    ${visD.map(d=>`<th style="${thStyle};color:${DCOL[d]||'#fff'}">D${d}<br><span style="font-size:7pt">R/L/K</span></th>`).join('')}
+    <th style="${thStyle};color:rgba(255,255,255,.6)">Tanpa<br><span style="font-size:7pt">R/L/K</span></th>
+  </tr>`;
+
+  let tbody='';
+  filtered.forEach((r,i)=>{
+    const bg=i%2===0?'#fff':'#F9FAFB';
+    const s0=r.desil[0]||{t:0,r:0,l:0,k:0};
+    tbody+=`<tr>
+      ${tab==='kec'?
+        `<td style="${tdStyle};background:${bg};font-weight:bold">${r.kec}</td>`:
+        `<td style="${tdStyle};background:${bg};font-size:7pt;color:#64748B">${r.kec}</td><td style="${tdStyle};background:${bg};font-weight:600">${r.desa||'-'}</td>`}
+      <td style="${tdStyle};background:${bg};text-align:center;font-weight:bold;color:#1B6CA8">${r.total}</td>
+      <td style="${tdStyle};background:${bg};text-align:center;color:#DC2626;font-weight:${r.rtlh?'bold':'normal'}">${r.rtlh||'-'}</td>
+      <td style="${tdStyle};background:${bg};text-align:center;color:#16A34A;font-weight:${r.layak?'bold':'normal'}">${r.layak||'-'}</td>
+      <td style="${tdStyle};background:${bg};text-align:center;color:#7C3AED;font-weight:${r.lain?'bold':'normal'}">${r.lain||'-'}</td>
+      ${visD.map(d=>{
+        const s=r.desil[d]||{t:0,r:0,l:0,k:0};
+        if(!s.t)return`<td style="${tdStyle};background:${bg};text-align:center;color:#CBD5E1">-</td>`;
+        return`<td style="${tdStyle};background:${bg};text-align:center;font-size:7pt">
+          <span style="font-weight:bold;color:${DCOL[d]||'#333'}">${s.t}</span><br>
+          <span style="color:#555">${[s.r?'R:'+s.r:'',s.l?'L:'+s.l:'',s.k?'K:'+s.k:''].filter(Boolean).join(' ')}</span>
+        </td>`;
+      }).join('')}
+      <td style="${tdStyle};background:${bg};text-align:center;font-size:7pt">
+        ${s0.t?`<span style="font-weight:bold;color:#6B7280">${s0.t}</span><br><span style="color:#999">${[s0.r?'R:'+s0.r:'',s0.l?'L:'+s0.l:'',s0.k?'K:'+s0.k:''].filter(Boolean).join(' ')}</span>`:'<span style="color:#CBD5E1">-</span>'}
+      </td>
+    </tr>`;
+  });
+
+  // Footer
+  const gTotal=filtered.reduce((s,r)=>s+r.total,0);
+  const gRtlh=filtered.reduce((s,r)=>s+r.rtlh,0);
+  const gLayak=filtered.reduce((s,r)=>s+r.layak,0);
+  const gLain=filtered.reduce((s,r)=>s+r.lain,0);
+  const ftd='border:1pt solid #1B3A5C;background:#0C2340;color:#fff;padding:3pt 4pt;font-size:8pt;font-weight:bold;text-align:center';
+  tbody+=`<tr>
+    ${tab==='kec'?`<td style="${ftd};text-align:left">TOTAL (${filtered.length} Kec)</td>`:`<td style="${ftd};text-align:left" colspan="2">TOTAL (${filtered.length} Desa)</td>`}
+    <td style="${ftd}">${gTotal}</td>
+    <td style="${ftd};color:#FCA5A5">${gRtlh}</td>
+    <td style="${ftd};color:#86EFAC">${gLayak}</td>
+    <td style="${ftd};color:#C4B5FD">${gLain}</td>
+    ${visD.map(d=>{
+      const t=filtered.reduce((s,r)=>s+(r.desil[d]?.t||0),0);
+      const rv=filtered.reduce((s,r)=>s+(r.desil[d]?.r||0),0);
+      const lv=filtered.reduce((s,r)=>s+(r.desil[d]?.l||0),0);
+      const kv=filtered.reduce((s,r)=>s+(r.desil[d]?.k||0),0);
+      return`<td style="${ftd};font-size:7pt;color:${DCOL[d]||'#fff'}">${t}<br><span style="color:rgba(255,255,255,.6)">${[rv?'R:'+rv:'',lv?'L:'+lv:'',kv?'K:'+kv:''].filter(Boolean).join(' ')||'-'}</span></td>`;
+    }).join('')}
+    ${(()=>{const t=filtered.reduce((s,r)=>s+(r.desil[0]?.t||0),0);const rv=filtered.reduce((s,r)=>s+(r.desil[0]?.r||0),0);const lv=filtered.reduce((s,r)=>s+(r.desil[0]?.l||0),0);const kv=filtered.reduce((s,r)=>s+(r.desil[0]?.k||0),0);return`<td style="${ftd};font-size:7pt;color:rgba(255,255,255,.7)">${t}<br><span style="color:rgba(255,255,255,.5)">${[rv?'R:'+rv:'',lv?'L:'+lv:'',kv?'K:'+kv:''].filter(Boolean).join(' ')||'-'}</span></td>`;})()}
+  </tr>`;
+
+  const docHtml=`<html xmlns:o="urn:schemas-microsoft-com:office:office"
+    xmlns:w="urn:schemas-microsoft-com:office:word"
+    xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="UTF-8">
+<meta name=ProgId content=Word.Document>
+<meta name=Generator content="Microsoft Word 15">
+<!--[if gte mso 9]><xml>
+<w:WordDocument><w:View>Print</w:View><w:Zoom>90</w:Zoom>
+<w:DoNotOptimizeForBrowser/></w:WordDocument>
+</xml><![endif]-->
+<style>
+  @page WordSection1{size:29.7cm 21cm;mso-page-orientation:landscape;margin:1.5cm 1cm}
+  div.WordSection1{page:WordSection1}
+  body{font-family:'Calibri',Arial,sans-serif;font-size:9pt}
+  table{border-collapse:collapse;width:100%}
+  h1{font-size:14pt;color:#0C2340;margin-bottom:4pt}
+  h2{font-size:10pt;color:#1B6CA8;margin-bottom:2pt;font-weight:normal}
+  .meta{font-size:8pt;color:#64748B;margin-bottom:8pt}
+</style>
+</head>
+<body>
+<div class="WordSection1">
+  <h1>Data DTSEN / MyPKP — ${judulTab}</h1>
+  <h2>Distribusi Desil per ${tab==='kec'?'Kecamatan':'Desa'} dengan Breakdown Status RTLH — Kabupaten Ngawi</h2>
+  <p class="meta">
+    Dicetak: ${tgl} &nbsp;|&nbsp; Filter: ${filterLabel}${searchLabel?' | '+searchLabel:''} &nbsp;|&nbsp;
+    Jumlah: ${filtered.length} ${tab==='kec'?'Kecamatan':'Desa'} &nbsp;|&nbsp;
+    Keterangan: <b style="color:#DC2626">R</b>=RTLH &nbsp;<b style="color:#16A34A">L</b>=Layak Huni &nbsp;<b style="color:#7C3AED">K</b>=Ket.Lain
+  </p>
+  <table>${thead}<tbody>${tbody}</tbody></table>
+</div>
+</body></html>`;
+
+  const blob=new Blob(['\ufeff'+docHtml],{type:'application/msword'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  const tgl2=new Date().toISOString().slice(0,10);
+  a.download=`DTSEN_${tab==='kec'?'Kecamatan':'Desa'}_${tgl2}.doc`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Word berhasil diunduh','success');
+}
+
 
 </script>
 
