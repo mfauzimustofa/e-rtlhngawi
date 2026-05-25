@@ -731,10 +731,30 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
         </select>
         <!-- Export buttons -->
         <div style="display:flex;gap:4px;flex-shrink:0">
-          <button onclick="exportDtsenExcel()" title="Export Excel"
-            style="padding:7px 11px;border-radius:7px;border:none;background:#16A34A;color:#fff;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;white-space:nowrap">
-            <i class="fas fa-file-excel"></i> Excel
-          </button>
+          <div style="position:relative;display:inline-flex" id="dtExcelDropWrap">
+            <button onclick="exportDtsenExcel()" title="Export Excel tab aktif"
+              style="padding:7px 10px;border-radius:7px 0 0 7px;border:none;border-right:1px solid #15803d;background:#16A34A;color:#fff;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;white-space:nowrap">
+              <i class="fas fa-file-excel"></i> Excel
+            </button>
+            <button onclick="toggleDtExcelMenu()" title="Pilih format download"
+              style="padding:7px 8px;border-radius:0 7px 7px 0;border:none;background:#16A34A;color:#fff;font-size:.7rem;cursor:pointer;font-family:inherit">
+              <i class="fas fa-caret-down"></i>
+            </button>
+            <div id="dtExcelMenu" style="display:none;position:absolute;top:100%;right:0;margin-top:4px;background:#fff;border:1px solid var(--gray-200);border-radius:8px;box-shadow:var(--shadow-lg);z-index:999;min-width:190px;overflow:hidden">
+              <button onclick="exportDtsenExcel();closeDtExcelMenu()" style="width:100%;padding:9px 14px;background:none;border:none;text-align:left;font-size:.75rem;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--gray-700)" onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
+                <i class="fas fa-file-excel" style="color:#16A34A;width:14px"></i> Tab Aktif (Kec/Desa)
+              </button>
+              <button onclick="exportDtsenExcelOnly('kec');closeDtExcelMenu()" style="width:100%;padding:9px 14px;background:none;border:none;border-top:1px solid var(--gray-100);text-align:left;font-size:.75rem;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--gray-700)" onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
+                <i class="fas fa-city" style="color:var(--blue);width:14px"></i> Per Kecamatan saja
+              </button>
+              <button onclick="exportDtsenExcelOnly('desa');closeDtExcelMenu()" style="width:100%;padding:9px 14px;background:none;border:none;border-top:1px solid var(--gray-100);text-align:left;font-size:.75rem;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--gray-700)" onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
+                <i class="fas fa-home" style="color:var(--gold);width:14px"></i> Per Desa saja
+              </button>
+              <button onclick="exportDtsenExcelBoth();closeDtExcelMenu()" style="width:100%;padding:9px 14px;background:none;border:none;border-top:1px solid var(--gray-100);text-align:left;font-size:.75rem;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--gray-700);font-weight:700" onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
+                <i class="fas fa-layer-group" style="color:#7C3AED;width:14px"></i> Kecamatan + Desa (2 sheet)
+              </button>
+            </div>
+          </div>
           <button onclick="exportDtsenPDF()" title="Cetak / Export PDF"
             style="padding:7px 11px;border-radius:7px;border:none;background:#DC2626;color:#fff;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;white-space:nowrap">
             <i class="fas fa-file-pdf"></i> PDF
@@ -8121,6 +8141,144 @@ function exportDtsenExcel(){
   const fn=`DTSEN_${tab==='kec'?'Kecamatan':'Desa'}_${tgl}.xlsx`;
   XLSX.writeFile(wb,fn);
   toast('Excel berhasil diunduh','success');
+}
+
+// ── DTSEN EXCEL DROPDOWN HELPERS ──
+function toggleDtExcelMenu(){
+  const m=document.getElementById('dtExcelMenu');
+  if(!m)return;
+  const open=m.style.display==='block';
+  m.style.display=open?'none':'block';
+  if(!open){
+    setTimeout(()=>document.addEventListener('click',_closeDtExcelOutside),0);
+  }
+}
+function closeDtExcelMenu(){
+  const m=document.getElementById('dtExcelMenu');
+  if(m)m.style.display='none';
+  document.removeEventListener('click',_closeDtExcelOutside);
+}
+function _closeDtExcelOutside(e){
+  const wrap=document.getElementById('dtExcelDropWrap');
+  if(wrap&&!wrap.contains(e.target))closeDtExcelMenu();
+}
+
+// Helper: build sheet rows untuk tab tertentu ('kec' atau 'desa')
+function _buildDtsenSheetRows(tab){
+  if(!_dtData)return[];
+  const q=(document.getElementById('dtSearch')?.value||'').toLowerCase().trim();
+  const filterDesil=document.getElementById('dtFilterDesil')?.value||'';
+  const desil_labels={1:'Desil 1',2:'Desil 2',3:'Desil 3',4:'Desil 4',5:'Desil 5',6:'Desil 6',7:'Desil 7',8:'Desil 8',0:'Tanpa Desil'};
+
+  function mkDs(){const o={0:{t:0,r:0,l:0,k:0}};for(let i=1;i<=8;i++)o[i]={t:0,r:0,l:0,k:0};return o;}
+  const byKec={},byDesa={};
+  Object.entries(KEC_CONFIG||{}).forEach(([kn,kv])=>{
+    const kec=normCase(kn)||kn;
+    byKec[kec]={kec,total:0,rtlh:0,layak:0,lain:0,desil:mkDs()};
+    (kv.desa||[]).forEach(d=>{
+      const desa=normCase(d.nama)||d.nama;
+      byDesa[kec+'|'+desa]={kec,desa,kode:d.kode,total:0,rtlh:0,layak:0,lain:0,desil:mkDs()};
+    });
+  });
+  _dtData.forEach(r=>{
+    const kec=normCase(r.kec)||r.kec||'-';
+    const desaRaw=(r.desa||'').trim();
+    const matchKey=Object.keys(byDesa).find(k=>{const[kk,dk]=k.split('|');return kk.toUpperCase()===kec.toUpperCase()&&dk.toUpperCase()===desaRaw.toUpperCase();});
+    const desaKey=matchKey||(kec+'|'+desaRaw);
+    const d=parseDt(r.desil);
+    const kat=statusKategori(r.status_rtlh);
+    const isR=kat==='RTLH',isL=kat==='Layak Huni';
+    if(!byKec[kec])byKec[kec]={kec,total:0,rtlh:0,layak:0,lain:0,desil:mkDs()};
+    byKec[kec].total++;if(isR)byKec[kec].rtlh++;else if(isL)byKec[kec].layak++;else byKec[kec].lain=(byKec[kec].lain||0)+1;
+    const ks=byKec[kec].desil[d]||{t:0,r:0,l:0,k:0};ks.t++;if(isR)ks.r++;else if(isL)ks.l++;else ks.k++;byKec[kec].desil[d]=ks;
+    if(!byDesa[desaKey])byDesa[desaKey]={kec,desa:normCase(desaRaw)||desaRaw,kode:'',total:0,rtlh:0,layak:0,lain:0,desil:mkDs()};
+    byDesa[desaKey].total++;if(isR)byDesa[desaKey].rtlh++;else if(isL)byDesa[desaKey].layak++;else byDesa[desaKey].lain=(byDesa[desaKey].lain||0)+1;
+    const ds=byDesa[desaKey].desil[d]||{t:0,r:0,l:0,k:0};ds.t++;if(isR)ds.r++;else if(isL)ds.l++;else ds.k++;byDesa[desaKey].desil[d]=ds;
+  });
+  const globalDC={};_dtData.forEach(r=>{const d=parseDt(r.desil);globalDC[d]=(globalDC[d]||0)+1;});
+  const visD=[1,2,3,4,5,6,7,8].filter(d=>globalDC[d]>0);
+
+  const allRows=tab==='kec'?Object.values(byKec):Object.values(byDesa);
+  const filtered=allRows.filter(r=>{
+    const match=!q||(r.kec||'').toLowerCase().includes(q)||(r.desa||'').toLowerCase().includes(q);
+    const dMatch=!filterDesil||((r.desil[parseInt(filterDesil)]?.t||0)>0);
+    return match&&dMatch;
+  }).sort((a,b)=>tab==='desa'?a.kec.localeCompare(b.kec)||a.desa.localeCompare(b.desa):a.kec.localeCompare(b.kec));
+
+  const rows=filtered.map((r,i)=>{
+    const obj={'No':i+1};
+    if(tab==='kec'){obj['Kecamatan']=r.kec;}
+    else{obj['Kecamatan']=r.kec;obj['Desa']=r.desa||'-';}
+    obj['Total']=r.total;obj['RTLH']=r.rtlh;obj['Layak Huni']=r.layak;obj['Ket. Lain']=r.lain;
+    visD.forEach(d=>{
+      const s=r.desil[d]||{t:0,r:0,l:0,k:0};const lbl=desil_labels[d]||'D'+d;
+      obj[lbl+' (Total)']=s.t||0;obj[lbl+' (RTLH)']=s.r||0;obj[lbl+' (Layak)']=s.l||0;obj[lbl+' (Ket.Lain)']=s.k||0;
+    });
+    if(visD.length>0){const s0=r.desil[0]||{t:0,r:0,l:0,k:0};obj['Tanpa Desil (Total)']=s0.t||0;obj['Tanpa Desil (RTLH)']=s0.r||0;obj['Tanpa Desil (Layak)']=s0.l||0;obj['Tanpa Desil (Ket.Lain)']=s0.k||0;}
+    return obj;
+  });
+
+  // Grand total
+  const grand={'No':''};
+  if(tab==='kec')grand['Kecamatan']='TOTAL';
+  else{grand['Kecamatan']='TOTAL';grand['Desa']='';}
+  grand['Total']=filtered.reduce((s,r)=>s+r.total,0);
+  grand['RTLH']=filtered.reduce((s,r)=>s+r.rtlh,0);
+  grand['Layak Huni']=filtered.reduce((s,r)=>s+r.layak,0);
+  grand['Ket. Lain']=filtered.reduce((s,r)=>s+r.lain,0);
+  visD.forEach(d=>{
+    const lbl=desil_labels[d]||'D'+d;
+    grand[lbl+' (Total)']=filtered.reduce((s,r)=>s+(r.desil[d]?.t||0),0);
+    grand[lbl+' (RTLH)']=filtered.reduce((s,r)=>s+(r.desil[d]?.r||0),0);
+    grand[lbl+' (Layak)']=filtered.reduce((s,r)=>s+(r.desil[d]?.l||0),0);
+    grand[lbl+' (Ket.Lain)']=filtered.reduce((s,r)=>s+(r.desil[d]?.k||0),0);
+  });
+  if(visD.length>0){
+    grand['Tanpa Desil (Total)']=filtered.reduce((s,r)=>s+(r.desil[0]?.t||0),0);
+    grand['Tanpa Desil (RTLH)']=filtered.reduce((s,r)=>s+(r.desil[0]?.r||0),0);
+    grand['Tanpa Desil (Layak)']=filtered.reduce((s,r)=>s+(r.desil[0]?.l||0),0);
+    grand['Tanpa Desil (Ket.Lain)']=filtered.reduce((s,r)=>s+(r.desil[0]?.k||0),0);
+  }
+  rows.push(grand);
+  return rows;
+}
+
+// Export hanya kec atau hanya desa
+function exportDtsenExcelOnly(tab){
+  if(!_dtData){toast('Data belum dimuat','error');return;}
+  if(!window.XLSX){toast('Library Excel belum siap','error');return;}
+  const rows=_buildDtsenSheetRows(tab);
+  if(!rows.length){toast('Tidak ada data','error');return;}
+  const ws=XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=Object.keys(rows[0]).map(k=>({wch:Math.max(k.length+2,10)}));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,tab==='kec'?'Per Kecamatan':'Per Desa');
+  const tgl=new Date().toISOString().slice(0,10).replace(/-/g,'');
+  XLSX.writeFile(wb,`DTSEN_${tab==='kec'?'Kecamatan':'Desa'}_${tgl}.xlsx`);
+  toast(`Excel Per ${tab==='kec'?'Kecamatan':'Desa'} diunduh`,'success');
+}
+
+// Export keduanya dalam satu file 2 sheet
+function exportDtsenExcelBoth(){
+  if(!_dtData){toast('Data belum dimuat','error');return;}
+  if(!window.XLSX){toast('Library Excel belum siap','error');return;}
+  const rowsKec=_buildDtsenSheetRows('kec');
+  const rowsDesa=_buildDtsenSheetRows('desa');
+  if(!rowsKec.length&&!rowsDesa.length){toast('Tidak ada data','error');return;}
+  const wb=XLSX.utils.book_new();
+  if(rowsKec.length){
+    const ws=XLSX.utils.json_to_sheet(rowsKec);
+    ws['!cols']=Object.keys(rowsKec[0]).map(k=>({wch:Math.max(k.length+2,10)}));
+    XLSX.utils.book_append_sheet(wb,ws,'Per Kecamatan');
+  }
+  if(rowsDesa.length){
+    const ws=XLSX.utils.json_to_sheet(rowsDesa);
+    ws['!cols']=Object.keys(rowsDesa[0]).map(k=>({wch:Math.max(k.length+2,10)}));
+    XLSX.utils.book_append_sheet(wb,ws,'Per Desa');
+  }
+  const tgl=new Date().toISOString().slice(0,10).replace(/-/g,'');
+  XLSX.writeFile(wb,`DTSEN_Kecamatan_Desa_${tgl}.xlsx`);
+  toast('Excel 2 sheet (Kecamatan + Desa) diunduh','success');
 }
 
 // ── EXPORT PDF (via browser print) ──
