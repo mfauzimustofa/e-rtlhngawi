@@ -2099,7 +2099,7 @@ async function loadGlobalStats(){
     const pages=Math.ceil((count||0)/pageSize);
     const results=await Promise.all(
       Array.from({length:pages},(_,p)=>
-        sb.from('rtlh').select('kec,status_rtlh,desil,nik,jenis_bantuan').range(p*pageSize,(p+1)*pageSize-1)
+        sb.from('rtlh').select('kec,desa,status_rtlh,desil,nik,jenis_bantuan').range(p*pageSize,(p+1)*pageSize-1)
       )
     );
     const data=results.flatMap(r=>r.data||[]);
@@ -2202,7 +2202,7 @@ function _applyGlobalStats(data){
   }
 
   // ── Pre-populate DTSEN data dari global stats (tanpa fetch tambahan) ──
-  // global_stats sudah punya kec, desa, desil, status_rtlh — cukup untuk DTSEN
+  // global_stats punya kec, desa, desil, status_rtlh — cukup untuk DTSEN
   if(!_dtLoaded&&data&&data.length){
     _dtData=data;
     _dtLoaded=true;
@@ -3379,7 +3379,7 @@ function initMap(){
 // ══════════════════════════════════════════════════
 const CACHE_TTL = 5 * 60 * 1000; // 5 menit
 const CACHE_TTL_STATS = 60 * 1000; // 60 detik untuk stats beranda
-const CACHE_PREFIX = 'ertlh_v2_';
+const CACHE_PREFIX = 'ertlh_v3_';
 
 function cacheSet(key, data){
   try{
