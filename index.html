@@ -2200,6 +2200,15 @@ function _applyGlobalStats(data){
       el('gs-nondb').textContent=nonDbCount.toLocaleString('id');
     }).catch(()=>{el('gs-nondb').textContent='?';});
   }
+
+  // ── Pre-populate DTSEN data dari global stats (tanpa fetch tambahan) ──
+  // global_stats sudah punya kec, desa, desil, status_rtlh — cukup untuk DTSEN
+  if(!_dtLoaded&&data&&data.length){
+    _dtData=data;
+    _dtLoaded=true;
+    // Simpan ke cache agar dipakai saat user buka tab DTSEN
+    cacheSet('dtsen_data',data);
+  }
 }
 
 function renderDesilGrid(counts){
@@ -7453,30 +7462,60 @@ const DESIL_COLORS_DT=['#BE123C','#DC2626','#EA580C','#D97706','#84CC16','#16A34
 const DESIL_BGS_DT=['#FFF1F2','#FEF2F2','#FFF7ED','#FFFBEB','#F7FEE7','#F0FDF4','#ECFEFF','#F5F3FF'];
 
 async function loadDtsen(){
+  // ── Prioritas 1: pakai _dtData yang sudah ada di memori ──
+  if(_dtData&&_dtLoaded){renderDtsen();return;}
+
+  // ── Prioritas 2: pakai cache dtsen_data ──
   const cached=cacheGet('dtsen_data');
   if(cached){
-    _dtData=cached.data; _dtLoaded=true; renderDtsen();
+    _dtData=cached.data;_dtLoaded=true;renderDtsen();
     if(cached.stale)_refreshDtsenBg();
     return;
   }
+
+  // ── Prioritas 3: pakai report_data yang sudah ada (kolom sama persis) ──
+  const rpCached=cacheGet('report_data');
+  if(rpCached&&rpCached.data&&rpCached.data.length){
+    _dtData=rpCached.data;
+    cacheSet('dtsen_data',_dtData);
+    _dtLoaded=true;
+    renderDtsen();
+    if(rpCached.stale)_refreshDtsenBg();
+    return;
+  }
+
+  // ── Prioritas 4: pakai _rpData yang sudah di memori (dari halaman Laporan) ──
+  if(_rpData&&_rpData.length){
+    _dtData=_rpData;
+    cacheSet('dtsen_data',_dtData);
+    _dtLoaded=true;
+    renderDtsen();
+    return;
+  }
+
+  // ── Prioritas 5: fetch dari Supabase (terakhir, kalau tidak ada cache sama sekali) ──
   document.getElementById('dtTable').innerHTML=
     '<div style="padding:40px;text-align:center;color:#94A3B8"><i class="fas fa-circle-notch fa-spin" style="font-size:1.5rem;display:block;margin-bottom:10px"></i>Memuat data DTSEN...</div>';
   try{
+    // Fetch sekaligus untuk report_data dan dtsen_data (satu request, dua cache)
     const pageSize=1000;
     const{count}=await sb.from('rtlh').select('*',{count:'exact',head:true});
     const pages=Math.ceil((count||0)/pageSize);
     const results=await Promise.all(
       Array.from({length:pages},(_,p)=>
-        sb.from('rtlh').select('kec,desa,desil,status_rtlh').range(p*pageSize,(p+1)*pageSize-1)
+        sb.from('rtlh').select('kec,desa,desil,status_rtlh,jenis_bantuan,tahun_bantuan').range(p*pageSize,(p+1)*pageSize-1)
       )
     );
     _dtData=results.flatMap(r=>r.data||[]);
+    // Simpan ke dua cache sekaligus agar Laporan juga bisa pakai
     cacheSet('dtsen_data',_dtData);
+    cacheSet('report_data',_dtData);
+    _rpData=_dtData; // share memory reference
     _dtLoaded=true;
     renderDtsen();
   }catch(e){
     document.getElementById('dtTable').innerHTML=
-      `<div style="padding:40px;text-align:center;color:#EF4444">Gagal memuat: ${e.message}</div>`;
+      `<div style="padding:40px;text-align:center;color:#EF4444"><i class="fas fa-exclamation-circle" style="font-size:1.5rem;display:block;margin-bottom:10px"></i>Gagal memuat: ${e.message}</div>`;
   }
 }
 
@@ -7487,11 +7526,14 @@ async function _refreshDtsenBg(){
     const pages=Math.ceil((count||0)/pageSize);
     const results=await Promise.all(
       Array.from({length:pages},(_,p)=>
-        sb.from('rtlh').select('kec,desa,desil,status_rtlh').range(p*pageSize,(p+1)*pageSize-1)
+        sb.from('rtlh').select('kec,desa,desil,status_rtlh,jenis_bantuan,tahun_bantuan').range(p*pageSize,(p+1)*pageSize-1)
       )
     );
     _dtData=results.flatMap(r=>r.data||[]);
     cacheSet('dtsen_data',_dtData);
+    cacheSet('report_data',_dtData);
+    _rpData=_dtData;
+    _dtLoaded=true;
     if(document.querySelector('.page.active')?.id==='pgDTSEN')renderDtsen();
   }catch(e){}
 }
@@ -7774,6 +7816,11 @@ function invalidateDtsenCache(){
   cacheDel('dtsen_data');
   _dtLoaded=false;
   _dtData=null;
+  // Jika _rpData masih ada di memori, langsung repakai (tanpa fetch ulang)
+  if(_rpData&&_rpData.length){
+    _dtData=_rpData;
+    _dtLoaded=true;
+  }
 }
 
 // ══════════════════════════════════════════════════
