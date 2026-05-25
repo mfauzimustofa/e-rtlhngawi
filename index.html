@@ -499,6 +499,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
     <button class="nav-tab" id="ntWebgis" onclick="nav('keclist')"><i class="fas fa-map-marked-alt"></i> WebGIS</button>
     <button class="nav-tab" id="ntReport" onclick="nav('report')"><i class="fas fa-chart-bar"></i> Laporan</button>
     <button class="nav-tab" id="ntDtsen" onclick="nav('dtsen')"><i class="fas fa-layer-group"></i> DTSEN</button>
+    <button class="nav-tab" id="ntCekNik" onclick="nav('ceknik')"><i class="fas fa-search-plus"></i> Cek NIK</button>
   </nav>
   <div class="header-right">
     <button class="btn-icon-sm" id="btnDokLib" onclick="openDokLib()" title="Library Dokumen Kabupaten" style="display:none"><i class="fas fa-folder-open"></i></button>
@@ -513,6 +514,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
   <button class="mob-nav-btn" id="mnWebgis" onclick="nav('keclist')"><i class="fas fa-map-marked-alt"></i>WebGIS</button>
   <button class="mob-nav-btn" id="mnReport" onclick="nav('report')"><i class="fas fa-chart-bar"></i>Laporan</button>
   <button class="mob-nav-btn" id="mnDtsen" onclick="nav('dtsen')"><i class="fas fa-layer-group"></i>DTSEN</button>
+  <button class="mob-nav-btn" id="mnCekNik" onclick="nav('ceknik')"><i class="fas fa-search-plus"></i>Cek NIK</button>
 </nav>
 
 <!-- TOAST -->
@@ -953,6 +955,139 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 </div>
 
 <!-- LOGIN MODAL -->
+<!-- PAGE CEK NIK MASSAL -->
+<div class="page" id="pgCekNIK" style="flex-direction:column;overflow-y:auto">
+  <div style="background:linear-gradient(135deg,var(--navy),#14375A);padding:24px 20px 20px">
+    <div style="max-width:900px;margin:0 auto">
+      <button onclick="nav('beranda')" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:6px 12px;color:#fff;font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;margin-bottom:14px">
+        <i class="fas fa-arrow-left"></i> Beranda
+      </button>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+        <div style="width:40px;height:40px;background:rgba(200,169,81,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(200,169,81,.3)">
+          <i class="fas fa-search-plus" style="color:var(--gold);font-size:1.1rem"></i>
+        </div>
+        <div>
+          <h2 style="color:#fff;font-size:1.1rem;font-weight:800;margin:0">Cek Data Massal via NIK</h2>
+          <p style="color:rgba(255,255,255,.5);font-size:.72rem;margin:2px 0 0">Upload Excel berisi NIK → tampil data lengkap dari database e-RTLH</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="flex:1;padding:20px;max-width:900px;margin:0 auto;width:100%">
+
+    <!-- Upload Zone -->
+    <div id="cnDropZone"
+      ondragover="event.preventDefault();this.classList.add('cn-drag-over')"
+      ondragleave="this.classList.remove('cn-drag-over')"
+      ondrop="cnHandleDrop(event)"
+      onclick="document.getElementById('cnFileInput').click()"
+      style="border:2.5px dashed var(--gray-300);border-radius:var(--radius);padding:32px 20px;text-align:center;cursor:pointer;background:#fff;transition:var(--transition);margin-bottom:18px">
+      <i class="fas fa-file-excel" style="font-size:2.2rem;color:#1D6F42;margin-bottom:10px"></i>
+      <p style="font-weight:700;font-size:.88rem;color:var(--gray-700);margin:0 0 4px">Drag & drop file Excel di sini</p>
+      <p style="font-size:.72rem;color:var(--gray-400);margin:0">atau klik untuk pilih file (.xlsx .xls)</p>
+      <input type="file" id="cnFileInput" accept=".xlsx,.xls" style="display:none" onchange="cnHandleFile(this.files[0])">
+    </div>
+
+    <!-- Panduan & mapping kolom -->
+    <div id="cnMappingPanel" style="display:none;background:#fff;border-radius:var(--radius-sm);border:1px solid var(--gray-200);padding:16px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <i class="fas fa-columns" style="color:var(--blue)"></i>
+        <span style="font-weight:800;font-size:.85rem;color:var(--gray-800)">Pilih kolom NIK dari file Excel</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <label style="font-size:.75rem;color:var(--gray-600);font-weight:600">Kolom NIK:</label>
+        <select id="cnNikCol" style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.78rem;font-family:inherit;background:#fff;color:var(--gray-800);min-width:180px"></select>
+        <button onclick="cnRunCheck()" style="padding:7px 18px;border-radius:8px;background:var(--blue);color:#fff;border:none;font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px">
+          <i class="fas fa-play"></i> Mulai Cek
+        </button>
+        <span id="cnFileLabel" style="font-size:.7rem;color:var(--gray-400)"></span>
+      </div>
+    </div>
+
+    <!-- Progress bar -->
+    <div id="cnProgress" style="display:none;background:#fff;border-radius:var(--radius-sm);border:1px solid var(--gray-200);padding:14px 16px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span id="cnProgLabel" style="font-size:.75rem;font-weight:700;color:var(--gray-700)">Memproses...</span>
+        <span id="cnProgPct" style="font-size:.75rem;color:var(--gray-500)">0%</span>
+      </div>
+      <div style="height:8px;background:var(--gray-100);border-radius:99px;overflow:hidden">
+        <div id="cnProgBar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--blue),var(--blue-light));border-radius:99px;transition:width .3s ease"></div>
+      </div>
+    </div>
+
+    <!-- Summary Badges -->
+    <div id="cnSummary" style="display:none;margin-bottom:16px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px">
+        <div style="background:#fff;border-radius:var(--radius-sm);padding:12px;border:1px solid var(--gray-200);text-align:center">
+          <div id="cnTotNik" style="font-size:1.3rem;font-weight:800;color:var(--navy)">0</div>
+          <div style="font-size:.65rem;color:var(--gray-500);font-weight:600;text-transform:uppercase;margin-top:2px">Total NIK</div>
+        </div>
+        <div style="background:var(--success-bg);border-radius:var(--radius-sm);padding:12px;border:1px solid #bbf7d0;text-align:center">
+          <div id="cnFoundNik" style="font-size:1.3rem;font-weight:800;color:var(--success)">0</div>
+          <div style="font-size:.65rem;color:var(--success);font-weight:600;text-transform:uppercase;margin-top:2px">Ditemukan</div>
+        </div>
+        <div style="background:var(--danger-bg);border-radius:var(--radius-sm);padding:12px;border:1px solid #fecaca;text-align:center">
+          <div id="cnNotFound" style="font-size:1.3rem;font-weight:800;color:var(--danger)">0</div>
+          <div style="font-size:.65rem;color:var(--danger);font-weight:600;text-transform:uppercase;margin-top:2px">Tidak Ada</div>
+        </div>
+        <div style="background:var(--warning-bg);border-radius:var(--radius-sm);padding:12px;border:1px solid #fde68a;text-align:center">
+          <div id="cnRtlhCount" style="font-size:1.3rem;font-weight:800;color:var(--warning)">0</div>
+          <div style="font-size:.65rem;color:#b45309;font-weight:600;text-transform:uppercase;margin-top:2px">RTLH</div>
+        </div>
+        <div style="background:var(--success-bg);border-radius:var(--radius-sm);padding:12px;border:1px solid #bbf7d0;text-align:center">
+          <div id="cnLayakCount" style="font-size:1.3rem;font-weight:800;color:var(--success)">0</div>
+          <div style="font-size:.65rem;color:var(--success);font-weight:600;text-transform:uppercase;margin-top:2px">Layak Huni</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter & Download toolbar -->
+    <div id="cnToolbar" style="display:none;background:#fff;border-radius:var(--radius-sm);border:1px solid var(--gray-200);padding:10px 14px;margin-bottom:10px;display:none;align-items:center;gap:8px;flex-wrap:wrap">
+      <input id="cnFilterInput" type="text" placeholder="Filter nama, NIK, desa, kecamatan..."
+        oninput="cnRenderTable()"
+        style="flex:1;min-width:160px;padding:6px 12px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.78rem;font-family:inherit;outline:none">
+      <select id="cnFilterStatus" onchange="cnRenderTable()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.75rem;font-family:inherit">
+        <option value="">Semua Status</option>
+        <option value="found">Ditemukan</option>
+        <option value="notfound">Tidak Ditemukan</option>
+        <option value="RTLH">RTLH</option>
+        <option value="Layak Huni">Layak Huni</option>
+        <option value="SK Dibatalkan">SK Dibatalkan</option>
+        <option value="Keterangan Lain">Keterangan Lain</option>
+      </select>
+      <button onclick="cnDownloadExcel()" style="padding:7px 14px;border-radius:8px;background:var(--success);color:#fff;border:none;font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;white-space:nowrap">
+        <i class="fas fa-file-excel"></i> Unduh Excel
+      </button>
+    </div>
+
+    <!-- Hasil tabel -->
+    <div id="cnTableWrap" style="display:none;background:#fff;border-radius:var(--radius-sm);border:1px solid var(--gray-200);overflow:hidden">
+      <div style="overflow-x:auto">
+        <table id="cnTable" style="width:100%;border-collapse:collapse;font-size:.72rem">
+          <thead id="cnThead"></thead>
+          <tbody id="cnTbody"></tbody>
+        </table>
+      </div>
+      <div id="cnTableFooter" style="padding:8px 14px;background:var(--gray-50);border-top:1px solid var(--gray-200);font-size:.68rem;color:var(--gray-400)"></div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+#cnDropZone.cn-drag-over{border-color:var(--blue);background:var(--blue-bg);}
+#cnDropZone.cn-drag-over i{color:var(--blue);}
+#cnTable th{padding:8px 10px;background:var(--navy);color:#fff;font-weight:700;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;position:sticky;top:0;z-index:2}
+#cnTable td{padding:7px 10px;border-bottom:1px solid var(--gray-100);vertical-align:middle;white-space:nowrap}
+#cnTable tr:hover td{background:var(--gray-50)}
+.cn-badge-found{background:var(--success-bg);color:var(--success);padding:2px 8px;border-radius:99px;font-weight:700;font-size:.62rem}
+.cn-badge-notfound{background:var(--danger-bg);color:var(--danger);padding:2px 8px;border-radius:99px;font-weight:700;font-size:.62rem}
+.cn-badge-rtlh{background:#FEF2F2;color:#DC2626;padding:2px 8px;border-radius:99px;font-weight:700;font-size:.62rem}
+.cn-badge-layak{background:var(--success-bg);color:var(--success);padding:2px 8px;border-radius:99px;font-weight:700;font-size:.62rem}
+.cn-badge-sk{background:#FFF7ED;color:#C2410C;padding:2px 8px;border-radius:99px;font-weight:700;font-size:.62rem}
+.cn-badge-lain{background:var(--gray-100);color:var(--gray-600);padding:2px 8px;border-radius:99px;font-weight:700;font-size:.62rem}
+</style>
+
 <!-- MODAL DOWNLOAD EXCEL (per kecamatan) -->
 <div class="overlay" id="ovDownload">
   <div class="modal" style="max-width:420px">
@@ -1584,6 +1719,10 @@ function nav(pg){
     document.getElementById('mnDtsen')?.classList.add('active');
     if(!_dtLoaded)loadDtsen();
     else renderDtsen();
+  } else if(pg==='ceknik'){
+    document.getElementById('pgCekNIK').classList.add('active');
+    document.getElementById('ntCekNik')?.classList.add('active');
+    document.getElementById('mnCekNik')?.classList.add('active');
   }
   // Push browser history
   if(!_navFromPop){
@@ -8495,6 +8634,247 @@ function exportDtsenWord(){
 
 <!-- ═══ END APP SHELL ═══ -->
 </div>
+
+<script>
+// ══════════════════════════════════════════════════
+// CEK NIK MASSAL — Upload Excel → Lookup Supabase
+// ══════════════════════════════════════════════════
+let _cnRows = [];      // raw rows dari Excel
+let _cnResults = [];   // [{inputNik, row, dbData, found}]
+let _cnNikColKey = ''; // nama kolom NIK dari file
+
+function cnHandleDrop(e){
+  e.preventDefault();
+  document.getElementById('cnDropZone').classList.remove('cn-drag-over');
+  const f = e.dataTransfer.files[0];
+  if(f) cnHandleFile(f);
+}
+
+function cnHandleFile(file){
+  if(!file) return;
+  if(!window.XLSX){ toast('Library XLSX belum dimuat, coba refresh halaman','error'); return; }
+  const label = document.getElementById('cnFileLabel');
+  label.textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const wb = XLSX.read(e.target.result, {type:'binary'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      _cnRows = XLSX.utils.sheet_to_json(ws, {defval:''});
+      if(!_cnRows.length){ toast('Sheet kosong atau tidak terbaca','error'); return; }
+      // Populate kolom dropdown
+      const cols = Object.keys(_cnRows[0]);
+      const sel = document.getElementById('cnNikCol');
+      sel.innerHTML = cols.map(c=>`<option value="${c}"${c.toLowerCase().includes('nik')?'':''}">${c}</option>`).join('');
+      // Auto-pilih kolom yang mengandung 'nik'
+      const autoNik = cols.find(c=>c.toLowerCase().includes('nik'));
+      if(autoNik) sel.value = autoNik;
+      document.getElementById('cnMappingPanel').style.display = 'block';
+      // Reset result area
+      document.getElementById('cnSummary').style.display = 'none';
+      document.getElementById('cnTableWrap').style.display = 'none';
+      document.getElementById('cnToolbar').style.display = 'none';
+      document.getElementById('cnProgress').style.display = 'none';
+      toast(`File dimuat: ${_cnRows.length} baris`, 'success');
+    } catch(err){
+      toast('Gagal membaca file: '+err.message, 'error');
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+async function cnRunCheck(){
+  if(!_cnRows.length){ toast('Belum ada file diupload','error'); return; }
+  _cnNikColKey = document.getElementById('cnNikCol').value;
+  if(!_cnNikColKey){ toast('Pilih kolom NIK terlebih dahulu','error'); return; }
+
+  // Ambil list NIK unik (string 16 digit)
+  const nikList = [...new Set(
+    _cnRows.map(r => String(r[_cnNikColKey]||'').replace(/\D/g,'').trim()).filter(n=>n.length>=10)
+  )];
+
+  if(!nikList.length){ toast('Tidak ada NIK valid ditemukan di kolom tersebut','error'); return; }
+
+  // Tampilkan progress
+  const progWrap = document.getElementById('cnProgress');
+  const progBar = document.getElementById('cnProgBar');
+  const progLabel = document.getElementById('cnProgLabel');
+  const progPct = document.getElementById('cnProgPct');
+  progWrap.style.display = 'block';
+  progBar.style.width = '0%';
+  progLabel.textContent = 'Menghubungi database...';
+  progPct.textContent = '0%';
+
+  // Batch query ke Supabase (500 NIK per batch)
+  const BATCH = 500;
+  const dbMap = {}; // nik -> record
+  const totalBatches = Math.ceil(nikList.length / BATCH);
+
+  for(let i=0; i<totalBatches; i++){
+    const batch = nikList.slice(i*BATCH, (i+1)*BATCH);
+    const {data, error} = await sb.from('rtlh')
+      .select('id,nik,no_kk,kep_kk,kec,desa,alamat,jen_kel,umur,pekerjaan,pengh,status_rtlh,desil,jenis_bantuan,tahun_bantuan,keterangan,backlog')
+      .in('nik', batch);
+    if(data) data.forEach(r => { if(r.nik) dbMap[r.nik.trim()] = r; });
+    const pct = Math.round(((i+1)/totalBatches)*100);
+    progBar.style.width = pct+'%';
+    progPct.textContent = pct+'%';
+    progLabel.textContent = `Batch ${i+1}/${totalBatches} selesai (${Object.keys(dbMap).length} ditemukan)`;
+  }
+
+  // Gabungkan: 1 row output per baris input Excel
+  _cnResults = _cnRows.map(row => {
+    const inputNik = String(row[_cnNikColKey]||'').replace(/\D/g,'').trim();
+    const dbData = inputNik ? (dbMap[inputNik]||null) : null;
+    return { inputNik, row, dbData, found: !!dbData };
+  });
+
+  progWrap.style.display = 'none';
+
+  // Hitung summary
+  const found = _cnResults.filter(r=>r.found).length;
+  const notFound = _cnResults.length - found;
+  const rtlhCnt = _cnResults.filter(r=>r.dbData?.status_rtlh==='RTLH').length;
+  const layakCnt = _cnResults.filter(r=>r.dbData?.status_rtlh==='Layak Huni').length;
+
+  document.getElementById('cnTotNik').textContent = _cnResults.length;
+  document.getElementById('cnFoundNik').textContent = found;
+  document.getElementById('cnNotFound').textContent = notFound;
+  document.getElementById('cnRtlhCount').textContent = rtlhCnt;
+  document.getElementById('cnLayakCount').textContent = layakCnt;
+  document.getElementById('cnSummary').style.display = 'block';
+  document.getElementById('cnToolbar').style.display = 'flex';
+  document.getElementById('cnTableWrap').style.display = 'block';
+
+  cnRenderTable();
+  toast(`Selesai! ${found} dari ${_cnResults.length} NIK ditemukan`, found>0?'success':'error');
+}
+
+function cnRenderTable(){
+  if(!_cnResults.length) return;
+  const q = (document.getElementById('cnFilterInput')?.value||'').toLowerCase();
+  const sf = document.getElementById('cnFilterStatus')?.value||'';
+
+  // Kolom dari file asli (exclude NIK kolom karena akan digabung)
+  const extraCols = Object.keys(_cnRows[0]||{}).filter(c=>c!==_cnNikColKey);
+
+  const filtered = _cnResults.filter(r=>{
+    if(sf==='found' && !r.found) return false;
+    if(sf==='notfound' && r.found) return false;
+    if(sf && sf!=='found' && sf!=='notfound' && r.dbData?.status_rtlh!==sf) return false;
+    if(q){
+      const hay = [
+        r.inputNik,
+        r.dbData?.kep_kk||'',
+        r.dbData?.desa||'',
+        r.dbData?.kec||'',
+        r.dbData?.status_rtlh||'',
+        ...extraCols.map(c=>String(r.row[c]||''))
+      ].join(' ').toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  // Build header
+  const thead = document.getElementById('cnThead');
+  const tbody = document.getElementById('cnTbody');
+
+  thead.innerHTML = `<tr>
+    <th style="width:36px">#</th>
+    <th>NIK Input</th>
+    ${extraCols.map(c=>`<th>${c}</th>`).join('')}
+    <th>Status</th>
+    <th>Nama (DB)</th>
+    <th>Kecamatan</th>
+    <th>Desa</th>
+    <th>Alamat</th>
+    <th>Status RTLH</th>
+    <th>Desil</th>
+    <th>Jenis Bantuan</th>
+    <th>Tahun</th>
+    <th>Backlog</th>
+    <th>Keterangan</th>
+  </tr>`;
+
+  tbody.innerHTML = filtered.map((r,i)=>{
+    const d = r.dbData;
+    let badge = r.found
+      ? `<span class="cn-badge-found">✓ Ada</span>`
+      : `<span class="cn-badge-notfound">✗ Tidak Ada</span>`;
+    let statusBadge = '';
+    if(d){
+      const s = d.status_rtlh||'-';
+      if(s==='RTLH') statusBadge=`<span class="cn-badge-rtlh">RTLH</span>`;
+      else if(s==='Layak Huni') statusBadge=`<span class="cn-badge-layak">Layak Huni</span>`;
+      else if(s==='SK Dibatalkan') statusBadge=`<span class="cn-badge-sk">SK Dibatalkan</span>`;
+      else statusBadge=`<span class="cn-badge-lain">${s}</span>`;
+    }
+    return `<tr>
+      <td style="color:var(--gray-400);font-size:.65rem">${i+1}</td>
+      <td style="font-family:monospace;color:var(--navy);font-weight:700">${r.inputNik||'-'}</td>
+      ${extraCols.map(c=>`<td>${r.row[c]??''}</td>`).join('')}
+      <td>${badge}</td>
+      <td style="font-weight:700">${d?.kep_kk||'-'}</td>
+      <td>${d?.kec||'-'}</td>
+      <td>${d?.desa||'-'}</td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis">${d?.alamat||'-'}</td>
+      <td>${statusBadge||'-'}</td>
+      <td>${d?.desil||'-'}</td>
+      <td>${d?.jenis_bantuan||'-'}</td>
+      <td>${d?.tahun_bantuan||'-'}</td>
+      <td>${d?.backlog||'-'}</td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis">${d?.keterangan||'-'}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('cnTableFooter').textContent =
+    `Menampilkan ${filtered.length} dari ${_cnResults.length} data`;
+}
+
+function cnDownloadExcel(){
+  if(!_cnResults.length){ toast('Belum ada data hasil','error'); return; }
+  if(!window.XLSX){ toast('Library XLSX tidak tersedia','error'); return; }
+
+  const extraCols = Object.keys(_cnRows[0]||{}).filter(c=>c!==_cnNikColKey);
+
+  const rows = _cnResults.map((r,i)=>{
+    const d = r.dbData;
+    const base = {
+      'No': i+1,
+      'NIK (Input)': r.inputNik,
+    };
+    extraCols.forEach(c=>{ base[c] = r.row[c]??''; });
+    base['Status Cek'] = r.found ? 'Ditemukan' : 'Tidak Ditemukan';
+    base['Nama KK (DB)'] = d?.kep_kk||'';
+    base['No. KK'] = d?.no_kk||'';
+    base['Kecamatan'] = d?.kec||'';
+    base['Desa'] = d?.desa||'';
+    base['Alamat'] = d?.alamat||'';
+    base['Jenis Kelamin'] = d?.jen_kel||'';
+    base['Umur'] = d?.umur||'';
+    base['Pekerjaan'] = d?.pekerjaan||'';
+    base['Penghasilan'] = d?.pengh||'';
+    base['Status RTLH'] = d?.status_rtlh||'';
+    base['Desil'] = d?.desil||'';
+    base['Jenis Bantuan'] = d?.jenis_bantuan||'';
+    base['Tahun Bantuan'] = d?.tahun_bantuan||'';
+    base['Backlog'] = d?.backlog||'';
+    base['Keterangan'] = d?.keterangan||'';
+    return base;
+  });
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  // Warna header (tidak support styling di xlsx.full.min, tapi struktur ok)
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Hasil Cek NIK');
+
+  const d = new Date();
+  const tgl = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  XLSX.writeFile(wb, `CekNIK_RTLH_Ngawi_${tgl}.xlsx`);
+  toast('Excel berhasil diunduh!','success');
+}
+</script>
 
 </body>
 </html>
