@@ -2036,7 +2036,7 @@ async function setUser(u){
   user=u;
   // BACKEND: Ambil data admin dari Supabase — validasi di server via RLS
   const{data}=await sb.from('admin_users').select('*').eq('email',u.email).single();
-  if(data&&data.status==='approved'){
+  if(data&&data.status==='active'){
     isAdmin=true;
     _adminUsername=data.username||null;
     adminLevel=data.admin_level||2; // default level 2 jika tidak ada
@@ -2094,7 +2094,7 @@ async function doLogin(){
   btn.disabled=true;btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Memverifikasi...';
   try{
     const{data:adm}=await sb.from('admin_users').select('email,status').eq('username',input).single();
-    if(!adm||adm.status!=='approved')return toast('Username atau password salah','error');
+    if(!adm||adm.status!=='active')return toast('Username atau password salah','error');
     const{error}=await sb.auth.signInWithPassword({email:adm.email,password:pass});
     if(error)return toast('Username atau password salah','error');
     closeLogin();
@@ -6821,7 +6821,7 @@ async function doMaintenanceLogin(){
   btn.disabled=true;btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Memverifikasi...';
   try{
     const{data:adm}=await sb.from('admin_users').select('email,status').eq('username',input).single();
-    if(!adm||adm.status!=='approved'){errEl.innerHTML='<i class="fas fa-exclamation-circle"></i> Username atau password salah';return;}
+    if(!adm||adm.status!=='active'){errEl.innerHTML='<i class="fas fa-exclamation-circle"></i> Username atau password salah';return;}
     const{error}=await sb.auth.signInWithPassword({email:adm.email,password:pass});
     if(error){errEl.innerHTML='<i class="fas fa-exclamation-circle"></i> Username atau password salah';return;}
     hideMaintenanceOverlay();
@@ -6853,7 +6853,7 @@ window.addEventListener('DOMContentLoaded',async()=>{
     if(session){
       // Verifikasi user adalah admin aktif
       const{data}=await sb.from('admin_users').select('status,admin_level,username,nama,kecamatan,desa').eq('email',session.user.email).single();
-      if(data&&data.status==='approved'){
+      if(data&&data.status==='active'){
         // Cache info admin dari session
         _adminUsername=data.username||session.user.email?.split('@')[0]||'Admin';
         adminLevel=data.admin_level||2;
