@@ -4904,11 +4904,10 @@ async function downloadExcelKab(withNIK){
   setLog('<i class="fas fa-circle-notch fa-spin"></i> Menyiapkan query...');
 
   try{
-    // 1. Count dulu agar bisa parallel fetch
+    // 1. Count dulu — filter kec/desa/desil/tahun di DB, status nanti di client-side
     let countQ=sb.from('rtlh').select('id',{count:'exact',head:true});
     if(kec)    countQ=countQ.ilike('kec',kec);
     if(desa)   countQ=countQ.ilike('desa',desa);
-    if(status) countQ=countQ.eq('status_rtlh',status);
     if(desil)  countQ=countQ.eq('desil',desil);
     if(tahun)  countQ=countQ.eq('tahun_bantuan',parseInt(tahun)||tahun);
     const{count,error:cErr}=await countQ;
@@ -4920,7 +4919,7 @@ async function downloadExcelKab(withNIK){
 
     setLog('<i class="fas fa-circle-notch fa-spin"></i> Mengambil '+count+' data...');
 
-    // 2. Fetch paralel (5 page sekaligus)
+    // 2. Fetch paralel (5 page sekaligus) — TANPA filter status di DB
     const PAGE=1000;
     const totalPages=Math.ceil(count/PAGE);
     const CONCUR=5;
@@ -4932,7 +4931,6 @@ async function downloadExcelKab(withNIK){
           .range(pg*PAGE,(pg+1)*PAGE-1);
         if(kec)    q=q.ilike('kec',kec);
         if(desa)   q=q.ilike('desa',desa);
-        if(status) q=q.eq('status_rtlh',status);
         if(desil)  q=q.eq('desil',desil);
         if(tahun)  q=q.eq('tahun_bantuan',parseInt(tahun)||tahun);
         return q;
@@ -4943,9 +4941,15 @@ async function downloadExcelKab(withNIK){
       });
       setLog('<i class="fas fa-circle-notch fa-spin"></i> Mengambil data... '+allData.length+'/'+count);
     }
-    if(!allData.length) return toast('Tidak ada data','error');
 
-    // 3. Fetch verifikasi paralel
+    // 3. Filter status di client-side pakai statusKategori() — SINKRON 100% dengan grafik & dashboard
+    if(status) allData=allData.filter(r=>statusKategori(r.status_rtlh)===status);
+    if(!allData.length){
+      setLog('<span style="color:var(--danger)"><i class="fas fa-exclamation-circle"></i> Tidak ada data dengan filter tersebut</span>');
+      return toast('Tidak ada data','error');
+    }
+
+    // 4. Fetch verifikasi paralel
     setLog('<i class="fas fa-circle-notch fa-spin"></i> Memuat verifikasi...');
     const allIds=allData.map(r=>r.id);
     const verifResults=await Promise.all(
