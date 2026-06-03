@@ -10275,6 +10275,7 @@ async function scanMassalDokLib(){
       const{data:rows}=await sb.from('rtlh').select('id,nik').in('id',allRtlhIds.slice(i,i+500));
       (rows||[]).forEach(r=>{ if(r.nik) nikMap[r.id]=String(r.nik).trim(); });
     }
+    console.log('[SCAN] links:' + (links||[]).length + ' docs:' + allDocs.length + ' niks:' + Object.keys(nikMap).length);
 
     // ── 4. Ambil yang sudah di-scan (skip) ──
     const{data:done}=await sb.from('rtlh_pdf_scan_results')
@@ -10324,6 +10325,7 @@ async function scanMassalDokLib(){
       }
 
       show(`🔍 ${docIdx}/${allDocs.length}: ${doc.judul||''} — cari ${todo.length} NIK...`);
+      console.log('[SCAN] dok:'+doc.judul+' pages:'+pageData.length+' text:'+pageData.filter(p=>p.normText.length>10).length+' todo:'+todo.length);
 
       // ── 6. Cari setiap NIK di semua halaman (text layer only) ──
       for(const rtlhId of todo){
@@ -10333,18 +10335,23 @@ async function scanMassalDokLib(){
 
         for(const pg of pageData){
           // Quick check: apakah digit NIK ada di halaman ini?
-          if(!pg.normText.includes(nik) && !_nikMatch(pg.rawText,nik).match) continue;
+          const hasNik=pg.normText.includes(nik)||_nikMatch(pg.rawText,nik).match;
+          if(!hasNik) continue;
+          console.log('[SCAN] NIK '+nik+' pg'+pg.p+' normLen:'+pg.normText.length);
           // Cari lokasi baris
           const res=_searchNikInTextLayer({items:pg.items},nik,pg.vpH,pg.scale);
           if(res){
             pages.push(pg.p);
             highlights.push({page:pg.p,...res});
+          } else {
+            console.log('[SCAN] NIK in page but no loc found');
           }
         }
 
         // Tandai done (meski tidak ditemukan, agar tidak di-scan ulang)
         doneSet.add(rtlhId+'|'+urlH+'|'+nikH);
-        if(pages.length) totalFound++;
+        if(pages.length){ totalFound++; console.log('[SCAN] FOUND NIK '+nik+' hal:'+pages); }
+        else { console.log('[SCAN] MISS NIK '+nik); }
 
         // Simpan ke memory cache
         _pdfOcrCache.set(url+'|'+nik,{pages,highlights});
