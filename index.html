@@ -6929,7 +6929,7 @@ async function loadDokLink(rtlhId){
         const ck=url2+'|'+nik2;
         // Kalau belum pernah di-cache, buka dan scan otomatis di background
         if(!_pdfOcrCache.has(ck)){
-          _pdfSilentScan(url2, nik2);
+          _pdfSilentScan(url2, nik2, numId);
         }
       });
     }
@@ -9628,6 +9628,10 @@ async function _pdfRenderAll(){
     } else {
       // Cek cache dulu sebelum OCR
       const _cacheKey = _pdfUrl + '|' + _pdfNik;
+      // Load dari DB jika belum di memory
+      const _rid=parseInt(document.getElementById('dpBody')?.dataset?.rtlhId||0);
+      if(!_pdfOcrCache.has(_cacheKey)&&_rid)
+        await _loadScanFromDb(_rid,_urlHash(_pdfUrl),_urlHash(_pdfNik),_cacheKey);
       const _cached = _pdfOcrCache.get(_cacheKey);
       if(_cached){
         // Sudah pernah di-scan — restore highlights dari cache
@@ -10005,28 +10009,39 @@ async function _pdfRunOcr(nikFoundSoFar){
   if(ocrStatus) ocrStatus.style.display='none';
   _pdfOcrRunning=false;
 
-  // Simpan ke cache
+  // Simpan ke cache + DB
   const ck=_pdfUrl+'|'+_pdfNik;
-  _pdfOcrCache.set(ck,{pages:[...new Set(found)],highlights:cacheHighlights});
+  const finalPages=[...new Set(found)];
+  _pdfOcrCache.set(ck,{pages:finalPages,highlights:cacheHighlights});
+  const _rid2=parseInt(document.getElementById('dpBody')?.dataset?.rtlhId||0);
+  if(_rid2&&_pdfUrl&&_pdfNik)
+    _saveScanResult(_rid2,_urlHash(_pdfUrl),_urlHash(_pdfNik),finalPages,cacheHighlights);
 
   if(!badge) return;
-  if(found.length>0){
+  if(finalPages.length>0){
     badge.style.display='flex'; badge.style.background='#FEF3C7';
-    badgeText.textContent='★ NIK ditemukan di hal.'+[...new Set(found)].sort((a,b)=>a-b).join(',');
-    const fp=document.getElementById('pdfPageWrap_'+found[0]);
+    badgeText.textContent='★ NIK ditemukan di hal.'+finalPages.sort((a,b)=>a-b).join(',');
+    const fp=document.getElementById('pdfPageWrap_'+finalPages[0]);
     if(fp) setTimeout(()=>fp.scrollIntoView({behavior:'smooth',block:'center'}),200);
   } else {
     badge.style.display='flex'; badge.style.background='#FEE2E2';
     badgeText.textContent='NIK tidak terdeteksi';
     _pdfOcrCache.set(ck,{pages:[],highlights:[]});
+    if(_rid2) _saveScanResult(_rid2,_urlHash(_pdfUrl),_urlHash(_pdfNik),[],[]);
   }
 }
 
 // ── Silent background scan ──
-async function _pdfSilentScan(url, nik){
+async function _pdfSilentScan(url, nik, rtlhId){
   const ck=url+'|'+nik;
   if(_pdfOcrCache.has(ck)) return;
   if(!window.pdfjsLib) return;
+  // Load dari DB dulu jika ada rtlhId
+  if(rtlhId){
+    const uh=_urlHash(url),nh=_urlHash(nik);
+    const fromDb=await _loadScanFromDb(rtlhId,uh,nh,ck);
+    if(fromDb){ console.log('[SilentScan] loaded from DB'); return; }
+  }
 
   try{
     pdfjsLib.GlobalWorkerOptions.workerSrc=
@@ -10078,7 +10093,9 @@ async function _pdfSilentScan(url, nik){
       await worker.terminate();
     }
 
-    _pdfOcrCache.set(ck,{pages:[...new Set(found)],highlights});
+    const finalResult={pages:[...new Set(found)],highlights};
+    _pdfOcrCache.set(ck,finalResult);
+    if(rtlhId) await _saveScanResult(rtlhId,_urlHash(url),_urlHash(nik),finalResult.pages,finalResult.highlights);
     console.log('[SilentScan]',url.split('/').pop(),'found:',found);
   }catch(e){ console.warn('[SilentScan] error:',e.message); }
 }
