@@ -9815,33 +9815,75 @@ function _nikMatch(raw, target){
 // ── Text layer extraction dari pdf.js ──
 // Kembalikan {found, yPct} atau null
 function _searchNikInTextLayer(tc, nik, vpHeight, scale){
-  const allText = tc.items.map(i=>i.str).join('').replace(/\s/g,'');
-  if(!_nikMatch(allText, nik).match) return null;
+  // ── Cek dulu apakah NIK ada di semua teks halaman ──
+  // Gabung semua item, normalisasi spasi/karakter
+  const allRaw = tc.items.map(i=>i.str).join(' ');
+  const allNorm = _ocrNorm(allRaw);
+  if(!allNorm.includes(nik) && !_nikMatch(allRaw,nik).match) return null;
 
-  // Group by baris (y coordinate)
-  const lineMap = {};
+  // ── Group item per baris: toleransi ±4pt di koordinat Y PDF ──
+  // item.transform = [a,b,c,d,tx,ty] — ty = Y bottom-up dalam unit PDF
+  const lines = [];
   tc.items.forEach(item=>{
-    if(!item.str.trim()) return;
-    const y = Math.round(item.transform[5] * 10) / 10;
-    if(!lineMap[y]) lineMap[y]={items:[],y};
-    lineMap[y].items.push(item);
+    if(!item.str) return;
+    const ty = item.transform[5]; // Y in PDF space (bottom-up, unscaled)
+    const existing = lines.find(l=>Math.abs(l.ty-ty)<4);
+    if(existing){ existing.items.push(item); }
+    else { lines.push({ty, items:[item]}); }
   });
+  // Sort baris top→bottom (descending ty = ascending visual Y)
+  lines.sort((a,b)=>b.ty-a.ty);
 
-  for(const line of Object.values(lineMap)){
-    const lineText = line.items.map(i=>i.str).join('');
-    if(_nikMatch(lineText, nik).match){
-      // y dalam PDF coords (bottom-up) → convert ke top-down pct
-      const yTopDown = vpHeight - line.y * scale;
-      const rowH = 18 * scale; // estimasi tinggi baris
+  // ── Cari baris yang mengandung NIK ──
+  for(const line of lines){
+    // Gabung teks baris — coba dengan spasi dan tanpa spasi
+    const lineWithSpace = line.items.map(i=>i.str).join(' ');
+    const lineNoSpace   = line.items.map(i=>i.str).join('');
+    const m = _nikMatch(lineWithSpace+lineNoSpace, nik);
+    if(m.match){
+      // Koordinat PDF (bottom-up, unscaled) → viewport (top-down, scaled)
+      // vpHeight = page height dalam viewport coords (sudah di-scale)
+      // ty dalam PDF units, scale = viewport scale factor
+      const itemH = Math.abs(item => item.transform[3] || 12);
+      const rowHpdf = line.items.reduce((mx,it)=>Math.max(mx,Math.abs(it.transform[3])||10),10);
+      // Convert: y_viewport = vpHeight - ty * scale
+      const yCenterVP = vpHeight - line.ty * scale;
+      const rowHVP = rowHpdf * scale * 1.3; // sedikit padding
       return {
-        y0pct: Math.max(0, (yTopDown - rowH) / vpHeight),
-        y1pct: Math.min(1, (yTopDown + rowH*0.5) / vpHeight),
-        exact: true
+        y0pct: Math.max(0, (yCenterVP - rowHVP) / vpHeight),
+        y1pct: Math.min(1, (yCenterVP + rowHVP*0.4) / vpHeight),
+        exact: m.exact
       };
     }
   }
-  // Ketemu di full text tapi tidak ketemu per baris → return approx
-  return {y0pct:0.1, y1pct:0.15, exact:false};
+
+  // ── Fallback: coba sliding window antar baris ──
+  // (NIK mungkin terpotong di dua baris karena kolom tabel)
+  let accumulated='', accumLines=[];
+  for(const line of lines){
+    const lineText=line.items.map(i=>i.str).join('');
+    accumulated += lineText;
+    accumLines.push(line);
+    if(accumulated.length>32){
+      const m=_nikMatch(accumulated,nik);
+      if(m.match){
+        const firstLine=accumLines[0], lastLine=accumLines[accumLines.length-1];
+        const y0VP=vpHeight-firstLine.ty*scale;
+        const y1VP=vpHeight-lastLine.ty*scale;
+        const rowH=Math.max(...accumLines.map(l=>l.items.reduce((mx,it)=>Math.max(mx,Math.abs(it.transform[3])||10),10)))*scale;
+        return {
+          y0pct:Math.max(0,(Math.min(y0VP,y1VP)-rowH)/vpHeight),
+          y1pct:Math.min(1,(Math.max(y0VP,y1VP)+rowH*0.5)/vpHeight),
+          exact:m.exact
+        };
+      }
+      accumulated=accumulated.slice(-20);
+      accumLines=accumLines.slice(-2);
+    }
+  }
+
+  // Ketemu di full page tapi tidak bisa lokalisasi → highlight semua
+  return {y0pct:0, y1pct:1, exact:false, fullPage:true};
 }
 
 // ── Preprocess canvas untuk OCR ──
