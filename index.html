@@ -9657,7 +9657,7 @@ document.addEventListener('keydown',e=>{
 // Normalisasi karakter yang sering salah baca OCR pada angka
 function _ocrNorm(s){
   return s
-    .replace(/[oO]/g,'0').replace(/[iIlL|\\]/g,'1')
+    .replace(/[oO]/g,'0').replace(/[iIlL|]/g,'1')
     .replace(/[zZ]/g,'2').replace(/[sS]/g,'5')
     .replace(/[bB]/g,'6').replace(/[gGqQ]/g,'9')
     .replace(/[^0-9]/g,'');
@@ -9677,25 +9677,33 @@ function _nikMatch(raw, target){
   return {match:false};
 }
 
-// Preprocess canvas: grayscale + tingkatkan kontras
+// Preprocess canvas untuk OCR: scale up + kontras + sharpen
 function _enhanceCanvas(src){
-  const scale = Math.min(2, 3000/Math.max(src.width,src.height));
+  // Scale 2x agar teks lebih jelas (max 3000px di sisi terpanjang)
+  const scale = Math.min(2.5, 3000/Math.max(src.width, src.height));
   const dst = document.createElement('canvas');
   dst.width  = Math.round(src.width  * scale);
   dst.height = Math.round(src.height * scale);
   const ctx = dst.getContext('2d');
-  ctx.filter = 'contrast(1.8) brightness(1.1)';
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(src, 0, 0, dst.width, dst.height);
-  ctx.filter = 'none';
-  // Binarisasi adaptif
-  const id = ctx.getImageData(0,0,dst.width,dst.height);
+
+  // Pixel-level: grayscale + tingkatkan kontras manual
+  const id = ctx.getImageData(0, 0, dst.width, dst.height);
   const d = id.data;
-  for(let i=0;i<d.length;i+=4){
-    const g = 0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
-    const v = g<150?0:255;
-    d[i]=d[i+1]=d[i+2]=v;
+  for(let i=0; i<d.length; i+=4){
+    // Grayscale
+    let g = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+    // Tingkatkan kontras (faktor 1.8, titik tengah 128)
+    g = Math.min(255, Math.max(0, (g - 128) * 1.8 + 128));
+    // Binarisasi: threshold 160 (teks hitam di kertas putih)
+    const v = g < 160 ? 0 : 255;
+    d[i] = d[i+1] = d[i+2] = v;
+    // alpha tetap 255
+    d[i+3] = 255;
   }
-  ctx.putImageData(id,0,0);
+  ctx.putImageData(id, 0, 0);
   return dst;
 }
 
@@ -9747,12 +9755,12 @@ async function _pdfRunOcr(nikFoundSoFar){
 
   try{
     // ── Init worker Tesseract v5 ──
+    // Init Tesseract v5 — tanpa whitelist dulu, biar lebih fleksibel
     worker = await Tesseract.createWorker('eng', 1, {
       logger: m=>{
         if(m.status==='recognizing text')
-          show('OCR '+(m.progress*100|0)+'%...');
-      },
-      errorHandler: e=>console.warn('[Tesseract]',e)
+          show('OCR hal. '+m.userJobId+' '+(m.progress*100|0)+'%...');
+      }
     });
 
     for(let i=0; i<canvases.length; i++){
@@ -9762,55 +9770,58 @@ async function _pdfRunOcr(nikFoundSoFar){
       const svg     = wrap?.querySelector('svg');
       if(!svg) continue;
 
-      show('Hal. '+pageNum+'/'+canvases.length+'...');
+      show('Scan hal. '+pageNum+'/'+canvases.length+'...');
 
-      // ── Preprocess gambar ──
+      // ── Preprocess: scale 2x + kontras tinggi ──
       const enhanced = _enhanceCanvas(canvas);
-      const blob = await new Promise(r=>enhanced.toBlob(r,'image/png',1.0));
 
-      // ── OCR dengan konfigurasi digit ──
-      const {data} = await worker.recognize(blob, {}, {
-        blocks: false, hocr: false, tsv: false, box: false
+      // ── OCR full halaman ──
+      // psm 6 = assume uniform block of text (cocok untuk tabel)
+      const {data} = await worker.recognize(enhanced, {
+        rectangle: undefined
       });
 
       const fullText = data.text || '';
-      const fullNorm = _ocrNorm(fullText);
+      console.log('[OCR] Hal.'+pageNum+' chars:'+fullText.length,
+        'sample:', fullText.slice(0,80).replace(/\n/g,' '));
 
-      // Cek apakah halaman ini mengandung NIK
-      const pageMatch = _nikMatch(fullText, _pdfNik);
-      if(!pageMatch.match) continue;
+      // Cek match di full text
+      const pm = _nikMatch(fullText, _pdfNik);
+      console.log('[OCR] Hal.'+pageNum+' match:', pm, 'nik:', _pdfNik);
 
+      if(!pm.match) continue;
       found.push(pageNum);
 
-      // Cari baris spesifik dari lines
+      // Cari baris yang match dari word/line data
       let highlighted = false;
-      if(data.lines && data.lines.length){
-        const scaleFactor = enhanced.height / canvas.height;
+      const scaleFactor = enhanced.height / canvas.height;
+
+      if(data.lines?.length){
         for(const line of data.lines){
           const lm = _nikMatch(line.text, _pdfNik);
           if(!lm.match) continue;
-          // Koordinat dalam enhanced canvas → scale balik ke canvas asli
-          const y0pct = (line.bbox.y0/scaleFactor) / canvas.height;
-          const y1pct = (line.bbox.y1/scaleFactor) / canvas.height;
+          const y0pct = (line.bbox.y0/scaleFactor)/canvas.height;
+          const y1pct = (line.bbox.y1/scaleFactor)/canvas.height;
+          console.log('[OCR] Match di baris:', line.text.trim(), 'y:', y0pct.toFixed(2), y1pct.toFixed(2));
           _hlRow(svg, canvas.height, y0pct, y1pct, lm.exact);
           highlighted = true;
           break;
         }
       }
 
-      // Fallback: kalau tidak ketemu di lines, scan 30 strip per halaman
+      // Fallback strip scan
       if(!highlighted){
-        const STRIPS=30;
-        for(let s=0;s<STRIPS;s++){
-          const y0 = s/STRIPS, y1=(s+1)/STRIPS;
+        const STRIPS = 40;
+        for(let s=0; s<STRIPS; s++){
+          const y0=s/STRIPS, y1=(s+1)/STRIPS;
           const sy0=Math.floor(enhanced.height*y0);
-          const sh =Math.max(1,Math.floor(enhanced.height*(y1-y0)));
+          const sh=Math.max(4,Math.floor(enhanced.height/STRIPS));
           const strip=document.createElement('canvas');
           strip.width=enhanced.width; strip.height=sh;
           strip.getContext('2d').drawImage(enhanced,0,sy0,enhanced.width,sh,0,0,enhanced.width,sh);
-          const sb=await new Promise(r=>strip.toBlob(r,'image/png',1.0));
-          const {data:sd}=await worker.recognize(sb,{},{blocks:false,hocr:false,tsv:false,box:false});
+          const {data:sd}=await worker.recognize(strip);
           if(_nikMatch(sd.text,_pdfNik).match){
+            console.log('[OCR] Strip match s='+s, sd.text.trim());
             _hlRow(svg,canvas.height,y0,y1,false);
             highlighted=true;
             break;
@@ -9818,10 +9829,7 @@ async function _pdfRunOcr(nikFoundSoFar){
         }
       }
 
-      // Last fallback: highlight strip pertama berisi angka banyak
-      if(!highlighted){
-        _hlRow(svg, canvas.height, 0, 0.04, false);
-      }
+      if(!highlighted) _hlRow(svg,canvas.height,0,0.03,false);
     }
 
   } catch(e){
