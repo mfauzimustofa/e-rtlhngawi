@@ -2293,7 +2293,7 @@ function statusRow(r){
     if(jb.includes('RTLH')||jb.includes('BSPS')||jb==='DD'||jb.startsWith('DD ')||jb.includes(' DD')||jb.includes('DANA DESA'))
       return 'Layak Huni';
   }
-  return statusRow(r);
+  return statusKategori(r.status_rtlh);
 }
 function isLayakHuni(r){return statusRow(r)==='Layak Huni';}
 function isRTLH(r){return statusRow(r)==='RTLH';}
