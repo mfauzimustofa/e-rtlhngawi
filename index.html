@@ -4435,23 +4435,25 @@ function showDetail(r){
       </div>
     </div>`:''}
 
-    <!-- DOKUMEN TERHUBUNG -->
-    <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between">
-      <div style="display:flex;align-items:center;gap:7px">
-        <div style="width:26px;height:26px;border-radius:7px;background:#2563EB18;display:flex;align-items:center;justify-content:center">
-          <i class="fas fa-link" style="color:var(--blue);font-size:.72rem"></i>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between">
+    <!-- BUKTI DUKUNG -->
+    <div style="margin-top:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:6px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="width:24px;height:24px;border-radius:7px;background:#2563EB18;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <i class="fas fa-file-signature" style="color:var(--blue);font-size:.65rem"></i>
+          </div>
           <span style="font-size:.72rem;font-weight:800;color:var(--gray-700);text-transform:uppercase;letter-spacing:.5px">Bukti Dukung</span>
-          <button onclick="pdfRefreshMassal()" title="Refresh scan OCR semua dokumen"
-            style="padding:3px 8px;border-radius:6px;border:1px solid var(--gray-200);background:var(--gray-50);color:var(--gray-500);font-size:.6rem;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px">
-            <i class="fas fa-sync-alt"></i> Scan ulang
+        </div>
+        <div style="display:flex;gap:5px;flex-shrink:0">
+          <button onclick="pdfRefreshMassal()" title="Scan ulang semua dokumen"
+            style="padding:3px 8px;border-radius:6px;border:1px solid var(--gray-200);background:var(--gray-50);color:var(--gray-500);font-size:.58rem;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:3px">
+            <i class="fas fa-sync-alt"></i>
           </button>
+          ${canEdit()?`<button onclick="openLinkDok('${r.id}')" style="font-size:.62rem;padding:3px 9px;border-radius:6px;background:var(--blue);color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:700;display:flex;align-items:center;gap:3px"><i class="fas fa-link"></i> Kelola</button>`:''}
         </div>
       </div>
-      ${canEdit()?`<button onclick="openLinkDok('${r.id}')" style="font-size:.65rem;padding:3px 10px;border-radius:6px;background:var(--blue);color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:700"><i class="fas fa-link"></i> Kelola</button>`:''}
+      <div id="dpDokLink" style="font-size:.72rem;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
     </div>
-    <div id="dpDokLink" style="font-size:.72rem;color:var(--gray-400);margin-top:6px"><i class="fas fa-circle-notch fa-spin"></i> Memuat...</div>
 
     <!-- VERIFIKASI LAPANGAN -->
     <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between" id="dpVerifSection">
@@ -6885,10 +6887,33 @@ async function loadDokLink(rtlhId){
     const url=sb.storage.from('dokumen-kab').getPublicUrl(d.path).data.publicUrl;
     const isPdf=(d.path||'').toLowerCase().endsWith('.pdf');
     const uid='dok_'+numId+'_'+i;
-    return'<div id="'+uid+'" data-url="'+encodeURIComponent(url)+'" data-title="'+encodeURIComponent(d.judul||'')+'" data-nik="'+encodeURIComponent(nikVal)+'" data-ispdf="'+(isPdf?'1':'0')+'" data-rtlhid="'+numId+'" data-dokid="'+(d.id||'')+'" style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;border:1px solid '+cfg.color+'33;background:'+cfg.bg+';cursor:pointer;margin-bottom:4px;transition:opacity .15s" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1" onclick="_openDok(this)">'+
-      '<i class="'+cfg.icon+'" style="color:'+cfg.color+';font-size:.78rem"></i>'+
-      '<span style="font-size:.72rem;font-weight:600;color:'+cfg.color+';flex:1">'+d.judul+'</span>'+
-      (isPdf?'<span style="font-size:.58rem;background:'+cfg.color+'22;color:'+cfg.color+';padding:1px 6px;border-radius:99px;font-weight:700"><i class="fas fa-eye" style="margin-right:2px"></i>Buka</span>':'<i class="fas fa-external-link-alt" style="color:'+cfg.color+';font-size:.6rem"></i>')+
+    // Cek apakah NIK sudah ditemukan di dokumen ini (dari cache)
+    const cacheKey = url+'|'+nikVal;
+    const cached = _pdfOcrCache.get(cacheKey);
+    const nikOk = cached && cached.pages && cached.pages.length > 0;
+    const nikBadge = nikOk
+      ? '<span style="font-size:.55rem;background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;padding:1px 5px;border-radius:99px;font-weight:700;white-space:nowrap"><i class="fas fa-check-circle" style="color:#EAB308;margin-right:2px"></i>NIK hal.'+cached.pages.join(',')+'</span>'
+      : (cached ? '<span style="font-size:.55rem;color:#94A3B8;padding:1px 5px">NIK tdk terdeteksi</span>' : '');
+    return'<div id="'+uid+'" data-url="'+encodeURIComponent(url)+'" data-title="'+encodeURIComponent(d.judul||'')+'" data-nik="'+encodeURIComponent(nikVal)+'" data-ispdf="'+(isPdf?'1':'0')+'" data-rtlhid="'+numId+'" data-dokid="'+(d.id||'')+
+      '" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;border:1.5px solid '+(nikOk?'#FCD34D':cfg.color+'33')+';background:'+(nikOk?'#FEFCE8':cfg.bg)+';cursor:pointer;margin-bottom:5px;transition:all .15s"'+
+      ' onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1" onclick="_openDok(this)">'+
+      // Icon
+      '<div style="width:30px;height:30px;border-radius:8px;background:'+(nikOk?'#FEF3C7':cfg.color+'18')+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'+
+        '<i class="'+(nikOk?'fas fa-file-signature':cfg.icon)+'" style="color:'+(nikOk?'#EAB308':cfg.color)+';font-size:.8rem"></i>'+
+      '</div>'+
+      // Info
+      '<div style="flex:1;min-width:0">'+
+        '<div style="font-size:.72rem;font-weight:700;color:'+(nikOk?'#92400E':'#1E293B')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+d.judul+'</div>'+
+        '<div style="display:flex;align-items:center;gap:4px;margin-top:2px;flex-wrap:wrap">'+
+          '<span style="font-size:.58rem;color:'+cfg.color+';background:'+cfg.bg+';padding:1px 5px;border-radius:99px;font-weight:700">'+d.jenis+'</span>'+
+          (d.tahun?'<span style="font-size:.55rem;color:#94A3B8">'+d.tahun+'</span>':'')+
+          nikBadge+
+        '</div>'+
+      '</div>'+
+      // Action
+      (isPdf
+        ? '<span style="font-size:.6rem;background:'+cfg.color+'18;color:'+cfg.color+';padding:4px 8px;border-radius:8px;font-weight:700;flex-shrink:0"><i class="fas fa-eye" style="margin-right:2px"></i>Buka</span>'
+        : '<i class="fas fa-external-link-alt" style="color:'+cfg.color+';font-size:.65rem;flex-shrink:0"></i>')+
     '</div>';
   }).join('');
   // Auto-scan dokumen jika NIK ada tapi belum pernah di-scan
@@ -9735,410 +9760,327 @@ document.addEventListener('keydown',e=>{
 
 
 // ══════════════════════════════════════════════════
-// OCR ENGINE — Tesseract.js v5, simpel & reliable
+// OCR ENGINE — multi-strategy, robust untuk semua jenis PDF
 // ══════════════════════════════════════════════════
 
-// Normalisasi karakter yang sering salah baca OCR pada angka
+// ── Normalisasi OCR: karakter yang mirip digit ──
 function _ocrNorm(s){
-  return s
-    .replace(/[oO]/g,'0').replace(/[iIlL|]/g,'1')
-    .replace(/[zZ]/g,'2').replace(/[sS]/g,'5')
-    .replace(/[bB]/g,'6').replace(/[gGqQ]/g,'9')
+  return String(s||'')
+    .replace(/[oO°]/g,'0')
+    .replace(/[iIlL|!1]/g,'1')
+    .replace(/[zZ]/g,'2')
+    .replace(/[sS$]/g,'5')
+    .replace(/[bB]/g,'6')
+    .replace(/[tT]/g,'7')
+    .replace(/[gGqQ]/g,'9')
     .replace(/[^0-9]/g,'');
 }
 
-// Fuzzy match NIK 16 digit dari teks OCR
+// ── Fuzzy match NIK: 3 strategi ──
 function _nikMatch(raw, target){
   if(!raw||!target) return {match:false};
-  // Cari semua token yang mirip angka 16 digit
-  // (termasuk yang dipisah spasi, titik, atau karakter lain)
-  const norm = _ocrNorm(raw);         // versi semua digit
-  const normTarget = target.trim();
+  const t = String(target).trim();
 
-  // ── Metode 1: exact di normalisasi penuh ──
-  if(norm.includes(normTarget)) return {match:true, exact:true};
-
-  // ── Metode 2: cari substring 16 digit dalam norm ──
+  // Strategi 1: normalisasi penuh → cari substring 16 digit
+  const norm = _ocrNorm(String(raw));
   for(let i=0; i<=norm.length-16; i++){
-    const chunk = norm.slice(i,i+16);
-    if(chunk===normTarget) return {match:true, exact:true};
-    // Fuzzy: max 2 digit berbeda
-    let diff=0;
-    for(let j=0;j<16;j++) if(chunk[j]!==normTarget[j]) diff++;
-    if(diff<=2) return {match:true, exact:false, diff};
+    const c = norm.slice(i,i+16);
+    if(c===t) return {match:true,exact:true};
+    let d=0; for(let j=0;j<16;j++) if(c[j]!==t[j]) d++;
+    if(d<=2) return {match:true,exact:false,diff:d};
   }
 
-  // ── Metode 3: cari token kata per kata, gabungkan digit-only tokens ──
-  // Berguna saat OCR memisah "3521 1810 1078 0002" jadi beberapa token
-  const tokens = raw.split(/\s+/).map(t=>_ocrNorm(t)).filter(t=>t.length>=3);
-  let combined = '';
+  // Strategi 2: token sliding — gabung angka per kata
+  const tokens = String(raw).split(/\s+/).map(w=>_ocrNorm(w)).filter(w=>w.length>=3);
+  let buf='';
   for(const tok of tokens){
-    combined += tok;
-    if(combined.length >= 16){
-      // Cek setiap jendela 16 digit
-      for(let i=0; i<=combined.length-16; i++){
-        const chunk=combined.slice(i,i+16);
-        if(chunk===normTarget) return {match:true, exact:false, diff:0};
-        let diff=0;
-        for(let j=0;j<16;j++) if(chunk[j]!==normTarget[j]) diff++;
-        if(diff<=2) return {match:true, exact:false, diff};
+    buf+=tok;
+    if(buf.length>=16){
+      for(let i=0;i<=buf.length-16;i++){
+        const c=buf.slice(i,i+16);
+        if(c===t) return {match:true,exact:false,diff:0};
+        let d=0; for(let j=0;j<16;j++) if(c[j]!==t[j]) d++;
+        if(d<=2) return {match:true,exact:false,diff:d};
       }
-      // Geser window — buang token terlalu lama
-      if(combined.length > 32) combined = combined.slice(combined.length-20);
+      if(buf.length>32) buf=buf.slice(buf.length-20);
     }
   }
-
   return {match:false};
 }
 
-// Preprocess canvas untuk OCR: multi-pass enhancement
-// Menangani tulisan kecil, buram, foto, fotokopi
-function _enhanceCanvas(src, mode='auto'){
-  // ── Pass 1: Upscale agresif ──
-  // Tesseract butuh min ~30px tinggi per karakter
-  // Untuk tabel BNBA yang ratusan baris, scale minimal 3x
-  const minSide = Math.max(src.width, src.height);
-  const scale = Math.min(4.0, Math.max(3.0, 4000 / minSide));
+// ── Text layer extraction dari pdf.js ──
+// Kembalikan {found, yPct} atau null
+function _searchNikInTextLayer(tc, nik, vpHeight, scale){
+  const allText = tc.items.map(i=>i.str).join('').replace(/\s/g,'');
+  if(!_nikMatch(allText, nik).match) return null;
 
+  // Group by baris (y coordinate)
+  const lineMap = {};
+  tc.items.forEach(item=>{
+    if(!item.str.trim()) return;
+    const y = Math.round(item.transform[5] * 10) / 10;
+    if(!lineMap[y]) lineMap[y]={items:[],y};
+    lineMap[y].items.push(item);
+  });
+
+  for(const line of Object.values(lineMap)){
+    const lineText = line.items.map(i=>i.str).join('');
+    if(_nikMatch(lineText, nik).match){
+      // y dalam PDF coords (bottom-up) → convert ke top-down pct
+      const yTopDown = vpHeight - line.y * scale;
+      const rowH = 18 * scale; // estimasi tinggi baris
+      return {
+        y0pct: Math.max(0, (yTopDown - rowH) / vpHeight),
+        y1pct: Math.min(1, (yTopDown + rowH*0.5) / vpHeight),
+        exact: true
+      };
+    }
+  }
+  // Ketemu di full text tapi tidak ketemu per baris → return approx
+  return {y0pct:0.1, y1pct:0.15, exact:false};
+}
+
+// ── Preprocess canvas untuk OCR ──
+function _enhanceCanvas(src){
+  // Scale 3x — Tesseract butuh min ~30px per karakter
+  const scale = Math.min(3.5, 4000/Math.max(src.width,src.height));
   const dst = document.createElement('canvas');
   dst.width  = Math.round(src.width  * scale);
   dst.height = Math.round(src.height * scale);
   const ctx = dst.getContext('2d');
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(src, 0, 0, dst.width, dst.height);
+  ctx.imageSmoothingEnabled=true;
+  ctx.imageSmoothingQuality='high';
+  ctx.drawImage(src,0,0,dst.width,dst.height);
 
-  const id = ctx.getImageData(0, 0, dst.width, dst.height);
-  const d = id.data;
-  const W = dst.width, H = dst.height;
+  const id = ctx.getImageData(0,0,dst.width,dst.height);
+  const d=id.data, W=dst.width, H=dst.height;
 
-  // ── Pass 2: Grayscale ──
-  const gray = new Float32Array(W * H);
-  for(let i=0, p=0; i<d.length; i+=4, p++){
-    gray[p] = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+  // Pass 1: Grayscale
+  const gray = new Float32Array(W*H);
+  for(let i=0,p=0;i<d.length;i+=4,p++)
+    gray[p]=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+
+  // Pass 2: Unsharp mask (sharpen teks buram)
+  const blur = new Float32Array(W*H);
+  for(let y=1;y<H-1;y++) for(let x=1;x<W-1;x++){
+    let s=0;
+    for(let ky=-1;ky<=1;ky++) for(let kx=-1;kx<=1;kx++)
+      s+=gray[(y+ky)*W+(x+kx)]*[1,2,1,2,4,2,1,2,1][(ky+1)*3+(kx+1)];
+    blur[y*W+x]=s/16;
   }
+  const sharp = new Float32Array(W*H);
+  for(let p=0;p<W*H;p++)
+    sharp[p]=Math.min(255,Math.max(0,gray[p]+(gray[p]-blur[p])*1.8));
 
-  // ── Pass 3: Unsharp mask (sharpen) — bantu teks buram/foto ──
-  // Gaussian blur 3x3 sederhana, lalu tambah selisihnya
-  const blurred = new Float32Array(W * H);
-  const kernel = [1,2,1, 2,4,2, 1,2,1]; // Gaussian 3x3 / 16
-  for(let y=1; y<H-1; y++){
-    for(let x=1; x<W-1; x++){
-      let sum=0;
-      for(let ky=-1;ky<=1;ky++) for(let kx=-1;kx<=1;kx++){
-        sum += gray[(y+ky)*W+(x+kx)] * kernel[(ky+1)*3+(kx+1)];
-      }
-      blurred[y*W+x] = sum/16;
-    }
-  }
-  // Sharpen: original + (original - blurred) * amount
-  const sharp = new Float32Array(W * H);
-  const amount = 1.5; // kekuatan sharpening
-  for(let p=0; p<W*H; p++){
-    sharp[p] = Math.min(255, Math.max(0, gray[p] + (gray[p] - blurred[p]) * amount));
-  }
+  // Pass 3: Adaptive threshold (Sauvola-like, radius = 1.5% lebar)
+  const r = Math.max(8, Math.round(W*0.015));
+  const sum = new Float64Array((W+1)*(H+1));
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++)
+    sum[(y+1)*(W+1)+(x+1)]=sharp[y*W+x]+sum[y*(W+1)+(x+1)]+sum[(y+1)*(W+1)+x]-sum[y*(W+1)+x];
 
-  // ── Pass 4: Adaptive threshold (Sauvola-like) ──
-  // Lebih baik dari threshold global untuk fotokopi tidak merata
-  const radius = Math.round(W * 0.015); // ~1.5% lebar halaman
-  const out = new Uint8Array(W * H);
-
-  // Hitung integral image untuk mean cepat
-  const integral = new Float64Array((W+1)*(H+1));
-  for(let y=0; y<H; y++){
-    for(let x=0; x<W; x++){
-      integral[(y+1)*(W+1)+(x+1)] =
-        sharp[y*W+x]
-        + integral[y*(W+1)+(x+1)]
-        + integral[(y+1)*(W+1)+x]
-        - integral[y*(W+1)+x];
-    }
+  for(let y=0,p=0,i=0;y<H;y++) for(let x=0;x<W;x++,p++,i+=4){
+    const x0=Math.max(0,x-r),y0=Math.max(0,y-r);
+    const x1=Math.min(W-1,x+r),y1=Math.min(H-1,y+r);
+    const n=(x1-x0)*(y1-y0)||1;
+    const s=sum[(y1+1)*(W+1)+(x1+1)]-sum[y0*(W+1)+(x1+1)]-sum[(y1+1)*(W+1)+x0]+sum[y0*(W+1)+x0];
+    const v=sharp[p]<(s/n)*0.85?0:255;
+    d[i]=d[i+1]=d[i+2]=v; d[i+3]=255;
   }
-
-  for(let y=0; y<H; y++){
-    for(let x=0; x<W; x++){
-      const x0=Math.max(0,x-radius), y0=Math.max(0,y-radius);
-      const x1=Math.min(W-1,x+radius), y1=Math.min(H-1,y+radius);
-      const n=(x1-x0)*(y1-y0);
-      const sum=integral[(y1+1)*(W+1)+(x1+1)]
-               -integral[(y0)*(W+1)+(x1+1)]
-               -integral[(y1+1)*(W+1)+(x0)]
-               +integral[(y0)*(W+1)+(x0)];
-      const mean=sum/n;
-      // Threshold = mean * k (k<1 → lebih agresif mempertahankan teks tipis)
-      const thresh = mean * 0.85;
-      out[y*W+x] = sharp[y*W+x] < thresh ? 0 : 255;
-    }
-  }
-
-  // ── Pass 5: Write back ke canvas ──
-  for(let p=0, i=0; p<W*H; p++, i+=4){
-    d[i]=d[i+1]=d[i+2]=out[p];
-    d[i+3]=255;
-  }
-  ctx.putImageData(id, 0, 0);
+  ctx.putImageData(id,0,0);
   return dst;
 }
 
-// Highlight baris di SVG
+// ── Gambar highlight di SVG ──
 function _hlRow(svg, canvasH, y0pct, y1pct, exact){
-  const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
-  const y0 = Math.max(0, y0pct * canvasH - 4);
-  const h  = Math.max((y1pct-y0pct)*canvasH+8, 20);
+  const rect=document.createElementNS('http://www.w3.org/2000/svg','rect');
+  const y0=Math.max(0,y0pct*canvasH-4);
+  const h=Math.max((y1pct-y0pct)*canvasH+8,20);
   rect.setAttribute('x','0');
-  rect.setAttribute('y', String(y0));
-  rect.setAttribute('width', svg.getAttribute('width')||'1000');
-  rect.setAttribute('height', String(h));
-  rect.setAttribute('fill', exact?'rgba(234,179,8,0.45)':'rgba(234,179,8,0.28)');
+  rect.setAttribute('y',String(y0));
+  rect.setAttribute('width',svg.getAttribute('width')||'1000');
+  rect.setAttribute('height',String(h));
+  rect.setAttribute('fill',exact?'rgba(234,179,8,0.45)':'rgba(234,179,8,0.28)');
   rect.setAttribute('stroke','#EAB308');
   rect.setAttribute('stroke-width','2.5');
   rect.setAttribute('rx','3');
   svg.appendChild(rect);
-  // Label
-  const lbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+  const lbl=document.createElementNS('http://www.w3.org/2000/svg','text');
   lbl.setAttribute('x','6');
-  lbl.setAttribute('y', String(Math.max(14, y0-2)));
-  lbl.setAttribute('fill', exact?'#92400E':'#B45309');
+  lbl.setAttribute('y',String(Math.max(14,y0-2)));
+  lbl.setAttribute('fill',exact?'#92400E':'#B45309');
   lbl.setAttribute('font-size','11');
   lbl.setAttribute('font-weight','bold');
-  lbl.textContent = exact ? '★ NIK BNBA' : '~ NIK (fuzzy)';
+  lbl.textContent=exact?'★ NIK BNBA':'~ NIK (fuzzy)';
   svg.appendChild(lbl);
 }
 
+// ── Scan satu halaman: text layer dulu, fallback OCR ──
+async function _scanPage(page, nik, worker){
+  const scale=1.5;
+  const vp=page.getViewport({scale});
+
+  // ── Coba text layer ──
+  const tc=await page.getTextContent();
+  const tRes=_searchNikInTextLayer(tc,nik,vp.height,scale);
+  if(tRes) return {found:true,...tRes, method:'text'};
+
+  // ── Fallback: render + OCR ──
+  if(!worker) return {found:false};
+  const canvas=document.createElement('canvas');
+  canvas.width=vp.width; canvas.height=vp.height;
+  await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
+  const enhanced=_enhanceCanvas(canvas);
+  const {data}=await worker.recognize(enhanced);
+
+  const pm=_nikMatch(data.text,nik);
+  if(!pm.match) return {found:false};
+
+  // Cari baris spesifik
+  if(data.lines){
+    for(const line of data.lines){
+      if(_nikMatch(line.text,nik).match){
+        const sf=enhanced.height/canvas.height;
+        return {
+          found:true, exact:pm.exact,
+          y0pct:(line.bbox.y0/sf)/canvas.height,
+          y1pct:(line.bbox.y1/sf)/canvas.height,
+          method:'ocr'
+        };
+      }
+    }
+  }
+  return {found:true, exact:false, y0pct:0, y1pct:0.04, method:'ocr-noline'};
+}
+
+// ── Main OCR untuk viewer (dengan progress UI) ──
 async function _pdfRunOcr(nikFoundSoFar){
   if(!_pdfNik||_pdfOcrRunning) return;
-  if(!window.Tesseract){
-    _pdfSetNikBadge('error','Tesseract.js belum dimuat — refresh halaman');
-    return;
-  }
-  _pdfOcrRunning = true;
+  if(!window.Tesseract){ _pdfSetNikBadge('error','Tesseract belum dimuat'); return; }
+  _pdfOcrRunning=true;
 
-  const ocrStatus = document.getElementById('pdfOcrStatus');
-  const ocrText   = document.getElementById('pdfOcrStatusText');
-  const badge     = document.getElementById('pdfNikBadge');
-  const badgeText = document.getElementById('pdfNikBadgeText');
-
-  const show = (txt)=>{ if(ocrText) ocrText.textContent=txt; };
+  const ocrStatus=document.getElementById('pdfOcrStatus');
+  const ocrText=document.getElementById('pdfOcrStatusText');
+  const badge=document.getElementById('pdfNikBadge');
+  const badgeText=document.getElementById('pdfNikBadgeText');
+  const show=txt=>{ if(ocrText) ocrText.textContent=txt; };
   if(ocrStatus) ocrStatus.style.display='flex';
-  show('Muat OCR engine...');
+  show('Inisialisasi...');
 
-  const canvases = [...document.querySelectorAll('[id^="pdfPageWrap_"] canvas')];
-  const found = [...nikFoundSoFar];
-  let worker = null;
+  const canvases=[...document.querySelectorAll('[id^="pdfPageWrap_"] canvas')];
+  const found=[...nikFoundSoFar];
+  const cacheHighlights=[];
+  let worker=null;
 
   try{
-    // ── Init worker Tesseract v5 ──
-    // Init Tesseract v5 — tanpa whitelist dulu, biar lebih fleksibel
-    worker = await Tesseract.createWorker('eng', 1, {
-      logger: m=>{
-        if(m.status==='recognizing text')
-          show('Scan hal. '+(m.progress*100|0)+'%...');
-      }
+    worker=await Tesseract.createWorker('eng',1,{
+      logger:m=>{ if(m.status==='recognizing text') show('OCR '+(m.progress*100|0)+'%...'); }
     });
-    // PSM 6 = uniform block of text (optimal untuk tabel)
-    // OEM 1 = LSTM neural network (lebih akurat untuk teks kecil)
-    // PSM 11 = sparse text, cari teks di mana saja tanpa layout analysis
-    // Tanpa whitelist agar struktur tabel tetap terbaca
-    await worker.setParameters({
-      tessedit_pageseg_mode: '11',
-    });
+    await worker.setParameters({tessedit_pageseg_mode:'11'});
 
-    for(let i=0; i<canvases.length; i++){
-      const canvas  = canvases[i];
-      const wrap    = canvas.closest('[id^="pdfPageWrap_"]');
-      const pageNum = parseInt(wrap?.id?.replace('pdfPageWrap_','')||i+1);
-      const svg     = wrap?.querySelector('svg');
-      if(!svg) continue;
+    for(let i=0;i<canvases.length;i++){
+      const canvas=canvases[i];
+      const wrap=canvas.closest('[id^="pdfPageWrap_"]');
+      const pageNum=parseInt(wrap?.id?.replace('pdfPageWrap_','')||i+1);
+      const svg=wrap?.querySelector('svg');
+      if(!svg||!_pdfDoc) continue;
+      show('Hal. '+pageNum+'/'+canvases.length+'...');
 
-      show('Scan hal. '+pageNum+'/'+canvases.length+'...');
+      // Gunakan _scanPage dengan pdfjs page object
+      const page=await _pdfDoc.getPage(pageNum);
+      const res=await _scanPage(page,_pdfNik,worker);
+      console.log('[OCR] hal.'+pageNum,res.method||'skip',res.found);
 
-      // ── Preprocess: scale 2x + kontras tinggi ──
-      const enhanced = _enhanceCanvas(canvas);
-
-      // ── OCR full halaman ──
-      // psm 6 = assume uniform block of text (cocok untuk tabel)
-      const {data} = await worker.recognize(enhanced, {
-        rectangle: undefined
-      });
-
-      const fullText = data.text || '';
-      console.log('[OCR] Hal.'+pageNum+' chars:'+fullText.length,
-        'sample:', fullText.slice(0,80).replace(/\n/g,' '));
-
-      // Cek match di full text
-      const pm = _nikMatch(fullText, _pdfNik);
-      console.log('[OCR] Hal.'+pageNum+' match:', pm, 'nik:', _pdfNik);
-
-      if(!pm.match) continue;
-      found.push(pageNum);
-
-      // Cari baris yang match dari word/line data
-      let highlighted = false;
-      const scaleFactor = enhanced.height / canvas.height;
-
-      if(data.lines?.length){
-        for(const line of data.lines){
-          const lm = _nikMatch(line.text, _pdfNik);
-          if(!lm.match) continue;
-          const y0pct = (line.bbox.y0/scaleFactor)/canvas.height;
-          const y1pct = (line.bbox.y1/scaleFactor)/canvas.height;
-          console.log('[OCR] Match di baris:', line.text.trim(), 'y:', y0pct.toFixed(2), y1pct.toFixed(2));
-          _hlRow(svg, canvas.height, y0pct, y1pct, lm.exact);
-          highlighted = true;
-          break;
-        }
+      if(res.found){
+        found.push(pageNum);
+        _hlRow(svg,canvas.height,res.y0pct||0,res.y1pct||0.04,res.exact!==false);
+        cacheHighlights.push({page:pageNum,y0pct:res.y0pct||0,y1pct:res.y1pct||0.04,exact:res.exact!==false});
       }
-
-      // Fallback strip scan
-      if(!highlighted){
-        const STRIPS = 40;
-        for(let s=0; s<STRIPS; s++){
-          const y0=s/STRIPS, y1=(s+1)/STRIPS;
-          const sy0=Math.floor(enhanced.height*y0);
-          const sh=Math.max(4,Math.floor(enhanced.height/STRIPS));
-          const strip=document.createElement('canvas');
-          strip.width=enhanced.width; strip.height=sh;
-          strip.getContext('2d').drawImage(enhanced,0,sy0,enhanced.width,sh,0,0,enhanced.width,sh);
-          const {data:sd}=await worker.recognize(strip);
-          if(_nikMatch(sd.text,_pdfNik).match){
-            console.log('[OCR] Strip match s='+s, sd.text.trim());
-            _hlRow(svg,canvas.height,y0,y1,false);
-            highlighted=true;
-            break;
-          }
-        }
-      }
-
-      if(!highlighted) _hlRow(svg,canvas.height,0,0.03,false);
     }
-
-  } catch(e){
-    console.error('OCR Error:', e);
-    _pdfSetNikBadge('error','Error OCR: '+e.message);
-  } finally {
-    if(worker) try{ await worker.terminate(); }catch(x){}
+    await worker.terminate();
+  }catch(e){
+    console.error('OCR error:',e);
+    if(worker) try{await worker.terminate();}catch(x){}
   }
 
   if(ocrStatus) ocrStatus.style.display='none';
-  _pdfOcrRunning = false;
+  _pdfOcrRunning=false;
+
+  // Simpan ke cache
+  const ck=_pdfUrl+'|'+_pdfNik;
+  _pdfOcrCache.set(ck,{pages:[...new Set(found)],highlights:cacheHighlights});
 
   if(!badge) return;
-
-  // Kumpulkan semua highlight yang sudah digambar untuk disimpan ke cache
-  const _cacheHighlights = [];
-  const _cacheKey2 = _pdfUrl + '|' + _pdfNik;
-  document.querySelectorAll('[id^="pdfPageWrap_"] svg rect').forEach(rect=>{
-    const wrap = rect.closest('[id^="pdfPageWrap_"]');
-    if(!wrap) return;
-    const pageNum = parseInt(wrap.id.replace('pdfPageWrap_',''));
-    const canvas = wrap.querySelector('canvas');
-    if(!canvas) return;
-    const y = parseFloat(rect.getAttribute('y')||0);
-    const h = parseFloat(rect.getAttribute('height')||20);
-    _cacheHighlights.push({
-      page: pageNum,
-      y0pct: y / canvas.height,
-      y1pct: (y+h) / canvas.height,
-      exact: rect.getAttribute('fill')?.includes('0.45')
-    });
-  });
-  // Simpan ke cache
-  _pdfOcrCache.set(_cacheKey2, {
-    pages: [...new Set(found)].sort((a,b)=>a-b),
-    highlights: _cacheHighlights
-  });
-
   if(found.length>0){
-    badge.style.display='flex';
-    badge.style.background='#FEF3C7';
-    const pages=[...new Set(found)].sort((a,b)=>a-b).join(', ');
-    badgeText.textContent='★ NIK ditemukan di hal. '+pages;
+    badge.style.display='flex'; badge.style.background='#FEF3C7';
+    badgeText.textContent='★ NIK ditemukan di hal.'+[...new Set(found)].sort((a,b)=>a-b).join(',');
     const fp=document.getElementById('pdfPageWrap_'+found[0]);
     if(fp) setTimeout(()=>fp.scrollIntoView({behavior:'smooth',block:'center'}),200);
   } else {
-    badge.style.display='flex';
-    badge.style.background='#FEE2E2';
+    badge.style.display='flex'; badge.style.background='#FEE2E2';
     badgeText.textContent='NIK tidak terdeteksi';
-    // Simpan hasil kosong ke cache agar tidak scan ulang
-    _pdfOcrCache.set(_cacheKey2, {pages:[], highlights:[]});
+    _pdfOcrCache.set(ck,{pages:[],highlights:[]});
   }
 }
 
-// Silent background scan — scan PDF tanpa buka viewer, simpan ke cache
+// ── Silent background scan ──
 async function _pdfSilentScan(url, nik){
-  const cacheKey = url + '|' + nik;
-  if(_pdfOcrCache.has(cacheKey)) return; // sudah ada
-  if(!window.Tesseract || !window.pdfjsLib) return;
+  const ck=url+'|'+nik;
+  if(_pdfOcrCache.has(ck)) return;
+  if(!window.pdfjsLib) return;
 
   try{
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
+    pdfjsLib.GlobalWorkerOptions.workerSrc=
       'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    const pdf = await pdfjsLib.getDocument({url, withCredentials:false}).promise;
-    const worker = await Tesseract.createWorker('eng', 1, {logger:()=>{}});
-    await worker.setParameters({
-      tessedit_pageseg_mode: '11',
-    });
-    const found = [], highlights = [];
+    const pdf=await pdfjsLib.getDocument({url,withCredentials:false}).promise;
 
-    for(let p=1; p<=pdf.numPages; p++){
-      const page = await pdf.getPage(p);
-      const vp = page.getViewport({scale:1.5});
-      const canvas = document.createElement('canvas');
-      canvas.width=vp.width; canvas.height=vp.height;
-      await page.render({canvasContext:canvas.getContext('2d'), viewport:vp}).promise;
-
-      // Coba text layer dulu
-      const tc = await page.getTextContent();
-      const textLayerText = tc.items.map(i=>i.str).join('').replace(/\s/g,'');
-      const hasText = textLayerText.length > 20;
-
-      if(hasText && textLayerText.includes(nik)){
-        found.push(p);
-        // Cari baris
-        const lm={};
-        tc.items.forEach(item=>{
-          if(!item.str.trim()) return;
-          const y=Math.round(item.transform[5]);
-          if(!lm[y]) lm[y]={items:[],y};
-          lm[y].items.push(item);
-        });
-        Object.values(lm).forEach(line=>{
-          if(line.items.map(i=>i.str).join('').replace(/\s/g,'').includes(nik)){
-            const yPct = 1 - (line.y*1.5)/vp.height;
-            highlights.push({page:p, y0pct:Math.max(0,yPct-0.02), y1pct:Math.min(1,yPct+0.03), exact:true});
-          }
-        });
-      } else if(!hasText){
-        // OCR
-        const enhanced = _enhanceCanvas(canvas);
-        const {data} = await worker.recognize(enhanced);
-        const pm = _nikMatch(data.text, nik);
-        if(pm.match){
-          found.push(p);
-          if(data.lines){
-            for(const line of data.lines){
-              if(_nikMatch(line.text, nik).match){
-                const sf = enhanced.height / canvas.height;
-                highlights.push({
-                  page:p,
-                  y0pct: (line.bbox.y0/sf)/canvas.height,
-                  y1pct: (line.bbox.y1/sf)/canvas.height,
-                  exact: _nikMatch(line.text, nik).exact
-                });
-                break;
-              }
-            }
-          }
-        }
-      }
+    // Coba text layer dulu (tanpa OCR) — lebih cepat
+    const found=[], highlights=[];
+    let needsOcr=false;
+    for(let p=1;p<=pdf.numPages;p++){
+      const page=await pdf.getPage(p);
+      const tc=await page.getTextContent();
+      const vp=page.getViewport({scale:1.5});
+      const tRes=_searchNikInTextLayer(tc,nik,vp.height,1.5);
+      if(tRes){ found.push(p); highlights.push({page:p,...tRes}); }
+      else if(tc.items.map(i=>i.str).join('').length<20) needsOcr=true;
     }
 
-    await worker.terminate();
-    _pdfOcrCache.set(cacheKey, {pages:[...new Set(found)], highlights});
-    console.log('[Silent OCR]', url.split('/').pop(), 'NIK found:', found);
-  } catch(e){
-    console.warn('[Silent OCR] error:', e.message);
-  }
+    // Kalau ada halaman scan & NIK belum ketemu → OCR
+    if(needsOcr && !found.length && window.Tesseract){
+      const worker=await Tesseract.createWorker('eng',1,{logger:()=>{}});
+      await worker.setParameters({tessedit_pageseg_mode:'11'});
+      for(let p=1;p<=pdf.numPages;p++){
+        const page=await pdf.getPage(p);
+        const tc=await page.getTextContent();
+        if(tc.items.map(i=>i.str).join('').length>20) continue; // skip text pages
+        const vp=page.getViewport({scale:1.5});
+        const canvas=document.createElement('canvas');
+        canvas.width=vp.width; canvas.height=vp.height;
+        await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
+        const enhanced=_enhanceCanvas(canvas);
+        const {data}=await worker.recognize(enhanced);
+        const pm=_nikMatch(data.text,nik);
+        if(pm.match){
+          found.push(p);
+          let y0=0,y1=0.04,ex=false;
+          if(data.lines) for(const line of data.lines){
+            const lm=_nikMatch(line.text,nik);
+            if(lm.match){
+              const sf=enhanced.height/canvas.height;
+              y0=(line.bbox.y0/sf)/canvas.height;
+              y1=(line.bbox.y1/sf)/canvas.height;
+              ex=lm.exact; break;
+            }
+          }
+          highlights.push({page:p,y0pct:y0,y1pct:y1,exact:ex});
+        }
+      }
+      await worker.terminate();
+    }
+
+    _pdfOcrCache.set(ck,{pages:[...new Set(found)],highlights});
+    console.log('[SilentScan]',url.split('/').pop(),'found:',found);
+  }catch(e){ console.warn('[SilentScan] error:',e.message); }
 }
 
 function _pdfSetNikBadge(type, text){
