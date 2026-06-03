@@ -10171,6 +10171,72 @@ async function _pdfSilentScan(url, nik, rtlhId){
   }catch(e){ console.warn('[SilentScan] error:',e.message); }
 }
 
+// ── URL hash ringkas untuk key DB ──
+function _urlHash(str){
+  let h=0;
+  const s=String(str||'');
+  for(let i=0;i<s.length;i++) h=(Math.imul(31,h)+s.charCodeAt(i))|0;
+  return Math.abs(h).toString(36);
+}
+
+// ── Simpan hasil scan ke Supabase ──
+async function _saveScanResult(rtlhId, urlHash, nikHash, pages, highlights){
+  if(!rtlhId||!sb) return;
+  try{
+    await sb.from('rtlh_pdf_scan_results').upsert({
+      rtlh_id: parseInt(rtlhId),
+      url_hash: urlHash,
+      nik_hash: nikHash,
+      pages_found: pages,
+      highlights: highlights,
+      scanned_at: new Date().toISOString()
+    },{onConflict:'rtlh_id,url_hash,nik_hash'});
+  }catch(e){ console.warn('[SaveScan]',e.message); }
+}
+
+// ── Load hasil scan dari Supabase ke memory cache ──
+async function _loadScanFromDb(rtlhId, urlHash, nikHash, cacheKey){
+  if(!rtlhId||!sb) return false;
+  try{
+    const{data}=await sb.from('rtlh_pdf_scan_results')
+      .select('pages_found,highlights')
+      .eq('rtlh_id',parseInt(rtlhId))
+      .eq('url_hash',urlHash)
+      .eq('nik_hash',nikHash)
+      .maybeSingle();
+    if(data){
+      _pdfOcrCache.set(cacheKey,{pages:data.pages_found||[],highlights:data.highlights||[]});
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+// ── Trigger scan semua PDF untuk satu rtlhId ──
+async function _triggerScanForRtlh(rtlhId, forceRefresh=false){
+  const numId=parseInt(rtlhId);
+  const rec=brAll.find(x=>parseInt(x.id)===numId);
+  const nik=rec?String(rec.nik||'').trim():'';
+  if(!nik) return;
+  const{data}=await sb.from('rtlh_dokumen_link')
+    .select('rtlh_dokumen_kabupaten(id,path)')
+    .eq('rtlh_id',numId);
+  if(!data?.length) return;
+  data.forEach(lnk=>{
+    const d=lnk.rtlh_dokumen_kabupaten;
+    if(!d||(d.path||'').toLowerCase().endsWith('.pdf')===false) return;
+    const url=sb.storage.from('dokumen-kab').getPublicUrl(d.path).data.publicUrl;
+    const ck=url+'|'+nik;
+    if(forceRefresh){
+      _pdfOcrCache.delete(ck);
+      sb.from('rtlh_pdf_scan_results')
+        .delete().eq('rtlh_id',numId).eq('url_hash',_urlHash(url)).eq('nik_hash',_urlHash(nik))
+        .then(()=>{}).catch(()=>{});
+    }
+    if(!_pdfOcrCache.has(ck)) _pdfSilentScan(url,nik,numId);
+  });
+}
+
 // ── SCAN MASSAL dari Library Dokumen ──
 // Scan semua PDF di library, cocokkan dengan semua BNBA yang tertaut
 async function scanMassalDokLib(){
