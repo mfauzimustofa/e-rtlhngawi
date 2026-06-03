@@ -6873,7 +6873,7 @@ async function loadDokLink(rtlhId){
     const url=sb.storage.from('dokumen-kab').getPublicUrl(d.path).data.publicUrl;
     const isPdf=(d.path||'').toLowerCase().endsWith('.pdf');
     const uid='dok_'+numId+'_'+i;
-    return'<div id="'+uid+'" data-url="'+encodeURIComponent(url)+'" data-title="'+encodeURIComponent(d.judul||'')+'" data-nik="'+encodeURIComponent(nikVal)+'" data-ispdf="'+(isPdf?'1':'0')+'" style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;border:1px solid '+cfg.color+'33;background:'+cfg.bg+';cursor:pointer;margin-bottom:4px;transition:opacity .15s" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1" onclick="_openDok(this)">'+
+    return'<div id="'+uid+'" data-url="'+encodeURIComponent(url)+'" data-title="'+encodeURIComponent(d.judul||'')+'" data-nik="'+encodeURIComponent(nikVal)+'" data-ispdf="'+(isPdf?'1':'0')+'" data-rtlhid="'+numId+'" data-dokid="'+(d.id||'')+'" style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;border:1px solid '+cfg.color+'33;background:'+cfg.bg+';cursor:pointer;margin-bottom:4px;transition:opacity .15s" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1" onclick="_openDok(this)">'+
       '<i class="'+cfg.icon+'" style="color:'+cfg.color+';font-size:.78rem"></i>'+
       '<span style="font-size:.72rem;font-weight:600;color:'+cfg.color+';flex:1">'+d.judul+'</span>'+
       (isPdf?'<span style="font-size:.58rem;background:'+cfg.color+'22;color:'+cfg.color+';padding:1px 6px;border-radius:99px;font-weight:700"><i class="fas fa-eye" style="margin-right:2px"></i>Buka</span>':'<i class="fas fa-external-link-alt" style="color:'+cfg.color+';font-size:.6rem"></i>')+
@@ -6889,8 +6889,10 @@ function _openDok(el){
   const title=decodeURIComponent(el.dataset.title||'');
   const nik=decodeURIComponent(el.dataset.nik||'');
   const isPdf=el.dataset.ispdf==='1';
+  const rtlhId=el.dataset.rtlhid||'';
+  const dokId=el.dataset.dokid||'';
   if(!url)return;
-  if(isPdf) openPdfViewer(url,title,nik);
+  if(isPdf) openPdfViewer(url,title,nik,rtlhId,dokId);
   else window.open(url,'_blank');
 }
 
@@ -9006,6 +9008,17 @@ function exportDtsenWord(){
     </div>
     <button class="pdf-nav-btn" id="pdfFullBtn" onclick="pdfToggleFullscreen()" title="Fullscreen"><i class="fas fa-expand"></i></button>
     <a id="pdfDownloadBtn" href="#" download style="width:34px;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;text-decoration:none" title="Unduh PDF"><i class="fas fa-download"></i></a>
+    <button id="pdfHighlightBtn" onclick="pdfToggleHighlightMode()"
+      style="display:flex;align-items:center;gap:5px;padding:0 10px;height:34px;border-radius:8px;border:1px solid rgba(234,179,8,.5);background:rgba(234,179,8,.12);color:#EAB308;cursor:pointer;font-size:.72rem;font-weight:700;font-family:inherit;transition:all .15s"
+      title="Mode Stabilo — klik & drag untuk highlight baris">
+      <i class="fas fa-highlighter"></i> <span id="pdfHighlightBtnText">Stabilo</span>
+    </button>
+    <button id="pdfSaveHighlightBtn" onclick="pdfSaveHighlights()" style="display:none;align-items:center;gap:5px;padding:0 10px;height:34px;border-radius:8px;border:1px solid #16A34A;background:rgba(22,163,74,.12);color:#16A34A;cursor:pointer;font-size:.72rem;font-weight:700;font-family:inherit" title="Simpan highlight">
+      <i class="fas fa-save"></i> Simpan
+    </button>
+    <button id="pdfClearHighlightBtn" onclick="pdfClearHighlights()" style="display:none;align-items:center;gap:5px;padding:0 10px;height:34px;border-radius:8px;border:1px solid #DC2626;background:rgba(220,38,38,.1);color:#DC2626;cursor:pointer;font-size:.72rem;font-weight:700;font-family:inherit" title="Hapus semua highlight">
+      <i class="fas fa-eraser"></i>
+    </button>
     <div id="pdfNikBadge" style="display:none;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;background:#FEF3C7;font-size:.65rem;font-weight:700;color:#92400E">
       <i class="fas fa-highlighter" style="color:#EAB308"></i>
       <span id="pdfNikBadgeText"></span>
@@ -9409,12 +9422,22 @@ let _pdfScale = 1.4;
 let _pdfNik = '';
 let _pdfUrl = '';
 let _pdfRendering = false;
+let _pdfRtlhId = null;   // rtlh_id yang sedang dibuka
+let _pdfDokId = null;    // dokumen_kabupaten id
+let _pdfHighlights = []; // [{page,x,y,w,h,id}] highlights dari DB
+let _pdfHighlightMode = false;  // true = mode stabilo aktif
+let _pdfDragStart = null;       // {page, x, y} saat mousedown
 
-async function openPdfViewer(url, title, nik){
+async function openPdfViewer(url, title, nik, rtlhId, dokId){
   _pdfUrl = url;
   _pdfNik = String(nik||'').trim();
   _pdfPage = 1;
   _pdfDoc = null;
+  _pdfRtlhId = rtlhId ? parseInt(rtlhId) : null;
+  _pdfDokId = dokId || null;
+  _pdfHighlights = [];
+  _pdfHighlightMode = false;
+  _pdfDragStart = null;
 
   const ov = document.getElementById('ovPdfViewer');
   const scrollArea = document.getElementById('pdfScrollArea');
@@ -9450,6 +9473,8 @@ async function openPdfViewer(url, title, nik){
     document.getElementById('pdfPageCount').textContent = _pdfDoc.numPages;
     document.getElementById('pdfPageNum').textContent = 1;
     _pdfUpdateNavBtns();
+    // Load highlights dari DB sebelum render
+    if(_pdfRtlhId && _pdfDokId) await _pdfLoadHighlights();
     await _pdfRenderAll();
   } catch(e){
     scrollArea.innerHTML='<div style="color:#F87171;padding:40px;text-align:center"><i class="fas fa-exclamation-circle"></i> Gagal membuka PDF.<br><small style="opacity:.7">'+e.message+'</small></div>';
@@ -9489,7 +9514,16 @@ async function _pdfRenderAll(){
     svg.setAttribute('width', vp.width);
     svg.setAttribute('height', vp.height);
     svg.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none';
+    svg.dataset.page = p;
     wrap.appendChild(svg);
+
+    // Interactive layer untuk drag highlight
+    const interactLayer = document.createElement('div');
+    interactLayer.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;cursor:crosshair;display:none';
+    interactLayer.dataset.page = p;
+    interactLayer.id = 'pdfInteract_'+p;
+    _pdfSetupDragHighlight(interactLayer, svg, p, vp);
+    wrap.appendChild(interactLayer);
 
     // Cari NIK di teks halaman
     if(_pdfNik){
@@ -9566,6 +9600,21 @@ async function _pdfRenderAll(){
       });
     }
 
+    // Render saved highlights dari DB
+    _pdfHighlights.filter(h=>h.page===p).forEach(h=>{
+      const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      rect.setAttribute('x', h.x * _pdfScale);
+      rect.setAttribute('y', h.y * _pdfScale);
+      rect.setAttribute('width', h.w * _pdfScale);
+      rect.setAttribute('height', h.h * _pdfScale);
+      rect.setAttribute('fill','rgba(234,179,8,0.4)');
+      rect.setAttribute('stroke','#EAB308');
+      rect.setAttribute('stroke-width','2');
+      rect.setAttribute('rx','2');
+      rect.dataset.hid = h.id||'';
+      svg.appendChild(rect);
+    });
+
     // Label halaman
     const pageLabel = document.createElement('div');
     pageLabel.style.cssText='text-align:center;font-size:.65rem;color:#94A3B8;padding:4px 0';
@@ -9627,7 +9676,18 @@ function _pdfUpdateNavBtns(){
 function closePdfViewer(){
   document.getElementById('ovPdfViewer').classList.remove('open');
   _pdfDoc=null; _pdfNik=''; _pdfUrl='';
+  _pdfRtlhId=null; _pdfDokId=null; _pdfHighlights=[];
+  _pdfHighlightMode=false; _pdfDragStart=null;
   document.getElementById('pdfScrollArea').innerHTML='';
+  // Reset toolbar buttons
+  const btn=document.getElementById('pdfHighlightBtn');
+  if(btn){btn.style.background='rgba(234,179,8,.12)';btn.style.borderColor='rgba(234,179,8,.5)';}
+  const btnText=document.getElementById('pdfHighlightBtnText');
+  if(btnText)btnText.textContent='Stabilo';
+  const saveBtn=document.getElementById('pdfSaveHighlightBtn');
+  if(saveBtn)saveBtn.style.display='none';
+  const clrBtn=document.getElementById('pdfClearHighlightBtn');
+  if(clrBtn)clrBtn.style.display='none';
 }
 
 function pdfToggleFullscreen(){
@@ -9666,9 +9726,234 @@ document.addEventListener('DOMContentLoaded',()=>{
 // Tutup viewer dengan Escape
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&document.getElementById('ovPdfViewer')?.classList.contains('open')){
-    closePdfViewer();
+    if(_pdfHighlightMode) pdfToggleHighlightMode();
+    else closePdfViewer();
   }
 });
+
+// ══════════════════════════════════════════════════
+// PDF HIGHLIGHT MANUAL (Stabilo)
+// ══════════════════════════════════════════════════
+
+// Toggle mode stabilo
+function pdfToggleHighlightMode(){
+  _pdfHighlightMode = !_pdfHighlightMode;
+  const btn = document.getElementById('pdfHighlightBtn');
+  const btnText = document.getElementById('pdfHighlightBtnText');
+  const saveBtn = document.getElementById('pdfSaveHighlightBtn');
+  const clrBtn = document.getElementById('pdfClearHighlightBtn');
+  const scrollArea = document.getElementById('pdfScrollArea');
+
+  if(_pdfHighlightMode){
+    // Aktifkan semua interact layer
+    document.querySelectorAll('[id^="pdfInteract_"]').forEach(el=>el.style.display='block');
+    scrollArea.style.cursor='crosshair';
+    if(btn){btn.style.background='rgba(234,179,8,.35)';btn.style.borderColor='#EAB308';}
+    if(btnText)btnText.textContent='Mode Aktif';
+    if(saveBtn)saveBtn.style.display='flex';
+    if(clrBtn&&_pdfHighlights.length)clrBtn.style.display='flex';
+    toast('Mode Stabilo aktif — klik & drag untuk highlight baris','info');
+  } else {
+    document.querySelectorAll('[id^="pdfInteract_"]').forEach(el=>el.style.display='none');
+    scrollArea.style.cursor='';
+    if(btn){btn.style.background='rgba(234,179,8,.12)';btn.style.borderColor='rgba(234,179,8,.5)';}
+    if(btnText)btnText.textContent='Stabilo';
+  }
+}
+
+// Setup drag handler di satu halaman
+function _pdfSetupDragHighlight(layer, svg, pageNum, vp){
+  let startX, startY, rect, isDragging=false;
+
+  layer.addEventListener('mousedown', e=>{
+    if(!_pdfHighlightMode)return;
+    e.preventDefault();
+    const bbox = layer.getBoundingClientRect();
+    startX = e.clientX - bbox.left;
+    startY = e.clientY - bbox.top;
+    isDragging = true;
+
+    // Preview rect
+    rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('fill','rgba(234,179,8,0.35)');
+    rect.setAttribute('stroke','#EAB308');
+    rect.setAttribute('stroke-width','2');
+    rect.setAttribute('rx','2');
+    rect.classList.add('pdf-preview-rect');
+    svg.appendChild(rect);
+  });
+
+  layer.addEventListener('mousemove', e=>{
+    if(!isDragging||!rect)return;
+    const bbox = layer.getBoundingClientRect();
+    const curX = e.clientX - bbox.left;
+    const curY = e.clientY - bbox.top;
+    // Full-width highlight (selebar halaman) tapi tinggi sesuai drag
+    const x = 0;
+    const y = Math.min(startY, curY);
+    const w = vp.width;
+    const h = Math.abs(curY - startY);
+    rect.setAttribute('x', x);
+    rect.setAttribute('y', y);
+    rect.setAttribute('width', w);
+    rect.setAttribute('height', Math.max(h, 4));
+  });
+
+  layer.addEventListener('mouseup', e=>{
+    if(!isDragging)return;
+    isDragging = false;
+    if(!rect)return;
+
+    const bbox = layer.getBoundingClientRect();
+    const curY = e.clientY - bbox.top;
+    const y = Math.min(startY, curY);
+    const h = Math.abs(curY - startY);
+
+    if(h < 4){
+      // Terlalu kecil — hapus preview
+      rect.remove(); rect=null; return;
+    }
+
+    // Finalize rect — simpan ke _pdfHighlights (koordinat dalam unit PDF, bukan viewport)
+    const hl = {
+      page: pageNum,
+      x: 0,
+      y: y / _pdfScale,
+      w: vp.width / _pdfScale,
+      h: h / _pdfScale,
+      id: null  // belum disimpan ke DB
+    };
+    _pdfHighlights.push(hl);
+    rect.classList.remove('pdf-preview-rect');
+    rect.dataset.hid = '';
+
+    // Show save dan clear buttons
+    const saveBtn=document.getElementById('pdfSaveHighlightBtn');
+    const clrBtn=document.getElementById('pdfClearHighlightBtn');
+    if(saveBtn)saveBtn.style.display='flex';
+    if(clrBtn)clrBtn.style.display='flex';
+
+    rect=null;
+  });
+
+  // Touch support
+  layer.addEventListener('touchstart', e=>{
+    if(!_pdfHighlightMode)return;
+    e.preventDefault();
+    const t=e.touches[0];
+    const bbox=layer.getBoundingClientRect();
+    startX=t.clientX-bbox.left; startY=t.clientY-bbox.top; isDragging=true;
+    rect=document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('fill','rgba(234,179,8,0.35)');
+    rect.setAttribute('stroke','#EAB308');
+    rect.setAttribute('stroke-width','2');
+    rect.setAttribute('rx','2');
+    svg.appendChild(rect);
+  },{passive:false});
+
+  layer.addEventListener('touchmove', e=>{
+    if(!isDragging||!rect)return;
+    e.preventDefault();
+    const t=e.touches[0];
+    const bbox=layer.getBoundingClientRect();
+    const curY=t.clientY-bbox.top;
+    const y=Math.min(startY,curY);
+    const h=Math.abs(curY-startY);
+    rect.setAttribute('x',0);
+    rect.setAttribute('y',y);
+    rect.setAttribute('width',vp.width);
+    rect.setAttribute('height',Math.max(h,4));
+  },{passive:false});
+
+  layer.addEventListener('touchend', e=>{
+    if(!isDragging)return;
+    isDragging=false;
+    if(!rect)return;
+    const y=parseFloat(rect.getAttribute('y')||0);
+    const h=parseFloat(rect.getAttribute('height')||0);
+    if(h<4){rect.remove();rect=null;return;}
+    const hl={page:pageNum,x:0,y:y/_pdfScale,w:vp.width/_pdfScale,h:h/_pdfScale,id:null};
+    _pdfHighlights.push(hl);
+    rect.dataset.hid='';
+    const saveBtn=document.getElementById('pdfSaveHighlightBtn');
+    const clrBtn=document.getElementById('pdfClearHighlightBtn');
+    if(saveBtn)saveBtn.style.display='flex';
+    if(clrBtn)clrBtn.style.display='flex';
+    rect=null;
+  });
+}
+
+// Load highlights dari Supabase
+async function _pdfLoadHighlights(){
+  if(!_pdfRtlhId||!_pdfDokId)return;
+  try{
+    const{data}=await sb.from('rtlh_pdf_highlights')
+      .select('id,page,x,y,w,h')
+      .eq('rtlh_id',_pdfRtlhId)
+      .eq('dokumen_id',_pdfDokId)
+      .order('page');
+    if(data) _pdfHighlights=[...data.map(r=>({...r,id:r.id}))];
+  }catch(e){console.warn('Load highlights failed:',e);}
+}
+
+// Simpan highlights baru ke Supabase
+async function pdfSaveHighlights(){
+  if(!_pdfRtlhId||!_pdfDokId){
+    toast('Tidak bisa simpan — dokumen tidak terhubung ke data BNBA','error');
+    return;
+  }
+  const unsaved=_pdfHighlights.filter(h=>!h.id);
+  if(!unsaved.length){toast('Tidak ada highlight baru','info');return;}
+
+  const rows=unsaved.map(h=>({
+    rtlh_id:_pdfRtlhId,
+    dokumen_id:_pdfDokId,
+    page:h.page,
+    x:Math.round(h.x*100)/100,
+    y:Math.round(h.y*100)/100,
+    w:Math.round(h.w*100)/100,
+    h:Math.round(h.h*100)/100,
+    created_by:user?.email||null
+  }));
+
+  try{
+    const{data,error}=await sb.from('rtlh_pdf_highlights').insert(rows).select('id,page,x,y,w,h');
+    if(error)throw error;
+    // Update ID di _pdfHighlights
+    if(data){
+      let di=0;
+      _pdfHighlights.forEach(h=>{if(!h.id&&di<data.length){h.id=data[di].id;di++;}});
+    }
+    const saveBtn=document.getElementById('pdfSaveHighlightBtn');
+    if(saveBtn)saveBtn.style.display='none';
+    toast(unsaved.length+' highlight disimpan','success');
+  }catch(e){
+    toast('Gagal simpan: '+e.message,'error');
+  }
+}
+
+// Hapus semua highlights
+async function pdfClearHighlights(){
+  if(!confirm('Hapus semua highlight di dokumen ini?'))return;
+  try{
+    if(_pdfRtlhId&&_pdfDokId){
+      await sb.from('rtlh_pdf_highlights')
+        .delete()
+        .eq('rtlh_id',_pdfRtlhId)
+        .eq('dokumen_id',_pdfDokId);
+    }
+    _pdfHighlights=[];
+    // Hapus semua rect dari SVG
+    document.querySelectorAll('[id^="pdfPageWrap_"] svg rect').forEach(r=>{
+      if(!r.classList.contains('auto-hl'))r.remove();
+    });
+    const clrBtn=document.getElementById('pdfClearHighlightBtn');
+    const saveBtn=document.getElementById('pdfSaveHighlightBtn');
+    if(clrBtn)clrBtn.style.display='none';
+    if(saveBtn)saveBtn.style.display='none';
+    toast('Highlight dihapus','info');
+  }catch(e){toast('Gagal hapus: '+e.message,'error');}
+}
 </script>
 
 </body>
