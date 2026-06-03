@@ -9755,17 +9755,47 @@ function _ocrNorm(s){
     .replace(/[^0-9]/g,'');
 }
 
-// Fuzzy match: toleransi 2 digit dari 16
+// Fuzzy match NIK 16 digit dari teks OCR
 function _nikMatch(raw, target){
-  const norm = _ocrNorm(raw);
-  // Scan semua substring 16 digit
+  if(!raw||!target) return {match:false};
+  // Cari semua token yang mirip angka 16 digit
+  // (termasuk yang dipisah spasi, titik, atau karakter lain)
+  const norm = _ocrNorm(raw);         // versi semua digit
+  const normTarget = target.trim();
+
+  // ── Metode 1: exact di normalisasi penuh ──
+  if(norm.includes(normTarget)) return {match:true, exact:true};
+
+  // ── Metode 2: cari substring 16 digit dalam norm ──
   for(let i=0; i<=norm.length-16; i++){
-    const chunk=norm.slice(i,i+16);
-    if(chunk===target) return {match:true,exact:true};
+    const chunk = norm.slice(i,i+16);
+    if(chunk===normTarget) return {match:true, exact:true};
+    // Fuzzy: max 2 digit berbeda
     let diff=0;
-    for(let j=0;j<16;j++) if(chunk[j]!==target[j]) diff++;
-    if(diff<=2) return {match:true,exact:false,diff};
+    for(let j=0;j<16;j++) if(chunk[j]!==normTarget[j]) diff++;
+    if(diff<=2) return {match:true, exact:false, diff};
   }
+
+  // ── Metode 3: cari token kata per kata, gabungkan digit-only tokens ──
+  // Berguna saat OCR memisah "3521 1810 1078 0002" jadi beberapa token
+  const tokens = raw.split(/\s+/).map(t=>_ocrNorm(t)).filter(t=>t.length>=3);
+  let combined = '';
+  for(const tok of tokens){
+    combined += tok;
+    if(combined.length >= 16){
+      // Cek setiap jendela 16 digit
+      for(let i=0; i<=combined.length-16; i++){
+        const chunk=combined.slice(i,i+16);
+        if(chunk===normTarget) return {match:true, exact:false, diff:0};
+        let diff=0;
+        for(let j=0;j<16;j++) if(chunk[j]!==normTarget[j]) diff++;
+        if(diff<=2) return {match:true, exact:false, diff};
+      }
+      // Geser window — buang token terlalu lama
+      if(combined.length > 32) combined = combined.slice(combined.length-20);
+    }
+  }
+
   return {match:false};
 }
 
@@ -9915,10 +9945,10 @@ async function _pdfRunOcr(nikFoundSoFar){
     });
     // PSM 6 = uniform block of text (optimal untuk tabel)
     // OEM 1 = LSTM neural network (lebih akurat untuk teks kecil)
+    // PSM 11 = sparse text, cari teks di mana saja tanpa layout analysis
+    // Tanpa whitelist agar struktur tabel tetap terbaca
     await worker.setParameters({
-      tessedit_pageseg_mode: '6',
-      tessedit_char_whitelist: '0123456789',
-      preserve_interword_spaces: '0',
+      tessedit_pageseg_mode: '11',
     });
 
     for(let i=0; i<canvases.length; i++){
@@ -10054,9 +10084,7 @@ async function _pdfSilentScan(url, nik){
     const pdf = await pdfjsLib.getDocument({url, withCredentials:false}).promise;
     const worker = await Tesseract.createWorker('eng', 1, {logger:()=>{}});
     await worker.setParameters({
-      tessedit_pageseg_mode: '6',
-      tessedit_char_whitelist: '0123456789',
-      preserve_interword_spaces: '0',
+      tessedit_pageseg_mode: '11',
     });
     const found = [], highlights = [];
 
