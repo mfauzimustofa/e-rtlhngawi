@@ -10241,7 +10241,7 @@ async function _triggerScanForRtlh(rtlhId, forceRefresh=false){
 // Scan semua PDF di library, cocokkan dengan semua BNBA yang tertaut
 async function scanMassalDokLib(){
   if(!window.pdfjsLib){
-    toast('pdf.js belum dimuat — coba refresh halaman','error'); return;
+    toast('pdf.js belum dimuat — coba refresh','error'); return;
   }
   const btn=document.getElementById('btnScanMassal');
   const prog=document.getElementById('scanMassalProgress');
@@ -10252,13 +10252,15 @@ async function scanMassalDokLib(){
 
   try{
     show('Memuat data...');
+    pdfjsLib.GlobalWorkerOptions.workerSrc=
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-    // ── Ambil semua dokumen PDF di library ──
-    const{data:allDocsRaw}=await sb.from('rtlh_dokumen_kabupaten')
+    // ── 1. Ambil semua PDF di library ──
+    const{data:docsRaw}=await sb.from('rtlh_dokumen_kabupaten')
       .select('id,path,judul').limit(200);
-    const allDocs=(allDocsRaw||[]).filter(d=>(d.path||'').toLowerCase().endsWith('.pdf'));
+    const allDocs=(docsRaw||[]).filter(d=>(d.path||'').toLowerCase().endsWith('.pdf'));
 
-    // ── Ambil semua link dokumen → BNBA ──
+    // ── 2. Ambil semua link dokumen→BNBA ──
     const{data:links}=await sb.from('rtlh_dokumen_link').select('rtlh_id,dokumen_id');
     const dokToRtlh={};
     (links||[]).forEach(l=>{
@@ -10266,143 +10268,112 @@ async function scanMassalDokLib(){
       dokToRtlh[l.dokumen_id].push(l.rtlh_id);
     });
 
-    // ── Ambil NIK semua BNBA tertaut (batch) ──
+    // ── 3. Ambil NIK semua BNBA ──
     const allRtlhIds=[...new Set((links||[]).map(l=>l.rtlh_id))];
     const nikMap={};
-    if(allRtlhIds.length){
-      // Batch 500
-      for(let i=0;i<allRtlhIds.length;i+=500){
-        const{data:rows}=await sb.from('rtlh').select('id,nik').in('id',allRtlhIds.slice(i,i+500));
-        (rows||[]).forEach(r=>{ if(r.nik) nikMap[r.id]=String(r.nik).trim(); });
-      }
+    for(let i=0;i<allRtlhIds.length;i+=500){
+      const{data:rows}=await sb.from('rtlh').select('id,nik').in('id',allRtlhIds.slice(i,i+500));
+      (rows||[]).forEach(r=>{ if(r.nik) nikMap[r.id]=String(r.nik).trim(); });
     }
 
-    // ── Cek scan yang sudah ada di DB (batch) ──
-    const{data:existingScans}=await sb.from('rtlh_pdf_scan_results')
-      .select('rtlh_id,url_hash,nik_hash').limit(5000);
-    const doneSet=new Set();
-    (existingScans||[]).forEach(s=>doneSet.add(s.rtlh_id+'|'+s.url_hash+'|'+s.nik_hash));
+    // ── 4. Ambil yang sudah di-scan (skip) ──
+    const{data:done}=await sb.from('rtlh_pdf_scan_results')
+      .select('rtlh_id,url_hash,nik_hash').limit(9999);
+    const doneSet=new Set((done||[]).map(s=>s.rtlh_id+'|'+s.url_hash+'|'+s.nik_hash));
 
-    let docIdx=0, totalFound=0;
-    pdfjsLib.GlobalWorkerOptions.workerSrc=
-      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    let docIdx=0, totalFound=0, totalRows=[];
 
     for(const doc of allDocs){
       docIdx++;
       const rtlhIds=(dokToRtlh[doc.id]||[]);
       if(!rtlhIds.length) continue;
 
-      // Filter NIK yang perlu di-scan untuk dokumen ini
       const url=sb.storage.from('dokumen-kab').getPublicUrl(doc.path).data.publicUrl;
       const urlH=_urlHash(url);
-      const needScan=rtlhIds.filter(rid=>{
+
+      // Filter yang belum di-scan
+      const todo=rtlhIds.filter(rid=>{
         const nik=nikMap[rid]; if(!nik) return false;
         return !doneSet.has(rid+'|'+urlH+'|'+_urlHash(nik));
       });
-
-      if(!needScan.length){
-        show(`Skip ${docIdx}/${allDocs.length}: ${doc.judul||''} (sudah terscan)`);
+      if(!todo.length){
+        show(`✓ Skip ${docIdx}/${allDocs.length}: ${doc.judul||''}`);
         continue;
       }
 
-      show(`Buka ${docIdx}/${allDocs.length}: ${doc.judul||''} (${needScan.length} NIK)`);
+      show(`📄 ${docIdx}/${allDocs.length}: ${doc.judul||''} — buka PDF...`);
 
-      // ── Load PDF SEKALI — extract teks semua halaman ──
-      let pdf, pageTexts=[], pageItems=[];
+      // ── 5. Load PDF & extract text layer semua halaman ──
+      // TANPA OCR — text layer saja, sangat cepat
+      let pageData=[];
       try{
-        pdf=await pdfjsLib.getDocument({url,withCredentials:false}).promise;
+        const pdf=await pdfjsLib.getDocument({url,withCredentials:false}).promise;
         for(let p=1;p<=pdf.numPages;p++){
           const page=await pdf.getPage(p);
-          const tc=await page.getTextContent();
           const vp=page.getViewport({scale:1.5});
-          pageTexts.push({
-            p, items:tc.items, vpH:vp.height, scale:1.5,
-            fullNorm:_ocrNorm(tc.items.map(i=>i.str).join(''))
-          });
+          const tc=await page.getTextContent();
+          // Gabung semua text items ke string
+          const rawText=tc.items.map(i=>i.str).join('');
+          const normText=_ocrNorm(rawText);
+          pageData.push({p, rawText, normText, items:tc.items, vpH:vp.height, scale:1.5});
         }
-      }catch(e){ console.warn('Load PDF failed:',e.message); continue; }
-
-      // ── Cek apakah perlu OCR (ada halaman tanpa text layer) ──
-      const needOcr=pageTexts.some(pt=>pt.fullNorm.length<10);
-      let worker=null;
-      if(needOcr&&window.Tesseract){
-        worker=await Tesseract.createWorker('eng',1,{logger:()=>{}});
-        await worker.setParameters({tessedit_pageseg_mode:'11'});
+      }catch(e){
+        show(`⚠ Gagal buka: ${doc.judul||''}`);
+        console.warn('PDF load error:',e.message);
+        continue;
       }
 
-      // ── Render canvas sekali untuk halaman scan (kalau perlu OCR) ──
-      const pageCanvases={};
-      if(needOcr&&worker&&pdf){
-        for(const pt of pageTexts){
-          if(pt.fullNorm.length<10){
-            const page=await pdf.getPage(pt.p);
-            const vp=page.getViewport({scale:1.5});
-            const canvas=document.createElement('canvas');
-            canvas.width=vp.width; canvas.height=vp.height;
-            await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
-            pageCanvases[pt.p]=_enhanceCanvas(canvas);
-          }
-        }
-      }
+      show(`🔍 ${docIdx}/${allDocs.length}: ${doc.judul||''} — cari ${todo.length} NIK...`);
 
-      show(`Scan ${docIdx}/${allDocs.length}: ${doc.judul||''} — cari ${needScan.length} NIK...`);
-
-      // ── Cari setiap NIK di semua halaman (SEKALI per NIK) ──
-      const batchResults=[];
-      for(const rtlhId of needScan){
+      // ── 6. Cari setiap NIK di semua halaman (text layer only) ──
+      for(const rtlhId of todo){
         const nik=nikMap[rtlhId]; if(!nik) continue;
+        const nikH=_urlHash(nik);
         const pages=[], highlights=[];
 
-        for(const pt of pageTexts){
-          // Coba text layer dulu
-          let res=null;
-          if(pt.fullNorm.includes(nik)||_nikMatch(pt.items.map(i=>i.str).join(''),nik).match){
-            const tc={items:pt.items};
-            res=_searchNikInTextLayer(tc,nik,pt.vpH,pt.scale);
+        for(const pg of pageData){
+          // Quick check: apakah digit NIK ada di halaman ini?
+          if(!pg.normText.includes(nik) && !_nikMatch(pg.rawText,nik).match) continue;
+          // Cari lokasi baris
+          const res=_searchNikInTextLayer({items:pg.items},nik,pg.vpH,pg.scale);
+          if(res){
+            pages.push(pg.p);
+            highlights.push({page:pg.p,...res});
           }
-          // Fallback OCR kalau halaman scan
-          if(!res&&worker&&pageCanvases[pt.p]){
-            const{data}=await worker.recognize(pageCanvases[pt.p]);
-            if(_nikMatch(data.text,nik).match){
-              res={y0pct:0,y1pct:0.04,exact:false};
-              if(data.lines) for(const line of data.lines){
-                if(_nikMatch(line.text,nik).match){
-                  const sf=pageCanvases[pt.p].height/(pt.vpH/pt.scale);
-                  res={y0pct:(line.bbox.y0/sf)/pt.vpH*pt.scale,y1pct:(line.bbox.y1/sf)/pt.vpH*pt.scale,exact:false};
-                  break;
-                }
-              }
-            }
-          }
-          if(res){ pages.push(pt.p); highlights.push({page:pt.p,...res}); }
         }
 
+        // Tandai done (meski tidak ditemukan, agar tidak di-scan ulang)
+        doneSet.add(rtlhId+'|'+urlH+'|'+nikH);
         if(pages.length) totalFound++;
-        // Simpan ke cache memory
-        const ck=url+'|'+nik;
-        _pdfOcrCache.set(ck,{pages,highlights});
-        // Tandai sudah selesai
-        doneSet.add(rtlhId+'|'+urlH+'|'+_urlHash(nik));
-        batchResults.push({rtlhId,urlH,nikH:_urlHash(nik),pages,highlights});
-      }
 
-      if(worker) await worker.terminate();
+        // Simpan ke memory cache
+        _pdfOcrCache.set(url+'|'+nik,{pages,highlights});
 
-      // ── Simpan batch ke DB sekaligus ──
-      if(batchResults.length){
-        const rows=batchResults.map(r=>({
-          rtlh_id:parseInt(r.rtlhId),url_hash:r.urlH,nik_hash:r.nikH,
-          pages_found:r.pages,highlights:r.highlights,
+        // Kumpulkan untuk batch upsert
+        totalRows.push({
+          rtlh_id:parseInt(rtlhId), url_hash:urlH, nik_hash:nikH,
+          pages_found:pages, highlights,
           scanned_at:new Date().toISOString()
-        }));
-        await sb.from('rtlh_pdf_scan_results')
-          .upsert(rows,{onConflict:'rtlh_id,url_hash,nik_hash'});
+        });
+
+        // Batch upsert tiap 50 baris
+        if(totalRows.length>=50){
+          await sb.from('rtlh_pdf_scan_results')
+            .upsert(totalRows,{onConflict:'rtlh_id,url_hash,nik_hash'});
+          totalRows=[];
+        }
       }
     }
 
-    toast(`✅ Selesai: ${docIdx} dokumen, ${totalFound} NIK ditemukan`,'success');
+    // Simpan sisa
+    if(totalRows.length){
+      await sb.from('rtlh_pdf_scan_results')
+        .upsert(totalRows,{onConflict:'rtlh_id,url_hash,nik_hash'});
+    }
+
+    toast(`✅ Scan selesai: ${docIdx} dok, ${totalFound} NIK ditemukan`,'success');
   }catch(e){
-    console.error('Scan massal error:',e);
+    console.error('Scan massal:',e);
     toast('Error: '+e.message,'error');
   }finally{
     if(btn) btn.style.display='flex';
