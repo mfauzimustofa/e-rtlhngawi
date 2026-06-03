@@ -1880,7 +1880,7 @@ function renderReport(){
       return kk.toUpperCase()===kec.toUpperCase()&&dk.toUpperCase()===desaUp;
     });
     const key=matchKey||(kec+'|'+desaRaw);
-    const _rk=statusKategori(r.status_rtlh);
+    const _rk=statusRow(r);
     if(!byKec[kec])byKec[kec]={kec,total:0,layak:0,rtlh:0,lain:0};
     byKec[kec].total++;if(_rk==='Layak Huni')byKec[kec].layak++;else if(_rk==='RTLH')byKec[kec].rtlh++;else byKec[kec].lain++;
     if(!byDesa[key])byDesa[key]={kec,desa:normCase(desaRaw)||desaRaw,kode:'',total:0,layak:0,rtlh:0,lain:0};
@@ -1986,7 +1986,7 @@ function exportReportExcel(){
     const kec=normCase(r.kec)||r.kec||'-';
     const desa=normCase(r.desa)||r.desa||'-';
     const key=kec+'|'+desa;
-    const _ek=statusKategori(r.status_rtlh);
+    const _ek=statusRow(r);
     if(!byKec[kec])byKec[kec]={Kecamatan:kec,Total:0,'Layak Huni':0,RTLH:0,'Keterangan Lain':0,'% Layak':0};
     byKec[kec].Total++;if(_ek==='Layak Huni')byKec[kec]['Layak Huni']++;else if(_ek==='RTLH')byKec[kec].RTLH++;else byKec[kec]['Keterangan Lain']++;
     if(!byDesa[key])byDesa[key]={Kecamatan:kec,Desa:desa,Total:0,'Layak Huni':0,RTLH:0,'Keterangan Lain':0,'% Layak':0};
@@ -2284,9 +2284,19 @@ function statusKategori(s){
   // Keterangan Lain — semua yang tidak cocok di atas
   return 'Keterangan Lain';
 }
-function isLayakHuni(r){return statusKategori(r.status_rtlh)==='Layak Huni';}
-function isRTLH(r){return statusKategori(r.status_rtlh)==='RTLH';}
-function isKetLain(r){return statusKategori(r.status_rtlh)==='Keterangan Lain';}
+// statusRow: sama seperti statusKategori, tapi jika jenis_bantuan berisi
+// RTLH, BSPS, atau DD maka otomatis dianggap Layak Huni
+function statusRow(r){
+  if(r&&r.jenis_bantuan){
+    const jb=String(r.jenis_bantuan).toUpperCase().trim();
+    if(jb.includes('RTLH')||jb.includes('BSPS')||jb==='DD'||jb.startsWith('DD ')||jb.includes(' DD')||jb.includes('DANA DESA'))
+      return 'Layak Huni';
+  }
+  return statusKategori(r?r.status_rtlh:null);
+}
+function isLayakHuni(r){return statusRow(r)==='Layak Huni';}
+function isRTLH(r){return statusRow(r)==='RTLH';}
+function isKetLain(r){return statusRow(r)==='Keterangan Lain';}
 const STATUS_COLORS={'Layak Huni':'#16A34A','RTLH':'#DC2626','Keterangan Lain':'#7C3AED'};
 
 async function loadGlobalStats(){
@@ -2340,7 +2350,7 @@ function _applyGlobalStats(data){
 
   data.forEach(r=>{
     // Status
-    const kat=statusKategori(r.status_rtlh);
+    const kat=statusRow(r);
     if(kat==='Layak Huni')layak++;
     else if(kat==='RTLH')rtlh++;
     else lain++;
@@ -2741,7 +2751,7 @@ function _renderChartStatusFromCounts(layak,rtlh,lain,total){
 function renderChartStatus(data){
   if(!data||!data.length)return;
   let layak=0,rtlh=0,lain=0;
-  data.forEach(r=>{const k=statusKategori(r.status_rtlh);if(k==='Layak Huni')layak++;else if(k==='RTLH')rtlh++;else lain++;});
+  data.forEach(r=>{const k=statusRow(r);if(k==='Layak Huni')layak++;else if(k==='RTLH')rtlh++;else lain++;});
   _renderChartStatusFromCounts(layak,rtlh,lain,data.length);
 }
 
@@ -2857,7 +2867,7 @@ async function searchNIK(){
         <span style="margin-left:auto;font-size:.65rem;background:var(--blue);color:#fff;border-radius:99px;padding:1px 8px">${group.items.length}</span>
       </div>
       ${group.items.map(r=>{
-        const _sk=statusKategori(r.status_rtlh);
+        const _sk=statusRow(r);
         const statusColor=STATUS_COLORS[_sk]||'var(--danger)';
         const statusIcon=_sk==='Layak Huni'?'home':_sk==='Keterangan Lain'?'question-circle':'house-damage';
         const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
@@ -2924,7 +2934,7 @@ async function ensureKecCounts(force=false){
       const k=(r.kec||'').toUpperCase().trim();
       if(!kecCounts[k])kecCounts[k]={total:0,sudah:0,proses:0,belum:0};
       kecCounts[k].total++;
-      const _kat2=statusKategori(r.status_rtlh);
+      const _kat2=statusRow(r);
       if(_kat2==='Layak Huni')kecCounts[k].sudah++;
       else if(_kat2==='RTLH')kecCounts[k].belum++;
       else kecCounts[k].lain++;
@@ -2976,7 +2986,7 @@ async function applyGlobalFilter(){
     const all=results.flatMap(r=>r.data||[]);
 
     // Filter berdasarkan kategori (client-side, instant)
-    const data=all.filter(r=>statusKategori(r.status_rtlh)===_globalStatusFilter);
+    const data=all.filter(r=>statusRow(r)===_globalStatusFilter);
 
     if(!data.length){
       cnt.innerHTML=`<span style="background:${sbg};color:${sc};padding:2px 10px;border-radius:99px;font-weight:700;font-size:.72rem">${_globalStatusFilter}</span> <span style="font-size:.72rem;color:var(--gray-400)">— tidak ada data</span>`;
@@ -3004,7 +3014,7 @@ async function applyGlobalFilter(){
         </div>
         ${g.items.map(r=>{
           const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
-          const badge=statusKategori(r.status_rtlh);
+          const badge=statusRow(r);
           const bc=STATUS_COLORS[badge]||'#94A3B8';
           return`<div onclick="clearKeclistSearch();_globalStatusFilter='';bukaDetailDariSearch('${r.id}','${kecKey}')"
             style="padding:9px 12px;border-bottom:1px solid var(--gray-100);cursor:pointer;display:flex;align-items:center;gap:10px"
@@ -3085,7 +3095,7 @@ async function showDesaStat(kecName){
     );
     if(found){
       found.total++;
-      const kat=statusKategori(r.status_rtlh);
+      const kat=statusRow(r);
       if(kat==='Layak Huni')found.layak++;
       else if(kat==='RTLH')found.rtlh++;
       else found.lain++;
@@ -3094,7 +3104,7 @@ async function showDesaStat(kecName){
       const key='extra_'+dn.toUpperCase();
       if(!byDesa[key])byDesa[key]={desa:dn,kode:'-',total:0,layak:0,rtlh:0,lain:0};
       byDesa[key].total++;
-      const kat=statusKategori(r.status_rtlh);
+      const kat=statusRow(r);
       if(kat==='Layak Huni')byDesa[key].layak++;
       else if(kat==='RTLH')byDesa[key].rtlh++;
       else byDesa[key].lain++;
@@ -3352,7 +3362,7 @@ async function showNonDbModal(){
                 <td style="padding:7px 10px;font-family:monospace;font-size:.68rem">${r.nik||'-'}</td>
                 <td style="padding:7px 10px;font-weight:600">${r.kep_kk||'-'}</td>
                 <td style="padding:7px 10px;color:var(--gray-500);font-size:.7rem">${r.desa||'-'} / ${r.kec||'-'}</td>
-                <td style="padding:7px 10px"><span style="background:${STATUS_COLORS[statusKategori(r.status_rtlh)]||'#94A3B8'}20;color:${STATUS_COLORS[statusKategori(r.status_rtlh)]||'#94A3B8'};border-radius:99px;padding:2px 8px;font-size:.62rem;font-weight:700">${statusKategori(r.status_rtlh)}</span></td>
+                <td style="padding:7px 10px"><span style="background:${STATUS_COLORS[statusRow(r)]||'#94A3B8'}20;color:${STATUS_COLORS[statusRow(r)]||'#94A3B8'};border-radius:99px;padding:2px 8px;font-size:.62rem;font-weight:700">${statusRow(r)}</span></td>
               </tr>`).join('')}
           </tbody>
         </table>
@@ -3436,7 +3446,7 @@ async function searchKeclist(){
         const key=((r.desa||'')+':'+(r.kec||'')).toUpperCase();
         if(!byDesa2[key])byDesa2[key]={desa:normCase(r.desa)||r.desa,kec:normCase(r.kec)||r.kec,total:0,layak:0,rtlh:0,lain:0};
         byDesa2[key].total++;
-        const _kat=statusKategori(r.status_rtlh);
+        const _kat=statusRow(r);
         if(_kat==='Layak Huni')byDesa2[key].layak++;
         else if(_kat==='RTLH')byDesa2[key].rtlh++;
         else byDesa2[key].lain++;
@@ -3926,7 +3936,7 @@ function setFilterDesil(d){
 function applyFilters(){
   // Tampilkan semua data
   brFeatures=brAll.filter(r=>{
-    if(filterStatus!=='all'&&statusKategori(r.status_rtlh)!==filterStatus)return false;
+    if(filterStatus!=='all'&&statusRow(r)!==filterStatus)return false;
     if(filterDesil!=='all'){
       const m=String(r.desil||'').match(/\d+/);
       if(filterDesil==='5+'){if(!m||parseInt(m[0])<5)return false;}
@@ -4081,7 +4091,7 @@ function renderSidebarList(){
       </div>
       <div id="${dgId}" style="padding:4px 6px">
         ${sortedItems.map((r,idx)=>{
-          const kat=statusKategori(r.status_rtlh);
+          const kat=statusRow(r);
           const sc=STATUS_COLORS[kat]||'#94A3B8';
           const ico=kat==='Layak Huni'?'home':kat==='Keterangan Lain'?'question-circle':'house-damage';
           const desilNum=String(r.desil||'').match(/\d+/)?.[0]||'';
@@ -4132,7 +4142,7 @@ function updateMap(){
     if(!lat||!lng||isNaN(lat)||isNaN(lng))return;
     if(lat<-90||lat>90||lng<-180||lng>180)return;
 
-    const kat=statusKategori(r.status_rtlh);
+    const kat=statusRow(r);
     const markerColor=STATUS_COLORS[kat]||'#94A3B8';
     const mk=L.circleMarker([lat,lng],{
       radius:7,
@@ -4201,7 +4211,7 @@ function showDetail(r){
   document.getElementById('dpTitle').textContent=showNama(r.kep_kk);
   const desilNum=String(r.desil||'').match(/\d+/)?.[0];
   const desilColor=desilNum?getDesilColor(desilNum):'var(--gray-400)';
-  const _kat=statusKategori(r.status_rtlh);
+  const _kat=statusRow(r);
   const statusCls=_kat==='Layak Huni'?'sudah':_kat==='Keterangan Lain'?'lain':'belum';
   const hasBatal=r.status_batal&&r.status_batal!=='-';
 
@@ -4959,7 +4969,7 @@ async function downloadExcelKab(withNIK){
     }
 
     // 3. Filter status di client-side pakai statusKategori() — SINKRON 100% dengan grafik & dashboard
-    if(status) allData=allData.filter(r=>statusKategori(r.status_rtlh)===status);
+    if(status) allData=allData.filter(r=>statusRow(r)===status);
     if(!allData.length){
       setLog('<span style="color:var(--danger)"><i class="fas fa-exclamation-circle"></i> Tidak ada data dengan filter tersebut</span>');
       return toast('Tidak ada data','error');
@@ -6326,7 +6336,7 @@ function renderPenerimaDok(list){
   });
   el.innerHTML=Object.values(byDesa).sort((a,b)=>a.kec.localeCompare(b.kec)||a.desa.localeCompare(b.desa)).map(g=>{
     const itemsHtml=g.items.map(r=>{
-      const kat=statusKategori(r.status_rtlh);
+      const kat=statusRow(r);
       const sc=STATUS_COLORS[kat]||'#94A3B8';
       const ico=kat==='Layak Huni'?'home':kat==='Keterangan Lain'?'question-circle':'house-damage';
       const kecKey=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
@@ -6569,7 +6579,7 @@ async function loadEditDlLinked(docId){
   cnt.textContent=data.length+' penerima';
   list.innerHTML=data.map(lnk=>{
     const r=lnk.rtlh||{};
-    const kat=statusKategori(r.status_rtlh);
+    const kat=statusRow(r);
     const sc=STATUS_COLORS[kat]||'#94A3B8';
     return`<div style="padding:7px 10px;border-bottom:1px solid #F1F5F9;display:flex;align-items:center;gap:8px">
       <div style="flex:1;min-width:0">
@@ -6605,7 +6615,7 @@ async function searchEditDlPenerima(){
   if(!data?.length){res.innerHTML='<div style="padding:8px;text-align:center;color:#94A3B8;font-size:.72rem">Tidak ditemukan</div>';return;}
   const docId=document.getElementById('editDlId').value;
   res.innerHTML=data.map(r=>{
-    const kat=statusKategori(r.status_rtlh);
+    const kat=statusRow(r);
     const sc=STATUS_COLORS[kat]||'#94A3B8';
     return`<div style="padding:7px 10px;border-bottom:1px solid #F1F5F9;display:flex;align-items:center;gap:8px;cursor:pointer"
       onmouseover="this.style.background='#EFF6FF'" onmouseout="this.style.background=''"
@@ -7799,7 +7809,7 @@ function renderDtsen(){
     });
     const desaKey=matchKey||(kec+'|'+desaRaw);
     const d=parseDt(r.desil);
-    const kat=statusKategori(r.status_rtlh);
+    const kat=statusRow(r);
     const isR=kat==='RTLH', isL=kat==='Layak Huni', isK=kat==='Keterangan Lain';
 
     // Global
@@ -8059,7 +8069,7 @@ function _getDtsenExportData(){
     });
     const desaKey=matchKey||(kec+'|'+desaRaw);
     const d=parseDt(r.desil);
-    const kat=statusKategori(r.status_rtlh);
+    const kat=statusRow(r);
     const isR=kat==='RTLH',isL=kat==='Layak Huni',isK=kat==='Keterangan Lain';
 
     if(!byKec[kec])byKec[kec]={kec,total:0,rtlh:0,layak:0,lain:0,desil:mkDesilStat2()};
@@ -8206,7 +8216,7 @@ function _buildDtsenSheetRows(tab){
     const matchKey=Object.keys(byDesa).find(k=>{const[kk,dk]=k.split('|');return kk.toUpperCase()===kec.toUpperCase()&&dk.toUpperCase()===desaRaw.toUpperCase();});
     const desaKey=matchKey||(kec+'|'+desaRaw);
     const d=parseDt(r.desil);
-    const kat=statusKategori(r.status_rtlh);
+    const kat=statusRow(r);
     const isR=kat==='RTLH',isL=kat==='Layak Huni';
     if(!byKec[kec])byKec[kec]={kec,total:0,rtlh:0,layak:0,lain:0,desil:mkDs()};
     byKec[kec].total++;if(isR)byKec[kec].rtlh++;else if(isL)byKec[kec].layak++;else byKec[kec].lain=(byKec[kec].lain||0)+1;
