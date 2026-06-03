@@ -10183,6 +10183,53 @@ async function scanMassalDokLib(){
   }
 }
 
+// DIAGNOSTIC: Test scan satu NIK di satu PDF
+// Panggil dari browser console: await diagScanNIK('URL_PDF', 'NIK_16_DIGIT')
+async function diagScanNIK(url, nik){
+  console.log('=== DIAG SCAN ===');
+  console.log('URL:', url.slice(-50));
+  console.log('NIK:', nik);
+  
+  if(!window.pdfjsLib){console.log('ERROR: pdfjsLib not loaded');return;}
+  pdfjsLib.GlobalWorkerOptions.workerSrc=
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  
+  try{
+    console.log('Loading PDF...');
+    const pdf=await pdfjsLib.getDocument({url,withCredentials:false}).promise;
+    console.log('PDF loaded, pages:', pdf.numPages);
+    
+    for(let p=1;p<=pdf.numPages;p++){
+      const page=await pdf.getPage(p);
+      const vp=page.getViewport({scale:1.5});
+      const tc=await page.getTextContent();
+      const rawText=tc.items.map(i=>i.str).join('');
+      const normText=_ocrNorm(rawText);
+      
+      console.log('Page '+p+': items='+tc.items.length+
+        ' textLen='+rawText.length+
+        ' normLen='+normText.length+
+        ' hasNIK_exact='+normText.includes(nik)+
+        ' hasNIK_fuzzy='+_nikMatch(rawText,nik).match);
+      
+      if(normText.includes(nik)||_nikMatch(rawText,nik).match){
+        console.log('  *** NIK FOUND on page '+p+' ***');
+        // Show which items contain it
+        tc.items.forEach((item,idx)=>{
+          if(_ocrNorm(item.str).includes(nik.slice(0,8))){
+            console.log('  Item '+idx+':', JSON.stringify(item.str), 'transform:', item.transform);
+          }
+        });
+        const res=_searchNikInTextLayer(tc,nik,vp.height,1.5);
+        console.log('  _searchNikInTextLayer result:', res);
+      }
+    }
+    console.log('=== DONE ===');
+  }catch(e){
+    console.error('DIAG ERROR:', e.message);
+  }
+}
+
 function _pdfSetNikBadge(type, text){
   const badge=document.getElementById('pdfNikBadge');
   const badgeText=document.getElementById('pdfNikBadgeText');
