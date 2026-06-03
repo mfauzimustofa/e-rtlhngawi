@@ -3660,6 +3660,8 @@ async function loadKec(){
   document.getElementById('btnAddRtlh').style.display=canEdit()?'flex':'none';
   document.getElementById('btnDelAll').style.display=isSuperAdmin()?'flex':'none';
 
+  // Reset BA links saat pindah kecamatan
+  _baLinkedIds = new Set();
   const sidebarList=document.getElementById('sidebarList');
 
   // Cek memory cache dulu (tercepat)
@@ -3668,6 +3670,10 @@ async function loadKec(){
     brFeatures=[...brAll];
     renderSidebar();renderKecDashboard();updateMap();
     loadBoundary(kecName);
+    // Reload BA links setiap buka kecamatan (data bisa berubah)
+    loadBALinks(brAll.map(r=>parseInt(r.id))).then(()=>{
+      renderSidebarList(); updateMap();
+    }).catch(()=>{});
     // Cek apakah perlu refresh background
     const cached=cacheGet(cacheKey);
     if(cached?.stale)_refreshKecBackground(cacheKey, currentKec, kecName);
@@ -3684,6 +3690,9 @@ async function loadKec(){
     brFeatures=[...brAll];
     renderSidebar();renderKecDashboard();updateMap();
     loadBoundary(kecName);
+    loadBALinks(brAll.map(r=>parseInt(r.id))).then(()=>{
+      renderSidebarList(); updateMap();
+    }).catch(()=>{});
     if(cached.stale)_refreshKecBackground(cacheKey, currentKec, kecName);
     return;
   }
@@ -3726,7 +3735,7 @@ async function _fetchKec(cacheKey, kecName, kecLabel){
     renderSidebar();renderKecDashboard();updateMap();
     loadBoundary(Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===kecName));
     // Load BA/SK links background — highlight setelah dapat data
-    loadBALinks(allRows.map(r=>r.id)).then(()=>{
+    loadBALinks(allRows.map(r=>parseInt(r.id))).then(()=>{
       if(currentKec===kecName){ renderSidebarList(); updateMap(); }
     }).catch(()=>{});
   }
@@ -3752,6 +3761,9 @@ async function _refreshKecBackground(cacheKey, kecName, kecLabel){
     if(currentKec===kecName){
       brAll=brCache[kecName];brFeatures=[...brAll];
       renderSidebar();renderKecDashboard();updateMap();
+      loadBALinks(brAll.map(r=>parseInt(r.id))).then(()=>{
+        if(currentKec===kecName){renderSidebarList();updateMap();}
+      }).catch(()=>{});
     }
   }catch(e){console.warn('Background refresh kec failed:',e);}
 }
@@ -3790,13 +3802,13 @@ async function loadBALinks(rtlhIds){
   for(let i=0; i<rtlhIds.length; i+=BATCH){
     const batch = rtlhIds.slice(i, i+BATCH);
     const{data} = await sb.from('rtlh_dokumen_link').select('rtlh_id').in('rtlh_id', batch);
-    if(data) data.forEach(r => _baLinkedIds.add(r.rtlh_id));
+    if(data) data.forEach(r => _baLinkedIds.add(parseInt(r.rtlh_id)));
   }
   // Update badge di sidebar header
   const badge = document.getElementById('baSummaryBadge');
   const text  = document.getElementById('baSummaryText');
   if(badge && text){
-    const hasDok = brAll.filter(r => _baLinkedIds.has(r.id)).length;
+    const hasDok = brAll.filter(r => _baLinkedIds.has(parseInt(r.id))).length;
     if(hasDok>0){
       badge.style.display='flex';
       text.textContent = hasDok+' / '+brAll.length+' ada BA/SK';
@@ -4136,7 +4148,7 @@ function renderSidebarList(){
           const ico=kat==='Layak Huni'?'home':kat==='Keterangan Lain'?'question-circle':'house-damage';
           const desilNum=String(r.desil||'').match(/\d+/)?.[0]||'';
           const desilColor=desilNum?getDesilColor(desilNum):'#94A3B8';
-          const hasDok=_baLinkedIds.has(r.id);
+          const hasDok=_baLinkedIds.has(parseInt(r.id));
           const rowBg=hasDok?'#FEFCE8':'#fff';
           const rowBorder=hasDok?'2px solid #EAB308':'1px solid #E2E8F0';
           const rowShadow=hasDok?';box-shadow:0 0 0 2px rgba(234,179,8,.15)':'';
@@ -4195,7 +4207,7 @@ function updateMap(){
 
     const kat=statusRow(r);
     const markerColor=STATUS_COLORS[kat]||'#94A3B8';
-    const hasDok=_baLinkedIds.has(r.id);
+    const hasDok=_baLinkedIds.has(parseInt(r.id));
     const mk=L.circleMarker([lat,lng],{
       radius: hasDok ? 9 : 7,
       fillColor: hasDok ? '#EAB308' : markerColor,
@@ -6823,18 +6835,18 @@ async function unlinkDok(linkId){
 async function loadDokLink(rtlhId){
   const el=document.getElementById('dpDokLink');
   if(!el)return;
+  const numId=parseInt(rtlhId);
   const{data}=await sb.from('rtlh_dokumen_link')
     .select('id,rtlh_dokumen_kabupaten(id,jenis,judul,tahun,path)')
-    .eq('rtlh_id',parseInt(rtlhId));
+    .eq('rtlh_id',numId);
   if(!data?.length){
-    // Hapus dari _baLinkedIds jika tidak ada dok
-    _baLinkedIds.delete(parseInt(rtlhId));
+    _baLinkedIds.delete(numId);
     el.innerHTML='<span style="color:var(--gray-400)">Belum ada dokumen terhubung</span>';
-    _refreshSidebarItem(parseInt(rtlhId));
+    _refreshSidebarItem(numId);
     return;
   }
   // Tandai sebagai punya dok
-  _baLinkedIds.add(parseInt(rtlhId));
+  _baLinkedIds.add(numId);
   el.innerHTML=data.map(lnk=>{
     const d=lnk.rtlh_dokumen_kabupaten;
     if(!d)return'';
@@ -6847,26 +6859,41 @@ async function loadDokLink(rtlhId){
     </a>`;
   }).join('');
   // Refresh highlight di sidebar item & peta secara instan
-  _refreshSidebarItem(parseInt(rtlhId));
+  _refreshSidebarItem(numId);
 }
 
 // Refresh hanya satu item di sidebar tanpa full re-render
 function _refreshSidebarItem(id){
+  const numId=parseInt(id);
   const el=document.getElementById('ri_'+id);
-  if(!el)return;
-  const r=brAll.find(x=>x.id===id);
-  if(!r)return;
-  const hasDok=_baLinkedIds.has(id);
-  el.style.background=hasDok?'#FEFCE8':'#fff';
-  el.style.border=hasDok?'2px solid #EAB308':'1px solid #E2E8F0';
-  el.style.boxShadow=hasDok?'0 0 0 2px rgba(234,179,8,.15)':'';
+  const hasDok=_baLinkedIds.has(numId);
+  // Update inline style jika elemen ada di DOM
+  if(el){
+    el.style.background=hasDok?'#FEFCE8':'#fff';
+    el.style.border=hasDok?'2px solid #EAB308':'1px solid #E2E8F0';
+    el.style.boxShadow=hasDok?'0 0 0 2px rgba(234,179,8,.15)':'';
+    // Update badge BA/SK di dalam item
+    const existingBadge=el.querySelector('.ba-badge');
+    if(hasDok&&!existingBadge){
+      const firstCol=el.querySelector('[style*="flex-direction:column"]');
+      if(firstCol){
+        const badge=document.createElement('span');
+        badge.className='ba-badge';
+        badge.style.cssText='font-size:.55rem;font-weight:800;color:#92400E;background:#FEF3C7;border:1px solid #FCD34D;padding:1px 6px;border-radius:99px;white-space:nowrap';
+        badge.innerHTML='<i class="fas fa-file-signature" style="color:#EAB308;margin-right:2px"></i>BA/SK';
+        firstCol.insertBefore(badge,firstCol.firstChild);
+      }
+    } else if(!hasDok&&existingBadge){
+      existingBadge.remove();
+    }
+  }
   // Update marker peta
   updateMap();
-  // Update badge summary
+  // Update badge summary di header
   const badge=document.getElementById('baSummaryBadge');
   const text=document.getElementById('baSummaryText');
   if(badge&&text){
-    const cnt=brAll.filter(x=>_baLinkedIds.has(x.id)).length;
+    const cnt=brAll.filter(x=>_baLinkedIds.has(parseInt(x.id))).length;
     if(cnt>0){badge.style.display='flex';text.textContent=cnt+' / '+brAll.length+' ada BA/SK';}
     else badge.style.display='none';
   }
@@ -6881,7 +6908,7 @@ async function autoLinkDokumen(rtlhId, jenisBantuan, tahunBantuan){
   let q=sb.from('rtlh_dokumen_kabupaten').select('id,jenis,judul,tahun');
   if(tahun)q=q.eq('tahun',tahun);
   const{data:docs}=await q;
-  if(!data&&!docs?.length)return;
+  if(!docs?.length)return;
   // Filter: cari dokumen yang judulnya mengandung jenis bantuan atau tahun
   const jb=(jenisBantuan||'').toUpperCase();
   const matches=(docs||[]).filter(d=>{
