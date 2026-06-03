@@ -4439,7 +4439,13 @@ function showDetail(r){
         <div style="width:26px;height:26px;border-radius:7px;background:#2563EB18;display:flex;align-items:center;justify-content:center">
           <i class="fas fa-link" style="color:var(--blue);font-size:.72rem"></i>
         </div>
-        <span style="font-size:.72rem;font-weight:800;color:var(--gray-700);text-transform:uppercase;letter-spacing:.5px">Bukti Dukung</span>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:.72rem;font-weight:800;color:var(--gray-700);text-transform:uppercase;letter-spacing:.5px">Bukti Dukung</span>
+          <button onclick="pdfRefreshMassal()" title="Refresh scan OCR semua dokumen"
+            style="padding:3px 8px;border-radius:6px;border:1px solid var(--gray-200);background:var(--gray-50);color:var(--gray-500);font-size:.6rem;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px">
+            <i class="fas fa-sync-alt"></i> Scan ulang
+          </button>
+        </div>
       </div>
       ${canEdit()?`<button onclick="openLinkDok('${r.id}')" style="font-size:.65rem;padding:3px 10px;border-radius:6px;background:var(--blue);color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:700"><i class="fas fa-link"></i> Kelola</button>`:''}
     </div>
@@ -9028,6 +9034,9 @@ function exportDtsenWord(){
     <div id="pdfOcrStatus" style="display:none;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;background:rgba(234,179,8,.15);font-size:.65rem;font-weight:700;color:#EAB308;white-space:nowrap">
       <i class="fas fa-brain"></i> <span id="pdfOcrStatusText">Membaca teks...</span>
     </div>
+    <button class="pdf-nav-btn" onclick="pdfRescan()" title="Scan ulang — paksa OCR ulang halaman ini" style="font-size:.65rem;padding:0 8px;gap:4px;display:flex;align-items:center">
+      <i class="fas fa-redo"></i>
+    </button>
     <button class="pdf-nav-btn" id="pdfFullBtn" onclick="pdfToggleFullscreen()" title="Fullscreen"><i class="fas fa-expand"></i></button>
     <a id="pdfDownloadBtn" href="#" download style="width:34px;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;text-decoration:none" title="Unduh PDF"><i class="fas fa-download"></i></a>
     <div id="pdfNikBadge" style="display:none;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;background:#FEF3C7;font-size:.65rem;font-weight:700;color:#92400E">
@@ -9650,6 +9659,48 @@ function closePdfViewer(){
   document.getElementById('pdfScrollArea').innerHTML='';
 }
 
+// Paksa scan ulang halaman yang sedang ditampilkan (hapus cache dulu)
+async function pdfRescan(){
+  if(!_pdfUrl||!_pdfNik) return;
+  const ck = _pdfUrl+'|'+_pdfNik;
+  _pdfOcrCache.delete(ck);
+  // Hapus semua highlight yang ada
+  document.querySelectorAll('[id^="pdfPageWrap_"] svg rect, [id^="pdfPageWrap_"] svg text').forEach(el=>el.remove());
+  // Reset badge
+  const badge=document.getElementById('pdfNikBadge');
+  const badgeText=document.getElementById('pdfNikBadgeText');
+  if(badge){badge.style.display='flex';badge.style.background='#FDE68A';}
+  if(badgeText) badgeText.textContent='Scan ulang...';
+  // Jalankan OCR ulang
+  await _pdfRunOcr([]);
+}
+
+// Refresh massal: hapus semua cache, scan ulang semua dokumen yang terhubung
+async function pdfRefreshMassal(){
+  const total = _pdfOcrCache.size;
+  _pdfOcrCache.clear();
+  toast('<i class="fas fa-sync fa-spin"></i> Cache OCR direset ('+total+' dokumen). Buka dokumen untuk scan ulang.','info');
+  // Re-trigger silent scan untuk semua dokumen yang ada di panel aktif
+  const numId = parseInt(document.getElementById('dpBody')?.dataset?.rtlhId||0);
+  if(numId){
+    const rec=brAll.find(x=>parseInt(x.id)===numId);
+    const nik=rec?String(rec.nik||'').trim():'';
+    if(nik){
+      // Ambil ulang dokumen dan scan
+      const{data}=await sb.from('rtlh_dokumen_link')
+        .select('rtlh_dokumen_kabupaten(id,path)')
+        .eq('rtlh_id',numId);
+      if(data) data.forEach(lnk=>{
+        const d=lnk.rtlh_dokumen_kabupaten;
+        if(!d||(d.path||'').toLowerCase().endsWith('.pdf')===false) return;
+        const url=sb.storage.from('dokumen-kab').getPublicUrl(d.path).data.publicUrl;
+        _pdfSilentScan(url, nik);
+      });
+      toast('Scan ulang dimulai di background','info');
+    }
+  }
+}
+
 function pdfToggleFullscreen(){
   const el = document.getElementById('ovPdfViewer');
   const btn = document.getElementById('pdfFullBtn');
@@ -9718,10 +9769,15 @@ function _nikMatch(raw, target){
   return {match:false};
 }
 
-// Preprocess canvas untuk OCR: scale up + kontras + sharpen
-function _enhanceCanvas(src){
-  // Scale 2x agar teks lebih jelas (max 3000px di sisi terpanjang)
-  const scale = Math.min(2.5, 3000/Math.max(src.width, src.height));
+// Preprocess canvas untuk OCR: multi-pass enhancement
+// Menangani tulisan kecil, buram, foto, fotokopi
+function _enhanceCanvas(src, mode='auto'){
+  // ── Pass 1: Upscale agresif ──
+  // Tesseract butuh min ~30px tinggi per karakter
+  // Untuk tabel BNBA yang ratusan baris, scale minimal 3x
+  const minSide = Math.max(src.width, src.height);
+  const scale = Math.min(4.0, Math.max(3.0, 4000 / minSide));
+
   const dst = document.createElement('canvas');
   dst.width  = Math.round(src.width  * scale);
   dst.height = Math.round(src.height * scale);
@@ -9730,19 +9786,73 @@ function _enhanceCanvas(src){
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(src, 0, 0, dst.width, dst.height);
 
-  // Pixel-level: grayscale + tingkatkan kontras manual
   const id = ctx.getImageData(0, 0, dst.width, dst.height);
   const d = id.data;
-  for(let i=0; i<d.length; i+=4){
-    // Grayscale
-    let g = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
-    // Tingkatkan kontras (faktor 1.8, titik tengah 128)
-    g = Math.min(255, Math.max(0, (g - 128) * 1.8 + 128));
-    // Binarisasi: threshold 160 (teks hitam di kertas putih)
-    const v = g < 160 ? 0 : 255;
-    d[i] = d[i+1] = d[i+2] = v;
-    // alpha tetap 255
-    d[i+3] = 255;
+  const W = dst.width, H = dst.height;
+
+  // ── Pass 2: Grayscale ──
+  const gray = new Float32Array(W * H);
+  for(let i=0, p=0; i<d.length; i+=4, p++){
+    gray[p] = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+  }
+
+  // ── Pass 3: Unsharp mask (sharpen) — bantu teks buram/foto ──
+  // Gaussian blur 3x3 sederhana, lalu tambah selisihnya
+  const blurred = new Float32Array(W * H);
+  const kernel = [1,2,1, 2,4,2, 1,2,1]; // Gaussian 3x3 / 16
+  for(let y=1; y<H-1; y++){
+    for(let x=1; x<W-1; x++){
+      let sum=0;
+      for(let ky=-1;ky<=1;ky++) for(let kx=-1;kx<=1;kx++){
+        sum += gray[(y+ky)*W+(x+kx)] * kernel[(ky+1)*3+(kx+1)];
+      }
+      blurred[y*W+x] = sum/16;
+    }
+  }
+  // Sharpen: original + (original - blurred) * amount
+  const sharp = new Float32Array(W * H);
+  const amount = 1.5; // kekuatan sharpening
+  for(let p=0; p<W*H; p++){
+    sharp[p] = Math.min(255, Math.max(0, gray[p] + (gray[p] - blurred[p]) * amount));
+  }
+
+  // ── Pass 4: Adaptive threshold (Sauvola-like) ──
+  // Lebih baik dari threshold global untuk fotokopi tidak merata
+  const radius = Math.round(W * 0.015); // ~1.5% lebar halaman
+  const out = new Uint8Array(W * H);
+
+  // Hitung integral image untuk mean cepat
+  const integral = new Float64Array((W+1)*(H+1));
+  for(let y=0; y<H; y++){
+    for(let x=0; x<W; x++){
+      integral[(y+1)*(W+1)+(x+1)] =
+        sharp[y*W+x]
+        + integral[y*(W+1)+(x+1)]
+        + integral[(y+1)*(W+1)+x]
+        - integral[y*(W+1)+x];
+    }
+  }
+
+  for(let y=0; y<H; y++){
+    for(let x=0; x<W; x++){
+      const x0=Math.max(0,x-radius), y0=Math.max(0,y-radius);
+      const x1=Math.min(W-1,x+radius), y1=Math.min(H-1,y+radius);
+      const n=(x1-x0)*(y1-y0);
+      const sum=integral[(y1+1)*(W+1)+(x1+1)]
+               -integral[(y0)*(W+1)+(x1+1)]
+               -integral[(y1+1)*(W+1)+(x0)]
+               +integral[(y0)*(W+1)+(x0)];
+      const mean=sum/n;
+      // Threshold = mean * k (k<1 → lebih agresif mempertahankan teks tipis)
+      const thresh = mean * 0.85;
+      out[y*W+x] = sharp[y*W+x] < thresh ? 0 : 255;
+    }
+  }
+
+  // ── Pass 5: Write back ke canvas ──
+  for(let p=0, i=0; p<W*H; p++, i+=4){
+    d[i]=d[i+1]=d[i+2]=out[p];
+    d[i+3]=255;
   }
   ctx.putImageData(id, 0, 0);
   return dst;
@@ -9800,8 +9910,15 @@ async function _pdfRunOcr(nikFoundSoFar){
     worker = await Tesseract.createWorker('eng', 1, {
       logger: m=>{
         if(m.status==='recognizing text')
-          show('OCR hal. '+m.userJobId+' '+(m.progress*100|0)+'%...');
+          show('Scan hal. '+(m.progress*100|0)+'%...');
       }
+    });
+    // PSM 6 = uniform block of text (optimal untuk tabel)
+    // OEM 1 = LSTM neural network (lebih akurat untuk teks kecil)
+    await worker.setParameters({
+      tessedit_pageseg_mode: '6',
+      tessedit_char_whitelist: '0123456789',
+      preserve_interword_spaces: '0',
     });
 
     for(let i=0; i<canvases.length; i++){
@@ -9936,6 +10053,11 @@ async function _pdfSilentScan(url, nik){
       'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     const pdf = await pdfjsLib.getDocument({url, withCredentials:false}).promise;
     const worker = await Tesseract.createWorker('eng', 1, {logger:()=>{}});
+    await worker.setParameters({
+      tessedit_pageseg_mode: '6',
+      tessedit_char_whitelist: '0123456789',
+      preserve_interword_spaces: '0',
+    });
     const found = [], highlights = [];
 
     for(let p=1; p<=pdf.numPages; p++){
