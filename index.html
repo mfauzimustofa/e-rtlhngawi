@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <title>e-RTLH Kabupaten Ngawi | DPRKP Ngawi</title>
 <meta name="theme-color" content="#0C2340">
-<meta name="description" content="Sistem Informasi Rumah Tidak Layak Huni (RTLH) Kabupaten Ngawi — DPRKP Kab. Ngawi. Data 19 Kecamatan dan 217 Desa/Kelurahan.">
+<meta name="description" content="Sistem Informasi Rumah Tidak Layak Huni (RTLH) Kabupaten Ngawi -- DPRKP Kab. Ngawi. Data 19 Kecamatan dan 217 Desa/Kelurahan.">
 <meta name="robots" content="index,follow">
 <meta name="googlebot" content="index,follow">
 <link rel="canonical" href="https://e-rtlhngawi.id/">
@@ -21,7 +21,7 @@
 <meta name="rating" content="general">
 <!-- Open Graph -->
 <meta property="og:title" content="e-RTLH Kabupaten Ngawi">
-<meta property="og:description" content="Sistem Informasi RTLH Kabupaten Ngawi — DPRKP">
+<meta property="og:description" content="Sistem Informasi RTLH Kabupaten Ngawi -- DPRKP">
 <meta property="og:image" content="https://e-rtlhngawi.id/data/logo-ngawi.png">
 <meta property="og:url" content="https://e-rtlhngawi.id">
 <meta property="og:type" content="website">
@@ -610,7 +610,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
       </div>
     </div>
 
-    <!-- SEARCH RESULTS — di luar sticky, tidak menimpa peta -->
+    <!-- SEARCH RESULTS -- di luar sticky, tidak menimpa peta -->
     <div id="searchResultsWrap" style="display:none;background:#fff;border-bottom:1px solid var(--gray-200);z-index:99">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px 4px">
         <div id="searchResultCount" style="font-size:.72rem;color:var(--gray-500)"></div>
@@ -629,7 +629,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
     <!-- PETA SEBARAN RTLH -->
     <div class="section">
-      <div class="section-head"><i class="fas fa-map"></i> Peta Sebaran RTLH — Kabupaten Ngawi
+      <div class="section-head"><i class="fas fa-map"></i> Peta Sebaran RTLH -- Kabupaten Ngawi
         <span style="margin-left:auto;display:flex;gap:6px;align-items:center">
           <button onclick="toggleSatellite()" id="btnToggleTile" style="padding:4px 10px;border-radius:7px;background:var(--gray-100);border:1px solid var(--gray-200);font-size:.68rem;font-weight:700;cursor:pointer;font-family:inherit;color:var(--gray-700)"><i class="fas fa-satellite"></i> Satelit</button>
           <button onclick="toggleKecLayer()" id="btnToggleKec" style="padding:4px 10px;border-radius:7px;background:var(--blue-bg);border:1px solid var(--blue);font-size:.68rem;font-weight:700;cursor:pointer;font-family:inherit;color:var(--blue)"><i class="fas fa-draw-polygon"></i> Batas Kec</button>
@@ -906,7 +906,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
       </button>
       <div>
         <h2 style="font-size:.95rem;margin:0"><i class="fas fa-map-marked-alt" style="color:var(--gold)"></i> Pilih Kecamatan</h2>
-        <p style="font-size:.65rem;margin:0;opacity:.6">WebGIS RTLH — Data BNBA per kecamatan</p>
+        <p style="font-size:.65rem;margin:0;opacity:.6">WebGIS RTLH -- Data BNBA per kecamatan</p>
       </div>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:4px">
@@ -1020,7 +1020,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
         </div>
         <div>
           <h2 style="color:#fff;font-size:1.1rem;font-weight:800;margin:0">Cek Data Massal via NIK</h2>
-          <p style="color:rgba(255,255,255,.5);font-size:.72rem;margin:2px 0 0">Upload Excel berisi NIK → tampil data lengkap dari database e-RTLH</p>
+          <p style="color:rgba(255,255,255,.5);font-size:.72rem;margin:2px 0 0">Upload Excel berisi NIK -> tampil data lengkap dari database e-RTLH</p>
         </div>
       </div>
     </div>
@@ -1329,7 +1329,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
   <div class="modal" style="max-width:800px;max-height:92vh">
     <div class="modal-head">
       <div>
-        <h3><i class="fas fa-random" style="color:var(--blue)"></i> Mapping Kolom Excel → Database</h3>
+        <h3><i class="fas fa-random" style="color:var(--blue)"></i> Mapping Kolom Excel -> Database</h3>
         <div class="sub" id="cmSubtitle">Cocokkan kolom Excel dengan field database</div>
       </div>
       <button class="modal-x" onclick="closeModal('ovColMap')"><i class="fas fa-times"></i></button>
@@ -1591,14 +1591,14 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
 <script>
-// ══════════════════════════════════════════════════
+// ==================================================
 // INIT
-// ══════════════════════════════════════════════════
+// ==================================================
 const SUPA_URL='https://oiygddbzugipepatswxi.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9peWdkZGJ6dWdpcGVwYXRzd3hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MTk3NTEsImV4cCI6MjA5MTM5NTc1MX0.MiGiTCuawuT0SCD7OzvEgBH4PqqdqCtl_njMqmX4Jzs';
 const LOGIN_FN_URL=SUPA_URL+'/functions/v1/login-username';
 const NIK_DB_TOTAL=10379;
-let _dbMode='semua'; // selalu semua — mode tidak ditampilkan ke user
+let _dbMode='semua'; // selalu semua -- mode tidak ditampilkan ke user
 
 let sb=null; // akan diinit di DOMContentLoaded
 
@@ -1646,9 +1646,9 @@ let loginTab='username';
 let _adminUsername=null;
 let adminKecamatan="";
 
-// ══════════════════════════════════════════════════
+// ==================================================
 // HELPERS
-// ══════════════════════════════════════════════════
+// ==================================================
 const dn=v=>v||'-';
 const isSuperAdmin=()=>isAdmin&&adminLevel===1;
 const isAdminL2=()=>isAdmin&&adminLevel===2;
@@ -1663,7 +1663,7 @@ const canEdit=()=>{
   return kecs.length===0||kecs.includes(currentKec);
 };
 
-// ── MASKING FUNCTIONS ──
+// -- MASKING FUNCTIONS --
 // NIK: hanya huruf/angka pertama saja yang tampil, sisanya bintang
 function maskNIK(v){
   if(!v||v==='-')return'-';
@@ -1679,7 +1679,7 @@ function maskNoKK(v){
   if(!s)return'-';
   return s[0]+'*'.repeat(Math.max(1,s.length-1));
 }
-// Nama: hanya inisial huruf pertama saja, misal "Budi Santoso" → "B***"
+// Nama: hanya inisial huruf pertama saja, misal "Budi Santoso" -> "B***"
 function maskNama(v){
   if(!v||v==='-')return'-';
   const s=String(v).trim();
@@ -1704,9 +1704,9 @@ function showAlamat(v){return isAdmin?String(v||'-'):maskAlamat(v)}
 function pct(a,b){return b?Math.round(a/b*100):0}
 function dn2(v){return v!=null&&v!==''?v:'-'}
 
-// ══════════════════════════════════════════════════
+// ==================================================
 // SESSION PERSISTENCE
-// ══════════════════════════════════════════════════
+// ==================================================
 function saveSession(){
   sessionStorage.setItem('ertlh_page',document.querySelector('.page.active')?.id||'pgBeranda');
   sessionStorage.setItem('ertlh_kec',currentKec||'');
@@ -1746,9 +1746,9 @@ function restoreSession(){
   else nav('beranda');
 }
 
-// ══════════════════════════════════════════════════
+// ==================================================
 // NAVIGATION + BROWSER HISTORY
-// ══════════════════════════════════════════════════
+// ==================================================
 const PAGE_HASH={beranda:'#beranda',keclist:'#webgis',webgis:'#webgis',report:'#laporan',dtsen:'#dtsen'};
 const HASH_PAGE={'#beranda':'beranda','#webgis':'keclist','#laporan':'report','#dtsen':'dtsen'};
 let _navFromPop=false;
@@ -1812,9 +1812,9 @@ function nav(pg){
   saveSession();
 }
 
-// ══════════════════════════════════════════════════
-// LAPORAN — per kecamatan & per desa
-// ══════════════════════════════════════════════════
+// ==================================================
+// LAPORAN -- per kecamatan & per desa
+// ==================================================
 let _rpData=null, _rpLoaded=false, _rpTab='kec';
 
 async function loadReport(){
@@ -2020,9 +2020,9 @@ function exportReportExcel(){
   toast('Export berhasil','success');
 }
 
-// ══════════════════════════════════════════════════
+// ==================================================
 // TOAST
-// ══════════════════════════════════════════════════
+// ==================================================
 function toast(msg,type='info'){
   const w=document.getElementById('toastWrap');
   const t=document.createElement('div');
@@ -2033,9 +2033,9 @@ function toast(msg,type='info'){
   setTimeout(()=>t.remove(),3500);
 }
 
-// ══════════════════════════════════════════════════
+// ==================================================
 // HARD REFRESH
-// ══════════════════════════════════════════════════
+// ==================================================
 async function hardRefresh(){
   const ico=document.getElementById('icoRefresh');
   ico.classList.add('spinning');
@@ -2050,9 +2050,9 @@ async function hardRefresh(){
   setTimeout(()=>ico.classList.remove('spinning'),600);
 }
 
-// ══════════════════════════════════════════════════
+// ==================================================
 // AUTH
-// ══════════════════════════════════════════════════
+// ==================================================
 async function initAuth(){
   const{data:{session}}=await sb.auth.getSession();
   if(session)await setUser(session.user);
@@ -2068,7 +2068,7 @@ async function initAuth(){
 }
 async function setUser(u){
   user=u;
-  // BACKEND: Ambil data admin dari Supabase — validasi di server via RLS
+  // BACKEND: Ambil data admin dari Supabase -- validasi di server via RLS
   const{data}=await sb.from('admin_users').select('*').eq('email',u.email).single();
   if(data&&data.status==='active'){
     isAdmin=true;
@@ -2182,7 +2182,7 @@ function startAutoRefresh(){
   if(_realtimeChannel)try{sb.removeChannel(_realtimeChannel);}catch(e){}
   if(_pollTimer)clearInterval(_pollTimer);
 
-  // Supabase Realtime — berlaku untuk semua user (bukan hanya admin)
+  // Supabase Realtime -- berlaku untuk semua user (bukan hanya admin)
   _realtimeChannel=sb.channel('rtlh-live')
     .on('postgres_changes',{event:'*',schema:'public',table:'rtlh'},async(payload)=>{
       if(document.hidden)return;
@@ -2239,7 +2239,7 @@ function startAutoRefresh(){
                 toast('Data baru ditambahkan','info');
               }
             }else{
-              // DELETE atau perubahan lain — reload kecamatan ini saja
+              // DELETE atau perubahan lain -- reload kecamatan ini saja
               brAll=[];await loadKec();
             }
           }else if(changedKec===currentKec.toUpperCase()||!changedKec){
@@ -2256,7 +2256,7 @@ function startAutoRefresh(){
     })
     .subscribe((status)=>{
       if(status==='SUBSCRIBED'){
-        console.log('[Realtime] Connected — auto-sync aktif');
+        console.log('[Realtime] Connected -- auto-sync aktif');
       }
     });
 
@@ -2285,10 +2285,10 @@ function togglePass(inputId,btn){
   if(ico){ico.className=isPass?'fas fa-eye-slash':'fas fa-eye';}
 }
 
-// ══════════════════════════════════════════════════
+// ==================================================
 // GLOBAL STATS (BERANDA)
-// ══════════════════════════════════════════════════
-// ── Klasifikasi status ke 3 kategori resmi ──
+// ==================================================
+// -- Klasifikasi status ke 3 kategori resmi --
 function statusKategori(s){
   if(!s)return 'RTLH';
   const su=String(s).toUpperCase().trim();
@@ -2299,7 +2299,7 @@ function statusKategori(s){
      su==='SUDAH'||su==='DIBANTU'||su.startsWith('LAYAK'))return 'Layak Huni';
   return 'Keterangan Lain';
 }
-// statusRow: prioritas SK Dibatalkan → Keterangan Lain, lalu cek jenis_bantuan
+// statusRow: prioritas SK Dibatalkan -> Keterangan Lain, lalu cek jenis_bantuan
 function statusRow(r){
   if(!r) return statusKategori(null);
   const sr=String(r.status_rtlh||'').toUpperCase().trim();
@@ -2359,7 +2359,7 @@ async function forceRefreshStats(){
 function _applyGlobalStats(data){
   if(!data||!data.length)return;
 
-  // ── Satu kali hitung, semua pakai nilai yang sama ──
+  // -- Satu kali hitung, semua pakai nilai yang sama --
   const total=data.length;
   let layak=0,rtlh=0,lain=0;
   kecCounts={};
@@ -2389,39 +2389,39 @@ function _applyGlobalStats(data){
 
   const playak=pct(layak,total), prtlh=pct(rtlh,total), plain=pct(lain,total);
 
-  // ── Angka ringkasan (mini-stat) ──
+  // -- Angka ringkasan (mini-stat) --
   const el=id=>document.getElementById(id);
   if(el('gs-total'))el('gs-total').textContent=total.toLocaleString('id');
   if(el('gs-layak'))el('gs-layak').textContent=layak.toLocaleString('id');
   if(el('gs-belum'))el('gs-belum').textContent=rtlh.toLocaleString('id');
   if(el('gs-lain'))el('gs-lain').textContent=lain.toLocaleString('id');
 
-  // ── Progress bar — semua 3 segmen sinkron dengan chart ──
+  // -- Progress bar -- semua 3 segmen sinkron dengan chart --
   if(el('pbSudah'))el('pbSudah').style.width=playak+'%';
   if(el('pbBelum'))el('pbBelum').style.width=prtlh+'%';
   if(el('pbLain'))el('pbLain').style.width=plain+'%';
 
-  // ── Legend teks — format seragam ──
+  // -- Legend teks -- format seragam --
   if(el('lgSudah'))el('lgSudah').innerHTML='<strong style="color:#16A34A">'+layak.toLocaleString('id')+'</strong> Layak Huni ('+playak+'%)';
   if(el('lgBelum'))el('lgBelum').innerHTML='<strong style="color:#DC2626">'+rtlh.toLocaleString('id')+'</strong> RTLH ('+prtlh+'%)';
   if(el('lgLain'))el('lgLain').innerHTML='<strong style="color:#7C3AED">'+lain.toLocaleString('id')+'</strong> Ket. Lain ('+plain+'%)';
 
-  // ── Chart status — pakai nilai yang sudah dihitung (bukan filter ulang) ──
+  // -- Chart status -- pakai nilai yang sudah dihitung (bukan filter ulang) --
   _renderChartStatusFromCounts(layak,rtlh,lain,total);
 
-  // ── Desil grid + chart ──
+  // -- Desil grid + chart --
   renderDesilGrid(desilCounts);
   _renderChartDesilFromCounts(desilCounts);
 
-  // ── Kec grid ──
+  // -- Kec grid --
   renderKecGrid();
 
-  // ── Map & progress ──
+  // -- Map & progress --
   initMapBeranda();
   updateMapMarkers();
   render10379Beranda();
 
-  // ── gs-nondb async (tidak blokir render utama) ──
+  // -- gs-nondb async (tidak blokir render utama) --
   if(el('gs-nondb')){
     el('gs-nondb').textContent='...';
     ensureNikDB().then(()=>{
@@ -2430,8 +2430,8 @@ function _applyGlobalStats(data){
     }).catch(()=>{el('gs-nondb').textContent='?';});
   }
 
-  // ── Pre-populate DTSEN data dari global stats (tanpa fetch tambahan) ──
-  // global_stats punya kec, desa, desil, status_rtlh — cukup untuk DTSEN
+  // -- Pre-populate DTSEN data dari global stats (tanpa fetch tambahan) --
+  // global_stats punya kec, desa, desil, status_rtlh -- cukup untuk DTSEN
   if(!_dtLoaded&&data&&data.length){
     _dtData=data;
     _dtLoaded=true;
@@ -2744,7 +2744,7 @@ function toggleKecLayer(){
 }
 
 
-// Chart status — pakai nilai pre-computed, tidak filter ulang data
+// Chart status -- pakai nilai pre-computed, tidak filter ulang data
 function _renderChartStatusFromCounts(layak,rtlh,lain,total){
   const ctx=document.getElementById('chartStatus');
   if(!ctx)return;
@@ -2765,7 +2765,7 @@ function _renderChartStatusFromCounts(layak,rtlh,lain,total){
     }
   });
 }
-// Legacy wrapper — bisa dipanggil dengan array data
+// Legacy wrapper -- bisa dipanggil dengan array data
 function renderChartStatus(data){
   if(!data||!data.length)return;
   let layak=0,rtlh=0,lain=0;
@@ -2773,7 +2773,7 @@ function renderChartStatus(data){
   _renderChartStatusFromCounts(layak,rtlh,lain,data.length);
 }
 
-// Chart desil — hanya tampilkan desil yang ada datanya
+// Chart desil -- hanya tampilkan desil yang ada datanya
 function _renderChartDesilFromCounts(counts){
   const ctx=document.getElementById('chartDesil');
   if(!ctx)return;
@@ -2798,9 +2798,9 @@ function _renderChartDesilFromCounts(counts){
 }
 function renderChartDesil(counts){_renderChartDesilFromCounts(counts);}
 
-// ══════════════════════════════════════════════════
+// ==================================================
 // NIK SEARCH
-// ══════════════════════════════════════════════════
+// ==================================================
 function clearSearch(){
   document.getElementById('nikSearchInput').value='';
   const wrap=document.getElementById('searchResultsWrap');
@@ -2838,7 +2838,7 @@ async function searchNIK(){
     query = query.ilike('jenis_bantuan', `%${jenisBantuan}%`);
     if(tahunBantuan) query = query.eq('tahun_bantuan', tahunBantuan);
   } else if(isNumeric && q.length>=10){
-    // NIK exact match — langsung buka detail
+    // NIK exact match -- langsung buka detail
     await cariByNIK(q);
     res.innerHTML='';
     return;
@@ -2911,7 +2911,7 @@ async function searchNIK(){
 
 async function bukaDetailDariSearch(id, kecKey){
   if(!kecKey)return toast('Kecamatan tidak ditemukan','error');
-  // Fetch data lengkap langsung dari Supabase — tidak perlu tunggu loadKec
+  // Fetch data lengkap langsung dari Supabase -- tidak perlu tunggu loadKec
   const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,backlog,desil,nik,no_kk,updated_at,keterangan';
   const{data,error}=await sb.from('rtlh').select(cols).eq('id',parseInt(id)).single();
   if(error||!data)return toast('Data tidak ditemukan','error');
@@ -2927,9 +2927,9 @@ async function bukaDetailDariSearch(id, kecKey){
   setTimeout(()=>showDetail(data),400);
 }
 
-// ══════════════════════════════════════════════════
+// ==================================================
 // KECLIST
-// ══════════════════════════════════════════════════
+// ==================================================
 function selectKec(k){
   const kKey=Object.keys(KEC_CONFIG).find(x=>x.toLowerCase()===k.toLowerCase());
   if(!kKey)return;
@@ -2960,7 +2960,7 @@ async function ensureKecCounts(force=false){
   }catch(e){console.error(e);}
 }
 
-// ══ Navigate ke keclist dengan pre-filter status ══
+// == Navigate ke keclist dengan pre-filter status ==
 let _globalStatusFilter='';
 
 async function navWithFilter(status){
@@ -3007,7 +3007,7 @@ async function applyGlobalFilter(){
     const data=all.filter(r=>statusRow(r)===_globalStatusFilter);
 
     if(!data.length){
-      cnt.innerHTML=`<span style="background:${sbg};color:${sc};padding:2px 10px;border-radius:99px;font-weight:700;font-size:.72rem">${_globalStatusFilter}</span> <span style="font-size:.72rem;color:var(--gray-400)">— tidak ada data</span>`;
+      cnt.innerHTML=`<span style="background:${sbg};color:${sc};padding:2px 10px;border-radius:99px;font-weight:700;font-size:.72rem">${_globalStatusFilter}</span> <span style="font-size:.72rem;color:var(--gray-400)">-- tidak ada data</span>`;
       res.innerHTML='<div style="padding:24px;text-align:center;color:var(--gray-400);font-size:.82rem">Tidak ada data dengan status ini</div>';
       return;
     }
@@ -3077,7 +3077,7 @@ async function showDesaStat(kecName){
   const cnt=document.getElementById('keclistResultCount');
   wrap.style.display='block';
   res.innerHTML='<div style="padding:16px;text-align:center;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin"></i> Memuat statistik desa...</div>';
-  cnt.innerHTML=`<strong>${kecName}</strong> — statistik per desa`;
+  cnt.innerHTML=`<strong>${kecName}</strong> -- statistik per desa`;
 
   const{data,error}=await sb.from('rtlh')
     .select('desa,status_rtlh,desil')
@@ -3089,7 +3089,7 @@ async function showDesaStat(kecName){
     return;
   }
 
-  // Ambil semua 217 desa dari KEC_CONFIG — termasuk yang 0 data
+  // Ambil semua 217 desa dari KEC_CONFIG -- termasuk yang 0 data
   const kecKey2=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===kecName.toUpperCase())||'';
   const allDesaKec=(KEC_CONFIG[kecKey2]?.desa)||[];
 
@@ -3104,7 +3104,7 @@ async function showDesaStat(kecName){
   (data||[]).forEach(r=>{
     const dn=(r.desa||'').trim();
     const dnUp=dn.toUpperCase();
-    // Alias Supabase → Excel
+    // Alias Supabase -> Excel
     const ALIAS={'PONCOL':'POCOL'};
     const lookupKey=ALIAS[dnUp]||dnUp;
     // Cari berdasarkan nama desa case-insensitive
@@ -3118,7 +3118,7 @@ async function showDesaStat(kecName){
       else if(kat==='RTLH')found.rtlh++;
       else found.lain++;
     } else {
-      // Desa tidak ada di KEC_CONFIG — tetap tampilkan
+      // Desa tidak ada di KEC_CONFIG -- tetap tampilkan
       const key='extra_'+dn.toUpperCase();
       if(!byDesa[key])byDesa[key]={desa:dn,kode:'-',total:0,layak:0,rtlh:0,lain:0};
       byDesa[key].total++;
@@ -3134,7 +3134,7 @@ async function showDesaStat(kecName){
 
   res.innerHTML=`
     <div style="padding:8px 12px;background:var(--blue-bg);border-bottom:1px solid var(--gray-100);display:flex;align-items:center;justify-content:space-between">
-      <span style="font-size:.7rem;font-weight:800;color:var(--blue)"><i class="fas fa-map-marker-alt"></i> ${kecName} — ${desas.length} Desa</span>
+      <span style="font-size:.7rem;font-weight:800;color:var(--blue)"><i class="fas fa-map-marker-alt"></i> ${kecName} -- ${desas.length} Desa</span>
       <button onclick="clearKeclistSearch()" style="background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:.78rem"><i class="fas fa-times"></i></button>
     </div>
     ${desas.map(({desa,kode,total,layak,rtlh,lain})=>{
@@ -3164,9 +3164,9 @@ async function showDesaStat(kecName){
     }).join('')}`;
 }
 
-// ══════════════════════════════════════════════════
+// ==================================================
 // DATABASE MODE: filter berdasarkan NIK_DB_10379
-// ══════════════════════════════════════════════════
+// ==================================================
 async function setDbMode(mode){
   _dbMode=mode;
   // Load NIK database dari server jika belum
@@ -3209,7 +3209,7 @@ async function setWgDbMode(mode){
 }
 
 // nik_database: Set NIK yang dimuat dari Supabase (tabel nik_database)
-// TIDAK pernah disimpan di HTML — diambil server-side saat login
+// TIDAK pernah disimpan di HTML -- diambil server-side saat login
 let _nikDBSet=null; // null = belum dimuat
 
 async function ensureNikDB(){
@@ -3235,7 +3235,7 @@ async function ensureNikDB(){
   return _nikDBSet;
 }
 
-// Cek apakah record termasuk database — pakai server-side set
+// Cek apakah record termasuk database -- pakai server-side set
 function isInDB(r){
   if(!_nikDBSet)return false; // belum dimuat
   const nik=String(r.nik||'').replace(/\D/g,'');
@@ -3334,7 +3334,7 @@ async function render10379Beranda(){
   }catch(e){console.error('render10379Beranda',e);}
 }
 
-// ── Non-Database Modal ──
+// -- Non-Database Modal --
 async function showNonDbModal(){
   document.getElementById('ovNonDb').classList.add('open');
   const el=document.getElementById('nonDbContent');
@@ -3585,15 +3585,15 @@ function renderKecList(){
           style="font-size:.6rem;padding:3px 9px;border-radius:99px;border:1px solid var(--gray-200);background:#fff;color:var(--gray-600);cursor:pointer;font-family:inherit;font-weight:600;display:flex;align-items:center;gap:4px">
           <i class="fas fa-table" style="font-size:.55rem"></i> Per Desa
         </button>
-        <span style="font-size:.6rem;color:var(--gray-400)">Buka WebGIS →</span>
+        <span style="font-size:.6rem;color:var(--gray-400)">Buka WebGIS -></span>
       </div>
     </div>`;
   }).join('');
 }
 
-// ══════════════════════════════════════════════════
+// ==================================================
 // MAP: WebGIS
-// ══════════════════════════════════════════════════
+// ==================================================
 function initMap(){
   if(map)return;
   if(!window.L){console.warn("Leaflet not ready");return;}
@@ -3603,9 +3603,9 @@ function initMap(){
 }
 
 // Cache timestamp per kecamatan
-// ══════════════════════════════════════════════════
-// CACHE SYSTEM — localStorage + stale-while-revalidate
-// ══════════════════════════════════════════════════
+// ==================================================
+// CACHE SYSTEM -- localStorage + stale-while-revalidate
+// ==================================================
 const CACHE_TTL = 5 * 60 * 1000; // 5 menit
 const CACHE_TTL_STATS = 60 * 1000; // 60 detik untuk stats beranda
 const CACHE_PREFIX = 'ertlh_v3_';
@@ -3613,7 +3613,7 @@ const CACHE_PREFIX = 'ertlh_v3_';
 function cacheSet(key, data){
   try{
     localStorage.setItem(CACHE_PREFIX+key, JSON.stringify({t:Date.now(),d:data}));
-  }catch(e){} // QuotaExceededError — skip
+  }catch(e){} // QuotaExceededError -- skip
 }
 
 function cacheGet(key, ttl){
@@ -3638,7 +3638,7 @@ async function loadWithCache(cacheKey, fetchFn, onData){
   const cached=cacheGet(cacheKey);
   if(cached){
     onData(cached.data, false); // tampilkan cache dulu (instant)
-    if(!cached.stale)return;   // masih fresh — tidak perlu fetch
+    if(!cached.stale)return;   // masih fresh -- tidak perlu fetch
     // Stale: fetch di background tanpa loading indicator
     try{
       const fresh=await fetchFn();
@@ -3646,7 +3646,7 @@ async function loadWithCache(cacheKey, fetchFn, onData){
       onData(fresh, true); // update dengan data baru
     }catch(e){console.warn('Background refresh failed:',e);}
   }else{
-    // Tidak ada cache — fetch dengan loading
+    // Tidak ada cache -- fetch dengan loading
     try{
       const fresh=await fetchFn();
       cacheSet(cacheKey, fresh);
@@ -3700,7 +3700,7 @@ async function loadKec(){
   // Cek localStorage cache
   const cached=cacheGet(cacheKey);
   if(cached){
-    // Tampilkan cache langsung — tidak ada loading
+    // Tampilkan cache langsung -- tidak ada loading
     brAll=cached.data;
     brAll=brAll.map(r=>{r._score=calcScore(r);r._cat=getCat(r._score);return r;});
     brCache[currentKec]=brAll;
@@ -3714,7 +3714,7 @@ async function loadKec(){
     return;
   }
 
-  // Tidak ada cache — tampilkan skeleton loading
+  // Tidak ada cache -- tampilkan skeleton loading
   if(sidebarList)sidebarList.innerHTML=_skeletonLoading();
 
   await _fetchKec(cacheKey, currentKec, kecName);
@@ -3751,7 +3751,7 @@ async function _fetchKec(cacheKey, kecName, kecLabel){
   if(currentKec===kecName){
     renderSidebar();renderKecDashboard();updateMap();
     loadBoundary(Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===kecName));
-    // Load BA/SK links background — highlight setelah dapat data
+    // Load BA/SK links background -- highlight setelah dapat data
     loadBALinks(allRows.map(r=>parseInt(r.id))).then(()=>{
       if(currentKec===kecName){ renderSidebarList(); updateMap(); }
     }).catch(()=>{});
@@ -3759,7 +3759,7 @@ async function _fetchKec(cacheKey, kecName, kecLabel){
 }
 
 async function _refreshKecBackground(cacheKey, kecName, kecLabel){
-  // Silent background refresh — tidak ganggu UI
+  // Silent background refresh -- tidak ganggu UI
   try{
     const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,backlog,desil,nik,no_kk,updated_at,keterangan';
     let allRows=[],pg=0,pgSize=1000,isDone=false;
@@ -3804,9 +3804,9 @@ function applyBoundary(kecName){
   map.fitBounds(layer.getBounds(),{padding:[30,30]});
 }
 
-// ══════════════════════════════════════════════════
-// BERITA ACARA (BA) — highlight dari bukti dukung
-// ══════════════════════════════════════════════════
+// ==================================================
+// BERITA ACARA (BA) -- highlight dari bukti dukung
+// ==================================================
 
 // Set rtlh_id yang punya bukti dukung (diisi background setelah loadKec)
 let _baLinkedIds = new Set();
@@ -3835,11 +3835,11 @@ async function loadBALinks(rtlhIds){
   }
 }
 
-// ══════════════════════════════════════════════════
-// ══════════════════════════════════════════════════
+// ==================================================
+// ==================================================
 // SCORING (berbasis Desil murni)
-// ══════════════════════════════════════════════════
-// ══════════════════════════════════════════════════
+// ==================================================
+// ==================================================
 
 function calcScore(r){
   // Tetap ada untuk kompatibilitas, nilai = desil number (1=terbaik)
@@ -3856,9 +3856,9 @@ function getCatColor(s){return'#94A3B8';} // fallback
 
 function toggleScoring(){scoringOpen=!scoringOpen;renderSidebar();}
 
-// ══════════════════════════════════════════════════
+// ==================================================
 // SIDEBAR
-// ══════════════════════════════════════════════════
+// ==================================================
 function renderSidebar(){
   const sc=document.getElementById('wgBody');
   if(!sc)return;
@@ -3869,7 +3869,7 @@ function renderSidebar(){
     sc.innerHTML=`
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">
       <div>
-        <div style="font-size:.88rem;font-weight:800;color:var(--gray-900)">${kecName} — BNBA RTLH</div>
+        <div style="font-size:.88rem;font-weight:800;color:var(--gray-900)">${kecName} -- BNBA RTLH</div>
         <div style="font-size:.65rem;color:var(--gray-500);margin-top:2px" id="sidebarCount">${brAll.length} data terdaftar</div>
       </div>
       <div id="baSummaryBadge" style="display:none;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;background:#FEF3C7;border:1.5px solid #FCD34D;font-size:.65rem;font-weight:700;color:#92400E">
@@ -3989,7 +3989,7 @@ function renderKecDashboard(data){
 
 function setFilterStatus(s){
   filterStatus=s;
-  // Update chip UI tanpa rebuild — langsung toggle class
+  // Update chip UI tanpa rebuild -- langsung toggle class
   document.querySelectorAll('[data-status-chip]').forEach(btn=>{
     btn.classList.toggle('active', btn.dataset.statusChip===s);
   });
@@ -4021,7 +4021,7 @@ function applyFilters(){
   updateMap();
 }
 
-// Search inline di sidebar — client-side dari brAll (instant)
+// Search inline di sidebar -- client-side dari brAll (instant)
 function searchSidebarInline(){
   const inp=document.getElementById('sidebarInlineSearch');
   const q=(inp?.value||'').trim().toLowerCase();
@@ -4209,9 +4209,9 @@ function toggleDesaGroup(id){
   if(ico)ico.style.transform=open?'rotate(-90deg)':'';
 }
 
-// ══════════════════════════════════════════════════
+// ==================================================
 // MAP MARKERS
-// ══════════════════════════════════════════════════
+// ==================================================
 function updateMap(){
   if(!map||!mcg)return;
   mcg.clearLayers();
@@ -4322,7 +4322,7 @@ function showDetail(r){
       ${extra}
     </div>`;
 
-  // ── Status badge ──
+  // -- Status badge --
   const statusBadge=r.status_rtlh
     ?`<span class="badge ${statusCls}">${r.status_rtlh}</span>`
     :'<span style="color:var(--gray-400)">-</span>';
@@ -4344,7 +4344,7 @@ function showDetail(r){
       </div>
       ${hasBatal?`<div style="margin-top:10px;padding:7px 10px;background:rgba(239,68,68,.15);border-radius:7px;border:1px solid rgba(239,68,68,.3);font-size:.7rem;color:#FCA5A5;display:flex;align-items:center;gap:6px">
         <i class="fas fa-ban" style="font-size:.65rem"></i>
-        <span>Ada di BNBA/SK namun Dibatalkan — <strong>${r.status_batal}</strong></span>
+        <span>Ada di BNBA/SK namun Dibatalkan -- <strong>${r.status_batal}</strong></span>
       </div>`:''}
     </div>
 
@@ -4544,14 +4544,14 @@ function showDetail(r){
 
 function closeDetail(){document.getElementById('detailPanel').classList.remove('open');clearDetailSession();}
 
-// ── NIK / KK MODAL (Super Admin only) ──
+// -- NIK / KK MODAL (Super Admin only) --
 let nikEditId=null;
 function openNIKModal(id){
   if(!isSuperAdmin())return toast('Hanya Super Admin','error');
   nikEditId=id;
   const r=brAll.find(x=>x.id===id);
   if(!r)return;
-  document.getElementById('nikModalSub').textContent=r.kep_kk||'Super Admin — data sensitif';
+  document.getElementById('nikModalSub').textContent=r.kep_kk||'Super Admin -- data sensitif';
   const nikEl=document.getElementById('nikInput');
   const kkEl=document.getElementById('noKkInput');
   nikEl.value=r.nik||'';
@@ -4586,9 +4586,9 @@ async function saveNIK(){
   if(r)showDetail(r);
 }
 
-// ══════════════════════════════════════════════════
+// ==================================================
 // CRUD
-// ══════════════════════════════════════════════════
+// ==================================================
 const FIELDS=[
   {key:'nik',label:'NIK',type:'text',placeholder:'16 digit NIK'},
   {key:'no_kk',label:'No. KK',type:'text',placeholder:'16 digit No. KK'},
@@ -4753,7 +4753,7 @@ async function saveForm(){
     for(const[key,label] of Object.entries(FIELD_LABELS)){
       const lama=String(oldData[key]||'').trim();
       const baru=String(obj[key]||'').trim();
-      // Case-insensitive — NGRAMBE == Ngrambe tidak dianggap berubah
+      // Case-insensitive -- NGRAMBE == Ngrambe tidak dianggap berubah
       if(lama.toLowerCase()!==baru.toLowerCase())changes.push({
         nik:saved.nik,rtlh_id:saved.id,
         field_name:label,nilai_lama:lama||null,nilai_baru:baru||null,
@@ -4810,9 +4810,9 @@ async function deleteAllKec(){
   renderSidebar();updateMap();toast('Semua data dihapus','success');
 }
 
-// ══════════════════════════════════════════════════
+// ==================================================
 // DOWNLOAD / UPLOAD EXCEL
-// ══════════════════════════════════════════════════
+// ==================================================
 function openDownloadModal(){
   document.getElementById('btnDlFull').style.display=isSuperAdmin()?'flex':'none';
   document.getElementById('ovDownload').classList.add('open');
@@ -4951,11 +4951,11 @@ async function importExcel(input){
   reader.readAsBinaryString(file);
 }
 
-// ══════════════════════════════════════════════════
+// ==================================================
 // EXCEL KABUPATEN
-// ══════════════════════════════════════════════════
+// ==================================================
 function openExcelKab(){
-  // Isi dropdown kecamatan (sekali saja) — value pakai normCase agar match DB
+  // Isi dropdown kecamatan (sekali saja) -- value pakai normCase agar match DB
   const exKec=document.getElementById('exKec');
   if(exKec&&exKec.options.length<=1){
     Object.keys(KEC_CONFIG).sort().forEach(k=>{
@@ -5021,7 +5021,7 @@ async function downloadExcelKab(withNIK){
   setLog('<i class="fas fa-circle-notch fa-spin"></i> Menyiapkan query...');
 
   try{
-    // 1. Count dulu — filter kec/desa/desil/tahun di DB, status nanti di client-side
+    // 1. Count dulu -- filter kec/desa/desil/tahun di DB, status nanti di client-side
     let countQ=sb.from('rtlh').select('id',{count:'exact',head:true});
     if(kec)    countQ=countQ.ilike('kec',kec);
     if(desa)   countQ=countQ.ilike('desa',desa);
@@ -5036,7 +5036,7 @@ async function downloadExcelKab(withNIK){
 
     setLog('<i class="fas fa-circle-notch fa-spin"></i> Mengambil '+count+' data...');
 
-    // 2. Fetch paralel (5 page sekaligus) — TANPA filter status di DB
+    // 2. Fetch paralel (5 page sekaligus) -- TANPA filter status di DB
     const PAGE=1000;
     const totalPages=Math.ceil(count/PAGE);
     const CONCUR=5;
@@ -5059,7 +5059,7 @@ async function downloadExcelKab(withNIK){
       setLog('<i class="fas fa-circle-notch fa-spin"></i> Mengambil data... '+allData.length+'/'+count);
     }
 
-    // 3. Filter status di client-side pakai statusKategori() — SINKRON 100% dengan grafik & dashboard
+    // 3. Filter status di client-side pakai statusKategori() -- SINKRON 100% dengan grafik & dashboard
     if(status) allData=allData.filter(r=>statusRow(r)===status);
     if(!allData.length){
       setLog('<span style="color:var(--danger)"><i class="fas fa-exclamation-circle"></i> Tidak ada data dengan filter tersebut</span>');
@@ -5141,9 +5141,9 @@ async function downloadExcelKab(withNIK){
   }
 }
 
-// ══════════════════════════════════════════════════
-// BULK UPLOAD FOTO MASSAL — Upload dulu, link nanti
-// ══════════════════════════════════════════════════
+// ==================================================
+// BULK UPLOAD FOTO MASSAL -- Upload dulu, link nanti
+// ==================================================
 let _uploadedFotos=[];   // [{tempName, url, path, linked:false}]
 let _selectedFotos=[];   // foto yang dicentang
 let _dbRecords=[];       // cache data rtlh untuk search
@@ -5284,7 +5284,7 @@ function fotoSearchPenerima(q){
 
 function selectFotoTarget(id,nama,desa,kec){
   _fotoTargetId=id;
-  document.getElementById('fotoSearchInput').value=nama+' — '+desa;
+  document.getElementById('fotoSearchInput').value=nama+' -- '+desa;
   document.getElementById('fotoSearchDrop').style.display='none';
   // Aktifkan tombol link jika ada foto dipilih
   const btn=document.getElementById('fotoLinkBtn');
@@ -5345,7 +5345,7 @@ function getCol(row, ...names){
   return '';
 }
 
-// Normalize case: "GENENG" → "Geneng", "KARANGJATI" → "Karangjati"
+// Normalize case: "GENENG" -> "Geneng", "KARANGJATI" -> "Karangjati"
 function normCase(v){
   if(!v)return v;
   // Field tertentu pakai Title Case
@@ -5377,7 +5377,7 @@ async function importExcelKab(input){
       
       log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memproses ${rows.length} baris... (${excelHeaders.length} kolom terdeteksi)`;
       
-      // ── Build semua obj sekaligus ──
+      // -- Build semua obj sekaligus --
       const toUpdate=[], toInsert=[], toUpsertByNIK=[];
       
       for(let i=0;i<rows.length;i++){
@@ -5457,12 +5457,12 @@ async function importExcelKab(input){
         }
       }
 
-      // ── 1. Update by ID (paralel 25) ──
+      // -- 1. Update by ID (paralel 25) --
       if(toUpdate.length){
         await runBatched(toUpdate,({id,obj})=>sb.from('rtlh').update(obj).eq('id',id),PBATCH,'Update ID');
       }
 
-      // ── 2. Upsert by NIK — satu query cek existing, lalu batch update/insert ──
+      // -- 2. Upsert by NIK -- satu query cek existing, lalu batch update/insert --
       if(toUpsertByNIK.length){
         log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Cek NIK existing...`;
         // Batch lookup semua NIK sekaligus (chunk 500)
@@ -5488,7 +5488,7 @@ async function importExcelKab(input){
         }
       }
 
-      // ── 3. Insert baru (bulk 100) ──
+      // -- 3. Insert baru (bulk 100) --
       if(toInsert.length){
         log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Insert baru: ${toInsert.length} baris...`;
         for(let i=0;i<toInsert.length;i+=100){
@@ -5498,7 +5498,7 @@ async function importExcelKab(input){
         }
       }
 
-      // ── 4. Verifikasi — kumpulkan semua, resolve NIK→ID secara paralel, upsert bulk ──
+      // -- 4. Verifikasi -- kumpulkan semua, resolve NIK->ID secara paralel, upsert bulk --
       const verifInserts=[];
       rows.forEach(row=>{
         const id=parseInt(getCol(row,'ID','id')||0);
@@ -5518,7 +5518,7 @@ async function importExcelKab(input){
       });
       if(verifInserts.length){
         log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Memproses ${verifInserts.length} verifikasi...`;
-        // Resolve NIK → ID paralel (hanya yg type='nik')
+        // Resolve NIK -> ID paralel (hanya yg type='nik')
         const nikRefs=[...new Set(verifInserts.filter(v=>v._type==='nik').map(v=>v._ref))];
         const nikIdMap={};
         if(nikRefs.length){
@@ -5565,7 +5565,7 @@ async function importExcelKab(input){
         }
       }
 
-      // ── 5. Auto-link dokumen — ambil semua docs sekali, resolve ID paralel, upsert bulk ──
+      // -- 5. Auto-link dokumen -- ambil semua docs sekali, resolve ID paralel, upsert bulk --
       const autoLinkRows=rows.filter(row=>!!xlVal(getCol(row,'Jenis Bantuan','jenis_bantuan')));
       if(autoLinkRows.length){
         log.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Auto-link dokumen...`;
@@ -5608,7 +5608,7 @@ async function importExcelKab(input){
         }
       }
 
-      // ── Bersihkan SEMUA cache ──
+      // -- Bersihkan SEMUA cache --
       cacheDel('global_stats');
       cacheDel('report_data');
       Object.keys(_kecCacheTime).forEach(k=>delete _kecCacheTime[k]);
@@ -5622,10 +5622,10 @@ async function importExcelKab(input){
       input.value='';
       toast(`Import selesai: ${ok} berhasil${fail?', '+fail+' gagal':''}`,fail?'error':'success');
 
-      // ── Refresh beranda stats (selalu) ──
+      // -- Refresh beranda stats (selalu) --
       await loadGlobalStats();
 
-      // ── Refresh WebGIS kalau sedang aktif ──
+      // -- Refresh WebGIS kalau sedang aktif --
       if(currentKec){ brAll=[]; await loadKec(); }
 
     }catch(err){
@@ -5635,9 +5635,9 @@ async function importExcelKab(input){
   reader.readAsBinaryString(file);
 }
 
-// ══════════════════════════════════════════════════
+// ==================================================
 // RIWAYAT PERUBAHAN
-// ══════════════════════════════════════════════════
+// ==================================================
 async function loadRiwayat(nik){
   const el=document.getElementById('dpRiwayatList');
   if(!el||!nik)return;
@@ -5663,9 +5663,9 @@ async function loadRiwayat(nik){
   }).join('');
 }
 
-// ══════════════════════════════════════════════════
+// ==================================================
 // CARI BY NIK (quick lookup)
-// ══════════════════════════════════════════════════
+// ==================================================
 async function cariByNIK(nik){
   if(!nik||nik.length<5)return toast('Masukkan NIK minimal 5 digit','error');
   const{data,error}=await sb.from('rtlh').select('*').eq('nik',nik.trim()).single();
@@ -5684,24 +5684,24 @@ async function cariByNIK(nik){
   }
 }
 
-// ══════════════════════════════════════════════════
+// ==================================================
 // ADMIN PANEL
-// ══════════════════════════════════════════════════
+// ==================================================
 function openAdminPanel(){toast('Kelola admin via Supabase Dashboard','info');}
 function renderAdminPanel(){}
 function openApproveAdmin(){}
 async function createAdminAccount(){}
 
-// ══════════════════════════════════════════════════
+// ==================================================
 // VERIFIKASI LAPANGAN
-// ══════════════════════════════════════════════════
+// ==================================================
 let _verifRtlhId=null;
 
 function openVerifModal(rtlhId){
   if(!canEdit())return toast('Tidak ada akses','error');
   _verifRtlhId=rtlhId;
   const r=brAll.find(x=>String(x.id)===String(rtlhId));
-  document.getElementById('verifSub').textContent=(r?.kep_kk||rtlhId)+' — Tambah Verifikasi';
+  document.getElementById('verifSub').textContent=(r?.kep_kk||rtlhId)+' -- Tambah Verifikasi';
   document.getElementById('verifHasil').value='';
   document.getElementById('verifKet').value='';
   document.getElementById('verifTahun').value=new Date().getFullYear();
@@ -5734,7 +5734,7 @@ async function loadVerifList(rtlhId){
   if(!data||!data.length){el.innerHTML='<span style="color:var(--gray-400)">Belum ada verifikasi lapangan</span>';return;}
   el.innerHTML=data.map(v=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;border:1px solid var(--gray-200);margin-bottom:6px;background:#fff">
     <span style="font-size:.68rem;font-weight:800;padding:2px 8px;border-radius:99px;background:${v.hasil==='Layak'?'#F0FDF4':'#FEF2F2'};color:${v.hasil==='Layak'?'#16A34A':'#DC2626'}">${v.hasil||'-'}</span>
-    <div style="flex:1"><div style="font-weight:600;font-size:.7rem">${v.keterangan||'–'}</div><div style="color:var(--gray-400);font-size:.63rem">${v.tahun||''} · Petugas: ${v.petugas||'-'}</div></div>
+    <div style="flex:1"><div style="font-weight:600;font-size:.7rem">${v.keterangan||'-'}</div><div style="color:var(--gray-400);font-size:.63rem">${v.tahun||''} · Petugas: ${v.petugas||'-'}</div></div>
   </div>`).join('');
 }
 
@@ -5751,7 +5751,7 @@ async function saveVerif(){
     created_by:user?.email
   });
   if(error)return toast('Gagal simpan: '+error.message,'error');
-  // Jika hasil verifikasi Layak → update status RTLH jadi Layak Huni
+  // Jika hasil verifikasi Layak -> update status RTLH jadi Layak Huni
   if(hasil==='Layak'){
     const r=brAll.find(x=>String(x.id)===String(_verifRtlhId));
     if(r&&r.status_rtlh!=='Layak Huni'&&r.status_rtlh!=='SK Dibatalkan'){
@@ -5778,9 +5778,9 @@ async function deleteVerif(id){
   loadVerifList(_verifRtlhId);
 }
 
-// ══════════════════════════════════════════════════
+// ==================================================
 // DOWNLOAD & UPLOAD EXCEL PER INDIVIDU
-// ══════════════════════════════════════════════════
+// ==================================================
 function downloadExcelIndividu(r){
   const row={
     ID:r.id, NIK:r.nik||'', 'No. KK':r.no_kk||'',
@@ -5887,9 +5887,9 @@ async function uploadExcelIndividu(input, rtlhId){
   reader.readAsBinaryString(file);
 }
 
-// ══════════════════════════════════════════════════
+// ==================================================
 // DOKUMEN & FOTO (multi-file per individu)
-// ══════════════════════════════════════════════════
+// ==================================================
 let _dokRtlhId=null;
 
 const DOK_LABELS={
@@ -6139,13 +6139,13 @@ async function deleteDok(id,path){
   loadDokList(_dokRtlhId);
 }
 
-// ══════════════════════════════════════════════════
-// CHATBOT AI — Asisten e-RTLH Ngawi
-// ══════════════════════════════════════════════════
+// ==================================================
+// CHATBOT AI -- Asisten e-RTLH Ngawi
+// ==================================================
 
-// ══════════════════════════════════════════════════
+// ==================================================
 // LIBRARY DOKUMEN KABUPATEN
-// ══════════════════════════════════════════════════
+// ==================================================
 let _dokLibFilter='';
 let _dokLibData=[];
 let _linkDokRtlhId=null;
@@ -6218,7 +6218,7 @@ async function refreshDokLib(){
     totalLinked+=matched.length;
     statusDiv.innerHTML='<i class="fas fa-sync-alt fa-spin"></i> Menyinkronkan: '+d.judul+' ('+matched.length+' penerima)';
   }
-  statusDiv.innerHTML='<i class="fas fa-check-circle" style="color:var(--success)"></i> Sinkronisasi selesai — '+totalLinked+' link diperbarui';
+  statusDiv.innerHTML='<i class="fas fa-check-circle" style="color:var(--success)"></i> Sinkronisasi selesai -- '+totalLinked+' link diperbarui';
   setTimeout(()=>statusDiv.remove(),3000);
   if(btn){btn.innerHTML='<i class="fas fa-sync-alt"></i>';btn.disabled=false;}
   toast('Sinkronisasi selesai: '+totalLinked+' link diperbarui','success');
@@ -6349,7 +6349,7 @@ async function uploadDokLib(){
       prog.innerHTML='<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Upload selesai · '+_dlSelectedIds.size+' penerima terhubung!</span>';
     }
   } else if(desa||kec||jenisBantuan){
-    // Auto-link: per desa → per kecamatan → per jenis bantuan
+    // Auto-link: per desa -> per kecamatan -> per jenis bantuan
     prog.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Menghubungkan ke penerima...';
     if(newDoc){
       let qLink=sb.from('rtlh').select('id');
@@ -6479,7 +6479,7 @@ function filterPenerimaDok(q){
   renderPenerimaDok(filtered);
 }
 
-// ══ Manual link penerima di upload dokumen ══
+// == Manual link penerima di upload dokumen ==
 let _dlSelectedIds=new Set();
 
 function toggleDlLinkMode(mode){
@@ -6551,7 +6551,7 @@ function renderDlSelected(){
   if(cnt)cnt.textContent=_dlSelectedIds.size;
   if(!list)return;
   if(!_dlSelectedIds.size){list.innerHTML='<span style="font-size:.68rem;color:var(--gray-400)">Belum ada yang dipilih</span>';return;}
-  // Tampilkan sebagai chips — hanya ID, nama diambil dari DOM search results
+  // Tampilkan sebagai chips -- hanya ID, nama diambil dari DOM search results
   list.innerHTML=[..._dlSelectedIds].map(id=>`
     <span style="background:var(--blue-bg);color:var(--blue);border-radius:99px;padding:2px 8px 2px 10px;font-size:.65rem;font-weight:700;display:flex;align-items:center;gap:4px">
       ID:${id}
@@ -6584,7 +6584,7 @@ async function runAutoLinkFromLib(dokId){
   
   prog.innerHTML=`<i class="fas fa-circle-notch fa-spin"></i> Menghubungkan ${matched.length} penerima...`;
   
-  // Batch upsert link — 100 per batch
+  // Batch upsert link -- 100 per batch
   let linked=0;
   for(let i=0;i<matched.length;i+=100){
     const batch=matched.slice(i,i+100).map(r=>({rtlh_id:r.id,dokumen_id:dokId,linked_by:user?.email}));
@@ -6789,7 +6789,7 @@ async function saveEditDokLib(){
   setTimeout(()=>{closeModal('ovEditDokLib');loadDokLib(true);},800);
 }
 
-// ══ Link dokumen ke penerima ══
+// == Link dokumen ke penerima ==
 async function openLinkDok(rtlhId){
   _linkDokRtlhId=rtlhId;
   const r=brAll.find(x=>String(x.id)===String(rtlhId));
@@ -6848,7 +6848,7 @@ async function linkDokToPenerima(dokId){
     rtlh_id:parseInt(_linkDokRtlhId),dokumen_id:dokId,linked_by:user?.email
   },{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
   if(error)return toast('Gagal: '+error.message,'error');
-  toast('<i class="fas fa-link" style="color:#EAB308"></i> Ditambahkan ke Bukti Dukung — scan NIK dimulai...','success');
+  toast('<i class="fas fa-link" style="color:#EAB308"></i> Ditambahkan ke Bukti Dukung -- scan NIK dimulai...','success');
   loadLinkedDok(_linkDokRtlhId);
   loadDokLink(_linkDokRtlhId);
   // Langsung trigger scan NIK di background
@@ -6938,7 +6938,7 @@ async function loadDokLink(rtlhId){
   _refreshSidebarItem(numId);
 }
 
-// Handler klik dokumen — baca dari data-* attribute (aman dari quote injection)
+// Handler klik dokumen -- baca dari data-* attribute (aman dari quote injection)
 function _openDok(el){
   const url=decodeURIComponent(el.dataset.url||'');
   const title=decodeURIComponent(el.dataset.title||'');
@@ -6988,7 +6988,7 @@ function _refreshSidebarItem(id){
   }
 }
 
-// ══ AUTO-LINK DOKUMEN berdasarkan Jenis Bantuan + Tahun ══
+// == AUTO-LINK DOKUMEN berdasarkan Jenis Bantuan + Tahun ==
 async function autoLinkDokumen(rtlhId, jenisBantuan, tahunBantuan){
   if(!rtlhId||!jenisBantuan)return;
   // Cari dokumen di library yang cocok: jenis SK atau BA, tahun sama
@@ -7011,15 +7011,15 @@ async function autoLinkDokumen(rtlhId, jenisBantuan, tahunBantuan){
     return jenisMatch&&tahunMatch;
   });
   if(!matches.length)return;
-  // Link ke semua dokumen yang cocok (upsert — tidak duplikat)
+  // Link ke semua dokumen yang cocok (upsert -- tidak duplikat)
   const links=matches.map(d=>({rtlh_id:parseInt(rtlhId),dokumen_id:d.id,linked_by:user?.email}));
   await sb.from('rtlh_dokumen_link').upsert(links,{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
   console.log(`[autoLink] Linked ${links.length} dokumen ke rtlh_id ${rtlhId}`);
 }
 
-// ══════════════════════════════════════════════════
-// MAINTENANCE MODE — Akses terbatas hanya staf dinas
-// ══════════════════════════════════════════════════
+// ==================================================
+// MAINTENANCE MODE -- Akses terbatas hanya staf dinas
+// ==================================================
 const MAINTENANCE_MODE = true; // Ganti false untuk buka ke publik
 
 function showMaintenanceOverlay(){
@@ -7107,7 +7107,7 @@ window.addEventListener('DOMContentLoaded',async()=>{
     const activePg=document.querySelector('.page.active')?.id;
     if(activePg==='pgBeranda'||!activePg)await loadGlobalStats();
   }
-  // Load GeoJSON boundary — cache di sessionStorage biar tidak fetch ulang
+  // Load GeoJSON boundary -- cache di sessionStorage biar tidak fetch ulang
   const _geoKey='e-rtlh-batas-ngawi-v1';
   const _geoCached=sessionStorage.getItem(_geoKey);
   if(_geoCached){
@@ -7121,7 +7121,7 @@ window.addEventListener('DOMContentLoaded',async()=>{
   }
 });
 
-// ── Drag & Drop global — cegah browser buka file ──
+// -- Drag & Drop global -- cegah browser buka file --
 (function(){
   // Cegah browser buka file saat drop di luar zone
   ['dragenter','dragover','dragleave','drop'].forEach(ev=>{
@@ -7280,7 +7280,7 @@ function xlFindHeaderRow(ws){
     if(score > bestScore){bestScore=score; bestRow=i;}
   }
 
-  // Build header dari baris terpilih — pakai nilai sel apa adanya
+  // Build header dari baris terpilih -- pakai nilai sel apa adanya
   const rawHeader=raw[bestRow];
   const headerArr=rawHeader.map(v=>String(v===''||v==null?'':v).trim());
 
@@ -7381,7 +7381,7 @@ function cmAutoMap(){
   const cleanHeaders=fd.headers.filter(h=>!String(h).startsWith('__EMPTY'));
   _cmMapping[_cmCurFile]={};
 
-  // Step 1: hitung score semua kombinasi field→kolom
+  // Step 1: hitung score semua kombinasi field->kolom
   const scores=[]; // {fieldK, excelCol, score}
   CM_FIELDS.forEach(field=>{
     const hints=CM_HINTS[field.k]||[field.lb.toLowerCase()];
@@ -7406,7 +7406,7 @@ function cmAutoMap(){
     });
   });
 
-  // Step 2: sort by score descending, assign greedy — satu kolom Excel hanya ke satu field
+  // Step 2: sort by score descending, assign greedy -- satu kolom Excel hanya ke satu field
   scores.sort((a,b)=>b.score-a.score);
   const usedExcel=new Set();
   const usedField=new Set();
@@ -7525,7 +7525,7 @@ function renderCmRows(){
 
   let html='';
 
-  // ── Header row picker ──
+  // -- Header row picker --
   html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 12px;background:#FFFBEB;border-radius:8px;border:1px solid #FDE68A">
     <i class="fas fa-list-ol" style="color:#D97706;font-size:.78rem;flex-shrink:0"></i>
     <span style="font-size:.72rem;font-weight:700;color:#92400E;flex-shrink:0">Baris Header:</span>
@@ -7541,7 +7541,7 @@ function renderCmRows(){
     <span style="font-size:.62rem;color:#B45309;margin-left:auto">${fd.rows.length.toLocaleString('id')} baris data</span>
   </div>`;
 
-  // ── Sheet selector (jika lebih dari 1 sheet) ──
+  // -- Sheet selector (jika lebih dari 1 sheet) --
   if(fd.allSheets&&fd.allSheets.length>1){
     html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 10px;background:var(--blue-bg);border-radius:8px;border:1px solid var(--blue-light)">
       <i class="fas fa-table" style="color:var(--blue);font-size:.75rem;flex-shrink:0"></i>
@@ -7561,7 +7561,7 @@ function renderCmRows(){
     </div>`;
   }
 
-  // ── Info deteksi ──
+  // -- Info deteksi --
   html+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:0 2px">
     <span style="font-size:.65rem;color:var(--gray-500)">
       <i class="fas fa-check-circle" style="color:var(--success)"></i>
@@ -7570,14 +7570,14 @@ function renderCmRows(){
     <span style="font-size:.62rem;color:var(--gray-400)">Periksa & koreksi jika perlu</span>
   </div>`;
 
-  // ── Header tabel ──
+  // -- Header tabel --
   html+=`<div style="display:grid;grid-template-columns:1fr 18px 1fr;gap:6px;padding:4px 8px;background:var(--navy);border-radius:6px 6px 0 0;margin-bottom:2px">
     <div style="font-size:.62rem;font-weight:800;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.05em">Kolom di Excel Anda</div>
     <div></div>
     <div style="font-size:.62rem;font-weight:800;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.05em">Field Database</div>
   </div>`;
 
-  // ── Baris per kolom Excel ──
+  // -- Baris per kolom Excel --
   html+=cleanHeaders.map((h,idx)=>{
     const hNorm=String(h).replace(/\s+/g,' ').trim(); // normalize whitespace/newline
     const dbKey=reverseMap[hNorm]||'';
@@ -7616,7 +7616,7 @@ function cmClearRow(excelCol){
   renderCmPreview();
 }
 
-// Update mapping: excelCol → dbKey
+// Update mapping: excelCol -> dbKey
 function cmUpdateMapByExcel(dbKey, excelCol){
   if(!_cmMapping[_cmCurFile])_cmMapping[_cmCurFile]={};
   const norm=cmNormCol(excelCol);
@@ -7657,12 +7657,12 @@ function renderCmPreview(){
         ${mapped.map(f=>`<th style="padding:2px 8px;font-size:.58rem;font-weight:600;white-space:nowrap;text-align:left;max-width:120px;overflow:hidden;text-overflow:ellipsis" title="${mapping[f.k]}">${mapping[f.k]}</th>`).join('')}
       </tr>
       <tr style="background:var(--navy);color:#fff">
-        ${mapped.map(f=>`<th style="padding:3px 8px;font-size:.62rem;font-weight:700;white-space:nowrap;text-align:left">→ ${f.lb}</th>`).join('')}
+        ${mapped.map(f=>`<th style="padding:3px 8px;font-size:.62rem;font-weight:700;white-space:nowrap;text-align:left">-> ${f.lb}</th>`).join('')}
       </tr>
     </thead>
     <tbody>${rows.map((row,i)=>`<tr style="background:${i%2?'var(--gray-50)':'#fff'}">${mapped.map(f=>{
       const v=String(row[mapping[f.k]]??'').substring(0,25);
-      return`<td style="padding:3px 8px;border-bottom:1px solid var(--gray-100);color:${v?'var(--gray-800)':'var(--gray-300)'}">${v||'—'}</td>`;
+      return`<td style="padding:3px 8px;border-bottom:1px solid var(--gray-100);color:${v?'var(--gray-800)':'var(--gray-300)'}">${v||'--'}</td>`;
     }).join('')}</tr>`).join('')}</tbody>
   </table>`;
 }
@@ -7701,8 +7701,8 @@ async function cmStartImport(){
 
     setLog(`<i class="fas fa-circle-notch fa-spin"></i> Membaca file ${fi+1}/${_cmFiles.length}: <strong>${fd.name}</strong> (${fd.rows.length} baris)...`);
 
-    // ── Build rows dari mapping ──
-    // Key di row bisa punya whitespace berbeda → buat lookup map yang normalized
+    // -- Build rows dari mapping --
+    // Key di row bisa punya whitespace berbeda -> buat lookup map yang normalized
     const toProcess=[];
 
     fd.rows.forEach((row,rowIdx)=>{
@@ -7759,9 +7759,9 @@ async function cmStartImport(){
       continue;
     }
 
-    // ── Fetch NIK yang sudah ada di DB (batch 1000) ──
+    // -- Fetch NIK yang sudah ada di DB (batch 1000) --
     const allNiks=toProcess.filter(x=>x.nik).map(x=>x.nik);
-    const existingNikMap={}; // nik → id
+    const existingNikMap={}; // nik -> id
 
     if(allNiks.length){
       for(let i=0;i<allNiks.length;i+=1000){
@@ -7790,7 +7790,7 @@ async function cmStartImport(){
       }
     });
 
-    // ── UPDATE existing records (batch 50 parallel) ──
+    // -- UPDATE existing records (batch 50 parallel) --
     const BATCH_UPDATE=50;
     for(let i=0;i<toUpdate.length;i+=BATCH_UPDATE){
       const batch=toUpdate.slice(i,i+BATCH_UPDATE);
@@ -7809,7 +7809,7 @@ async function cmStartImport(){
       });
     }
 
-    // ── INSERT new records (batch 100) ──
+    // -- INSERT new records (batch 100) --
     const BATCH_INSERT=100;
     for(let i=0;i<toInsert.length;i+=BATCH_INSERT){
       const batch=toInsert.slice(i,i+BATCH_INSERT);
@@ -7823,16 +7823,16 @@ async function cmStartImport(){
       }
     }
 
-    setLog(`<span style="color:var(--success)">✓ File ${fi+1} selesai — ${toUpdate.length} update, ${toInsert.length} insert baru</span>`);
+    setLog(`<span style="color:var(--success)">✓ File ${fi+1} selesai -- ${toUpdate.length} update, ${toInsert.length} insert baru</span>`);
   }
 
-  // ── Invalidate semua cache ──
+  // -- Invalidate semua cache --
   cacheClear(); // localStorage
   Object.keys(brCache||{}).forEach(k=>delete brCache[k]);
   _rpLoaded=false;
   _rpData=null;
 
-  // ── Tampilkan hasil ──
+  // -- Tampilkan hasil --
   const okColor='var(--success)',failColor='var(--danger)';
   let logHtml=`<span style="color:${okColor}"><i class="fas fa-check-circle"></i> Selesai: <strong>${totalOk}</strong> berhasil`;
   if(totalSkip)logHtml+=` · ${totalSkip} dilewati`;
@@ -7849,7 +7849,7 @@ async function cmStartImport(){
   const msgType=totalFail&&!totalOk?'error':totalFail?'warning':'success';
   toast(`Import: ${totalOk} berhasil${totalFail?', '+totalFail+' gagal':''}${totalSkip?', '+totalSkip+' dilewati':''}`,msgType);
 
-  // ── Tutup modal & reload data ──
+  // -- Tutup modal & reload data --
   setTimeout(()=>closeModal('ovColMap'),totalFail?2000:800);
 
   notifyDataChanged(); // Beritahu tab lain
@@ -7866,21 +7866,21 @@ async function cmStartImport(){
   if(btn){btn.disabled=false;btn.innerHTML='<i class="fas fa-upload"></i> Import';}
 }
 
-// ══════════════════════════════════════════════════
-// DTSEN — Data per Desil, per Kecamatan & Desa
-// ══════════════════════════════════════════════════
+// ==================================================
+// DTSEN -- Data per Desil, per Kecamatan & Desa
+// ==================================================
 let _dtData=null, _dtLoaded=false, _dtTab='kec';
 let _chartDtsenDesil=null;
 
-// Label dan warna desil — konsisten dengan beranda
+// Label dan warna desil -- konsisten dengan beranda
 const DESIL_COLORS_DT=['#BE123C','#DC2626','#EA580C','#D97706','#84CC16','#16A34A','#0891B2','#7C3AED'];
 const DESIL_BGS_DT=['#FFF1F2','#FEF2F2','#FFF7ED','#FFFBEB','#F7FEE7','#F0FDF4','#ECFEFF','#F5F3FF'];
 
 async function loadDtsen(){
-  // ── Prioritas 1: pakai _dtData yang sudah ada di memori ──
+  // -- Prioritas 1: pakai _dtData yang sudah ada di memori --
   if(_dtData&&_dtLoaded){renderDtsen();return;}
 
-  // ── Prioritas 2: pakai cache dtsen_data ──
+  // -- Prioritas 2: pakai cache dtsen_data --
   const cached=cacheGet('dtsen_data');
   if(cached){
     _dtData=cached.data;_dtLoaded=true;renderDtsen();
@@ -7888,7 +7888,7 @@ async function loadDtsen(){
     return;
   }
 
-  // ── Prioritas 3: pakai report_data yang sudah ada (kolom sama persis) ──
+  // -- Prioritas 3: pakai report_data yang sudah ada (kolom sama persis) --
   const rpCached=cacheGet('report_data');
   if(rpCached&&rpCached.data&&rpCached.data.length){
     _dtData=rpCached.data;
@@ -7899,7 +7899,7 @@ async function loadDtsen(){
     return;
   }
 
-  // ── Prioritas 4: pakai _rpData yang sudah di memori (dari halaman Laporan) ──
+  // -- Prioritas 4: pakai _rpData yang sudah di memori (dari halaman Laporan) --
   if(_rpData&&_rpData.length){
     _dtData=_rpData;
     cacheSet('dtsen_data',_dtData);
@@ -7908,7 +7908,7 @@ async function loadDtsen(){
     return;
   }
 
-  // ── Prioritas 5: fetch dari Supabase (terakhir, kalau tidak ada cache sama sekali) ──
+  // -- Prioritas 5: fetch dari Supabase (terakhir, kalau tidak ada cache sama sekali) --
   document.getElementById('dtTable').innerHTML=
     '<div style="padding:40px;text-align:center;color:#94A3B8"><i class="fas fa-circle-notch fa-spin" style="font-size:1.5rem;display:block;margin-bottom:10px"></i>Memuat data DTSEN...</div>';
   try{
@@ -7967,7 +7967,7 @@ function parseDt(v){
   const m=String(v).match(/\d+/);
   if(!m)return 0;
   const d=parseInt(m[0]);
-  // Cap desil ke 1-8 (sesuai skema DTSEN), lebih dari itu → 0 (tanpa desil valid)
+  // Cap desil ke 1-8 (sesuai skema DTSEN), lebih dari itu -> 0 (tanpa desil valid)
   return(d>=1&&d<=8)?d:0;
 }
 
@@ -8238,9 +8238,9 @@ function invalidateDtsenCache(){
   }
 }
 
-// ══════════════════════════════════════════════════
-// DTSEN EXPORT — Excel, PDF, Word
-// ══════════════════════════════════════════════════
+// ==================================================
+// DTSEN EXPORT -- Excel, PDF, Word
+// ==================================================
 
 // Ambil data tabel DTSEN yang sedang aktif (sudah terfilter)
 function _getDtsenExportData(){
@@ -8298,7 +8298,7 @@ function _getDtsenExportData(){
   return{filtered,visD,tab,filterLabel,searchLabel};
 }
 
-// ── EXPORT EXCEL ──
+// -- EXPORT EXCEL --
 function exportDtsenExcel(){
   if(!_dtData){toast('Data belum dimuat','error');return;}
   if(!window.XLSX){toast('Library Excel belum siap','error');return;}
@@ -8362,7 +8362,7 @@ function exportDtsenExcel(){
   const colW=Object.keys(rows[0]).map(k=>({wch:Math.max(k.length+2,10)}));
   ws['!cols']=colW;
 
-  // Style header baris pertama (warna navy) — SheetJS community tidak support rich style,
+  // Style header baris pertama (warna navy) -- SheetJS community tidak support rich style,
   // tapi bisa tambah baris judul di atas
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,tab==='kec'?'Per Kecamatan':'Per Desa');
@@ -8373,7 +8373,7 @@ function exportDtsenExcel(){
   toast('Excel berhasil diunduh','success');
 }
 
-// ── DTSEN EXCEL DROPDOWN HELPERS ──
+// -- DTSEN EXCEL DROPDOWN HELPERS --
 function toggleDtExcelMenu(){
   const m=document.getElementById('dtExcelMenu');
   if(!m)return;
@@ -8511,7 +8511,7 @@ function exportDtsenExcelBoth(){
   toast('Excel 2 sheet (Kecamatan + Desa) diunduh','success');
 }
 
-// ── EXPORT PDF (via browser print) ──
+// -- EXPORT PDF (via browser print) --
 function exportDtsenPDF(){
   if(!_dtData){toast('Data belum dimuat','error');return;}
   const{filtered,visD,tab,filterLabel,searchLabel}=_getDtsenExportData();
@@ -8583,7 +8583,7 @@ function exportDtsenPDF(){
   const html=`<!DOCTYPE html>
 <html lang="id"><head>
 <meta charset="UTF-8">
-<title>DTSEN ${judulTab} — Ngawi ${tgl}</title>
+<title>DTSEN ${judulTab} -- Ngawi ${tgl}</title>
 <style>
   @page{size:A3 landscape;margin:15mm 10mm}
   *{box-sizing:border-box;margin:0;padding:0}
@@ -8613,7 +8613,7 @@ function exportDtsenPDF(){
 <div class="cover">
   <div>
     <div style="font-size:8px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">DPRKP Kabupaten Ngawi</div>
-    <h1>Data DTSEN / MyPKP — ${judulTab}</h1>
+    <h1>Data DTSEN / MyPKP -- ${judulTab}</h1>
     <h2>Distribusi Desil per ${tab==='kec'?'Kecamatan':'Desa'} dengan Breakdown Status RTLH</h2>
   </div>
   <div class="meta">
@@ -8633,7 +8633,7 @@ function exportDtsenPDF(){
   <span class="leg-item"><span class="leg-dot" style="background:#DC2626"></span> R = RTLH</span>
   <span class="leg-item"><span class="leg-dot" style="background:#16A34A"></span> L = Layak Huni</span>
   <span class="leg-item"><span class="leg-dot" style="background:#7C3AED"></span> K = Keterangan Lain</span>
-  <span class="leg-item"><span class="leg-dot" style="background:#64748B"></span> D1–D8 = Desil DTSEN</span>
+  <span class="leg-item"><span class="leg-dot" style="background:#64748B"></span> D1-D8 = Desil DTSEN</span>
 </div>
 <table>
   <thead>${thead}</thead>
@@ -8642,13 +8642,13 @@ function exportDtsenPDF(){
 </body></html>`;
 
   const w=window.open('','_blank','width=1200,height=800');
-  if(!w){toast('Popup diblokir browser — izinkan popup untuk halaman ini','error');return;}
+  if(!w){toast('Popup diblokir browser -- izinkan popup untuk halaman ini','error');return;}
   w.document.write(html);
   w.document.close();
   w.focus();
 }
 
-// ── EXPORT WORD (HTML-to-DOCX via Blob) ──
+// -- EXPORT WORD (HTML-to-DOCX via Blob) --
 function exportDtsenWord(){
   if(!_dtData){toast('Data belum dimuat','error');return;}
   const{filtered,visD,tab,filterLabel,searchLabel}=_getDtsenExportData();
@@ -8742,8 +8742,8 @@ function exportDtsenWord(){
 </head>
 <body>
 <div class="WordSection1">
-  <h1>Data DTSEN / MyPKP — ${judulTab}</h1>
-  <h2>Distribusi Desil per ${tab==='kec'?'Kecamatan':'Desa'} dengan Breakdown Status RTLH — Kabupaten Ngawi</h2>
+  <h1>Data DTSEN / MyPKP -- ${judulTab}</h1>
+  <h2>Distribusi Desil per ${tab==='kec'?'Kecamatan':'Desa'} dengan Breakdown Status RTLH -- Kabupaten Ngawi</h2>
   <p class="meta">
     Dicetak: ${tgl} &nbsp;|&nbsp; Filter: ${filterLabel}${searchLabel?' | '+searchLabel:''} &nbsp;|&nbsp;
     Jumlah: ${filtered.length} ${tab==='kec'?'Kecamatan':'Desa'} &nbsp;|&nbsp;
@@ -8775,7 +8775,7 @@ function exportDtsenWord(){
   <div class="modal" style="max-width:680px">
     <div class="modal-head">
       <div><h3><i class="fas fa-folder-open" style="color:var(--gold)"></i> Library Dokumen Kabupaten</h3>
-        <div class="sub">SK, BA, Surat Pernyataan — dokumen resmi RTLH</div>
+        <div class="sub">SK, BA, Surat Pernyataan -- dokumen resmi RTLH</div>
       </div>
       <button class="modal-x" onclick="closeModal('ovDokLib')"><i class="fas fa-times"></i></button>
     </div>
@@ -8789,7 +8789,7 @@ function exportDtsenWord(){
         <button class="dok-jenis-chip" id="djc_Lainnya" onclick="filterDokLib('Lainnya')" style="background:var(--gray-100);color:var(--gray-600);border-color:var(--gray-300)">Lainnya</button>
         <button id="btnUploadDokLib" onclick="openUploadDokLib()" style="display:none;margin-left:auto;padding:5px 12px;border-radius:8px;background:var(--blue);color:#fff;border:none;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit"><i class="fas fa-upload"></i> Upload Dokumen</button>
         <button onclick="refreshDokLib()" title="Refresh & sinkronisasi link" style="padding:5px 10px;border-radius:8px;background:var(--gray-100);color:var(--gray-600);border:1px solid var(--gray-200);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit" id="btnRefreshDokLib"><i class="fas fa-sync-alt"></i></button>
-        <button onclick="scanMassalDokLib()" title="Scan OCR semua PDF di library — temukan NIK penerima" id="btnScanMassal" style="padding:5px 12px;border-radius:8px;background:#FEF3C7;color:#92400E;border:1.5px solid #FCD34D;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px"><i class="fas fa-brain" style="color:#EAB308"></i> Scan NIK Massal</button>
+        <button onclick="scanMassalDokLib()" title="Scan OCR semua PDF di library -- temukan NIK penerima" id="btnScanMassal" style="padding:5px 12px;border-radius:8px;background:#FEF3C7;color:#92400E;border:1.5px solid #FCD34D;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px"><i class="fas fa-brain" style="color:#EAB308"></i> Scan NIK Massal</button>
         <div id="scanMassalProgress" style="display:none;align-items:center;gap:6px;font-size:.65rem;color:#92400E;background:#FEF3C7;padding:4px 10px;border-radius:8px;border:1px solid #FCD34D">
           <i class="fas fa-circle-notch fa-spin" style="color:#EAB308"></i>
           <span id="scanMassalText">Scanning...</span>
@@ -8866,7 +8866,7 @@ function exportDtsenWord(){
             <option value="2027">2027</option>
           </select>
         </div>
-        <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Contoh: RTLH + 2026 → penerima RTLH 2026 otomatis terhubung saat disimpan</div>
+        <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Contoh: RTLH + 2026 -> penerima RTLH 2026 otomatis terhubung saat disimpan</div>
       </div>
       <div class="form-group" style="margin-bottom:10px">
         <label>Mode Link Penerima</label>
@@ -9039,7 +9039,7 @@ function exportDtsenWord(){
         <input type="file" id="editDlFile"
           accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.zip,.rar"
           style="font-size:.78rem;width:100%">
-        <div style="font-size:.6rem;color:#94A3B8;margin-top:4px">PDF · Word · Excel · PowerPoint · Gambar · ZIP — Maks 20 MB</div>
+        <div style="font-size:.6rem;color:#94A3B8;margin-top:4px">PDF · Word · Excel · PowerPoint · Gambar · ZIP -- Maks 20 MB</div>
       </div>
 
       <div id="editDlProgress" style="font-size:.72rem;margin-top:4px"></div>
@@ -9055,7 +9055,7 @@ function exportDtsenWord(){
 <div id="ovPdfViewer">
   <div class="pdf-toolbar">
     <button class="pdf-nav-btn" onclick="closePdfViewer()" title="Tutup"><i class="fas fa-times"></i></button>
-    <div class="pdf-toolbar-title" id="pdfViewerTitle">—</div>
+    <div class="pdf-toolbar-title" id="pdfViewerTitle">--</div>
     <div style="display:flex;align-items:center;gap:4px">
       <button class="pdf-nav-btn" id="pdfPrevBtn" onclick="pdfChangePage(-1)" title="Halaman sebelumnya"><i class="fas fa-chevron-left"></i></button>
       <span class="pdf-page-info"><span id="pdfPageNum">1</span> / <span id="pdfPageCount">?</span></span>
@@ -9069,7 +9069,7 @@ function exportDtsenWord(){
     <div id="pdfOcrStatus" style="display:none;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;background:rgba(234,179,8,.15);font-size:.65rem;font-weight:700;color:#EAB308;white-space:nowrap">
       <i class="fas fa-brain"></i> <span id="pdfOcrStatusText">Membaca teks...</span>
     </div>
-    <button class="pdf-nav-btn" onclick="pdfRescan()" title="Scan ulang — paksa OCR ulang halaman ini" style="font-size:.65rem;padding:0 8px;gap:4px;display:flex;align-items:center">
+    <button class="pdf-nav-btn" onclick="pdfRescan()" title="Scan ulang -- paksa OCR ulang halaman ini" style="font-size:.65rem;padding:0 8px;gap:4px;display:flex;align-items:center">
       <i class="fas fa-redo"></i>
     </button>
     <button class="pdf-nav-btn" id="pdfFullBtn" onclick="pdfToggleFullscreen()" title="Fullscreen"><i class="fas fa-expand"></i></button>
@@ -9090,12 +9090,12 @@ function exportDtsenWord(){
 </div>
 
 <script>
-// ══════════════════════════════════════════════════
-// CEK NIK MASSAL — Upload Excel → Lookup Supabase
-// ══════════════════════════════════════════════════
+// ==================================================
+// CEK NIK MASSAL -- Upload Excel -> Lookup Supabase
+// ==================================================
 let _cnRows = [];      // raw rows dari Excel
 let _cnResults = [];   // [{inputNik, row, dbData, found}]
-let _cnFiltered = [];  // subset setelah filter — SATU SUMBER KEBENARAN untuk card, grafik, tabel, Excel
+let _cnFiltered = [];  // subset setelah filter -- SATU SUMBER KEBENARAN untuk card, grafik, tabel, Excel
 let _cnNikColKey = ''; // nama kolom NIK dari file
 let _cnChartFound = null, _cnChartStatus = null, _cnChartBantuan = null;
 
@@ -9166,7 +9166,7 @@ async function cnRunCheck(){
     const pct = Math.round(((i+1)/totalBatches)*100);
     progBar.style.width = pct+'%';
     progPct.textContent = pct+'%';
-    progLabel.textContent = `Batch ${i+1}/${totalBatches} — ${Object.keys(dbMap).length} ditemukan`;
+    progLabel.textContent = `Batch ${i+1}/${totalBatches} -- ${Object.keys(dbMap).length} ditemukan`;
   }
 
   _cnResults = _cnRows.map(row => {
@@ -9189,7 +9189,7 @@ async function cnRunCheck(){
     _cnResults.some(r=>r.found)?'success':'error');
 }
 
-// ─── FUNGSI UTAMA: hitung filtered → update card + grafik + tabel (semuanya dari satu sumber) ───
+// --- FUNGSI UTAMA: hitung filtered -> update card + grafik + tabel (semuanya dari satu sumber) ---
 function cnRenderAll(){
   const q  = (document.getElementById('cnFilterInput')?.value||'').toLowerCase().trim();
   const sf = document.getElementById('cnFilterStatus')?.value||'';
@@ -9219,7 +9219,7 @@ function cnRenderAll(){
 // Alias agar oninput/onchange di HTML tetap bisa panggil cnRenderTable()
 function cnRenderTable(){ cnRenderAll(); }
 
-// ─── CARD ───
+// --- CARD ---
 function cnUpdateCards(){
   const f = _cnFiltered;
   const found    = f.filter(r=>r.found).length;
@@ -9238,7 +9238,7 @@ function cnUpdateCards(){
   document.getElementById('cnLainCount').textContent = lain;
 }
 
-// ─── GRAFIK ───
+// --- GRAFIK ---
 function cnUpdateCharts(){
   const f = _cnFiltered;
   const found    = f.filter(r=>r.found).length;
@@ -9319,7 +9319,7 @@ function cnUpdateCharts(){
   }
 }
 
-// ─── TABEL ───
+// --- TABEL ---
 function cnUpdateTable(extraCols){
   const f = _cnFiltered;
   const thead = document.getElementById('cnThead');
@@ -9415,7 +9415,7 @@ function cnUpdateTable(extraCols){
     `Menampilkan ${f.length} dari ${_cnResults.length} data`;
 }
 
-// ─── DOWNLOAD EXCEL — selalu dari _cnFiltered (sama dengan yang tampil di tabel) ───
+// --- DOWNLOAD EXCEL -- selalu dari _cnFiltered (sama dengan yang tampil di tabel) ---
 function cnDownloadExcel(){
   if(!_cnFiltered.length){ toast('Belum ada data untuk diunduh','error'); return; }
   if(!window.XLSX){ toast('Library XLSX tidak tersedia','error'); return; }
@@ -9468,9 +9468,9 @@ function cnDownloadExcel(){
   toast(`Excel diunduh: ${_cnFiltered.length} baris`, 'success');
 }
 
-// ══════════════════════════════════════════════════
-// PDF VIEWER INLINE — dengan NIK highlight
-// ══════════════════════════════════════════════════
+// ==================================================
+// PDF VIEWER INLINE -- dengan NIK highlight
+// ==================================================
 let _pdfDoc = null;
 let _pdfPage = 1;
 let _pdfScale = 1.4;
@@ -9478,7 +9478,10 @@ let _pdfNik = '';
 let _pdfUrl = '';
 let _pdfRendering = false;
 let _pdfOcrRunning = false; // sedang OCR
-// Cache hasil OCR: key = url+'|'+nik → {pages:[...], highlights:[{page,y0pct,y1pct,exact}]}
+// Cache hasil OCR: key = url+'|'+nik -> {pages:[...], highlights:[{page,y0pct,y1pct,exact}]}
+</script>
+
+<script>
 const _pdfOcrCache = new Map();
 
 async function openPdfViewer(url, title, nik){
@@ -9504,14 +9507,14 @@ async function openPdfViewer(url, title, nik){
 
   if(_pdfNik){
     nikBadge.style.display='flex';
-    nikBadgeText.textContent = 'Cari NIK: '+_pdfNik.slice(0,6)+'••••••••••';
+    nikBadgeText.textContent = 'Cari NIK: '+_pdfNik.slice(0,6)+'**********';
   } else {
     nikBadge.style.display='none';
   }
 
   // Setup pdf.js worker
   if(!window.pdfjsLib){
-    scrollArea.innerHTML='<div style="color:#F87171;padding:40px;text-align:center">pdf.js belum dimuat — coba refresh halaman</div>';
+    scrollArea.innerHTML='<div style="color:#F87171;padding:40px;text-align:center">pdf.js belum dimuat -- coba refresh halaman</div>';
     return;
   }
   pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -9564,7 +9567,7 @@ async function _pdfRenderAll(){
     svg.dataset.page = p;
     wrap.appendChild(svg);
 
-    // Cari NIK di teks halaman (text PDF) — simpan canvas ref untuk OCR
+    // Cari NIK di teks halaman (text PDF) -- simpan canvas ref untuk OCR
     if(_pdfNik){
       const tc = await page.getTextContent();
       const items = tc.items;
@@ -9572,7 +9575,7 @@ async function _pdfRenderAll(){
       const hasText = allText.length > 20; // PDF punya text layer
 
       if(hasText){
-        // ── TEXT PDF: cari per baris ──
+        // -- TEXT PDF: cari per baris --
         const lineMap = {};
         items.forEach(item=>{
           if(!item.str.trim()) return;
@@ -9604,7 +9607,7 @@ async function _pdfRenderAll(){
           }
         });
       }
-      // ── SCAN PDF: tandai canvas untuk OCR nanti (background) ──
+      // -- SCAN PDF: tandai canvas untuk OCR nanti (background) --
       if(!hasText) canvas.dataset.needsOcr = '1';
     }
 
@@ -9639,11 +9642,11 @@ async function _pdfRenderAll(){
         await _loadScanFromDb(_rid,_urlHash(_pdfUrl),_urlHash(_pdfNik),_cacheKey);
       const _cached = _pdfOcrCache.get(_cacheKey);
       if(_cached){
-        // Sudah pernah di-scan — restore highlights dari cache
+        // Sudah pernah di-scan -- restore highlights dari cache
         badge.style.display='flex';
         badge.style.background = _cached.pages.length ? '#FEF3C7' : '#FEE2E2';
         badgeText.textContent = _cached.pages.length
-          ? '★ NIK ditemukan di hal. '+_cached.pages.join(', ')+' (cached)'
+          ? '[FOUND] NIK ditemukan di hal. '+_cached.pages.join(', ')+' (cached)'
           : 'NIK tidak terdeteksi';
         // Gambar ulang highlight dari cache
         _cached.highlights.forEach(h=>{
@@ -9768,14 +9771,14 @@ document.addEventListener('keydown',e=>{
 });
 
 
-// ══════════════════════════════════════════════════
-// OCR ENGINE — multi-strategy, robust untuk semua jenis PDF
-// ══════════════════════════════════════════════════
+// ==================================================
+// OCR ENGINE -- multi-strategy, robust untuk semua jenis PDF
+// ==================================================
 
-// ── Normalisasi OCR: karakter yang mirip digit ──
+// -- Normalisasi OCR: karakter yang mirip digit --
 function _ocrNorm(s){
   return String(s||'')
-    .replace(/[oO°]/g,'0')
+    .replace(/[oOo]/g,'0')
     .replace(/[iIlL|!1]/g,'1')
     .replace(/[zZ]/g,'2')
     .replace(/[sS$]/g,'5')
@@ -9785,12 +9788,12 @@ function _ocrNorm(s){
     .replace(/[^0-9]/g,'');
 }
 
-// ── Fuzzy match NIK: 3 strategi ──
+// -- Fuzzy match NIK: 3 strategi --
 function _nikMatch(raw, target){
   if(!raw||!target) return {match:false};
   const t = String(target).trim();
 
-  // Strategi 1: normalisasi penuh → cari substring 16 digit
+  // Strategi 1: normalisasi penuh -> cari substring 16 digit
   const norm = _ocrNorm(String(raw));
   let bestDiff=99;
   for(let i=0; i<=norm.length-16; i++){
@@ -9801,7 +9804,7 @@ function _nikMatch(raw, target){
     if(d<=2) return {match:true,exact:false,diff:d};
   }
 
-  // Strategi 2: token sliding — gabung angka per kata
+  // Strategi 2: token sliding -- gabung angka per kata
   const tokens = String(raw).split(/\s+/).map(w=>_ocrNorm(w)).filter(w=>w.length>=3);
   let buf='';
   for(const tok of tokens){
@@ -9819,7 +9822,7 @@ function _nikMatch(raw, target){
   return {match:false};
 }
 
-// ── Text layer extraction — super agresif untuk PDF campuran ──
+// -- Text layer extraction -- super agresif untuk PDF campuran --
 function _searchNikInTextLayer(tc, nik, vpHeight, scale){
   const allItems = tc.items.filter(i => i.str && i.str.trim());
   if(!allItems.length) return null;
@@ -9834,7 +9837,7 @@ function _searchNikInTextLayer(tc, nik, vpHeight, scale){
     if(!quick.match) return null;
   }
 
-  // ── Build baris: toleransi ±8pt (lebih longgar untuk PDF hybrid) ──
+  // -- Build baris: toleransi +/-8pt (lebih longgar untuk PDF hybrid) --
   const lines = [];
   for(const item of allItems){
     const ty = item.transform[5];
@@ -9842,9 +9845,9 @@ function _searchNikInTextLayer(tc, nik, vpHeight, scale){
     if(existing) existing.items.push(item);
     else lines.push({ty, items:[item]});
   }
-  lines.sort((a,b) => b.ty - a.ty); // visual top → bottom
+  lines.sort((a,b) => b.ty - a.ty); // visual top -> bottom
 
-  // ── Coba window 1, 2, 3 baris ──
+  // -- Coba window 1, 2, 3 baris --
   for(let w = 1; w <= 3; w++){
     for(let i = 0; i <= lines.length - w; i++){
       const win = lines.slice(i, i+w);
@@ -9875,7 +9878,7 @@ function _searchNikInTextLayer(tc, nik, vpHeight, scale){
     }
   }
 
-  // ── Sliding window across ALL text items (ignore line boundaries) ──
+  // -- Sliding window across ALL text items (ignore line boundaries) --
   // Berguna saat NIK terpecah di banyak item kecil
   let buf = '', bufItems = [];
   for(const item of allItems){
@@ -9895,7 +9898,7 @@ function _searchNikInTextLayer(tc, nik, vpHeight, scale){
           exact: m.exact
         };
       }
-      // Geser window — buang item terlama
+      // Geser window -- buang item terlama
       const trimTo = Math.max(0, buf.length - 25);
       let trimChars = 0;
       while(bufItems.length > 1 && trimChars < trimTo){
@@ -9906,15 +9909,15 @@ function _searchNikInTextLayer(tc, nik, vpHeight, scale){
     }
   }
 
-  // Found in full page but can't localize → return top strip as marker
+  // Found in full page but can't localize -> return top strip as marker
   return {y0pct: 0, y1pct: 0.015, exact: false, fullPage: true};
 }
 
 
 
-// ── Preprocess canvas untuk OCR ──
+// -- Preprocess canvas untuk OCR --
 function _enhanceCanvas(src){
-  // Scale 3x — Tesseract butuh min ~30px per karakter
+  // Scale 3x -- Tesseract butuh min ~30px per karakter
   const scale = Math.min(3.5, 4000/Math.max(src.width,src.height));
   const dst = document.createElement('canvas');
   dst.width  = Math.round(src.width  * scale);
@@ -9962,7 +9965,7 @@ function _enhanceCanvas(src){
   return dst;
 }
 
-// ── Gambar highlight di SVG ──
+// -- Gambar highlight di SVG --
 function _hlRow(svg, canvasH, y0pct, y1pct, exact){
   const rect=document.createElementNS('http://www.w3.org/2000/svg','rect');
   const y0=Math.max(0,y0pct*canvasH-4);
@@ -9982,16 +9985,16 @@ function _hlRow(svg, canvasH, y0pct, y1pct, exact){
   lbl.setAttribute('fill',exact?'#92400E':'#B45309');
   lbl.setAttribute('font-size','11');
   lbl.setAttribute('font-weight','bold');
-  lbl.textContent=exact?'★ NIK BNBA':'~ NIK (fuzzy)';
+  lbl.textContent=exact?'[FOUND] NIK BNBA':'~ NIK (fuzzy)';
   svg.appendChild(lbl);
 }
 
-// ── Scan satu halaman: text layer dulu, fallback OCR ──
+// -- Scan satu halaman: text layer dulu, fallback OCR --
 async function _scanPage(page, nik, worker){
   const scale=1.5;
   const vp=page.getViewport({scale});
 
-  // ── Coba text layer ──
+  // -- Coba text layer --
   const tc=await page.getTextContent();
   const allTxt=tc.items.map(i=>i.str).join('');
   const allNorm=_ocrNorm(allTxt);
@@ -9999,7 +10002,7 @@ async function _scanPage(page, nik, worker){
   const tRes=_searchNikInTextLayer(tc,nik,vp.height,scale);
   if(tRes){ console.log('[SCAN] pg'+page.pageNumber,'TEXT FOUND y:'+tRes.y0pct?.toFixed(3)+'-'+tRes.y1pct?.toFixed(3)); return {found:true,...tRes, method:'text'}; }
 
-  // ── Fallback: render + OCR ──
+  // -- Fallback: render + OCR --
   if(!worker) return {found:false};
   const canvas=document.createElement('canvas');
   canvas.width=vp.width; canvas.height=vp.height;
@@ -10027,7 +10030,7 @@ async function _scanPage(page, nik, worker){
   return {found:true, exact:false, y0pct:0, y1pct:0.04, method:'ocr-noline'};
 }
 
-// ── Main OCR untuk viewer (dengan progress UI) ──
+// -- Main OCR untuk viewer (dengan progress UI) --
 async function _pdfRunOcr(nikFoundSoFar){
   if(!_pdfNik||_pdfOcrRunning) return;
   if(!window.Tesseract){ _pdfSetNikBadge('error','Tesseract belum dimuat'); return; }
@@ -10091,7 +10094,7 @@ async function _pdfRunOcr(nikFoundSoFar){
   if(!badge) return;
   if(finalPages.length>0){
     badge.style.display='flex'; badge.style.background='#FEF3C7';
-    badgeText.textContent='★ NIK ditemukan di hal.'+finalPages.sort((a,b)=>a-b).join(',');
+    badgeText.textContent='[FOUND] NIK ditemukan di hal.'+finalPages.sort((a,b)=>a-b).join(',');
     const fp=document.getElementById('pdfPageWrap_'+finalPages[0]);
     if(fp) setTimeout(()=>fp.scrollIntoView({behavior:'smooth',block:'center'}),200);
   } else {
@@ -10102,7 +10105,7 @@ async function _pdfRunOcr(nikFoundSoFar){
   }
 }
 
-// ── Silent background scan ──
+// -- Silent background scan --
 async function _pdfSilentScan(url, nik, rtlhId){
   const ck=url+'|'+nik;
   if(_pdfOcrCache.has(ck)) return;
@@ -10119,7 +10122,7 @@ async function _pdfSilentScan(url, nik, rtlhId){
       'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     const pdf=await pdfjsLib.getDocument({url,withCredentials:false}).promise;
 
-    // Coba text layer dulu (tanpa OCR) — lebih cepat
+    // Coba text layer dulu (tanpa OCR) -- lebih cepat
     const found=[], highlights=[];
     let needsOcr=false;
     for(let p=1;p<=pdf.numPages;p++){
@@ -10131,7 +10134,7 @@ async function _pdfSilentScan(url, nik, rtlhId){
       else if(tc.items.map(i=>i.str).join('').length<20) needsOcr=true;
     }
 
-    // Kalau ada halaman scan & NIK belum ketemu → OCR
+    // Kalau ada halaman scan & NIK belum ketemu -> OCR
     if(needsOcr && !found.length && window.Tesseract){
       const worker=await Tesseract.createWorker('eng',1,{logger:()=>{}});
       await worker.setParameters({tessedit_pageseg_mode:'11'});
@@ -10171,7 +10174,7 @@ async function _pdfSilentScan(url, nik, rtlhId){
   }catch(e){ console.warn('[SilentScan] error:',e.message); }
 }
 
-// ── URL hash ringkas untuk key DB ──
+// -- URL hash ringkas untuk key DB --
 function _urlHash(str){
   let h=0;
   const s=String(str||'');
@@ -10179,7 +10182,7 @@ function _urlHash(str){
   return Math.abs(h).toString(36);
 }
 
-// ── Simpan hasil scan ke Supabase ──
+// -- Simpan hasil scan ke Supabase --
 async function _saveScanResult(rtlhId, urlHash, nikHash, pages, highlights){
   if(!rtlhId||!sb) return;
   try{
@@ -10194,7 +10197,7 @@ async function _saveScanResult(rtlhId, urlHash, nikHash, pages, highlights){
   }catch(e){ console.warn('[SaveScan]',e.message); }
 }
 
-// ── Load hasil scan dari Supabase ke memory cache ──
+// -- Load hasil scan dari Supabase ke memory cache --
 async function _loadScanFromDb(rtlhId, urlHash, nikHash, cacheKey){
   if(!rtlhId||!sb) return false;
   try{
@@ -10212,7 +10215,7 @@ async function _loadScanFromDb(rtlhId, urlHash, nikHash, cacheKey){
   return false;
 }
 
-// ── Trigger scan semua PDF untuk satu rtlhId ──
+// -- Trigger scan semua PDF untuk satu rtlhId --
 async function _triggerScanForRtlh(rtlhId, forceRefresh=false){
   const numId=parseInt(rtlhId);
   const rec=brAll.find(x=>parseInt(x.id)===numId);
@@ -10237,12 +10240,9 @@ async function _triggerScanForRtlh(rtlhId, forceRefresh=false){
   });
 }
 
-// ── SCAN MASSAL dari Library Dokumen ──
+// -- SCAN MASSAL dari Library Dokumen --
 // Scan semua PDF di library, cocokkan dengan semua BNBA yang tertaut
 async function scanMassalDokLib(){
-  if(!window.pdfjsLib){
-    toast('pdf.js belum dimuat — coba refresh','error'); return;
-  }
   const btn=document.getElementById('btnScanMassal');
   const prog=document.getElementById('scanMassalProgress');
   const progText=document.getElementById('scanMassalText');
@@ -10252,15 +10252,12 @@ async function scanMassalDokLib(){
 
   try{
     show('Memuat data...');
-    pdfjsLib.GlobalWorkerOptions.workerSrc=
-      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-    // ── 1. Ambil semua PDF di library ──
-    const{data:docsRaw}=await sb.from('rtlh_dokumen_kabupaten')
-      .select('id,path,judul').limit(200);
+    // -- 1. Ambil semua PDF --
+    const{data:docsRaw}=await sb.from('rtlh_dokumen_kabupaten').select('id,path,judul').limit(200);
     const allDocs=(docsRaw||[]).filter(d=>(d.path||'').toLowerCase().endsWith('.pdf'));
 
-    // ── 2. Ambil semua link dokumen→BNBA ──
+    // -- 2. Link dokumen -> BNBA --
     const{data:links}=await sb.from('rtlh_dokumen_link').select('rtlh_id,dokumen_id');
     const dokToRtlh={};
     (links||[]).forEach(l=>{
@@ -10268,18 +10265,17 @@ async function scanMassalDokLib(){
       dokToRtlh[l.dokumen_id].push(l.rtlh_id);
     });
 
-    // ── 3. Ambil NIK semua BNBA ──
+    // -- 3. NIK semua BNBA --
     const allRtlhIds=[...new Set((links||[]).map(l=>l.rtlh_id))];
     const nikMap={};
     for(let i=0;i<allRtlhIds.length;i+=500){
       const{data:rows}=await sb.from('rtlh').select('id,nik').in('id',allRtlhIds.slice(i,i+500));
       (rows||[]).forEach(r=>{ if(r.nik) nikMap[r.id]=String(r.nik).trim(); });
     }
-    console.log('[SCAN] links:' + (links||[]).length + ' docs:' + allDocs.length + ' niks:' + Object.keys(nikMap).length);
+    console.log('[SCAN] links:'+( links||[]).length+' docs:'+allDocs.length+' niks:'+Object.keys(nikMap).length);
 
-    // ── 4. Ambil yang sudah di-scan (skip) ──
-    const{data:done}=await sb.from('rtlh_pdf_scan_results')
-      .select('rtlh_id,url_hash,nik_hash').limit(9999);
+    // -- 4. Sudah di-scan sebelumnya --
+    const{data:done}=await sb.from('rtlh_pdf_scan_results').select('rtlh_id,url_hash,nik_hash').limit(9999);
     const doneSet=new Set((done||[]).map(s=>s.rtlh_id+'|'+s.url_hash+'|'+s.nik_hash));
 
     let docIdx=0, totalFound=0, totalRows=[];
@@ -10292,93 +10288,92 @@ async function scanMassalDokLib(){
       const url=sb.storage.from('dokumen-kab').getPublicUrl(doc.path).data.publicUrl;
       const urlH=_urlHash(url);
 
-      // Filter yang belum di-scan
       const todo=rtlhIds.filter(rid=>{
         const nik=nikMap[rid]; if(!nik) return false;
         return !doneSet.has(rid+'|'+urlH+'|'+_urlHash(nik));
       });
-      if(!todo.length){
-        show(`✓ Skip ${docIdx}/${allDocs.length}: ${doc.judul||''}`);
-        continue;
-      }
+      if(!todo.length){ show('Skip '+docIdx+'/'+allDocs.length+': '+doc.judul); continue; }
 
-      show(`📄 ${docIdx}/${allDocs.length}: ${doc.judul||''} — buka PDF...`);
+      show('[PDF] '+docIdx+'/'+allDocs.length+': '+doc.judul+' ('+todo.length+' NIK)...');
 
-      // ── 5. Load PDF & extract text layer semua halaman ──
-      // TANPA OCR — text layer saja, sangat cepat
-      let pageData=[];
+      // -- 5. Download PDF sebagai base64 --
+      let pdfBase64='';
       try{
-        const pdf=await pdfjsLib.getDocument({url,withCredentials:false}).promise;
-        for(let p=1;p<=pdf.numPages;p++){
-          const page=await pdf.getPage(p);
-          const vp=page.getViewport({scale:1.5});
-          const tc=await page.getTextContent();
-          // Gabung semua text items ke string
-          const rawText=tc.items.map(i=>i.str).join('');
-          const normText=_ocrNorm(rawText);
-          pageData.push({p, rawText, normText, items:tc.items, vpH:vp.height, scale:1.5});
-        }
+        const resp=await fetch(url);
+        if(!resp.ok) throw new Error('HTTP '+resp.status);
+        const buf=await resp.arrayBuffer();
+        const bytes=new Uint8Array(buf);
+        let bin='';
+        // Konversi ke base64 efisien
+        const chunk=8192;
+        for(let i=0;i<bytes.length;i+=chunk)
+          bin+=String.fromCharCode(...bytes.subarray(i,i+chunk));
+        pdfBase64=btoa(bin);
       }catch(e){
-        show(`⚠ Gagal buka: ${doc.judul||''}`);
-        console.warn('PDF load error:',e.message);
+        show('[WARN] Gagal download: '+doc.judul);
+        console.warn('Download error:',e.message);
         continue;
       }
 
-      show(`🔍 ${docIdx}/${allDocs.length}: ${doc.judul||''} — cari ${todo.length} NIK...`);
-      console.log('[SCAN] dok:'+doc.judul+' pages:'+pageData.length+' text:'+pageData.filter(p=>p.normText.length>10).length+' todo:'+todo.length);
+      // -- 6. Kirim ke Claude API -- baca semua NIK sekaligus --
+      show('[AI] '+docIdx+'/'+allDocs.length+': '+doc.judul+' -- AI scan NIK...');
+      const nikList=todo.map(rid=>nikMap[rid]).filter(Boolean);
+      const prompt='Cari NIK berikut di PDF ini. Jawab HANYA JSON: [{"nik":"...","halaman":5},...] halaman=null jika tidak ada.\n'+nikList.join('\n');
 
-      // ── 6. Cari setiap NIK di semua halaman (text layer only) ──
+      let claudeResult=[];
+      try{
+        const aiResp=await fetch('https://api.anthropic.com/v1/messages',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({
+            model:'claude-sonnet-4-20250514',
+            max_tokens:2000,
+            messages:[{role:'user',content:[
+              {type:'document',source:{type:'base64',media_type:'application/pdf',data:pdfBase64}},
+              {type:'text',text:prompt}
+            ]}]
+          })
+        });
+        const aiData=await aiResp.json();
+        const txt=(aiData.content||[]).find(c=>c.type==='text')?.text||'';
+        // Parse JSON dari response
+        const match=txt.match(/\[[\s\S]*\]/);
+        if(match) claudeResult=JSON.parse(match[0]);
+        console.log('[AI] '+doc.judul+' result:',claudeResult.length,'NIK processed');
+      }catch(e){
+        console.warn('[AI] Error:',e.message);
+        // Fallback ke text layer jika AI gagal
+        claudeResult=nikList.map(n=>({nik:n,halaman:null}));
+      }
+
+      // -- 7. Simpan hasil --
       for(const rtlhId of todo){
         const nik=nikMap[rtlhId]; if(!nik) continue;
-        const nikH=_urlHash(nik);
-        const pages=[], highlights=[];
+        const aiItem=claudeResult.find(r=>String(r.nik).replace(/\s/g,'')===nik||_nikMatch(String(r.nik),nik).match);
+        const halaman=aiItem?.halaman;
+        const pages=halaman?[halaman]:[];
+        const highlights=halaman?[{page:halaman,y0pct:0.1,y1pct:0.9,exact:true}]:[];
 
-        for(const pg of pageData){
-          // Quick check: apakah digit NIK ada di halaman ini?
-          const hasNik=pg.normText.includes(nik)||_nikMatch(pg.rawText,nik).match;
-          if(!hasNik) continue;
-          console.log('[SCAN] NIK '+nik+' pg'+pg.p+' normLen:'+pg.normText.length);
-          // Cari lokasi baris
-          const res=_searchNikInTextLayer({items:pg.items},nik,pg.vpH,pg.scale);
-          if(res){
-            pages.push(pg.p);
-            highlights.push({page:pg.p,...res});
-          } else {
-            console.log('[SCAN] NIK in page but no loc found');
-          }
-        }
-
-        // Tandai done (meski tidak ditemukan, agar tidak di-scan ulang)
-        doneSet.add(rtlhId+'|'+urlH+'|'+nikH);
-        if(pages.length){ totalFound++; console.log('[SCAN] FOUND NIK '+nik+' hal:'+pages); }
-        else { console.log('[SCAN] MISS NIK '+nik); }
-
-        // Simpan ke memory cache
+        if(pages.length) totalFound++;
         _pdfOcrCache.set(url+'|'+nik,{pages,highlights});
+        doneSet.add(rtlhId+'|'+urlH+'|'+_urlHash(nik));
 
-        // Kumpulkan untuk batch upsert
         totalRows.push({
-          rtlh_id:parseInt(rtlhId), url_hash:urlH, nik_hash:nikH,
-          pages_found:pages, highlights,
-          scanned_at:new Date().toISOString()
+          rtlh_id:parseInt(rtlhId),url_hash:urlH,nik_hash:_urlHash(nik),
+          pages_found:pages,highlights,scanned_at:new Date().toISOString()
         });
 
-        // Batch upsert tiap 50 baris
         if(totalRows.length>=50){
-          await sb.from('rtlh_pdf_scan_results')
-            .upsert(totalRows,{onConflict:'rtlh_id,url_hash,nik_hash'});
+          await sb.from('rtlh_pdf_scan_results').upsert(totalRows,{onConflict:'rtlh_id,url_hash,nik_hash'});
           totalRows=[];
         }
       }
     }
 
-    // Simpan sisa
-    if(totalRows.length){
-      await sb.from('rtlh_pdf_scan_results')
-        .upsert(totalRows,{onConflict:'rtlh_id,url_hash,nik_hash'});
-    }
+    if(totalRows.length)
+      await sb.from('rtlh_pdf_scan_results').upsert(totalRows,{onConflict:'rtlh_id,url_hash,nik_hash'});
 
-    toast(`✅ Scan selesai: ${docIdx} dok, ${totalFound} NIK ditemukan`,'success');
+    toast('[OK] Selesai: '+docIdx+' dok, '+totalFound+' NIK ditemukan','success');
   }catch(e){
     console.error('Scan massal:',e);
     toast('Error: '+e.message,'error');
@@ -10387,6 +10382,7 @@ async function scanMassalDokLib(){
     if(prog) prog.style.display='none';
   }
 }
+
 
 function _pdfSetNikBadge(type, text){
   const badge=document.getElementById('pdfNikBadge');
