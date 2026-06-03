@@ -6275,6 +6275,7 @@ function renderDokLib(docs){
       <div style="display:flex;display:flex;gap:5px;flex-shrink:0;align-items:center">
         ${_linkDokRtlhId?`<button onclick="linkDokToPenerima('${d.id}')" title="Jadikan Bukti Dukung untuk BNBA yang sedang dibuka" style="padding:0 10px;height:28px;border-radius:7px;background:#FEF3C7;color:#92400E;border:1.5px solid #FCD34D;cursor:pointer;font-size:.62rem;font-weight:700;font-family:inherit;display:flex;align-items:center;gap:3px;white-space:nowrap"><i class="fas fa-link" style="color:#EAB308;font-size:.6rem"></i>+ Bukti Dukung</button>`:''}
         <a href="${url}" target="_blank" title="Buka" style="width:30px;height:30px;border-radius:7px;background:var(--blue-bg);color:var(--blue);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:.75rem"><i class="fas fa-external-link-alt"></i></a>
+        <button onclick="navigator.clipboard.writeText('${url}').then(()=>toast('URL disalin','info'))" title="Salin URL PDF untuk diagnostic" style="width:30px;height:30px;border-radius:7px;background:#F0FDF4;color:#16A34A;border:none;cursor:pointer;font-size:.75rem"><i class="fas fa-copy"></i></button>
         <button onclick="lihatPenerimaDok('${d.id}','${(d.judul||'').replace(/'/g,"\'")}')" title="Lihat penerima" style="width:30px;height:30px;border-radius:7px;background:#F5F3FF;color:#7C3AED;border:none;cursor:pointer;font-size:.75rem"><i class="fas fa-users"></i></button>
         ${isAdmin?`<button onclick="openEditDokLib('${d.id}')" title="Edit" style="width:30px;height:30px;border-radius:7px;background:#FFF7ED;color:#EA580C;border:none;cursor:pointer;font-size:.75rem"><i class="fas fa-edit"></i></button>`:''}
         ${isSuperAdmin()?`<button onclick="deleteDokLib('${d.id}','${d.path}')" title="Hapus" style="width:30px;height:30px;border-radius:7px;background:var(--danger-bg);color:var(--danger);border:none;cursor:pointer;font-size:.75rem"><i class="fas fa-trash"></i></button>`:''}
@@ -9878,18 +9879,17 @@ function _hlRow(svg, canvasH, y0pct, y1pct, exact){
 
 // Preprocess canvas untuk OCR
 function _enhanceCanvas(src){
-  const scale=Math.min(3,4000/Math.max(src.width,src.height));
+  // Grayscale saja - threshold merusak teks tipis. Tesseract handle sendiri.
   const dst=document.createElement('canvas');
-  dst.width=Math.round(src.width*scale);
-  dst.height=Math.round(src.height*scale);
+  dst.width=src.width;
+  dst.height=src.height;
   const ctx=dst.getContext('2d');
-  ctx.drawImage(src,0,0,dst.width,dst.height);
+  ctx.drawImage(src,0,0);
   const id=ctx.getImageData(0,0,dst.width,dst.height);
   const d=id.data;
   for(let i=0;i<d.length;i+=4){
     const g=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
-    const v=g<160?0:255;
-    d[i]=d[i+1]=d[i+2]=v; d[i+3]=255;
+    d[i]=d[i+1]=d[i+2]=g; d[i+3]=255;
   }
   ctx.putImageData(id,0,0);
   return dst;
@@ -9897,32 +9897,29 @@ function _enhanceCanvas(src){
 
 // Scan satu halaman PDF
 async function _scanPage(page, nik, worker){
-  const scale=1.5;
-  const vp=page.getViewport({scale});
+  // Text layer dulu (cepat) - tapi PDF scan biasanya rusak
+  const tcVp=page.getViewport({scale:1.5});
   const tc=await page.getTextContent();
-  const allTxt=tc.items.map(i=>i.str).join('');
-  const allNorm=_ocrNorm(allTxt);
-
-  // Coba text layer dulu
-  const tRes=_searchNikInTextLayer(tc,nik,vp.height,scale);
+  const tRes=_searchNikInTextLayer(tc,nik,tcVp.height,1.5);
   if(tRes) return {found:true,...tRes,method:'text'};
 
-  // Fallback OCR
+  // OCR - render resolusi tinggi (scale 2.5 ~ 180dpi, cukup untuk NIK)
   if(!worker) return {found:false};
+  const scale=2.5;
+  const vp=page.getViewport({scale});
   const canvas=document.createElement('canvas');
   canvas.width=vp.width; canvas.height=vp.height;
   await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
   const {data}=await worker.recognize(_enhanceCanvas(canvas));
   const pm=_nikMatch(data.text,nik);
   if(!pm.match) return {found:false};
-  // Cari baris
+  // Cari baris yang match
   if(data.lines){
     for(const line of data.lines){
       if(_nikMatch(line.text,nik).match){
-        const sf=_enhanceCanvas(canvas).height/canvas.height;
         return {found:true,exact:pm.exact,method:'ocr',
-          y0pct:(line.bbox.y0/sf)/canvas.height,
-          y1pct:(line.bbox.y1/sf)/canvas.height};
+          y0pct:line.bbox.y0/canvas.height,
+          y1pct:line.bbox.y1/canvas.height};
       }
     }
   }
@@ -9947,7 +9944,7 @@ async function _pdfRunOcr(nikFoundSoFar){
   let worker=null;
   try{
     worker=await Tesseract.createWorker('eng',1,{logger:m=>{if(m.status==='recognizing text')show('OCR '+(m.progress*100|0)+'%...');}});
-    await worker.setParameters({tessedit_pageseg_mode:'11'});
+    await worker.setParameters({tessedit_pageseg_mode:'4'});
     for(let i=0;i<canvases.length;i++){
       const canvas=canvases[i];
       const wrap=canvas.closest('[id^="pdfPageWrap_"]');
@@ -10120,42 +10117,103 @@ async function scanMassalDokLib(){
       if(!todo.length){show('Skip '+docIdx+'/'+allDocs.length+': '+doc.judul);continue;}
 
       show('Buka '+docIdx+'/'+allDocs.length+': '+doc.judul);
+      console.log('[SCAN] URL: '+url);
 
-      // Load PDF & extract text semua halaman
-      let pageData=[];
+      // Load PDF
+      let pdf;
       try{
         if(!window.pdfjsLib) throw new Error('pdfjsLib not loaded');
-        const pdf=await pdfjsLib.getDocument({url,withCredentials:false}).promise;
-        for(let p=1;p<=pdf.numPages;p++){
-          const page=await pdf.getPage(p);
-          const vp=page.getViewport({scale:1.5});
-          const tc=await page.getTextContent();
-          const rawText=tc.items.map(i=>i.str).join('');
-          pageData.push({p,items:tc.items,rawText,normText:_ocrNorm(rawText),vpH:vp.height,scale:1.5});
-        }
-        console.log('[SCAN] '+doc.judul+' pages:'+pageData.length+' textPages:'+pageData.filter(p=>p.normText.length>20).length);
+        pdf=await pdfjsLib.getDocument({url,withCredentials:false}).promise;
       }catch(e){
-        show('Gagal: '+doc.judul);
+        show('Gagal buka: '+doc.judul);
         console.warn('[SCAN] load error:',e.message);
         continue;
       }
 
-      show('Scan '+docIdx+'/'+allDocs.length+': '+doc.judul+' ('+todo.length+' NIK)');
+      // OCR semua halaman SEKALI -> kumpulkan teks per halaman
+      // (text layer PDF scan rusak, jadi wajib OCR)
+      let worker=null;
+      const pageOcr=[]; // {p, ocrText, ocrNorm, lines:[{text,y0pct,y1pct}]}
+      try{
+        if(!window.Tesseract) throw new Error('Tesseract not loaded');
+        worker=await Tesseract.createWorker('eng',1,{
+          logger:m=>{if(m.status==='recognizing text')show('OCR '+doc.judul+' '+(m.progress*100|0)+'%');}
+        });
+        await worker.setParameters({tessedit_pageseg_mode:'4'});
 
-      // Cari setiap NIK di semua halaman
+        for(let p=1;p<=pdf.numPages;p++){
+          // Cek text layer dulu - kalau ada NIK valid, pakai itu (lebih cepat)
+          const page=await pdf.getPage(p);
+          const tcVp=page.getViewport({scale:1.5});
+          const tc=await page.getTextContent();
+          const tlText=tc.items.map(i=>i.str).join('');
+          const tlHas16=/\d{16}/.test(_ocrNorm(tlText));
+
+          if(tlHas16){
+            // Text layer punya NIK valid - pakai
+            const lines=[];
+            const lineMap={};
+            tc.items.forEach(it=>{
+              if(!it.str.trim())return;
+              const ty=Math.round(it.transform[5]);
+              const key=Object.keys(lineMap).find(k=>Math.abs(k-ty)<8);
+              if(key)lineMap[key].items.push(it); else lineMap[ty]={ty,items:[it]};
+            });
+            Object.values(lineMap).forEach(ln=>{
+              const txt=ln.items.map(i=>i.str).join('');
+              const fh=ln.items.reduce((mx,it)=>Math.max(mx,Math.abs(it.transform[3])||10),10);
+              const yc=tcVp.height-ln.ty*1.5;
+              lines.push({text:txt,y0pct:Math.max(0,(yc-fh*1.5)/tcVp.height),y1pct:Math.min(1,(yc+fh*0.5)/tcVp.height)});
+            });
+            pageOcr.push({p,lines,src:'text'});
+          }else{
+            // OCR halaman ini
+            show('OCR '+doc.judul+' hal '+p+'/'+pdf.numPages);
+            const scale=2.5;
+            const vp=page.getViewport({scale});
+            const canvas=document.createElement('canvas');
+            canvas.width=vp.width; canvas.height=vp.height;
+            await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
+            const {data}=await worker.recognize(_enhanceCanvas(canvas));
+            const lines=(data.lines||[]).map(ln=>({
+              text:ln.text,
+              y0pct:ln.bbox.y0/canvas.height,
+              y1pct:ln.bbox.y1/canvas.height
+            }));
+            pageOcr.push({p,lines,src:'ocr'});
+          }
+        }
+        console.log('[SCAN] '+doc.judul+' pages OCR: '+pageOcr.map(pg=>pg.p+':'+pg.src).join(' '));
+      }catch(e){
+        console.warn('[SCAN] OCR error:',e.message);
+        if(worker)try{await worker.terminate();}catch(x){}
+        continue;
+      }
+      if(worker)try{await worker.terminate();}catch(x){}
+
+      show('Cocok NIK '+docIdx+'/'+allDocs.length+': '+doc.judul+' ('+todo.length+' NIK)');
+
+      // Cari setiap NIK di hasil OCR semua halaman
       for(const rtlhId of todo){
         const nik=nikMap[rtlhId]; if(!nik) continue;
         const nikH=_urlHash(nik);
         const pages=[],highlights=[];
 
-        for(const pg of pageData){
-          // Quick check
-          if(!pg.normText.includes(nik)&&!_nikMatch(pg.rawText,nik).match) continue;
-          const res=_searchNikInTextLayer({items:pg.items},nik,pg.vpH,pg.scale);
-          if(res){pages.push(pg.p);highlights.push({page:pg.p,...res});}
+        for(const pg of pageOcr){
+          // Gabung semua teks halaman
+          const pageText=pg.lines.map(l=>l.text).join(' ');
+          if(!_nikMatch(pageText,nik).match) continue;
+          // Cari baris spesifik
+          let hl=null;
+          for(const ln of pg.lines){
+            if(_nikMatch(ln.text,nik).match){
+              hl={page:pg.p,y0pct:ln.y0pct,y1pct:ln.y1pct,exact:true};
+              break;
+            }
+          }
+          if(!hl) hl={page:pg.p,y0pct:0,y1pct:0.05,exact:false};
+          pages.push(pg.p); highlights.push(hl);
         }
-
-        console.log('[SCAN] NIK '+nik+': found='+pages.length+' pages='+JSON.stringify(pages));
 
         if(pages.length) totalFound++;
         _pdfOcrCache.set(url+'|'+nik,{pages,highlights});
@@ -10168,6 +10226,7 @@ async function scanMassalDokLib(){
           totalRows=[];
         }
       }
+      console.log('[SCAN] '+doc.judul+' done, found so far: '+totalFound);
     }
 
     if(totalRows.length)
