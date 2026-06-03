@@ -950,6 +950,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
         <div style="display:flex;align-items:center;gap:6px;font-size:.72rem"><div style="width:12px;height:12px;border-radius:50%;background:#16A34A;flex-shrink:0"></div>Layak Huni</div>
         <div style="display:flex;align-items:center;gap:6px;font-size:.72rem"><div style="width:12px;height:12px;border-radius:50%;background:#DC2626;flex-shrink:0"></div>RTLH</div>
         <div style="display:flex;align-items:center;gap:6px;font-size:.72rem"><div style="width:12px;height:12px;border-radius:50%;background:#7C3AED;flex-shrink:0"></div>Ket. Lain</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:.72rem"><div style="width:12px;height:12px;border-radius:50%;background:#EAB308;border:2px solid #92400E;flex-shrink:0"></div>★ Berita Acara</div>
       </div>
     </div>
   </div>
@@ -1571,6 +1572,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
 <script>
 // ══════════════════════════════════════════════════
@@ -1814,7 +1816,7 @@ async function loadReport(){
     const pages=Math.ceil((count||0)/pageSize);
     const results=await Promise.all(
       Array.from({length:pages},(_,p)=>
-        sb.from('rtlh').select('kec,desa,status_rtlh,desil,jenis_bantuan,tahun_bantuan').range(p*pageSize,(p+1)*pageSize-1)
+        sb.from('rtlh').select('kec,desa,status_rtlh,status_batal,desil,jenis_bantuan,tahun_bantuan').range(p*pageSize,(p+1)*pageSize-1)
       )
     );
     _rpData=results.flatMap(r=>r.data||[]);
@@ -1834,7 +1836,7 @@ async function _refreshReportBackground(){
     const pages=Math.ceil((count||0)/pageSize);
     const results=await Promise.all(
       Array.from({length:pages},(_,p)=>
-        sb.from('rtlh').select('kec,desa,status_rtlh,desil,jenis_bantuan,tahun_bantuan').range(p*pageSize,(p+1)*pageSize-1)
+        sb.from('rtlh').select('kec,desa,status_rtlh,status_batal,desil,jenis_bantuan,tahun_bantuan').range(p*pageSize,(p+1)*pageSize-1)
       )
     );
     _rpData=results.flatMap(r=>r.data||[]);
@@ -2284,15 +2286,24 @@ function statusKategori(s){
   // Keterangan Lain — semua yang tidak cocok di atas
   return 'Keterangan Lain';
 }
-// statusRow: sama seperti statusKategori, tapi jika jenis_bantuan berisi
-// RTLH, BSPS, atau DD maka otomatis dianggap Layak Huni
+// statusRow: sama seperti statusKategori, tapi dengan dua aturan tambahan:
+// 1. Jika status_rtlh = 'SK Dibatalkan' ATAU status_batal terisi (bukan '-') → Keterangan Lain
+//    (berlaku meski jenis_bantuan berisi RTLH/BSPS/DD)
+// 2. Jika jenis_bantuan berisi RTLH/BSPS/DD dan TIDAK dibatalkan → Layak Huni
 function statusRow(r){
-  if(r&&r.jenis_bantuan){
+  if(!r) return statusKategori(null);
+  // Prioritas 1: SK Dibatalkan → selalu Keterangan Lain
+  const sr = String(r.status_rtlh||'').toUpperCase().trim();
+  const sb = String(r.status_batal||'').trim();
+  const isBatal = sr==='SK DIBATALKAN' || (sb && sb!=='-' && sb!=='');
+  if(isBatal) return 'Keterangan Lain';
+  // Prioritas 2: Ada jenis_bantuan RTLH/BSPS/DD → Layak Huni
+  if(r.jenis_bantuan){
     const jb=String(r.jenis_bantuan).toUpperCase().trim();
     if(jb.includes('RTLH')||jb.includes('BSPS')||jb==='DD'||jb.startsWith('DD ')||jb.includes(' DD')||jb.includes('DANA DESA'))
       return 'Layak Huni';
   }
-  return statusKategori(r?r.status_rtlh:null);
+  return statusKategori(r.status_rtlh);
 }
 function isLayakHuni(r){return statusRow(r)==='Layak Huni';}
 function isRTLH(r){return statusRow(r)==='RTLH';}
@@ -2310,7 +2321,7 @@ async function loadGlobalStats(){
     const pages=Math.ceil((count||0)/pageSize);
     const results=await Promise.all(
       Array.from({length:pages},(_,p)=>
-        sb.from('rtlh').select('kec,desa,status_rtlh,desil,nik,jenis_bantuan').range(p*pageSize,(p+1)*pageSize-1)
+        sb.from('rtlh').select('kec,desa,status_rtlh,status_batal,desil,nik,jenis_bantuan').range(p*pageSize,(p+1)*pageSize-1)
       )
     );
     const data=results.flatMap(r=>r.data||[]);
@@ -3771,6 +3782,164 @@ function applyBoundary(kecName){
 }
 
 // ══════════════════════════════════════════════════
+// BERITA ACARA (BA) — UPLOAD & NIK HIGHLIGHT
+// ══════════════════════════════════════════════════
+
+// Set NIK yang ditemukan di BA, format: Set of string '16digit'
+let _baNIKs = new Set();
+
+function triggerBAUpload(){
+  const inp = document.getElementById('baFileInput');
+  if(inp){ inp.value=''; inp.click(); }
+}
+
+async function handleBAFile(file){
+  if(!file) return;
+  toast('<i class="fas fa-spinner fa-spin"></i> Membaca file BA...','info');
+  try {
+    const ext = file.name.split('.').pop().toLowerCase();
+    let text = '';
+    if(ext === 'pdf'){
+      text = await extractTextFromPDF(file);
+    } else if(ext === 'xlsx' || ext === 'xls'){
+      text = await extractTextFromExcel(file);
+    } else if(ext === 'docx'){
+      text = await extractTextFromDocx(file);
+    } else {
+      toast('Format tidak didukung. Gunakan PDF, Excel, atau Word.','error'); return;
+    }
+    const niks = extractNIKsFromText(text);
+    if(!niks.size){
+      toast('Tidak ada NIK (16 digit) ditemukan di file BA','error'); return;
+    }
+    _baNIKs = niks;
+    applyBAHighlight();
+  } catch(e){
+    console.error('BA parse error:',e);
+    toast('Gagal membaca file: '+e.message,'error');
+  }
+}
+
+// Extract teks dari PDF menggunakan pdf.js
+async function extractTextFromPDF(file){
+  // Set worker
+  if(window.pdfjsLib){
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  } else {
+    throw new Error('pdf.js belum dimuat');
+  }
+  const ab = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({data: ab}).promise;
+  let fullText = '';
+  for(let p = 1; p <= pdf.numPages; p++){
+    const page = await pdf.getPage(p);
+    const tc = await page.getTextContent();
+    fullText += tc.items.map(i=>i.str).join(' ') + '\n';
+  }
+  return fullText;
+}
+
+// Extract teks dari Excel (baca semua cell sebagai string)
+async function extractTextFromExcel(file){
+  if(!window.XLSX) throw new Error('XLSX belum dimuat');
+  const ab = await file.arrayBuffer();
+  const wb = XLSX.read(ab, {type:'array'});
+  let text = '';
+  wb.SheetNames.forEach(sn=>{
+    const ws = wb.Sheets[sn];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:false, defval:''});
+    rows.forEach(row=>{ text += row.join(' ') + '\n'; });
+  });
+  return text;
+}
+
+// Extract teks dari DOCX (unzip + baca word/document.xml)
+async function extractTextFromDocx(file){
+  // Docx adalah ZIP; gunakan DOMParser pada XML
+  const ab = await file.arrayBuffer();
+  // Coba pakai JSZip jika ada, fallback ke raw regex
+  if(window.JSZip){
+    const zip = await JSZip.loadAsync(ab);
+    const xmlFile = zip.file('word/document.xml');
+    if(!xmlFile) throw new Error('Bukan file DOCX valid');
+    const xml = await xmlFile.async('string');
+    return xml.replace(/<[^>]+>/g,' ');
+  }
+  // Fallback: cari 16-digit dari raw bytes (ArrayBuffer → string)
+  const bytes = new Uint8Array(ab);
+  let s = '';
+  for(let i=0;i<bytes.length;i++) s+=String.fromCharCode(bytes[i]);
+  return s;
+}
+
+// Regex cari semua angka 16 digit (NIK Indonesia)
+// NIK dimulai dengan kode provinsi 11-99 (bukan 00, 01-10 tidak ada)
+function extractNIKsFromText(text){
+  const set = new Set();
+  // Match 16 digit berurutan, tidak dikelilingi digit lain
+  const re = /(?<![0-9])([0-9]{16})(?![0-9])/g;
+  let m;
+  while((m = re.exec(text)) !== null){
+    const nik = m[1];
+    // Validasi minimal: 2 digit pertama 11-99, digit ke-7 adalah 0-7 (tanggal lahir)
+    const prov = parseInt(nik.substring(0,2));
+    if(prov >= 11 && prov <= 99){
+      set.add(nik);
+    }
+  }
+  return set;
+}
+
+function applyBAHighlight(){
+  if(!_baNIKs.size) return;
+
+  // Cari match di data aktif
+  const matched = brFeatures.filter(r => r.nik && _baNIKs.has(String(r.nik).trim()));
+  const total = _baNIKs.size;
+  const found = matched.length;
+
+  // Update badge
+  const badge = document.getElementById('baBadge');
+  const badgeText = document.getElementById('baBadgeText');
+  const btnClear = document.getElementById('btnClearBA');
+  if(badge){ badge.style.display='block'; }
+  if(badgeText){
+    badgeText.innerHTML = ` BA: <strong>${total}</strong> NIK ditemukan di file · <strong>${found}</strong> cocok di data kecamatan ini`;
+  }
+  if(btnClear) btnClear.style.display='';
+
+  // Re-render sidebar list (highlight via _baNIKs)
+  renderSidebarList();
+
+  // Re-render markers peta
+  updateMap();
+
+  // Auto-scroll ke item pertama yang match
+  if(found > 0){
+    setTimeout(()=>{
+      const firstId = 'ri_' + matched[0].id;
+      const el = document.getElementById(firstId);
+      if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
+    }, 300);
+    toast('<i class="fas fa-highlighter" style="color:#EAB308"></i> '+found+' data ditemukan & di-highlight','success');
+  } else {
+    toast('NIK dari BA tidak ditemukan di data kecamatan ini','error');
+  }
+}
+
+function clearBAHighlight(){
+  _baNIKs = new Set();
+  const badge = document.getElementById('baBadge');
+  const btnClear = document.getElementById('btnClearBA');
+  if(badge) badge.style.display='none';
+  if(btnClear) btnClear.style.display='none';
+  renderSidebarList();
+  updateMap();
+  toast('Highlight BA dihapus','info');
+}
+
+// ══════════════════════════════════════════════════
 // ══════════════════════════════════════════════════
 // SCORING (berbasis Desil murni)
 // ══════════════════════════════════════════════════
@@ -3807,6 +3976,21 @@ function renderSidebar(){
         <div style="font-size:.88rem;font-weight:800;color:var(--gray-900)">${kecName} — BNBA RTLH</div>
         <div style="font-size:.65rem;color:var(--gray-500);margin-top:2px" id="sidebarCount">${brAll.length} data terdaftar</div>
       </div>
+      <div style="display:flex;gap:5px;align-items:center">
+        <button id="btnUploadBA" onclick="triggerBAUpload()"
+          style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;background:linear-gradient(135deg,#EAB308,#CA8A04);color:#fff;border:none;font-size:.68rem;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 2px 6px rgba(202,138,4,.3);transition:all .15s"
+          title="Upload Berita Acara PDF — NIK akan di-highlight kuning">
+          <i class="fas fa-file-pdf"></i> Upload BA
+        </button>
+        <button id="btnClearBA" onclick="clearBAHighlight()" style="display:none;padding:5px 8px;border-radius:8px;background:#FEF3C7;border:1.5px solid #FCD34D;color:#92400E;font-size:.65rem;font-weight:700;cursor:pointer;font-family:inherit" title="Hapus highlight BA">
+          <i class="fas fa-times"></i> Clear
+        </button>
+        <input type="file" id="baFileInput" accept=".pdf,.xlsx,.xls,.docx" style="display:none" onchange="handleBAFile(this.files[0])">
+      </div>
+    </div>
+    <div id="baBadge" style="display:none;margin-bottom:8px;padding:6px 10px;border-radius:8px;background:#FEF3C7;border:1.5px solid #FCD34D;font-size:.67rem;color:#92400E;font-weight:600">
+      <i class="fas fa-highlighter" style="color:#EAB308"></i>
+      <span id="baBadgeText"></span>
     </div>
     <div class="kec-dashboard" id="kecDashboard"></div>
 
@@ -4096,12 +4280,18 @@ function renderSidebarList(){
           const ico=kat==='Layak Huni'?'home':kat==='Keterangan Lain'?'question-circle':'house-damage';
           const desilNum=String(r.desil||'').match(/\d+/)?.[0]||'';
           const desilColor=desilNum?getDesilColor(desilNum):'#94A3B8';
+          // BA Highlight: cek apakah NIK ada di _baNIKs
+          const isBAMatch = _baNIKs && r.nik && _baNIKs.has(String(r.nik).trim());
+          const itemBg = isBAMatch ? '#FEFCE8' : '#fff';
+          const itemBorder = isBAMatch ? '2px solid #EAB308' : '1px solid #E2E8F0';
+          const baTag = isBAMatch ? `<span style="font-size:.55rem;font-weight:800;color:#92400E;background:#FEF3C7;border:1px solid #FCD34D;padding:1px 6px;border-radius:99px;white-space:nowrap"><i class="fas fa-highlighter" style="color:#EAB308"></i> BA</span>` : '';
           return`<div class="rtlh-item" id="ri_${r.id}"
             onclick="selectItem(${r.id})"
-            style="margin:3px 0;border-radius:8px;border:1px solid #E2E8F0;background:#fff;padding:8px 10px;cursor:pointer;transition:all .15s">
+            style="margin:3px 0;border-radius:8px;border:${itemBorder};background:${itemBg};padding:8px 10px;cursor:pointer;transition:all .15s${isBAMatch?';box-shadow:0 0 0 3px rgba(234,179,8,.2)':''}">
+            ${isBAMatch?`<div style="font-size:.6rem;font-weight:700;color:#92400E;margin-bottom:5px;display:flex;align-items:center;gap:4px"><i class="fas fa-file-pdf" style="color:#EAB308"></i> Terdaftar dalam Berita Acara</div>`:''}
             <div style="display:flex;align-items:center;gap:8px">
-              <div style="width:32px;height:32px;border-radius:8px;background:${sc}18;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative">
-                <i class="fas fa-${ico}" style="color:${sc};font-size:.78rem"></i>
+              <div style="width:32px;height:32px;border-radius:8px;background:${isBAMatch?'#FEF3C7':sc+'18'};border:${isBAMatch?'2px solid #EAB308':'none'};display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative">
+                <i class="fas fa-${isBAMatch?'star':ico}" style="color:${isBAMatch?'#EAB308':sc};font-size:.78rem"></i>
                 <span style="position:absolute;top:-5px;left:-5px;background:#1B6CA8;color:#fff;font-size:.48rem;font-weight:800;min-width:15px;height:15px;border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0 3px;line-height:1">${idx+1}</span>
               </div>
               <div style="flex:1;min-width:0">
@@ -4109,6 +4299,7 @@ function renderSidebarList(){
                 <div style="font-size:.62rem;color:#94A3B8;margin-top:1px">${showNIK(r.nik)}${desilNum?` · <span style="color:${desilColor}">D${desilNum}</span>`:''}</div>
               </div>
               <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">
+                ${baTag}
                 <span style="font-size:.58rem;font-weight:700;color:${sc};background:${sc}18;padding:2px 7px;border-radius:99px;white-space:nowrap">${kat}</span>
                 ${r.jenis_bantuan?`<span style="font-size:.55rem;color:#64748B;background:#F1F5F9;padding:1px 5px;border-radius:99px">${r.jenis_bantuan}${r.tahun_bantuan?' '+r.tahun_bantuan:''}</span>`:''}
               </div>
@@ -4144,18 +4335,20 @@ function updateMap(){
 
     const kat=statusRow(r);
     const markerColor=STATUS_COLORS[kat]||'#94A3B8';
+    // BA Highlight: marker kuning + ring jika NIK ada di BA
+    const isBAMatch = _baNIKs && r.nik && _baNIKs.has(String(r.nik).trim());
     const mk=L.circleMarker([lat,lng],{
-      radius:7,
-      fillColor:markerColor,
-      color:'#fff',
-      weight:1.5,
-      fillOpacity:.85,
+      radius: isBAMatch ? 10 : 7,
+      fillColor: isBAMatch ? '#EAB308' : markerColor,
+      color: isBAMatch ? '#92400E' : '#fff',
+      weight: isBAMatch ? 2.5 : 1.5,
+      fillOpacity: isBAMatch ? 1 : .85,
     });
     mk.on('click',()=>selectItem(r.id));
-    mk.bindTooltip(
-      `<b>${showNama(r.kep_kk)}</b><br>${dn(r.desa)} · <span style="color:${markerColor}">${kat}</span>`,
-      {direction:'top',offset:[0,-8]}
-    );
+    const tooltipLabel = isBAMatch
+      ? `<b>${showNama(r.kep_kk)}</b> <span style="color:#EAB308">★ BA</span><br>${dn(r.desa)} · <span style="color:${markerColor}">${kat}</span>`
+      : `<b>${showNama(r.kep_kk)}</b><br>${dn(r.desa)} · <span style="color:${markerColor}">${kat}</span>`;
+    mk.bindTooltip(tooltipLabel, {direction:'top',offset:[0,-8]});
     mcg.addLayer(mk);
     added++;
   });
