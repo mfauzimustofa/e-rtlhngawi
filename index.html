@@ -4281,6 +4281,8 @@ function selectItem(id){
     showDetail(r);
     // Load data async
     loadDokLink(r.id);
+    // Auto-scan background: semua PDF bukti dukung untuk penerima ini
+    setTimeout(()=>_triggerScanForRtlh(r.id), 500);
     loadVerifList(r.id);
     loadDokList(r.id);
     loadRiwayatList(r.id);
@@ -6268,9 +6270,10 @@ function renderDokLib(docs){
           ${kb?' · '+kb:''}
         </div>
       </div>
-      <div style="display:flex;gap:5px;flex-shrink:0">
+      <div style="display:flex;display:flex;gap:5px;flex-shrink:0;align-items:center">
+        ${_linkDokRtlhId?`<button onclick="linkDokToPenerima('${d.id}')" title="Jadikan Bukti Dukung untuk BNBA yang sedang dibuka" style="padding:0 10px;height:28px;border-radius:7px;background:#FEF3C7;color:#92400E;border:1.5px solid #FCD34D;cursor:pointer;font-size:.62rem;font-weight:700;font-family:inherit;display:flex;align-items:center;gap:3px;white-space:nowrap"><i class="fas fa-link" style="color:#EAB308;font-size:.6rem"></i>+ Bukti Dukung</button>`:''}
         <a href="${url}" target="_blank" title="Buka" style="width:30px;height:30px;border-radius:7px;background:var(--blue-bg);color:var(--blue);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:.75rem"><i class="fas fa-external-link-alt"></i></a>
-        <button onclick="lihatPenerimaDok('${d.id}','${(d.judul||'').replace(/'/g,"\\'")}')" title="Lihat penerima" style="width:30px;height:30px;border-radius:7px;background:#F5F3FF;color:#7C3AED;border:none;cursor:pointer;font-size:.75rem"><i class="fas fa-users"></i></button>
+        <button onclick="lihatPenerimaDok('${d.id}','${(d.judul||'').replace(/'/g,"\'")}')" title="Lihat penerima" style="width:30px;height:30px;border-radius:7px;background:#F5F3FF;color:#7C3AED;border:none;cursor:pointer;font-size:.75rem"><i class="fas fa-users"></i></button>
         ${isAdmin?`<button onclick="openEditDokLib('${d.id}')" title="Edit" style="width:30px;height:30px;border-radius:7px;background:#FFF7ED;color:#EA580C;border:none;cursor:pointer;font-size:.75rem"><i class="fas fa-edit"></i></button>`:''}
         ${isSuperAdmin()?`<button onclick="deleteDokLib('${d.id}','${d.path}')" title="Hapus" style="width:30px;height:30px;border-radius:7px;background:var(--danger-bg);color:var(--danger);border:none;cursor:pointer;font-size:.75rem"><i class="fas fa-trash"></i></button>`:''}
       </div>
@@ -6843,9 +6846,11 @@ async function linkDokToPenerima(dokId){
     rtlh_id:parseInt(_linkDokRtlhId),dokumen_id:dokId,linked_by:user?.email
   },{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
   if(error)return toast('Gagal: '+error.message,'error');
-  toast('Dokumen berhasil dihubungkan','success');
+  toast('<i class="fas fa-link" style="color:#EAB308"></i> Ditambahkan ke Bukti Dukung — scan NIK dimulai...','success');
   loadLinkedDok(_linkDokRtlhId);
   loadDokLink(_linkDokRtlhId);
+  // Langsung trigger scan NIK di background
+  _triggerScanForRtlh(parseInt(_linkDokRtlhId), true);
 }
 
 async function unlinkDok(linkId){
@@ -9680,24 +9685,11 @@ async function pdfRefreshMassal(){
   const total = _pdfOcrCache.size;
   _pdfOcrCache.clear();
   toast('<i class="fas fa-sync fa-spin"></i> Cache OCR direset ('+total+' dokumen). Buka dokumen untuk scan ulang.','info');
-  // Re-trigger silent scan untuk semua dokumen yang ada di panel aktif
+  // Re-scan semua dokumen BNBA yang sedang terbuka (force refresh)
   const numId = parseInt(document.getElementById('dpBody')?.dataset?.rtlhId||0);
   if(numId){
-    const rec=brAll.find(x=>parseInt(x.id)===numId);
-    const nik=rec?String(rec.nik||'').trim():'';
-    if(nik){
-      // Ambil ulang dokumen dan scan
-      const{data}=await sb.from('rtlh_dokumen_link')
-        .select('rtlh_dokumen_kabupaten(id,path)')
-        .eq('rtlh_id',numId);
-      if(data) data.forEach(lnk=>{
-        const d=lnk.rtlh_dokumen_kabupaten;
-        if(!d||(d.path||'').toLowerCase().endsWith('.pdf')===false) return;
-        const url=sb.storage.from('dokumen-kab').getPublicUrl(d.path).data.publicUrl;
-        _pdfSilentScan(url, nik);
-      });
-      toast('Scan ulang dimulai di background','info');
-    }
+    await _triggerScanForRtlh(numId, true);
+    toast('<i class="fas fa-sync fa-spin"></i> Scan ulang dimulai...','info');
   }
 }
 
