@@ -9706,133 +9706,185 @@ function _preprocessCanvas(src){
 }
 
 // Potong strip horizontal dari canvas (crop baris tertentu)
-function _cropStrip(src, y0Pct, y1Pct){
+// Crop area persegi dari canvas (x,y,w,h dalam pixel)
+function _cropRect(src, x, y, w, h){
   const dst = document.createElement('canvas');
-  const y0 = Math.floor(src.height * y0Pct);
-  const h  = Math.floor(src.height * (y1Pct - y0Pct));
-  dst.width = src.width;
-  dst.height = h;
-  const ctx = dst.getContext('2d');
-  ctx.drawImage(src, 0, y0, src.width, h, 0, 0, src.width, h);
+  dst.width = Math.max(1, w);
+  dst.height = Math.max(1, h);
+  dst.getContext('2d').drawImage(src, x, y, w, h, 0, 0, w, h);
   return dst;
+}
+
+// Crop strip horizontal (y dalam persen 0-1)
+function _cropStrip(src, y0Pct, y1Pct, x0Pct=0, x1Pct=1){
+  const x0 = Math.floor(src.width  * x0Pct);
+  const y0 = Math.floor(src.height * y0Pct);
+  const w  = Math.floor(src.width  * (x1Pct - x0Pct));
+  const h  = Math.floor(src.height * (y1Pct - y0Pct));
+  return _cropRect(src, x0, y0, w, h);
+}
+
+// Auto-detect kolom NIK: scan kolom vertikal kecil, cari kolom paling banyak 16-digit
+async function _detectNikColumn(processed, worker){
+  // Coba 5 band vertikal, cari yang paling banyak angka panjang
+  const bands = [
+    {x0:0.28, x1:0.42, label:'band A'},
+    {x0:0.30, x1:0.45, label:'band B'},
+    {x0:0.32, x1:0.48, label:'band C'},
+    {x0:0.20, x1:0.40, label:'band D'},
+    {x0:0.25, x1:0.50, label:'band E'},
+  ];
+  let best = null, bestScore = 0;
+  await worker.setParameters({tessedit_pageseg_mode:'6', tessedit_char_whitelist:'0123456789 '});
+  for(const b of bands){
+    const strip = _cropStrip(processed, 0.05, 0.95, b.x0, b.x1);
+    const blob = await new Promise(r=>strip.toBlob(r,'image/png'));
+    const {data} = await worker.recognize(blob);
+    // Hitung berapa banyak sequence 16 digit
+    const matches = (data.text.replace(/\s/g,'').match(/\d{14,18}/g)||[]).length;
+    if(matches > bestScore){ bestScore = matches; best = b; }
+  }
+  return best || {x0:0.28, x1:0.48}; // default
 }
 
 async function _pdfRunOcr(nikFoundSoFar){
   if(!_pdfNik || _pdfOcrRunning) return;
-  if(!window.Tesseract){
-    _pdfSetNikBadge('error','Library OCR belum dimuat'); return;
-  }
+  if(!window.Tesseract){ _pdfSetNikBadge('error','Library OCR belum dimuat'); return; }
   _pdfOcrRunning = true;
 
   const ocrStatus = document.getElementById('pdfOcrStatus');
   const ocrText   = document.getElementById('pdfOcrStatusText');
   if(ocrStatus) ocrStatus.style.display='flex';
-  if(ocrText) ocrText.textContent = 'Inisialisasi OCR...';
+  if(ocrText) ocrText.textContent = 'Inisialisasi...';
 
   const canvases = [...document.querySelectorAll('[id^="pdfPageWrap_"] canvas')];
   const found = [...nikFoundSoFar];
   let worker;
 
   try{
-    // Konfigurasi Tesseract untuk angka — lebih akurat dari pada full text
-    worker = await Tesseract.createWorker('eng', 1, {
-      logger: m=>{
-        if(m.status==='recognizing text' && ocrText)
-          ocrText.textContent='OCR '+(m.progress*100|0)+'%';
-      }
-    });
-    // Set mode khusus digit: psm 6 = blok teks seragam, oem 1 = LSTM
+    worker = await Tesseract.createWorker('eng', 1, {logger:()=>{}});
     await worker.setParameters({
       tessedit_char_whitelist: '0123456789',
       tessedit_pageseg_mode: '6',
     });
+
+    // ── PHASE 1: Auto-detect posisi kolom NIK dari halaman pertama ──
+    if(ocrText) ocrText.textContent = 'Deteksi kolom NIK...';
+    const firstCanvas = canvases[0];
+    const firstProcessed = firstCanvas ? _preprocessCanvas(firstCanvas) : null;
+    const nikCol = firstProcessed
+      ? await _detectNikColumn(firstProcessed, worker)
+      : {x0:0.28, x1:0.48};
+    await worker.setParameters({
+      tessedit_char_whitelist: '0123456789',
+      tessedit_pageseg_mode: '6',
+    });
+
+    // ── PHASE 2: Per halaman — OCR hanya di kolom NIK, strip per baris ──
+    const ROWS = 40; // max baris per halaman
 
     for(let i=0; i<canvases.length; i++){
       const canvas = canvases[i];
       const pageNum = parseInt(
         canvas.closest('[id^="pdfPageWrap_"]')?.id?.replace('pdfPageWrap_','')
       ) || (i+1);
-      if(ocrText) ocrText.textContent = 'Hal. '+pageNum+'/'+canvases.length+'...';
+      if(ocrText) ocrText.textContent = 'Scan hal. '+pageNum+'/'+canvases.length;
 
-      // ── Strategi 1: OCR pada canvas yang sudah di-preprocess (upscale+binarisasi) ──
       const processed = _preprocessCanvas(canvas);
-      const blob1 = await new Promise(r=>processed.toBlob(r,'image/png'));
-      const {data:d1} = await worker.recognize(blob1);
-      const text1 = d1.text;
+      const svg = canvas.closest('.pdf-page-wrap')?.querySelector('svg');
 
-      let matchedLine = null;
+      // Area header tabel biasanya 5-10% pertama — skip
+      const rowStart = 0.05;
+      const rowEnd   = 0.97;
+      const rowH     = (rowEnd - rowStart) / ROWS;
 
-      // Cek exact + fuzzy match
-      const cleanFull = text1.replace(/\s/g,'');
-      const isMatch = cleanFull.includes(_pdfNik) || _nikFuzzyMatch(text1, _pdfNik);
+      let rowMatch = null;
 
-      if(isMatch){
+      // ── Strategi A: OCR kolom NIK saja, per strip baris ──
+      await worker.setParameters({tessedit_pageseg_mode:'7'}); // single-line
+      for(let r=0; r<ROWS && !rowMatch; r++){
+        const y0p = rowStart + r * rowH;
+        const y1p = y0p + rowH;
+        // Crop: hanya area kolom NIK
+        const cell = _cropStrip(processed, y0p, y1p, nikCol.x0, nikCol.x1);
+        if(cell.height < 4) continue;
+
+        const blob = await new Promise(res=>cell.toBlob(res,'image/png'));
+        const {data} = await worker.recognize(blob);
+        const rawText = data.text.trim();
+        const normText = _ocrNormDigits(rawText);
+
+        // Match: exact atau fuzzy (toleransi 2 digit dari 16)
+        const isExact = normText.includes(_pdfNik);
+        const isFuzzy = !isExact && _nikFuzzyMatch(rawText, _pdfNik);
+
+        if(isExact || isFuzzy){
+          // Hitung posisi Y di canvas asli
+          const y0px = (y0p) * canvas.height;
+          const y1px = (y1p) * canvas.height;
+          rowMatch = {
+            y0: y0px - 3,
+            y1: y1px + 3,
+            conf: data.confidence,
+            fuzzy: isFuzzy,
+            raw: rawText
+          };
+        }
+      }
+
+      // ── Strategi B: fallback — OCR full halaman kalau strip gagal ──
+      if(!rowMatch){
+        await worker.setParameters({tessedit_pageseg_mode:'6'});
+        const blob2 = await new Promise(r=>processed.toBlob(r,'image/png'));
+        const {data:d2} = await worker.recognize(blob2);
+        const cleanFull = _ocrNormDigits(d2.text);
+        if(cleanFull.includes(_pdfNik) || _nikFuzzyMatch(d2.text, _pdfNik)){
+          // Cari baris yang match dari lines data
+          if(d2.lines){
+            for(const line of d2.lines){
+              const lnorm = _ocrNormDigits(line.text);
+              if(lnorm.includes(_pdfNik) || _nikFuzzyMatch(line.text, _pdfNik)){
+                rowMatch = {
+                  y0: line.bbox.y0/2 - 3,
+                  y1: line.bbox.y1/2 + 3,
+                  conf: line.confidence,
+                  fuzzy: !lnorm.includes(_pdfNik),
+                  raw: line.text
+                };
+                break;
+              }
+            }
+          }
+          if(!rowMatch) rowMatch = {y0:0, y1:8, conf:50, fuzzy:true, raw:''};
+        }
+      }
+
+      if(rowMatch){
         found.push(pageNum);
-        // Cari baris spesifik yang cocok dari word data
-        if(d1.lines){
-          for(const line of d1.lines){
-            const lc = line.text.replace(/\s/g,'');
-            if(lc.includes(_pdfNik) || _nikFuzzyMatch(line.text, _pdfNik)){
-              // Scale bbox kembali ke koordinat canvas asli (processed = 2x)
-              const b = line.bbox;
-              matchedLine = {
-                y0: b.y0/2, y1: b.y1/2,
-                conf: line.confidence
-              };
-              break;
-            }
-          }
-        }
-
-        // ── Strategi 2: kalau baris tidak ditemukan, scan strip demi strip ──
-        if(!matchedLine){
-          const STRIPS = 20; // bagi halaman jadi 20 strip horizontal
-          await worker.setParameters({tessedit_pageseg_mode:'7'}); // single line mode
-          for(let s=0; s<STRIPS && !matchedLine; s++){
-            const y0p = s/STRIPS, y1p = (s+1)/STRIPS;
-            const strip = _cropStrip(processed, y0p, y1p);
-            if(strip.height < 8) continue;
-            const stripBlob = await new Promise(r=>strip.toBlob(r,'image/png'));
-            const {data:ds} = await worker.recognize(stripBlob);
-            const sc = ds.text.replace(/\s/g,'');
-            if(sc.includes(_pdfNik)||_nikFuzzyMatch(ds.text,_pdfNik)){
-              const stripH = canvas.height / STRIPS;
-              matchedLine = {y0: s*stripH, y1: (s+1)*stripH, conf: ds.confidence};
-            }
-          }
-          await worker.setParameters({tessedit_pageseg_mode:'6'});
-        }
-
-        // Draw highlight pada SVG
-        const svg = canvas.closest('.pdf-page-wrap')?.querySelector('svg');
         if(svg){
-          const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
-          rect.setAttribute('x', 0);
-          if(matchedLine){
-            rect.setAttribute('y', Math.max(0, matchedLine.y0 - 4));
-            rect.setAttribute('height', Math.max(matchedLine.y1-matchedLine.y0+8, 20));
-          } else {
-            // Fallback: strip emas di atas halaman sebagai penanda
-            rect.setAttribute('y', 0);
-            rect.setAttribute('height', 8);
-          }
-          rect.setAttribute('width', canvas.width);
-          rect.setAttribute('fill','rgba(234,179,8,0.45)');
-          rect.setAttribute('stroke','#EAB308');
-          rect.setAttribute('stroke-width','2.5');
-          rect.setAttribute('rx','3');
-          svg.appendChild(rect);
+          // Highlight kuning selebar halaman di baris yang cocok
+          const hl = document.createElementNS('http://www.w3.org/2000/svg','rect');
+          hl.setAttribute('x', '0');
+          hl.setAttribute('y', String(Math.max(0, rowMatch.y0)));
+          hl.setAttribute('width', String(canvas.width));
+          hl.setAttribute('height', String(Math.max(rowMatch.y1-rowMatch.y0, 18)));
+          hl.setAttribute('fill','rgba(234,179,8,0.45)');
+          hl.setAttribute('stroke','#EAB308');
+          hl.setAttribute('stroke-width','2.5');
+          hl.setAttribute('rx','3');
+          svg.appendChild(hl);
 
-          // Kalau confidence rendah, tambah badge peringatan
-          if(matchedLine && matchedLine.conf < 70){
-            const warn = document.createElementNS('http://www.w3.org/2000/svg','text');
-            warn.setAttribute('x', 8);
-            warn.setAttribute('y', Math.max(0, matchedLine.y0-8));
-            warn.setAttribute('fill','#CA8A04');
-            warn.setAttribute('font-size','11');
-            warn.textContent = '⚠ OCR ~'+Math.round(matchedLine.conf)+'% akurasi';
-            svg.appendChild(warn);
-          }
+          // Label kecil di kiri
+          const lbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+          lbl.setAttribute('x','4');
+          lbl.setAttribute('y', String(Math.max(12, rowMatch.y0-2)));
+          lbl.setAttribute('fill', rowMatch.fuzzy?'#B45309':'#92400E');
+          lbl.setAttribute('font-size','10');
+          lbl.setAttribute('font-weight','700');
+          lbl.textContent = rowMatch.fuzzy
+            ? '⚠ NIK (OCR ~'+Math.round(rowMatch.conf)+'%)'
+            : '★ NIK BNBA';
+          svg.appendChild(lbl);
         }
       }
     }
@@ -9860,7 +9912,7 @@ async function _pdfRunOcr(nikFoundSoFar){
   } else {
     badge.style.display='flex';
     badge.style.background='#FEE2E2';
-    badgeText.textContent = 'NIK tidak terdeteksi — coba zoom PDF lebih besar';
+    badgeText.textContent = 'NIK tidak terdeteksi — coba zoom in lalu buka ulang';
   }
 }
 
