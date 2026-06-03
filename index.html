@@ -242,6 +242,21 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 .form-group input:focus,.form-group select:focus{border-color:var(--blue)}
 .form-group input.locked{background:var(--gray-50);color:var(--gray-400);cursor:not-allowed}
 
+/* PDF VIEWER MODAL */
+#ovPdfViewer{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99999;display:none;flex-direction:column}
+#ovPdfViewer.open{display:flex}
+.pdf-toolbar{height:48px;background:#1E293B;display:flex;align-items:center;gap:8px;padding:0 12px;flex-shrink:0}
+.pdf-toolbar-title{flex:1;font-size:.82rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pdf-nav-btn{width:34px;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.pdf-nav-btn:hover{background:rgba(255,255,255,.18)}
+.pdf-nav-btn:disabled{opacity:.35;cursor:not-allowed}
+.pdf-page-info{font-size:.72rem;color:#94A3B8;min-width:70px;text-align:center}
+#pdfCanvas{display:block;margin:0 auto}
+.pdf-scroll-area{flex:1;overflow-y:auto;overflow-x:auto;background:#374151;display:flex;flex-direction:column;align-items:center;gap:12px;padding:16px}
+.pdf-page-wrap{position:relative;box-shadow:0 4px 20px rgba(0,0,0,.4);flex-shrink:0}
+.pdf-highlight-layer{position:absolute;top:0;left:0;pointer-events:none}
+.pdf-nik-badge{position:absolute;right:0;top:0;background:#EAB308;color:#92400E;font-size:.58rem;font-weight:800;padding:2px 6px;border-radius:0 0 0 6px;pointer-events:none}
+
 /* DETAIL PANEL */
 .detail-panel{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow-lg);position:absolute;bottom:20px;left:50%;transform:translateX(-50%);width:calc(100% - 40px);max-width:420px;z-index:8500;max-height:60dvh;overflow-y:auto;display:none}
 .detail-panel.open{display:block}
@@ -1572,6 +1587,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
 <script>
 // ══════════════════════════════════════════════════
@@ -6847,19 +6863,35 @@ async function loadDokLink(rtlhId){
   }
   // Tandai sebagai punya dok
   _baLinkedIds.add(numId);
-  el.innerHTML=data.map(lnk=>{
+  // Ambil NIK penerima untuk highlight di PDF
+  const rec=brAll.find(x=>parseInt(x.id)===numId);
+  const nikVal=rec?String(rec.nik||''):'';
+  el.innerHTML=data.map((lnk,i)=>{
     const d=lnk.rtlh_dokumen_kabupaten;
     if(!d)return'';
     const cfg=DOK_JENIS_CONFIG[d.jenis]||DOK_JENIS_CONFIG['Lainnya'];
     const url=sb.storage.from('dokumen-kab').getPublicUrl(d.path).data.publicUrl;
-    return`<a href="${url}" target="_blank" style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;border:1px solid ${cfg.color}33;background:${cfg.bg};text-decoration:none;margin-bottom:4px">
-      <i class="${cfg.icon}" style="color:${cfg.color};font-size:.75rem"></i>
-      <span style="font-size:.72rem;font-weight:600;color:${cfg.color};flex:1">${d.judul}</span>
-      <i class="fas fa-external-link-alt" style="color:${cfg.color};font-size:.6rem"></i>
-    </a>`;
+    const isPdf=(d.path||'').toLowerCase().endsWith('.pdf');
+    const uid='dok_'+numId+'_'+i;
+    return'<div id="'+uid+'" data-url="'+encodeURIComponent(url)+'" data-title="'+encodeURIComponent(d.judul||'')+'" data-nik="'+encodeURIComponent(nikVal)+'" data-ispdf="'+(isPdf?'1':'0')+'" style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;border:1px solid '+cfg.color+'33;background:'+cfg.bg+';cursor:pointer;margin-bottom:4px;transition:opacity .15s" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1" onclick="_openDok(this)">'+
+      '<i class="'+cfg.icon+'" style="color:'+cfg.color+';font-size:.78rem"></i>'+
+      '<span style="font-size:.72rem;font-weight:600;color:'+cfg.color+';flex:1">'+d.judul+'</span>'+
+      (isPdf?'<span style="font-size:.58rem;background:'+cfg.color+'22;color:'+cfg.color+';padding:1px 6px;border-radius:99px;font-weight:700"><i class="fas fa-eye" style="margin-right:2px"></i>Buka</span>':'<i class="fas fa-external-link-alt" style="color:'+cfg.color+';font-size:.6rem"></i>')+
+    '</div>';
   }).join('');
   // Refresh highlight di sidebar item & peta secara instan
   _refreshSidebarItem(numId);
+}
+
+// Handler klik dokumen — baca dari data-* attribute (aman dari quote injection)
+function _openDok(el){
+  const url=decodeURIComponent(el.dataset.url||'');
+  const title=decodeURIComponent(el.dataset.title||'');
+  const nik=decodeURIComponent(el.dataset.nik||'');
+  const isPdf=el.dataset.ispdf==='1';
+  if(!url)return;
+  if(isPdf) openPdfViewer(url,title,nik);
+  else window.open(url,'_blank');
 }
 
 // Refresh hanya satu item di sidebar tanpa full re-render
@@ -8957,6 +8989,35 @@ function exportDtsenWord(){
   </div>
 </div>
 
+<!-- ═══ MODAL PDF VIEWER ═══ -->
+<div id="ovPdfViewer">
+  <div class="pdf-toolbar">
+    <button class="pdf-nav-btn" onclick="closePdfViewer()" title="Tutup"><i class="fas fa-times"></i></button>
+    <div class="pdf-toolbar-title" id="pdfViewerTitle">—</div>
+    <div style="display:flex;align-items:center;gap:4px">
+      <button class="pdf-nav-btn" id="pdfPrevBtn" onclick="pdfChangePage(-1)" title="Halaman sebelumnya"><i class="fas fa-chevron-left"></i></button>
+      <span class="pdf-page-info"><span id="pdfPageNum">1</span> / <span id="pdfPageCount">?</span></span>
+      <button class="pdf-nav-btn" id="pdfNextBtn" onclick="pdfChangePage(1)" title="Halaman berikutnya"><i class="fas fa-chevron-right"></i></button>
+    </div>
+    <div style="display:flex;align-items:center;gap:4px">
+      <button class="pdf-nav-btn" onclick="pdfZoom(-0.2)" title="Zoom out"><i class="fas fa-search-minus"></i></button>
+      <span style="font-size:.7rem;color:#94A3B8;min-width:40px;text-align:center" id="pdfZoomLabel">100%</span>
+      <button class="pdf-nav-btn" onclick="pdfZoom(0.2)" title="Zoom in"><i class="fas fa-search-plus"></i></button>
+    </div>
+    <button class="pdf-nav-btn" id="pdfFullBtn" onclick="pdfToggleFullscreen()" title="Fullscreen"><i class="fas fa-expand"></i></button>
+    <a id="pdfDownloadBtn" href="#" download style="width:34px;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;text-decoration:none" title="Unduh PDF"><i class="fas fa-download"></i></a>
+    <div id="pdfNikBadge" style="display:none;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;background:#FEF3C7;font-size:.65rem;font-weight:700;color:#92400E">
+      <i class="fas fa-highlighter" style="color:#EAB308"></i>
+      <span id="pdfNikBadgeText"></span>
+    </div>
+  </div>
+  <div class="pdf-scroll-area" id="pdfScrollArea">
+    <div style="color:#94A3B8;font-size:.82rem;padding:40px" id="pdfLoading">
+      <i class="fas fa-circle-notch fa-spin"></i> Membuka dokumen...
+    </div>
+  </div>
+</div>
+
 <!-- ═══ END APP SHELL ═══ -->
 </div>
 
@@ -9338,6 +9399,276 @@ function cnDownloadExcel(){
   XLSX.writeFile(wb, `CekNIK_RTLH_Ngawi_${tgl}${suffix}.xlsx`);
   toast(`Excel diunduh: ${_cnFiltered.length} baris`, 'success');
 }
+
+// ══════════════════════════════════════════════════
+// PDF VIEWER INLINE — dengan NIK highlight
+// ══════════════════════════════════════════════════
+let _pdfDoc = null;
+let _pdfPage = 1;
+let _pdfScale = 1.4;
+let _pdfNik = '';
+let _pdfUrl = '';
+let _pdfRendering = false;
+
+async function openPdfViewer(url, title, nik){
+  _pdfUrl = url;
+  _pdfNik = String(nik||'').trim();
+  _pdfPage = 1;
+  _pdfDoc = null;
+
+  const ov = document.getElementById('ovPdfViewer');
+  const scrollArea = document.getElementById('pdfScrollArea');
+  const titleEl = document.getElementById('pdfViewerTitle');
+  const loading = document.getElementById('pdfLoading');
+  const nikBadge = document.getElementById('pdfNikBadge');
+  const nikBadgeText = document.getElementById('pdfNikBadgeText');
+  const dlBtn = document.getElementById('pdfDownloadBtn');
+
+  ov.classList.add('open');
+  titleEl.textContent = title || 'Dokumen';
+  scrollArea.innerHTML = '<div style="color:#94A3B8;font-size:.82rem;padding:40px;text-align:center"><i class="fas fa-circle-notch fa-spin"></i> Membuka dokumen...</div>';
+  dlBtn.href = url;
+  dlBtn.download = (title||'dokumen')+'.pdf';
+
+  if(_pdfNik){
+    nikBadge.style.display='flex';
+    nikBadgeText.textContent = 'Cari NIK: '+_pdfNik.slice(0,6)+'••••••••••';
+  } else {
+    nikBadge.style.display='none';
+  }
+
+  // Setup pdf.js worker
+  if(!window.pdfjsLib){
+    scrollArea.innerHTML='<div style="color:#F87171;padding:40px;text-align:center">pdf.js belum dimuat — coba refresh halaman</div>';
+    return;
+  }
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  try{
+    _pdfDoc = await pdfjsLib.getDocument({url, withCredentials:false}).promise;
+    document.getElementById('pdfPageCount').textContent = _pdfDoc.numPages;
+    document.getElementById('pdfPageNum').textContent = 1;
+    _pdfUpdateNavBtns();
+    await _pdfRenderAll();
+  } catch(e){
+    scrollArea.innerHTML='<div style="color:#F87171;padding:40px;text-align:center"><i class="fas fa-exclamation-circle"></i> Gagal membuka PDF.<br><small style="opacity:.7">'+e.message+'</small></div>';
+  }
+}
+
+// Render semua halaman sekaligus (scroll view)
+async function _pdfRenderAll(){
+  if(!_pdfDoc) return;
+  const scrollArea = document.getElementById('pdfScrollArea');
+  scrollArea.innerHTML = '';
+
+  const nikFound = [];
+  for(let p=1; p<=_pdfDoc.numPages; p++){
+    const page = await _pdfDoc.getPage(p);
+    const vp = page.getViewport({scale: _pdfScale});
+
+    // Wrapper
+    const wrap = document.createElement('div');
+    wrap.className = 'pdf-page-wrap';
+    wrap.id = 'pdfPageWrap_'+p;
+    wrap.style.width = vp.width+'px';
+    wrap.style.height = vp.height+'px';
+
+    // Canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = vp.width;
+    canvas.height = vp.height;
+    canvas.style.display = 'block';
+    wrap.appendChild(canvas);
+
+    // Render canvas
+    await page.render({canvasContext: canvas.getContext('2d'), viewport: vp}).promise;
+
+    // Overlay SVG untuk highlight
+    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('width', vp.width);
+    svg.setAttribute('height', vp.height);
+    svg.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none';
+    wrap.appendChild(svg);
+
+    // Cari NIK di teks halaman
+    if(_pdfNik){
+      const tc = await page.getTextContent();
+      const items = tc.items;
+      // Gabung teks per baris (y koordinat sama ±5px)
+      const lines = [];
+      items.forEach(item=>{
+        const tx = page.getViewport({scale:1});
+        const [,, ,, x, y] = item.transform;
+        // Convert ke viewport coords
+        const vx = x * _pdfScale;
+        const vy = vp.height - (y * _pdfScale) - (item.height * _pdfScale);
+        const vw = item.width * _pdfScale;
+        const vh = Math.max(item.height * _pdfScale, 10);
+
+        if(item.str && item.str.trim()){
+          // Cek apakah mengandung NIK atau bagian NIK
+          const clean = item.str.replace(/\s/g,'');
+          if(clean.includes(_pdfNik) || _pdfNik.includes(clean) && clean.length>=6){
+            // Highlight baris ini — cari y yang sama
+            const existLine = lines.find(l=>Math.abs(l.y - vy)<12);
+            if(existLine){
+              existLine.x = Math.min(existLine.x, vx);
+              existLine.w = Math.max(existLine.x+existLine.w, vx+vw) - existLine.x;
+            } else {
+              lines.push({x:vx, y:vy, w:vw, h:vh, page:p});
+            }
+          }
+        }
+      });
+
+      // Jika tidak ketemu per item, cari di full text per baris yang mengandung NIK
+      if(!lines.length){
+        // Rebuild baris dari items
+        const lineMap = {};
+        items.forEach(item=>{
+          if(!item.str.trim()) return;
+          const [,, ,, x, y] = item.transform;
+          const vy = Math.round(y * _pdfScale);
+          if(!lineMap[vy]) lineMap[vy]={items:[], y:vy};
+          lineMap[vy].items.push(item);
+        });
+        Object.values(lineMap).forEach(line=>{
+          const lineText = line.items.map(i=>i.str).join('');
+          if(lineText.replace(/\s/g,'').includes(_pdfNik)){
+            // Hitung bbox seluruh baris
+            const xs = line.items.map(i=>i.transform[4]*_pdfScale);
+            const ws = line.items.map(i=>i.width*_pdfScale);
+            const xMin = Math.min(...xs);
+            const xMax = Math.max(...xs.map((x,i)=>x+ws[i]));
+            const vY = vp.height - line.y - (line.items[0]?.height||12)*_pdfScale;
+            const bboxH = Math.max((line.items[0]?.height||12)*_pdfScale + 4, 14);
+            lines.push({x:xMin-4, y:vY-4, w:xMax-xMin+8, h:bboxH, page:p});
+            nikFound.push(p);
+          }
+        });
+      } else {
+        nikFound.push(p);
+      }
+
+      // Draw highlight rectangles
+      lines.forEach(l=>{
+        const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+        rect.setAttribute('x', Math.max(0,l.x-4));
+        rect.setAttribute('y', Math.max(0,l.y-2));
+        rect.setAttribute('width', Math.min(vp.width, l.w+8));
+        rect.setAttribute('height', l.h+4);
+        rect.setAttribute('fill','rgba(234,179,8,0.35)');
+        rect.setAttribute('stroke','#EAB308');
+        rect.setAttribute('stroke-width','1.5');
+        rect.setAttribute('rx','3');
+        svg.appendChild(rect);
+      });
+    }
+
+    // Label halaman
+    const pageLabel = document.createElement('div');
+    pageLabel.style.cssText='text-align:center;font-size:.65rem;color:#94A3B8;padding:4px 0';
+    pageLabel.textContent='Halaman '+p;
+
+    const pageWrapper = document.createElement('div');
+    pageWrapper.style.cssText='display:flex;flex-direction:column;align-items:center';
+    pageWrapper.appendChild(wrap);
+    pageWrapper.appendChild(pageLabel);
+    scrollArea.appendChild(pageWrapper);
+  }
+
+  // Update badge jika NIK ditemukan
+  if(_pdfNik){
+    const badge = document.getElementById('pdfNikBadge');
+    const badgeText = document.getElementById('pdfNikBadgeText');
+    if(nikFound.length>0){
+      badge.style.display='flex';
+      badge.style.background='#FEF3C7';
+      badgeText.textContent='NIK ditemukan di hal. '+[...new Set(nikFound)].join(', ');
+      // Scroll ke halaman pertama yang ada NIK
+      const firstPage = document.getElementById('pdfPageWrap_'+nikFound[0]);
+      if(firstPage) setTimeout(()=>firstPage.scrollIntoView({behavior:'smooth',block:'center'}),300);
+    } else {
+      badge.style.display='flex';
+      badge.style.background='#FEE2E2';
+      badgeText.textContent='NIK tidak ditemukan di PDF ini';
+    }
+  }
+}
+
+async function pdfZoom(delta){
+  _pdfScale = Math.max(0.5, Math.min(3.0, _pdfScale+delta));
+  document.getElementById('pdfZoomLabel').textContent = Math.round(_pdfScale*100)+'%';
+  await _pdfRenderAll();
+}
+
+function pdfChangePage(dir){
+  // Scroll ke halaman terdekat + dir (untuk navigasi cepat)
+  const scrollArea = document.getElementById('pdfScrollArea');
+  const wraps = scrollArea.querySelectorAll('.pdf-page-wrap');
+  if(!wraps.length) return;
+  const areaRect = scrollArea.getBoundingClientRect();
+  let current = 0;
+  wraps.forEach((w,i)=>{
+    const r = w.getBoundingClientRect();
+    if(r.top < areaRect.top + areaRect.height/2) current = i;
+  });
+  const target = Math.max(0, Math.min(wraps.length-1, current+dir));
+  wraps[target].scrollIntoView({behavior:'smooth',block:'start'});
+  document.getElementById('pdfPageNum').textContent = target+1;
+}
+
+function _pdfUpdateNavBtns(){
+  document.getElementById('pdfPrevBtn').disabled = _pdfPage<=1;
+  document.getElementById('pdfNextBtn').disabled = !_pdfDoc||_pdfPage>=_pdfDoc.numPages;
+}
+
+function closePdfViewer(){
+  document.getElementById('ovPdfViewer').classList.remove('open');
+  _pdfDoc=null; _pdfNik=''; _pdfUrl='';
+  document.getElementById('pdfScrollArea').innerHTML='';
+}
+
+function pdfToggleFullscreen(){
+  const el = document.getElementById('ovPdfViewer');
+  const btn = document.getElementById('pdfFullBtn');
+  if(!document.fullscreenElement){
+    el.requestFullscreen().then(()=>{
+      btn.innerHTML='<i class="fas fa-compress"></i>';
+    }).catch(()=>{});
+  } else {
+    document.exitFullscreen().then(()=>{
+      btn.innerHTML='<i class="fas fa-expand"></i>';
+    }).catch(()=>{});
+  }
+}
+
+// Update page number saat scroll
+document.addEventListener('DOMContentLoaded',()=>{
+  const area = document.getElementById('pdfScrollArea');
+  if(!area) return;
+  area.addEventListener('scroll',()=>{
+    const wraps = area.querySelectorAll('.pdf-page-wrap');
+    if(!wraps.length) return;
+    const areaRect = area.getBoundingClientRect();
+    let current=1;
+    wraps.forEach((w,i)=>{
+      const r=w.getBoundingClientRect();
+      if(r.top < areaRect.top + areaRect.height*0.6) current=i+1;
+    });
+    const el=document.getElementById('pdfPageNum');
+    if(el) el.textContent=current;
+    _pdfPage=current;
+  });
+});
+
+// Tutup viewer dengan Escape
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&document.getElementById('ovPdfViewer')?.classList.contains('open')){
+    closePdfViewer();
+  }
+});
 </script>
 
 </body>
