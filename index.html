@@ -6215,8 +6215,9 @@ async function openDokLib(){
 async function refreshDokLib(){
   const btn=document.getElementById('btnRefreshDokLib');
   if(btn){btn.innerHTML='<i class="fas fa-sync-alt fa-spin"></i>';btn.disabled=true;}
-  // Reload data dokumen terbaru
-  await loadDokLib();
+  // Reload data dokumen terbaru (force, abaikan cache)
+  _clearDokLibCache();
+  await loadDokLib(true);
   // Re-run auto-link untuk semua dokumen yang punya jenis_bantuan
   const docsWithLink=_dokLibData.filter(d=>d.jenis_bantuan);
   if(!docsWithLink.length){
@@ -6246,8 +6247,14 @@ async function refreshDokLib(){
   }
   statusDiv.innerHTML='<i class="fas fa-check-circle" style="color:var(--success)"></i> Sinkronisasi selesai -- '+totalLinked+' link diperbarui';
   setTimeout(()=>statusDiv.remove(),3000);
+  if(typeof loadBALinks==='function'&&window.brAll) await loadBALinks(brAll.map(r=>parseInt(r.id)));
   if(btn){btn.innerHTML='<i class="fas fa-sync-alt"></i>';btn.disabled=false;}
   toast('Sinkronisasi selesai: '+totalLinked+' link diperbarui','success');
+}
+
+// Clear semua cache library dokumen (semua filter) + reload paksa
+function _clearDokLibCache(){
+  ['all','SK','BA','Surat Pernyataan','Lainnya'].forEach(f=>cacheDel('doklib_'+f));
 }
 
 async function loadDokLib(force=false){
@@ -6360,7 +6367,7 @@ async function uploadDokLib(){
   if(dbErr){prog.innerHTML=`<span style="color:var(--danger)">Gagal simpan: ${dbErr.message}</span>`;return;}
 
   // Invalidate cache
-  ['all','SK','BA','Surat Pernyataan','Lainnya'].forEach(k=>cacheDel('doklib_'+k));
+  _clearDokLibCache();
 
   prog.innerHTML='<span style="color:var(--success)"><i class="fas fa-check-circle"></i> Berhasil diupload!</span>';
   toast('Dokumen berhasil diupload','success');
@@ -6397,7 +6404,10 @@ async function uploadDokLib(){
       }
     }
   }
-  setTimeout(()=>{closeModal('ovUploadDokLib');loadDokLib();},1200);
+  // Sinkron: clear cache, reload paksa, refresh tracking BA/SK
+  _clearDokLibCache();
+  if(typeof loadBALinks==='function'&&window.brAll) await loadBALinks(brAll.map(r=>parseInt(r.id)));
+  setTimeout(()=>{closeModal('ovUploadDokLib');loadDokLib(true);},1200);
 }
 
 let _penerimaDokAll=[];
@@ -6626,10 +6636,20 @@ async function runAutoLinkFromLib(dokId){
 async function deleteDokLib(id,path){
   if(!isSuperAdmin())return;
   if(!confirm('Hapus dokumen ini? Link ke penerima juga akan terhapus.'))return;
-  await sb.storage.from('dokumen-kab').remove([path]);
-  await sb.from('rtlh_dokumen_kabupaten').delete().eq('id',id);
-  toast('Dokumen dihapus','success');
-  loadDokLib();
+  try{
+    // Hapus link dulu (FK), lalu hasil scan, lalu dokumen, lalu file
+    await sb.from('rtlh_dokumen_link').delete().eq('dokumen_id',id);
+    await sb.from('rtlh_dokumen_kabupaten').delete().eq('id',id);
+    if(path) await sb.storage.from('dokumen-kab').remove([path]);
+    // Bersihkan cache & sinkron tampilan
+    _clearDokLibCache();
+    await loadDokLib(true);
+    // Refresh tracking BA/SK di sidebar & peta
+    if(typeof loadBALinks==='function'&&window.brAll) await loadBALinks(brAll.map(r=>parseInt(r.id)));
+    toast('Dokumen dihapus','success');
+  }catch(e){
+    toast('Gagal hapus: '+e.message,'error');
+  }
 }
 
 function updateEditDlDesaOpts(){
