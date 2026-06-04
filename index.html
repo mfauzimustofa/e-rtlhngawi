@@ -260,18 +260,24 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 /* PDF VIEWER -- MOBILE FRIENDLY */
 .pdf-toolbar-group{display:flex;align-items:center;gap:4px}
 @media(max-width:768px){
-  .pdf-toolbar{height:auto;min-height:52px;flex-wrap:wrap;padding:8px;gap:6px;row-gap:6px}
-  .pdf-toolbar-title{flex:1 1 100%;order:-1;font-size:.78rem;padding-right:36px}
-  .pdf-nav-btn{width:40px;height:40px;font-size:.9rem}
-  .pdf-toolbar-group{flex:1;justify-content:center}
-  #pdfNikBadge{flex:1 1 100%;justify-content:center;font-size:.68rem !important;padding:6px !important}
-  #pdfOcrStatus{flex:1 1 100%;justify-content:center}
-  .pdf-page-info{font-size:.8rem;min-width:54px}
-  .pdf-scroll-area{padding:8px}
+  /* Toolbar: 1 baris judul + 1 baris kontrol, compact */
+  .pdf-toolbar{height:auto;min-height:0;flex-wrap:wrap;padding:6px 8px;gap:4px;row-gap:4px;align-items:center}
+  /* Baris 1: judul + close, kecil */
+  .pdf-toolbar-title{flex:1;order:0;font-size:.8rem;font-weight:700}
+  .pdf-close-mobile{order:1;width:32px;height:32px;font-size:.85rem}
+  /* Baris 2: semua kontrol dalam 1 baris flex */
+  .pdf-toolbar-group{order:2;gap:2px}
+  .pdf-toolbar-group:nth-of-type(1){flex:0 0 auto}
+  .pdf-toolbar-group:nth-of-type(2){flex:1;justify-content:center}
+  .pdf-toolbar-group:nth-of-type(3){flex:0 0 auto}
+  .pdf-nav-btn{width:32px;height:32px;font-size:.78rem;border-radius:7px}
+  .pdf-page-info{font-size:.72rem;min-width:38px}
+  #pdfZoomLabel{font-size:.68rem !important;min-width:34px !important}
+  /* Badge NIK & OCR status: strip tipis full-width baris bawah */
+  #pdfNikBadge{order:3;flex:1 1 100%;justify-content:center;font-size:.7rem !important;padding:5px !important;border-radius:7px}
+  #pdfOcrStatus{order:3;flex:1 1 100%;justify-content:center;padding:5px !important}
+  .pdf-scroll-area{padding:6px;gap:8px}
   .pdf-page-wrap{max-width:100%}
-  #pdfZoomLabel{font-size:.75rem !important}
-  /* Tombol close lebih besar & jelas di pojok */
-  .pdf-close-mobile{position:absolute;top:8px;right:8px;z-index:5}
 }
 @media(min-width:769px){
   .pdf-close-mobile{position:static}
