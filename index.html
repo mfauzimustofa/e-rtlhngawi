@@ -1621,6 +1621,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 
 <script>
 // ==================================================
@@ -6219,44 +6220,123 @@ async function openDokLib(){
   await loadDokLib();
 }
 
+// REFRESH = scan semua dokumen, ekstrak NIK, cocokkan dengan BNBA database,
+// simpan link (untuk tanda "ada BA") + highlight kuning (untuk tampilan PDF).
+// TIDAK mengubah data NIK di database.
 async function refreshDokLib(){
   const btn=document.getElementById('btnRefreshDokLib');
   if(btn){btn.innerHTML='<i class="fas fa-sync-alt fa-spin"></i>';btn.disabled=true;}
-  // Reload data dokumen terbaru (force, abaikan cache)
   _clearDokLibCache();
   await loadDokLib(true);
-  // Re-run auto-link untuk semua dokumen yang punya jenis_bantuan
-  const docsWithLink=_dokLibData.filter(d=>d.jenis_bantuan);
-  if(!docsWithLink.length){
-    if(btn){btn.innerHTML='<i class="fas fa-sync-alt"></i>';btn.disabled=false;}
-    toast('Data diperbarui','success');
-    return;
-  }
+
   const el=document.getElementById('dokLibList');
   const statusDiv=document.createElement('div');
-  statusDiv.style.cssText='padding:10px 14px;background:var(--blue-bg);font-size:.72rem;color:var(--blue);font-weight:600;border-bottom:1px solid var(--gray-200)';
-  statusDiv.innerHTML='<i class="fas fa-sync-alt fa-spin"></i> Menyinkronkan '+docsWithLink.length+' dokumen...';
+  statusDiv.style.cssText='padding:10px 14px;background:var(--blue-bg);font-size:.72rem;color:var(--blue);font-weight:700;border-bottom:1px solid var(--gray-200);position:sticky;top:0;z-index:5';
+  statusDiv.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Memuat database NIK...';
   el.parentElement.insertBefore(statusDiv,el);
-  let totalLinked=0;
-  for(const d of docsWithLink){
-    // Cari penerima yang cocok
-    let q=sb.from('rtlh').select('id').ilike('jenis_bantuan','%'+d.jenis_bantuan+'%');
-    if(d.tahun_bantuan)q=q.eq('tahun_bantuan',String(d.tahun_bantuan));
-    const{data:matched}=await q;
-    if(!matched?.length)continue;
-    // Batch upsert
-    for(let i=0;i<matched.length;i+=100){
-      const batch=matched.slice(i,i+100).map(r=>({rtlh_id:r.id,dokumen_id:d.id,linked_by:user?.email}));
-      await sb.from('rtlh_dokumen_link').upsert(batch,{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
+  const show=t=>{statusDiv.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> '+t;};
+
+  try{
+    // 1. Muat semua NIK BNBA dari database -> map NIK -> rtlh_id
+    const nikToRtlh={};
+    let from=0;
+    while(true){
+      const{data,error}=await sb.from('rtlh').select('id,nik').range(from,from+999);
+      if(error||!data?.length) break;
+      data.forEach(r=>{ if(r.nik){ const n=_ocrNorm(r.nik); if(n.length===16) nikToRtlh[n]=r.id; } });
+      if(data.length<1000) break;
+      from+=1000;
+      show('Memuat database NIK... ('+Object.keys(nikToRtlh).length+')');
     }
-    totalLinked+=matched.length;
-    statusDiv.innerHTML='<i class="fas fa-sync-alt fa-spin"></i> Menyinkronkan: '+d.judul+' ('+matched.length+' penerima)';
+    const totalNik=Object.keys(nikToRtlh).length;
+    console.log('[REFRESH] NIK database:',totalNik);
+
+    // 2. Scan setiap dokumen
+    const docs=_dokLibData.filter(d=>{
+      const e=(d.path||'').toLowerCase().split('.').pop();
+      return ['pdf','xlsx','xls','csv','docx'].includes(e);
+    });
+
+    let totalLink=0, totalHl=0;
+    const linkRows=[], scanRows=[];
+
+    for(let di=0; di<docs.length; di++){
+      const d=docs[di];
+      const url=sb.storage.from('dokumen-kab').getPublicUrl(d.path).data.publicUrl;
+      const urlH=_urlHash(url);
+      show('Scan '+(di+1)+'/'+docs.length+': '+d.judul);
+
+      let ext;
+      try{
+        ext=await _extractNiksFromDoc(url, d.path, (p,tot)=>show('Scan '+(di+1)+'/'+docs.length+': '+d.judul+' (hal '+p+'/'+tot+')'));
+      }catch(e){ console.warn('[REFRESH] gagal scan '+d.judul,e.message); continue; }
+
+      console.log('[REFRESH] '+d.judul+': '+ext.allNiks.size+' NIK 16-digit ditemukan');
+
+      // 3. Cocokkan NIK dokumen dengan database -> kumpulkan match
+      // Bangun map nik -> {pages, highlights}
+      const nikData={}; // nik -> {pages:Set, highlights:[]}
+      Object.entries(ext.pages).forEach(([pg,niks])=>{
+        niks.forEach(item=>{
+          // Cari NIK database yang cocok (exact atau fuzzy <=2)
+          let matchNik=null;
+          if(nikToRtlh[item.nik]) matchNik=item.nik;
+          else{
+            for(const dbNik in nikToRtlh){
+              let diff=0; for(let j=0;j<16;j++) if(item.nik[j]!==dbNik[j]) diff++;
+              if(diff<=2){ matchNik=dbNik; break; }
+            }
+          }
+          if(!matchNik) return;
+          if(!nikData[matchNik]) nikData[matchNik]={pages:new Set(),highlights:[]};
+          nikData[matchNik].pages.add(parseInt(pg));
+          if(item.y0pct||item.y1pct)
+            nikData[matchNik].highlights.push({page:parseInt(pg),y0pct:item.y0pct,y1pct:item.y1pct,exact:true});
+        });
+      });
+
+      // 4. Buat link + simpan highlight untuk tiap NIK yang cocok
+      for(const nik in nikData){
+        const rtlhId=nikToRtlh[nik];
+        const pages=[...nikData[nik].pages];
+        const highlights=nikData[nik].highlights;
+        // Link (tanda ada BA)
+        linkRows.push({rtlh_id:rtlhId,dokumen_id:d.id,linked_by:user?.email});
+        totalLink++;
+        // Highlight (garis kuning per BNBA)
+        scanRows.push({rtlh_id:rtlhId,url_hash:urlH,nik_hash:_urlHash(_ocrNorm(nik)),
+          pages_found:pages,highlights,scanned_at:new Date().toISOString()});
+        _pdfOcrCache.set(url+'|'+nik,{pages,highlights});
+        totalHl++;
+
+        // Batch flush
+        if(linkRows.length>=100){
+          await sb.from('rtlh_dokumen_link').upsert(linkRows.splice(0),{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
+        }
+        if(scanRows.length>=50){
+          await sb.from('rtlh_pdf_scan_results').upsert(scanRows.splice(0),{onConflict:'rtlh_id,url_hash,nik_hash'});
+        }
+      }
+    }
+
+    // Flush sisa
+    if(linkRows.length) await sb.from('rtlh_dokumen_link').upsert(linkRows,{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
+    if(scanRows.length) await sb.from('rtlh_pdf_scan_results').upsert(scanRows,{onConflict:'rtlh_id,url_hash,nik_hash'});
+
+    statusDiv.innerHTML='<i class="fas fa-check-circle" style="color:var(--success)"></i> Selesai -- '+totalLink+' NIK terhubung ke dokumen, '+totalHl+' highlight tersimpan';
+    setTimeout(()=>statusDiv.remove(),5000);
+
+    // Refresh tanda BA/SK di sidebar & peta
+    if(typeof loadBALinks==='function'&&window.brAll) await loadBALinks(brAll.map(r=>parseInt(r.id)));
+    toast('Scan selesai: '+totalLink+' NIK terhubung','success');
+  }catch(e){
+    console.error('[REFRESH] error',e);
+    statusDiv.innerHTML='<i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i> Error: '+e.message;
+    setTimeout(()=>statusDiv.remove(),5000);
+    toast('Error: '+e.message,'error');
+  }finally{
+    if(btn){btn.innerHTML='<i class="fas fa-sync-alt"></i>';btn.disabled=false;}
   }
-  statusDiv.innerHTML='<i class="fas fa-check-circle" style="color:var(--success)"></i> Sinkronisasi selesai -- '+totalLinked+' link diperbarui';
-  setTimeout(()=>statusDiv.remove(),3000);
-  if(typeof loadBALinks==='function'&&window.brAll) await loadBALinks(brAll.map(r=>parseInt(r.id)));
-  if(btn){btn.innerHTML='<i class="fas fa-sync-alt"></i>';btn.disabled=false;}
-  toast('Sinkronisasi selesai: '+totalLinked+' link diperbarui','success');
 }
 
 // Clear semua cache library dokumen (semua filter) + reload paksa
@@ -10114,6 +10194,127 @@ async function _triggerScanForRtlh(rtlhId,forceRefresh=false){
 // ==============================================
 // SCAN MASSAL -- load PDF sekali, cari semua NIK
 // ==============================================
+// ==============================================
+// EKSTRAKSI NIK UNIVERSAL: PDF / Excel / Word
+// Return: { niksByPage: {pageNum:[{nik,y0pct,y1pct}]}, allNiks:Set }
+// ==============================================
+
+// Ekstrak NIK dari PDF (text layer + OCR fallback) dengan posisi highlight
+async function _extractNiksFromPdf(url, onProgress){
+  const result={pages:{}, allNiks:new Set()};
+  if(!window.pdfjsLib) return result;
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const pdf=await pdfjsLib.getDocument({url,withCredentials:false}).promise;
+  let worker=null;
+
+  for(let p=1;p<=pdf.numPages;p++){
+    if(onProgress) onProgress(p, pdf.numPages);
+    const page=await pdf.getPage(p);
+    const vp=page.getViewport({scale:1.5});
+    const tc=await page.getTextContent();
+    const rawText=tc.items.map(i=>i.str).join('');
+    const tlHas16=/\d{16}/.test(_ocrNorm(rawText));
+    const pageNiks=[];
+
+    if(tlHas16){
+      // Text layer punya NIK -- ekstrak per baris dengan posisi
+      const lineMap={};
+      tc.items.forEach(it=>{
+        if(!it.str.trim())return;
+        const ty=Math.round(it.transform[5]);
+        const key=Object.keys(lineMap).find(k=>Math.abs(k-ty)<8);
+        if(key)lineMap[key].items.push(it); else lineMap[ty]={ty,items:[it]};
+      });
+      Object.values(lineMap).forEach(ln=>{
+        const txt=ln.items.map(i=>i.str).join('');
+        const norm=_ocrNorm(txt);
+        const found=norm.match(/\d{16}/g);
+        if(found){
+          const fh=ln.items.reduce((mx,it)=>Math.max(mx,Math.abs(it.transform[3])||10),10);
+          const yc=vp.height-ln.ty*1.5;
+          const y0=Math.max(0,(yc-fh*1.5)/vp.height);
+          const y1=Math.min(1,(yc+fh*0.5)/vp.height);
+          found.forEach(nik=>{ pageNiks.push({nik,y0pct:y0,y1pct:y1}); result.allNiks.add(nik); });
+        }
+      });
+    }else{
+      // OCR halaman ini
+      if(!worker){
+        worker=await Tesseract.createWorker('eng',1,{logger:()=>{}});
+        await worker.setParameters({tessedit_pageseg_mode:'4'});
+      }
+      const scale=2.5;
+      const vp2=page.getViewport({scale});
+      const canvas=document.createElement('canvas');
+      canvas.width=vp2.width; canvas.height=vp2.height;
+      await page.render({canvasContext:canvas.getContext('2d'),viewport:vp2}).promise;
+      const {data}=await worker.recognize(_enhanceCanvas(canvas));
+      (data.lines||[]).forEach(ln=>{
+        const norm=_ocrNorm(ln.text);
+        const found=norm.match(/\d{16}/g);
+        if(found){
+          const y0=ln.bbox.y0/canvas.height, y1=ln.bbox.y1/canvas.height;
+          found.forEach(nik=>{ pageNiks.push({nik,y0pct:y0,y1pct:y1}); result.allNiks.add(nik); });
+        }
+      });
+    }
+    if(pageNiks.length) result.pages[p]=pageNiks;
+  }
+  if(worker)try{await worker.terminate();}catch(e){}
+  return result;
+}
+
+// Ekstrak NIK dari Excel (semua sheet, semua sel)
+async function _extractNiksFromExcel(url){
+  const result={pages:{}, allNiks:new Set()};
+  if(!window.XLSX) return result;
+  const resp=await fetch(url);
+  const buf=await resp.arrayBuffer();
+  const wb=XLSX.read(buf,{type:'array'});
+  wb.SheetNames.forEach((sn,si)=>{
+    const sheet=wb.Sheets[sn];
+    const rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:''});
+    const pageNiks=[];
+    rows.forEach((row,ri)=>{
+      row.forEach(cell=>{
+        const norm=_ocrNorm(String(cell));
+        const found=norm.match(/\d{16}/g);
+        if(found) found.forEach(nik=>{
+          pageNiks.push({nik,y0pct:0,y1pct:0,sheet:sn,row:ri+1});
+          result.allNiks.add(nik);
+        });
+      });
+    });
+    if(pageNiks.length) result.pages[si+1]=pageNiks;
+  });
+  return result;
+}
+
+// Ekstrak NIK dari Word (.docx)
+async function _extractNiksFromWord(url){
+  const result={pages:{}, allNiks:new Set()};
+  if(!window.mammoth) return result;
+  const resp=await fetch(url);
+  const buf=await resp.arrayBuffer();
+  const {value}=await mammoth.extractRawText({arrayBuffer:buf});
+  const norm=_ocrNorm(value);
+  const found=norm.match(/\d{16}/g);
+  if(found){
+    const pageNiks=found.map(nik=>{ result.allNiks.add(nik); return {nik,y0pct:0,y1pct:0}; });
+    result.pages[1]=pageNiks;
+  }
+  return result;
+}
+
+// Router: pilih ekstraktor berdasarkan ekstensi
+async function _extractNiksFromDoc(url, path, onProgress){
+  const ext=(path||'').toLowerCase().split('.').pop();
+  if(ext==='pdf') return await _extractNiksFromPdf(url, onProgress);
+  if(ext==='xlsx'||ext==='xls'||ext==='csv') return await _extractNiksFromExcel(url);
+  if(ext==='docx') return await _extractNiksFromWord(url);
+  return {pages:{}, allNiks:new Set()};
+}
+
 async function scanMassalDokLib(){
   const btn=document.getElementById('btnScanMassal');
   const prog=document.getElementById('scanMassalProgress');
