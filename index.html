@@ -6224,10 +6224,18 @@ async function openDokLib(){
 // simpan link (untuk tanda "ada BA") + highlight kuning (untuk tampilan PDF).
 // TIDAK mengubah data NIK di database.
 async function refreshDokLib(){
+  if(!confirm('Scan ulang semua dokumen & cocokkan NIK dengan database?\n\nData highlight & link lama akan diganti dengan hasil baru (hanya kecocokan NIK yang PERSIS sama).')) return;
   const btn=document.getElementById('btnRefreshDokLib');
   if(btn){btn.innerHTML='<i class="fas fa-sync-alt fa-spin"></i>';btn.disabled=true;}
   _clearDokLibCache();
   await loadDokLib(true);
+
+  // Bersihkan hasil scan & link lama (yang mungkin salah dari fuzzy match)
+  try{
+    await sb.from('rtlh_pdf_scan_results').delete().neq('id',0);
+    await sb.from('rtlh_dokumen_link').delete().neq('id',0);
+    _pdfOcrCache.clear();
+  }catch(e){ console.warn('clear lama:',e.message); }
 
   const el=document.getElementById('dokLibList');
   const statusDiv=document.createElement('div');
@@ -6278,15 +6286,8 @@ async function refreshDokLib(){
       const nikData={}; // nik -> {pages:Set, highlights:[]}
       Object.entries(ext.pages).forEach(([pg,niks])=>{
         niks.forEach(item=>{
-          // Cari NIK database yang cocok (exact atau fuzzy <=2)
-          let matchNik=null;
-          if(nikToRtlh[item.nik]) matchNik=item.nik;
-          else{
-            for(const dbNik in nikToRtlh){
-              let diff=0; for(let j=0;j<16;j++) if(item.nik[j]!==dbNik[j]) diff++;
-              if(diff<=2){ matchNik=dbNik; break; }
-            }
-          }
+          // HANYA exact match -- fuzzy bikin salah orang (NIK Ngawi mirip2)
+          const matchNik = nikToRtlh[item.nik] ? item.nik : null;
           if(!matchNik) return;
           if(!nikData[matchNik]) nikData[matchNik]={pages:new Set(),highlights:[]};
           nikData[matchNik].pages.add(parseInt(pg));
