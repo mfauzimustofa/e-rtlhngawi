@@ -257,6 +257,26 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 .pdf-highlight-layer{position:absolute;top:0;left:0;pointer-events:none}
 .pdf-nik-badge{position:absolute;right:0;top:0;background:#EAB308;color:#92400E;font-size:.58rem;font-weight:800;padding:2px 6px;border-radius:0 0 0 6px;pointer-events:none}
 
+/* PDF VIEWER -- MOBILE FRIENDLY */
+.pdf-toolbar-group{display:flex;align-items:center;gap:4px}
+@media(max-width:768px){
+  .pdf-toolbar{height:auto;min-height:52px;flex-wrap:wrap;padding:8px;gap:6px;row-gap:6px}
+  .pdf-toolbar-title{flex:1 1 100%;order:-1;font-size:.78rem;padding-right:36px}
+  .pdf-nav-btn{width:40px;height:40px;font-size:.9rem}
+  .pdf-toolbar-group{flex:1;justify-content:center}
+  #pdfNikBadge{flex:1 1 100%;justify-content:center;font-size:.68rem !important;padding:6px !important}
+  #pdfOcrStatus{flex:1 1 100%;justify-content:center}
+  .pdf-page-info{font-size:.8rem;min-width:54px}
+  .pdf-scroll-area{padding:8px}
+  .pdf-page-wrap{max-width:100%}
+  #pdfZoomLabel{font-size:.75rem !important}
+  /* Tombol close lebih besar & jelas di pojok */
+  .pdf-close-mobile{position:absolute;top:8px;right:8px;z-index:5}
+}
+@media(min-width:769px){
+  .pdf-close-mobile{position:static}
+}
+
 /* DETAIL PANEL */
 .detail-panel{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow-lg);position:absolute;bottom:20px;left:50%;transform:translateX(-50%);width:calc(100% - 40px);max-width:420px;z-index:8500;max-height:60dvh;overflow-y:auto;display:none}
 .detail-panel.open{display:block}
@@ -359,6 +379,12 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
   /* Sidebar item tap area lebih besar */
   .rtlh-item{padding:14px 16px}
   .ri-head{gap:10px}
+  /* Kartu bukti dukung -- tap-friendly di HP */
+  #dpDokLink > div{padding:12px !important;margin-bottom:8px !important}
+  #dpDokLink > div > div:first-child{width:38px !important;height:38px !important}
+  #dpDokLink > div [style*="font-size:.72rem"]{font-size:.82rem !important}
+  /* Modal library dokumen -- kartu lebih besar */
+  #dokLibList > div{padding:12px !important}
 }
 @media(min-width:769px){
   .mob-sidebar-toggle{display:none!important}
@@ -9055,27 +9081,27 @@ function exportDtsenWord(){
 <!-- ═══ MODAL PDF VIEWER ═══ -->
 <div id="ovPdfViewer">
   <div class="pdf-toolbar">
-    <button class="pdf-nav-btn" onclick="closePdfViewer()" title="Tutup"><i class="fas fa-times"></i></button>
+    <button class="pdf-nav-btn pdf-close-mobile" onclick="closePdfViewer()" title="Tutup"><i class="fas fa-times"></i></button>
     <div class="pdf-toolbar-title" id="pdfViewerTitle">--</div>
-    <div style="display:flex;align-items:center;gap:4px">
-      <button class="pdf-nav-btn" id="pdfPrevBtn" onclick="pdfChangePage(-1)" title="Halaman sebelumnya"><i class="fas fa-chevron-left"></i></button>
-      <span class="pdf-page-info"><span id="pdfPageNum">1</span> / <span id="pdfPageCount">?</span></span>
-      <button class="pdf-nav-btn" id="pdfNextBtn" onclick="pdfChangePage(1)" title="Halaman berikutnya"><i class="fas fa-chevron-right"></i></button>
+    <div class="pdf-toolbar-group">
+      <button class="pdf-nav-btn" id="pdfPrevBtn" onclick="pdfChangePage(-1)" title="Sebelumnya"><i class="fas fa-chevron-left"></i></button>
+      <span class="pdf-page-info"><span id="pdfPageNum">1</span>/<span id="pdfPageCount">?</span></span>
+      <button class="pdf-nav-btn" id="pdfNextBtn" onclick="pdfChangePage(1)" title="Berikutnya"><i class="fas fa-chevron-right"></i></button>
     </div>
-    <div style="display:flex;align-items:center;gap:4px">
-      <button class="pdf-nav-btn" onclick="pdfZoom(-0.2)" title="Zoom out"><i class="fas fa-search-minus"></i></button>
+    <div class="pdf-toolbar-group">
+      <button class="pdf-nav-btn" onclick="pdfZoom(-0.2)" title="Perkecil"><i class="fas fa-search-minus"></i></button>
       <span style="font-size:.7rem;color:#94A3B8;min-width:40px;text-align:center" id="pdfZoomLabel">100%</span>
-      <button class="pdf-nav-btn" onclick="pdfZoom(0.2)" title="Zoom in"><i class="fas fa-search-plus"></i></button>
+      <button class="pdf-nav-btn" onclick="pdfZoom(0.2)" title="Perbesar"><i class="fas fa-search-plus"></i></button>
     </div>
-    <div id="pdfOcrStatus" style="display:none;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;background:rgba(234,179,8,.15);font-size:.65rem;font-weight:700;color:#EAB308;white-space:nowrap">
-      <i class="fas fa-brain"></i> <span id="pdfOcrStatusText">Membaca teks...</span>
+    <div class="pdf-toolbar-group">
+      <button class="pdf-nav-btn" onclick="pdfRescan()" title="Scan ulang NIK"><i class="fas fa-redo"></i></button>
+      <button class="pdf-nav-btn" id="pdfFullBtn" onclick="pdfToggleFullscreen()" title="Layar penuh"><i class="fas fa-expand"></i></button>
+      <a id="pdfDownloadBtn" href="#" download class="pdf-nav-btn" style="text-decoration:none" title="Unduh"><i class="fas fa-download"></i></a>
     </div>
-    <button class="pdf-nav-btn" onclick="pdfRescan()" title="Scan ulang -- paksa OCR ulang halaman ini" style="font-size:.65rem;padding:0 8px;gap:4px;display:flex;align-items:center">
-      <i class="fas fa-redo"></i>
-    </button>
-    <button class="pdf-nav-btn" id="pdfFullBtn" onclick="pdfToggleFullscreen()" title="Fullscreen"><i class="fas fa-expand"></i></button>
-    <a id="pdfDownloadBtn" href="#" download style="width:34px;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;text-decoration:none" title="Unduh PDF"><i class="fas fa-download"></i></a>
-    <div id="pdfNikBadge" style="display:none;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;background:#FEF3C7;font-size:.65rem;font-weight:700;color:#92400E">
+    <div id="pdfOcrStatus" style="display:none;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;background:rgba(234,179,8,.15);font-size:.68rem;font-weight:700;color:#EAB308;white-space:nowrap">
+      <i class="fas fa-circle-notch fa-spin"></i> <span id="pdfOcrStatusText">Membaca...</span>
+    </div>
+    <div id="pdfNikBadge" style="display:none;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;background:#FEF3C7;font-size:.7rem;font-weight:700;color:#92400E">
       <i class="fas fa-highlighter" style="color:#EAB308"></i>
       <span id="pdfNikBadgeText"></span>
     </div>
@@ -9478,19 +9504,30 @@ let _pdfScale = 1.4;
 let _pdfNik = '';
 let _pdfUrl = '';
 let _pdfRendering = false;
-let _pdfOcrRunning = false; // sedang OCR
+let _pdfOcrRunning = false;
+let _pdfRtlhId = 0;
+let _pdfDokId = ""; // sedang OCR
 // Cache hasil OCR: key = url+'|'+nik -> {pages:[...], highlights:[{page,y0pct,y1pct,exact}]}
 </script>
 
 <script>
 const _pdfOcrCache = new Map();
 
-async function openPdfViewer(url, title, nik){
+async function openPdfViewer(url, title, nik, rtlhId, dokId){
   _pdfUrl = url;
   _pdfNik = String(nik||'').trim();
+  _pdfRtlhId = parseInt(rtlhId)||0;
+  _pdfDokId = dokId||'';
   _pdfPage = 1;
   _pdfDoc = null;
   _pdfOcrRunning = false;
+
+  // PRELOAD hasil scan dari DB sebelum render -- supaya highlight langsung muncul
+  if(_pdfNik && _pdfRtlhId){
+    const ck=_pdfUrl+'|'+_pdfNik;
+    if(!_pdfOcrCache.has(ck))
+      await _loadScanFromDb(_pdfRtlhId,_urlHash(_pdfUrl),_urlHash(_pdfNik),ck);
+  }
 
   const ov = document.getElementById('ovPdfViewer');
   const scrollArea = document.getElementById('pdfScrollArea');
@@ -9568,48 +9605,18 @@ async function _pdfRenderAll(){
     svg.dataset.page = p;
     wrap.appendChild(svg);
 
-    // Cari NIK di teks halaman (text PDF) -- simpan canvas ref untuk OCR
+    // Gambar highlight dari cache (hasil scan tersimpan) -- konsisten di semua zoom
     if(_pdfNik){
-      const tc = await page.getTextContent();
-      const items = tc.items;
-      const allText = items.map(i=>i.str).join('').replace(/\s/g,'');
-      const hasText = allText.length > 20; // PDF punya text layer
-
-      if(hasText){
-        // -- TEXT PDF: cari per baris --
-        const lineMap = {};
-        items.forEach(item=>{
-          if(!item.str.trim()) return;
-          const [,, ,, x, y] = item.transform;
-          const vy = Math.round(y);
-          if(!lineMap[vy]) lineMap[vy]={items:[], y:vy};
-          lineMap[vy].items.push(item);
-        });
-        Object.values(lineMap).forEach(line=>{
-          const lineText = line.items.map(i=>i.str).join('').replace(/\s/g,'');
-          if(lineText.includes(_pdfNik)){
-            const xs = line.items.map(i=>i.transform[4]*_pdfScale);
-            const ws = line.items.map(i=>i.width*_pdfScale);
-            const xMin = 0;
-            const xMax = vp.width;
-            const vY = vp.height - line.y*_pdfScale - (line.items[0]?.height||12)*_pdfScale;
-            const bboxH = Math.max((line.items[0]?.height||12)*_pdfScale + 6, 16);
-            const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
-            rect.setAttribute('x', 0);
-            rect.setAttribute('y', Math.max(0, vY-4));
-            rect.setAttribute('width', vp.width);
-            rect.setAttribute('height', bboxH);
-            rect.setAttribute('fill','rgba(234,179,8,0.38)');
-            rect.setAttribute('stroke','#EAB308');
-            rect.setAttribute('stroke-width','2');
-            rect.setAttribute('rx','3');
-            svg.appendChild(rect);
-            nikFound.push(p);
+      const ck=_pdfUrl+'|'+_pdfNik;
+      const cached=_pdfOcrCache.get(ck);
+      if(cached&&cached.highlights){
+        cached.highlights.forEach(h=>{
+          if(h.page===p){
+            _hlRow(svg, vp.height, h.y0pct, h.y1pct, h.exact);
+            if(!nikFound.includes(p)) nikFound.push(p);
           }
         });
       }
-      // -- SCAN PDF: tandai canvas untuk OCR nanti (background) --
-      if(!hasText) canvas.dataset.needsOcr = '1';
     }
 
     // Label halaman
@@ -9970,9 +9977,12 @@ async function _pdfRunOcr(nikFoundSoFar){
   const ck=_pdfUrl+'|'+_pdfNik;
   const finalPages=[...new Set(found)];
   _pdfOcrCache.set(ck,{pages:finalPages,highlights:cacheHL});
-  const rid=parseInt(document.getElementById('dpBody')?.dataset?.rtlhId||0);
-  if(rid&&_pdfUrl&&_pdfNik)
+  const rid=_pdfRtlhId||parseInt(document.getElementById('dpBody')?.dataset?.rtlhId||0);
+  if(rid&&_pdfUrl&&_pdfNik){
     _saveScanResult(rid,_urlHash(_pdfUrl),_urlHash(_pdfNik),finalPages,cacheHL);
+    // Refresh kartu bukti dukung supaya badge "NIK hal.X" muncul
+    if(typeof loadDokLink==='function') setTimeout(()=>loadDokLink(rid),500);
+  }
   if(!badge) return;
   if(finalPages.length>0){
     badge.style.display='flex';badge.style.background='#FEF3C7';
