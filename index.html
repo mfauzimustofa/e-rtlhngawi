@@ -6338,12 +6338,30 @@ function filterDokLib(jenis){
 
 function openUploadDokLib(){
   if(!isAdmin)return toast('Hanya admin','error');
-  document.getElementById('dlJudul').value='';
+  const _ju=document.getElementById('dlJudul');
+  _ju.value=''; _ju.dataset.userEdited=''; _ju.dataset.autoFilled='';
   document.getElementById('dlFile').value='';
   _dlSelectedIds.clear();renderDlSelected();
   const rdAuto=document.querySelector('input[name="dlLinkMode"][value="auto"]');if(rdAuto){rdAuto.checked=true;toggleDlLinkMode('auto');}
   document.getElementById('dlProgress').innerHTML='';
   document.getElementById('ovUploadDokLib').classList.add('open');
+}
+
+// Auto-isi judul dari nama file (kecuali user sudah mengetik manual)
+function autoFillDlJudul(input){
+  const file=input.files&&input.files[0];
+  if(!file) return;
+  const judulEl=document.getElementById('dlJudul');
+  if(!judulEl) return;
+  // Jangan timpa kalau user sudah ketik & tandai manual
+  if(judulEl.dataset.userEdited==='1' && judulEl.value.trim()) return;
+  // Bersihkan nama file: buang ekstensi, ganti _ - jadi spasi, rapikan
+  let name=file.name.replace(/\.[^.]+$/,'');
+  name=name.replace(/[_]+/g,' ').replace(/\s+/g,' ').trim();
+  // Kapitalisasi tiap kata
+  name=name.replace(/\b\w/g,c=>c.toUpperCase());
+  judulEl.value=name;
+  judulEl.dataset.autoFilled='1';
 }
 
 async function uploadDokLib(){
@@ -8882,7 +8900,7 @@ function exportDtsenWord(){
       </div>
       <div class="form-group" style="margin-bottom:10px">
         <label>Judul Dokumen <span style="color:var(--danger)">*</span></label>
-        <input type="text" id="dlJudul" placeholder="misal: SK RTLH 2025 No. 188/...">
+        <input type="text" id="dlJudul" placeholder="otomatis terisi dari nama file" oninput="this.dataset.userEdited='1'">
       </div>
       <div class="form-group" style="margin-bottom:10px">
         <label>Kecamatan (kosongkan jika berlaku seluruh kabupaten)</label>
@@ -8943,7 +8961,7 @@ function exportDtsenWord(){
       </div>
       <div class="form-group" style="margin-bottom:4px">
         <label>File PDF <span style="color:var(--danger)">*</span></label>
-        <input type="file" id="dlFile" accept=".pdf,.doc,.docx,.jpg,.png" style="font-size:.8rem">
+        <input type="file" id="dlFile" accept=".pdf,.doc,.docx,.jpg,.png" style="font-size:.8rem" onchange="autoFillDlJudul(this)">
         <div style="font-size:.62rem;color:var(--gray-400);margin-top:4px">Format: PDF, DOC, JPG, PNG. Maks 20 MB.</div>
       </div>
       <div id="dlProgress" style="font-size:.72rem;margin-top:8px"></div>
