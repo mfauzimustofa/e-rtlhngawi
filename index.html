@@ -9923,31 +9923,12 @@ function _ocrNorm(s){
 // Cari NIK 16 digit dengan toleransi 2 kesalahan
 function _nikMatch(raw, target){
   if(!raw||!target) return {match:false};
-  const norm = _ocrNorm(String(raw));
   const t = String(target).trim();
-  // Exact
+  if(t.length!==16) return {match:false};
+  // EXACT 16 digit saja. Tidak ada fuzzy -- fuzzy bikin salah orang
+  // karena NIK satu wilayah sangat mirip (beda 1-2 digit = orang beda).
+  const norm = _ocrNorm(String(raw));
   if(norm.includes(t)) return {match:true, exact:true};
-  // Fuzzy: sliding window 16 digit, max 2 beda
-  for(let i=0; i<=norm.length-16; i++){
-    const chunk=norm.slice(i,i+16);
-    let diff=0;
-    for(let j=0;j<16;j++) if(chunk[j]!==t[j]) diff++;
-    if(diff<=2) return {match:true, exact:false, diff};
-  }
-  // Token sliding: gabung kata per kata
-  const tokens=String(raw).split(/\s+/).map(w=>_ocrNorm(w)).filter(w=>w.length>=4);
-  let buf='';
-  for(const tok of tokens){
-    buf+=tok;
-    if(buf.length>=16){
-      for(let i=0;i<=buf.length-16;i++){
-        const c=buf.slice(i,i+16);
-        let d=0; for(let j=0;j<16;j++) if(c[j]!==t[j]) d++;
-        if(d<=2) return {match:true,exact:false,diff:d};
-      }
-      if(buf.length>32) buf=buf.slice(-20);
-    }
-  }
   return {match:false};
 }
 
