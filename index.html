@@ -6291,50 +6291,40 @@ async function refreshDokLib(){
 
       console.log('[REFRESH] '+d.judul+': '+ext.allNiks.size+' NIK 16-digit ditemukan');
 
-      // 3. Cocokkan tiap baris dokumen dengan database (3-faktor)
+      // 3. Cocokkan tiap baris: WAJIB NIK cocok DAN Nama cocok (keduanya tepat)
       const nikData={}; // nik(db) -> {pages:Set, highlights:[]}
       Object.entries(ext.pages).forEach(([pg,niks])=>{
         niks.forEach(item=>{
-          const cand=item.nik;                 // 14-18 digit dari dokumen
-          const lineNorm=_normName(item.lineText||''); // teks baris (nama+desa)
+          const cand=item.nik;                          // 14-18 digit dari dokumen
+          const lineNorm=_normName(item.lineText||'');   // teks baris (untuk cek nama)
           let matchNik=null;
 
-          // A. NIK persis 16 digit & ada di database -> langsung terima
-          if(cand.length===16 && nikToRtlh[cand]){
-            matchNik=cand;
-          } else {
-            // B. Fuzzy: cari record DB yang NIK-nya mirip (diff<=2)
-            //    DAN nama muncul di baris DAN desa muncul di baris
-            let best=null, bestDiff=99;
-            for(const rec of dbRecords){
-              // Bandingkan 16 digit (geser kalau cand 17-18 digit)
-              let dmin=99;
-              for(let off=0; off+16<=cand.length || off===0; off++){
-                const seg=cand.substr(off,16);
-                if(seg.length<16) break;
-                let d=0; for(let j=0;j<16;j++) if(seg[j]!==rec.nik[j]) d++;
-                if(d<dmin) dmin=d;
-                if(off>2) break;
-              }
-              if(dmin>2) continue; // NIK terlalu beda
-              // Konfirmasi nama: minimal 1 token nama (>=3 huruf) ada di baris
-              const nameOk = rec.nameTokens.length>0 && rec.nameTokens.some(tok=>lineNorm.includes(tok));
-              // Konfirmasi desa: desa ada di baris
-              const desaOk = rec.desaNorm.length>=3 && lineNorm.includes(rec.desaNorm);
-              // Terima kalau NIK mirip + (nama ATAU desa) cocok; makin kecil diff makin baik
-              if(nameOk || desaOk){
-                const score = dmin - (nameOk?0.5:0) - (desaOk?0.5:0);
-                if(score<bestDiff){ bestDiff=score; best=rec; }
-              }
+          // Cari record DB: NIK cocok (persis, atau OCR mirip <=2) DAN nama ada di baris
+          let best=null, bestDiff=99;
+          for(const rec of dbRecords){
+            // Hitung selisih NIK (geser kalau cand 17-18 digit)
+            let dmin=99;
+            for(let off=0; off+16<=cand.length || off===0; off++){
+              const seg=cand.substr(off,16);
+              if(seg.length<16) break;
+              let d=0; for(let j=0;j<16;j++) if(seg[j]!==rec.nik[j]) d++;
+              if(d<dmin) dmin=d;
+              if(off>2) break;
             }
-            if(best) matchNik=best.nik;
+            if(dmin>2) continue; // NIK tidak cocok -> lewati
+            // WAJIB nama cocok: minimal 1 kata nama (>=3 huruf) ada di baris
+            const nameOk = rec.nameTokens.length>0 && rec.nameTokens.some(tok=>lineNorm.includes(tok));
+            if(!nameOk) continue; // nama tidak cocok -> lewati (keduanya harus tepat)
+            // Pilih yang NIK-nya paling cocok
+            if(dmin<bestDiff){ bestDiff=dmin; best=rec; }
           }
+          if(best) matchNik=best.nik;
 
           if(!matchNik) return;
           if(!nikData[matchNik]) nikData[matchNik]={pages:new Set(),highlights:[]};
           nikData[matchNik].pages.add(parseInt(pg));
           if(item.y0pct||item.y1pct)
-            nikData[matchNik].highlights.push({page:parseInt(pg),y0pct:item.y0pct,y1pct:item.y1pct,exact:cand.length===16&&nikToRtlh[cand]});
+            nikData[matchNik].highlights.push({page:parseInt(pg),y0pct:item.y0pct,y1pct:item.y1pct,exact:bestDiff===0});
         });
       });
 
@@ -6347,7 +6337,7 @@ async function refreshDokLib(){
         linkRows.push({rtlh_id:rtlhId,dokumen_id:d.id,linked_by:user?.email});
         totalLink++;
         // Highlight (garis kuning per BNBA)
-        scanRows.push({rtlh_id:rtlhId,url_hash:urlH,nik_hash:_urlHash(_ocrNorm(nik)),
+        scanRows.push({rtlh_id:rtlhId,url_hash:urlH,nik_hash:_nikHash(nik),
           pages_found:pages,highlights,scanned_at:new Date().toISOString()});
         _pdfOcrCache.set(url+'|'+nik,{pages,highlights});
         totalHl++;
@@ -9691,7 +9681,7 @@ async function openPdfViewer(url, title, nik, rtlhId, dokId){
   if(_pdfNik && _pdfRtlhId){
     const ck=_pdfUrl+'|'+_pdfNik;
     if(!_pdfOcrCache.has(ck))
-      await _loadScanFromDb(_pdfRtlhId,_urlHash(_pdfUrl),_urlHash(_pdfNik),ck);
+      await _loadScanFromDb(_pdfRtlhId,_urlHash(_pdfUrl),_nikHash(_pdfNik),ck);
   }
 
   const ov = document.getElementById('ovPdfViewer');
@@ -9812,7 +9802,7 @@ async function _pdfRenderAll(){
       // Load dari DB jika belum di memory
       const _rid=parseInt(document.getElementById('dpBody')?.dataset?.rtlhId||0);
       if(!_pdfOcrCache.has(_cacheKey)&&_rid)
-        await _loadScanFromDb(_rid,_urlHash(_pdfUrl),_urlHash(_pdfNik),_cacheKey);
+        await _loadScanFromDb(_rid,_urlHash(_pdfUrl),_nikHash(_pdfNik),_cacheKey);
       const _cached = _pdfOcrCache.get(_cacheKey);
       if(_cached){
         // Sudah pernah di-scan -- restore highlights dari cache
@@ -10128,7 +10118,7 @@ async function _pdfRunOcr(nikFoundSoFar){
   _pdfOcrCache.set(ck,{pages:finalPages,highlights:cacheHL});
   const rid=_pdfRtlhId||parseInt(document.getElementById('dpBody')?.dataset?.rtlhId||0);
   if(rid&&_pdfUrl&&_pdfNik){
-    _saveScanResult(rid,_urlHash(_pdfUrl),_urlHash(_pdfNik),finalPages,cacheHL);
+    _saveScanResult(rid,_urlHash(_pdfUrl),_nikHash(_pdfNik),finalPages,cacheHL);
     // Refresh kartu bukti dukung supaya badge "NIK hal.X" muncul
     if(typeof loadDokLink==='function') setTimeout(()=>loadDokLink(rid),500);
   }
@@ -10152,7 +10142,7 @@ async function _pdfSilentScan(url, nik, rtlhId){
   if(!window.pdfjsLib) return;
   // Cek DB dulu
   if(rtlhId){
-    const uh=_urlHash(url),nh=_urlHash(nik);
+    const uh=_urlHash(url),nh=_nikHash(nik);
     const ok=await _loadScanFromDb(rtlhId,uh,nh,ck);
     if(ok) return;
   }
@@ -10170,7 +10160,7 @@ async function _pdfSilentScan(url, nik, rtlhId){
     }
     const result={pages:[...new Set(found)],highlights};
     _pdfOcrCache.set(ck,result);
-    if(rtlhId)await _saveScanResult(rtlhId,_urlHash(url),_urlHash(nik),result.pages,result.highlights);
+    if(rtlhId)await _saveScanResult(rtlhId,_urlHash(url),_nikHash(nik),result.pages,result.highlights);
   }catch(e){console.warn('[SilentScan]',e.message);}
 }
 
@@ -10180,6 +10170,8 @@ function _urlHash(str){
   for(let i=0;i<s.length;i++) h=(Math.imul(31,h)+s.charCodeAt(i))|0;
   return Math.abs(h).toString(36);
 }
+// Hash NIK yang KONSISTEN: selalu normalisasi dulu (buang spasi/format)
+function _nikHash(nik){ return _urlHash(_ocrNorm(nik)); }
 async function _saveScanResult(rtlhId,uh,nh,pages,hl){
   if(!rtlhId||!sb) return;
   try{await sb.from('rtlh_pdf_scan_results').upsert(
@@ -10211,7 +10203,7 @@ async function _triggerScanForRtlh(rtlhId,forceRefresh=false){
     if(forceRefresh){
       _pdfOcrCache.delete(ck);
       sb.from('rtlh_pdf_scan_results').delete()
-        .eq('rtlh_id',numId).eq('url_hash',_urlHash(url)).eq('nik_hash',_urlHash(nik))
+        .eq('rtlh_id',numId).eq('url_hash',_urlHash(url)).eq('nik_hash',_nikHash(nik))
         .then(()=>{}).catch(()=>{});
     }
     if(!_pdfOcrCache.has(ck)) _pdfSilentScan(url,nik,numId);
@@ -10403,7 +10395,7 @@ async function scanMassalDokLib(){
       // Filter yang belum di-scan
       const todo=rtlhIds.filter(rid=>{
         const nik=nikMap[rid]; if(!nik) return false;
-        return !doneSet.has(rid+'|'+urlH+'|'+_urlHash(nik));
+        return !doneSet.has(rid+'|'+urlH+'|'+_nikHash(nik));
       });
       if(!todo.length){show('Skip '+docIdx+'/'+allDocs.length+': '+doc.judul);continue;}
 
@@ -10487,7 +10479,7 @@ async function scanMassalDokLib(){
       // Cari setiap NIK di hasil OCR semua halaman
       for(const rtlhId of todo){
         const nik=nikMap[rtlhId]; if(!nik) continue;
-        const nikH=_urlHash(nik);
+        const nikH=_nikHash(nik);
         const pages=[],highlights=[];
 
         for(const pg of pageOcr){
