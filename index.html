@@ -6245,19 +6245,29 @@ async function refreshDokLib(){
   const show=t=>{statusDiv.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> '+t;};
 
   try{
-    // 1. Muat semua NIK BNBA dari database -> map NIK -> rtlh_id
-    const nikToRtlh={};
+    // 1. Muat NIK + nama + desa dari database
+    const nikToRtlh={};      // nik(16) -> rtlhId (untuk exact cepat)
+    const dbRecords=[];      // [{nik, rtlhId, nameTokens:[], desaNorm}] (untuk fuzzy 3-faktor)
     let from=0;
     while(true){
-      const{data,error}=await sb.from('rtlh').select('id,nik').range(from,from+999);
+      const{data,error}=await sb.from('rtlh').select('id,nik,kep_kk,desa').range(from,from+999);
       if(error||!data?.length) break;
-      data.forEach(r=>{ if(r.nik){ const n=_ocrNorm(r.nik); if(n.length===16) nikToRtlh[n]=r.id; } });
+      data.forEach(r=>{
+        if(!r.nik) return;
+        const n=_ocrNorm(r.nik);
+        if(n.length!==16) return;
+        nikToRtlh[n]=r.id;
+        dbRecords.push({
+          nik:n, rtlhId:r.id,
+          nameTokens:_normName(r.kep_kk).split(' ').filter(w=>w.length>=3),
+          desaNorm:_normName(r.desa)
+        });
+      });
       if(data.length<1000) break;
       from+=1000;
-      show('Memuat database NIK... ('+Object.keys(nikToRtlh).length+')');
+      show('Memuat database NIK... ('+dbRecords.length+')');
     }
-    const totalNik=Object.keys(nikToRtlh).length;
-    console.log('[REFRESH] NIK database:',totalNik);
+    console.log('[REFRESH] NIK database:',dbRecords.length);
 
     // 2. Scan setiap dokumen
     const docs=_dokLibData.filter(d=>{
@@ -6281,18 +6291,50 @@ async function refreshDokLib(){
 
       console.log('[REFRESH] '+d.judul+': '+ext.allNiks.size+' NIK 16-digit ditemukan');
 
-      // 3. Cocokkan NIK dokumen dengan database -> kumpulkan match
-      // Bangun map nik -> {pages, highlights}
-      const nikData={}; // nik -> {pages:Set, highlights:[]}
+      // 3. Cocokkan tiap baris dokumen dengan database (3-faktor)
+      const nikData={}; // nik(db) -> {pages:Set, highlights:[]}
       Object.entries(ext.pages).forEach(([pg,niks])=>{
         niks.forEach(item=>{
-          // HANYA exact match -- fuzzy bikin salah orang (NIK Ngawi mirip2)
-          const matchNik = nikToRtlh[item.nik] ? item.nik : null;
+          const cand=item.nik;                 // 14-18 digit dari dokumen
+          const lineNorm=_normName(item.lineText||''); // teks baris (nama+desa)
+          let matchNik=null;
+
+          // A. NIK persis 16 digit & ada di database -> langsung terima
+          if(cand.length===16 && nikToRtlh[cand]){
+            matchNik=cand;
+          } else {
+            // B. Fuzzy: cari record DB yang NIK-nya mirip (diff<=2)
+            //    DAN nama muncul di baris DAN desa muncul di baris
+            let best=null, bestDiff=99;
+            for(const rec of dbRecords){
+              // Bandingkan 16 digit (geser kalau cand 17-18 digit)
+              let dmin=99;
+              for(let off=0; off+16<=cand.length || off===0; off++){
+                const seg=cand.substr(off,16);
+                if(seg.length<16) break;
+                let d=0; for(let j=0;j<16;j++) if(seg[j]!==rec.nik[j]) d++;
+                if(d<dmin) dmin=d;
+                if(off>2) break;
+              }
+              if(dmin>2) continue; // NIK terlalu beda
+              // Konfirmasi nama: minimal 1 token nama (>=3 huruf) ada di baris
+              const nameOk = rec.nameTokens.length>0 && rec.nameTokens.some(tok=>lineNorm.includes(tok));
+              // Konfirmasi desa: desa ada di baris
+              const desaOk = rec.desaNorm.length>=3 && lineNorm.includes(rec.desaNorm);
+              // Terima kalau NIK mirip + (nama ATAU desa) cocok; makin kecil diff makin baik
+              if(nameOk || desaOk){
+                const score = dmin - (nameOk?0.5:0) - (desaOk?0.5:0);
+                if(score<bestDiff){ bestDiff=score; best=rec; }
+              }
+            }
+            if(best) matchNik=best.nik;
+          }
+
           if(!matchNik) return;
           if(!nikData[matchNik]) nikData[matchNik]={pages:new Set(),highlights:[]};
           nikData[matchNik].pages.add(parseInt(pg));
           if(item.y0pct||item.y1pct)
-            nikData[matchNik].highlights.push({page:parseInt(pg),y0pct:item.y0pct,y1pct:item.y1pct,exact:true});
+            nikData[matchNik].highlights.push({page:parseInt(pg),y0pct:item.y0pct,y1pct:item.y1pct,exact:cand.length===16&&nikToRtlh[cand]});
         });
       });
 
@@ -9912,6 +9954,9 @@ document.addEventListener('keydown',e=>{
 // ==============================================
 
 // Normalisasi OCR: ganti karakter mirip digit
+function _normName(s){
+  return String(s||'').toUpperCase().replace(/[^A-Z\s]/g,' ').replace(/\s+/g,' ').trim();
+}
 function _ocrNorm(s){
   return String(s||'')
     .replace(/[oO]/g,'0').replace(/[iIlL|]/g,'1')
@@ -10208,15 +10253,19 @@ async function _extractNiksFromPdf(url, onProgress){
         if(key)lineMap[key].items.push(it); else lineMap[ty]={ty,items:[it]};
       });
       Object.values(lineMap).forEach(ln=>{
-        const txt=ln.items.map(i=>i.str).join('');
+        const txt=ln.items.map(i=>i.str).join(' ');
         const norm=_ocrNorm(txt);
-        const found=norm.match(/\d{16}/g);
+        // Tangkap 14-18 digit (16 +/- untuk fuzzy)
+        const found=norm.match(/\d{14,18}/g);
         if(found){
           const fh=ln.items.reduce((mx,it)=>Math.max(mx,Math.abs(it.transform[3])||10),10);
           const yc=vp.height-ln.ty*1.5;
           const y0=Math.max(0,(yc-fh*1.5)/vp.height);
           const y1=Math.min(1,(yc+fh*0.5)/vp.height);
-          found.forEach(nik=>{ pageNiks.push({nik,y0pct:y0,y1pct:y1}); result.allNiks.add(nik); });
+          found.forEach(nik=>{
+            pageNiks.push({nik,lineText:txt,y0pct:y0,y1pct:y1});
+            if(nik.length===16) result.allNiks.add(nik);
+          });
         }
       });
     }else{
@@ -10233,10 +10282,13 @@ async function _extractNiksFromPdf(url, onProgress){
       const {data}=await worker.recognize(_enhanceCanvas(canvas));
       (data.lines||[]).forEach(ln=>{
         const norm=_ocrNorm(ln.text);
-        const found=norm.match(/\d{16}/g);
+        const found=norm.match(/\d{14,18}/g);
         if(found){
           const y0=ln.bbox.y0/canvas.height, y1=ln.bbox.y1/canvas.height;
-          found.forEach(nik=>{ pageNiks.push({nik,y0pct:y0,y1pct:y1}); result.allNiks.add(nik); });
+          found.forEach(nik=>{
+            pageNiks.push({nik,lineText:ln.text,y0pct:y0,y1pct:y1});
+            if(nik.length===16) result.allNiks.add(nik);
+          });
         }
       });
     }
@@ -10258,13 +10310,12 @@ async function _extractNiksFromExcel(url){
     const rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:''});
     const pageNiks=[];
     rows.forEach((row,ri)=>{
-      row.forEach(cell=>{
-        const norm=_ocrNorm(String(cell));
-        const found=norm.match(/\d{16}/g);
-        if(found) found.forEach(nik=>{
-          pageNiks.push({nik,y0pct:0,y1pct:0,sheet:sn,row:ri+1});
-          result.allNiks.add(nik);
-        });
+      const lineText=row.map(c=>String(c)).join(' ');
+      const norm=_ocrNorm(lineText);
+      const found=norm.match(/\d{14,18}/g);
+      if(found) found.forEach(nik=>{
+        pageNiks.push({nik,lineText,y0pct:0,y1pct:0,sheet:sn,row:ri+1});
+        if(nik.length===16) result.allNiks.add(nik);
       });
     });
     if(pageNiks.length) result.pages[si+1]=pageNiks;
@@ -10279,12 +10330,17 @@ async function _extractNiksFromWord(url){
   const resp=await fetch(url);
   const buf=await resp.arrayBuffer();
   const {value}=await mammoth.extractRawText({arrayBuffer:buf});
-  const norm=_ocrNorm(value);
-  const found=norm.match(/\d{16}/g);
-  if(found){
-    const pageNiks=found.map(nik=>{ result.allNiks.add(nik); return {nik,y0pct:0,y1pct:0}; });
-    result.pages[1]=pageNiks;
-  }
+  const pageNiks=[];
+  // Per baris, supaya lineText punya konteks nama+desa
+  value.split(/\n/).forEach(line=>{
+    const norm=_ocrNorm(line);
+    const found=norm.match(/\d{14,18}/g);
+    if(found) found.forEach(nik=>{
+      pageNiks.push({nik,lineText:line,y0pct:0,y1pct:0});
+      if(nik.length===16) result.allNiks.add(nik);
+    });
+  });
+  if(pageNiks.length) result.pages[1]=pageNiks;
   return result;
 }
 
