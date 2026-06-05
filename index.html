@@ -6267,6 +6267,7 @@ async function refreshDokLib(){
       from+=1000;
       show('Memuat database NIK... ('+dbRecords.length+')');
     }
+    const validNikSet=new Set(Object.keys(nikToRtlh));
     console.log('[REFRESH] NIK database:',dbRecords.length);
 
     // 2. Scan setiap dokumen
@@ -6286,7 +6287,7 @@ async function refreshDokLib(){
 
       let ext;
       try{
-        ext=await _extractNiksFromDoc(url, d.path, (p,tot)=>show('Scan '+(di+1)+'/'+docs.length+': '+d.judul+' (hal '+p+'/'+tot+')'));
+        ext=await _extractNiksFromDoc(url, d.path, (p,tot)=>show('Scan '+(di+1)+'/'+docs.length+': '+d.judul+' (hal '+p+'/'+tot+')'), validNikSet);
       }catch(e){ console.warn('[REFRESH] gagal scan '+d.judul,e.message); continue; }
 
       console.log('[REFRESH] '+d.judul+': '+ext.allNiks.size+' NIK 16-digit ditemukan');
@@ -10219,7 +10220,7 @@ async function _triggerScanForRtlh(rtlhId,forceRefresh=false){
 // ==============================================
 
 // Ekstrak NIK dari PDF (text layer + OCR fallback) dengan posisi highlight
-async function _extractNiksFromPdf(url, onProgress){
+async function _extractNiksFromPdf(url, onProgress, validNiks){
   const result={pages:{}, allNiks:new Set()};
   if(!window.pdfjsLib) return result;
   pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -10232,10 +10233,16 @@ async function _extractNiksFromPdf(url, onProgress){
     const vp=page.getViewport({scale:1.5});
     const tc=await page.getTextContent();
     const rawText=tc.items.map(i=>i.str).join('');
-    const tlHas16=/\d{16}/.test(_ocrNorm(rawText));
+    // Text layer hanya DIPERCAYA kalau ada NIK yang BENAR-BENAR cocok database.
+    // PDF scan punya text layer sampah (angka teracak) -> harus OCR.
+    let tlValid=false;
+    if(validNiks && validNiks.size){
+      const norm16=(_ocrNorm(rawText).match(/\d{16}/g)||[]);
+      tlValid=norm16.some(n=>validNiks.has(n));
+    }
     const pageNiks=[];
 
-    if(tlHas16){
+    if(tlValid){
       // Text layer punya NIK -- ekstrak per baris dengan posisi
       const lineMap={};
       tc.items.forEach(it=>{
@@ -10337,9 +10344,9 @@ async function _extractNiksFromWord(url){
 }
 
 // Router: pilih ekstraktor berdasarkan ekstensi
-async function _extractNiksFromDoc(url, path, onProgress){
+async function _extractNiksFromDoc(url, path, onProgress, validNiks){
   const ext=(path||'').toLowerCase().split('.').pop();
-  if(ext==='pdf') return await _extractNiksFromPdf(url, onProgress);
+  if(ext==='pdf') return await _extractNiksFromPdf(url, onProgress, validNiks);
   if(ext==='xlsx'||ext==='xls'||ext==='csv') return await _extractNiksFromExcel(url);
   if(ext==='docx') return await _extractNiksFromWord(url);
   return {pages:{}, allNiks:new Set()};
