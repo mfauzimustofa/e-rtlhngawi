@@ -7206,7 +7206,8 @@ async function loadDokLink(rtlhId){
       '</div>'+
       // Action
       (isPdf
-        ? '<span style="font-size:.6rem;background:'+cfg.color+'18;color:'+cfg.color+';padding:4px 8px;border-radius:8px;font-weight:700;flex-shrink:0"><i class="fas fa-eye" style="margin-right:2px"></i>Buka</span>'
+        ? '<button onclick="event.stopPropagation();refreshOneDok(this)" title="Scan ulang dokumen ini (hasil disimpan permanen)" style="font-size:.6rem;background:#F0FDF4;color:#15803D;border:1px solid #BBF7D0;padding:4px 7px;border-radius:8px;font-weight:700;flex-shrink:0;cursor:pointer;font-family:inherit"><i class="fas fa-rotate"></i></button>'
+          +'<span style="font-size:.6rem;background:'+cfg.color+'18;color:'+cfg.color+';padding:4px 8px;border-radius:8px;font-weight:700;flex-shrink:0"><i class="fas fa-eye" style="margin-right:2px"></i>Buka</span>'
         : '<i class="fas fa-external-link-alt" style="color:'+cfg.color+';font-size:.65rem;flex-shrink:0"></i>')+
     '</div>';
   }).join('');
@@ -10181,6 +10182,88 @@ function _enhanceCanvas(src){
 }
 
 // Scan satu halaman PDF (NIK, dan bila ada `name`, deteksi NIK+Nama)
+// === DESKEW: deteksi & koreksi PDF miring (hasil scan tidak lurus) ===
+// Estimasi sudut kemiringan via projection-profile (cepat, di-downscale).
+function _estimateSkew(canvas){
+  try{
+    const maxW=600;
+    const sc=Math.min(1, maxW/canvas.width);
+    const w=Math.max(1,Math.round(canvas.width*sc));
+    const h=Math.max(1,Math.round(canvas.height*sc));
+    const tmp=document.createElement('canvas'); tmp.width=w; tmp.height=h;
+    const ctx=tmp.getContext('2d'); ctx.drawImage(canvas,0,0,w,h);
+    const d=ctx.getImageData(0,0,w,h).data;
+    const bin=new Uint8Array(w*h);
+    for(let i=0;i<w*h;i++){
+      const g=0.299*d[i*4]+0.587*d[i*4+1]+0.114*d[i*4+2];
+      bin[i]=g<140?1:0; // piksel gelap = teks
+    }
+    let bestAngle=0,bestScore=-1;
+    for(let deg=-8;deg<=8;deg+=0.5){
+      const tan=Math.tan(deg*Math.PI/180);
+      const rows=new Float64Array(h);
+      for(let y=0;y<h;y++){
+        const base=y*w;
+        for(let x=0;x<w;x++){
+          if(bin[base+x]){
+            const yy=(y+((x-w/2)*tan))|0;
+            if(yy>=0&&yy<h) rows[yy]++;
+          }
+        }
+      }
+      let mean=0; for(let y=0;y<h;y++) mean+=rows[y]; mean/=h;
+      let varr=0; for(let y=0;y<h;y++){const e=rows[y]-mean; varr+=e*e;}
+      if(varr>bestScore){bestScore=varr;bestAngle=deg;}
+    }
+    return bestAngle;
+  }catch(e){ return 0; }
+}
+
+// Putar canvas `deg` derajat (latar putih supaya OCR bersih). Ukuran tetap.
+function _rotateCanvas(src, deg){
+  const c=document.createElement('canvas');
+  c.width=src.width; c.height=src.height;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,c.width,c.height);
+  ctx.translate(c.width/2,c.height/2);
+  ctx.rotate(deg*Math.PI/180);
+  ctx.drawImage(src,-src.width/2,-src.height/2);
+  return c;
+}
+
+// OCR satu canvas untuk cari NIK (+Nama). appliedDeg = rotasi yang sudah diterapkan
+// (untuk memetakan posisi highlight kembali ke ruang asli). W/H = dimensi asli.
+async function _ocrCanvasForNik(worker, ocrCanvas, nik, name, appliedDeg, W, H){
+  const {data}=await worker.recognize(_enhanceCanvas(ocrCanvas));
+  const pm=_nikMatch(data.text,nik);
+  if(!pm.match) return {found:false};
+  const rad=appliedDeg*Math.PI/180;
+  // ocr = R(appliedDeg)*asli -> balik: asli.y = H/2 - dx*sin + dy*cos
+  const mapY=(bx,by)=>{ if(!appliedDeg) return by; const dx=bx-W/2, dy=by-H/2; return H/2 - dx*Math.sin(rad) + dy*Math.cos(rad); };
+  // Padding vertikal ekstra bila miring (baris menyilang lebar -> sebar vertikal)
+  const spread = appliedDeg ? Math.min(0.05, (W*Math.abs(Math.tan(rad)))/H*0.5) : 0;
+  const mkBox=(line,both)=>{
+    const cx=(line.bbox.x0+line.bbox.x1)/2;
+    const lineH=Math.max(8,line.bbox.y1-line.bbox.y0);
+    const yc=(mapY(cx,line.bbox.y0)+mapY(cx,line.bbox.y1))/2;
+    return {found:true,exact:pm.exact,method:'ocr',
+      y0pct:Math.max(0,(yc-lineH/2)/H - spread),
+      y1pct:Math.min(1,(yc+lineH/2)/H + spread), both};
+  };
+  if(data.lines){
+    let nikOnly=null;
+    for(const line of data.lines){
+      if(!_nikMatch(line.text,nik).match) continue;
+      const both = name ? _nameMatch(line.text,name).match : false;
+      const box=mkBox(line,both);
+      if(both) return box;
+      if(!nikOnly) nikOnly=box;
+    }
+    if(nikOnly) return nikOnly;
+  }
+  return {found:true,exact:false,method:'ocr',y0pct:0,y1pct:0.03,both:false};
+}
+
 async function _scanPage(page, nik, worker, name){
   // Text layer dulu (cepat) - tapi PDF scan biasanya rusak
   const tcVp=page.getViewport({scale:1.5});
@@ -10195,23 +10278,22 @@ async function _scanPage(page, nik, worker, name){
   const canvas=document.createElement('canvas');
   canvas.width=vp.width; canvas.height=vp.height;
   await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
-  const {data}=await worker.recognize(_enhanceCanvas(canvas));
-  const pm=_nikMatch(data.text,nik);
-  if(!pm.match) return {found:false};
-  // Cari baris yang match. Utamakan baris yang juga memuat nama.
-  if(data.lines){
-    let nikOnly=null;
-    for(const line of data.lines){
-      if(!_nikMatch(line.text,nik).match) continue;
-      const both = name ? _nameMatch(line.text,name).match : false;
-      const box={found:true,exact:pm.exact,method:'ocr',
-        y0pct:line.bbox.y0/canvas.height, y1pct:line.bbox.y1/canvas.height, both};
-      if(both) return box;            // NIK+Nama -> paling tepat
-      if(!nikOnly) nikOnly=box;
+  const W=canvas.width, H=canvas.height;
+
+  // 1) OCR lurus dulu
+  let r=await _ocrCanvasForNik(worker, canvas, nik, name, 0, W, H);
+  if(r.found) return r;
+
+  // 2) PDF miring? estimasi sudut & coba luruskan (dua arah untuk amannya)
+  const ang=_estimateSkew(canvas);
+  if(Math.abs(ang)>=1){
+    for(const dd of [ang,-ang]){
+      const rot=_rotateCanvas(canvas, dd);
+      r=await _ocrCanvasForNik(worker, rot, nik, name, dd, W, H);
+      if(r.found) return r;
     }
-    if(nikOnly) return nikOnly;
   }
-  return {found:true,exact:false,method:'ocr',y0pct:0,y1pct:0.03,both:false};
+  return {found:false};
 }
 
 // Main OCR untuk viewer (dengan progress UI)
@@ -10357,6 +10439,29 @@ async function _triggerScanForRtlh(rtlhId,forceRefresh=false){
 // SATU KLIK: pindai SEMUA dokumen terhubung untuk satu penerima.
 // Cocokkan NIK + Nama, highlight (hijau bila keduanya cocok), simpan ke DB.
 // ==============================================
+// Scan SATU PDF (teks->OCR->deskew), simpan permanen ke cache + DB. Return {pages,highlights}.
+async function _scanOnePdf(url, nik, name, numId, worker, onProgress){
+  const ck=url+'|'+nik;
+  _pdfOcrCache.delete(ck);
+  try{ await sb.from('rtlh_pdf_scan_results').delete()
+    .eq('rtlh_id',numId).eq('url_hash',_urlHash(url)).eq('nik_hash',_nikHash(nik)); }catch(e){}
+  const pdf=await pdfjsLib.getDocument({url,withCredentials:false}).promise;
+  const found=[], highlights=[];
+  for(let p=1;p<=pdf.numPages;p++){
+    if(onProgress) onProgress(p, pdf.numPages);
+    const page=await pdf.getPage(p);
+    const res=await _scanPage(page, nik, worker, name);   // teks dulu, OCR+deskew bila perlu
+    if(res.found){
+      found.push(p);
+      highlights.push({page:p,y0pct:res.y0pct||0,y1pct:res.y1pct||0.04,exact:res.exact!==false,both:!!res.both});
+    }
+  }
+  const result={pages:[...new Set(found)],highlights};
+  _pdfOcrCache.set(ck,result);                                   // cache sesi
+  await _saveScanResult(numId,_urlHash(url),_nikHash(nik),result.pages,result.highlights); // PERMANEN di DB
+  return result;
+}
+
 async function scanAllDokLink(rtlhId){
   const numId=parseInt(rtlhId);
   const rec=brAll.find(x=>parseInt(x.id)===numId);
@@ -10368,7 +10473,6 @@ async function scanAllDokLink(rtlhId){
   if(!nik){ toast('NIK penerima kosong — tidak bisa memindai','error'); return; }
   if(!window.pdfjsLib){ toast('pdf.js belum dimuat, coba refresh','error'); return; }
 
-  // Ambil semua dokumen terhubung (PDF saja yang bisa di-highlight)
   const{data}=await sb.from('rtlh_dokumen_link')
     .select('rtlh_dokumen_kabupaten(id,path,judul)').eq('rtlh_id',numId);
   const pdfs=(data||[]).map(l=>l.rtlh_dokumen_kabupaten)
@@ -10378,7 +10482,6 @@ async function scanAllDokLink(rtlhId){
   if(btn){btn.disabled=true;btn.style.opacity='.7';btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Memindai...';}
   pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-  // Satu worker OCR dipakai ulang untuk semua dokumen (hemat & cepat)
   let worker=null;
   if(window.Tesseract){
     try{ setStatus('Menyiapkan mesin OCR...');
@@ -10387,52 +10490,63 @@ async function scanAllDokLink(rtlhId){
     }catch(e){ worker=null; }
   }
 
-  let docHit=0, totalBoth=0;
+  let docHit=0;
   try{
     for(let i=0;i<pdfs.length;i++){
       const d=pdfs[i];
       const url=sb.storage.from('dokumen-kab').getPublicUrl(d.path).data.publicUrl;
-      const ck=url+'|'+nik;
-      setStatus('Memindai '+(i+1)+'/'+pdfs.length+': '+(d.judul||'dokumen'));
-      // Reset hasil lama supaya benar-benar fresh
-      _pdfOcrCache.delete(ck);
-      try{ await sb.from('rtlh_pdf_scan_results').delete()
-        .eq('rtlh_id',numId).eq('url_hash',_urlHash(url)).eq('nik_hash',_nikHash(nik)); }catch(e){}
-
-      let pdf;
-      try{ pdf=await pdfjsLib.getDocument({url,withCredentials:false}).promise; }
-      catch(e){ console.warn('buka PDF gagal',d.judul,e.message); continue; }
-
-      const found=[], highlights=[];
-      for(let p=1;p<=pdf.numPages;p++){
-        setStatus('Memindai '+(i+1)+'/'+pdfs.length+': '+(d.judul||'dokumen')+' (hal '+p+'/'+pdf.numPages+')');
-        const page=await pdf.getPage(p);
-        const res=await _scanPage(page, nik, worker, name);  // teks dulu, OCR bila perlu
-        if(res.found){
-          found.push(p);
-          highlights.push({page:p,y0pct:res.y0pct||0,y1pct:res.y1pct||0.04,exact:res.exact!==false,both:!!res.both});
-          if(res.both) totalBoth++;
-        }
-      }
-      const result={pages:[...new Set(found)],highlights};
-      _pdfOcrCache.set(ck,result);
-      await _saveScanResult(numId,_urlHash(url),_nikHash(nik),result.pages,result.highlights);
-      if(found.length) docHit++;
+      const label='Memindai '+(i+1)+'/'+pdfs.length+': '+(d.judul||'dokumen');
+      setStatus(label);
+      let result;
+      try{ result=await _scanOnePdf(url, nik, name, numId, worker, (p,tot)=>setStatus(label+' (hal '+p+'/'+tot+')')); }
+      catch(e){ console.warn('scan gagal',d.judul,e.message); continue; }
+      if(result.pages.length) docHit++;
     }
   }catch(e){ console.error('scanAllDokLink',e); toast('Gagal memindai: '+e.message,'error'); }
   if(worker){ try{await worker.terminate();}catch(e){} }
 
   if(statusEl){
     statusEl.style.display='block';
-    statusEl.innerHTML='<i class="fas fa-circle-check" style="color:#16A34A"></i> Selesai — '+docHit+'/'+pdfs.length+' dokumen ter-highlight'+(totalBoth?', '+totalBoth+' baris NIK+Nama cocok':'');
+    statusEl.innerHTML='<i class="fas fa-circle-check" style="color:#16A34A"></i> Selesai — '+docHit+'/'+pdfs.length+' dokumen ter-highlight (tersimpan permanen)';
     setTimeout(()=>{ if(statusEl)statusEl.style.display='none'; },6000);
   }
   if(btn){btn.disabled=false;btn.style.opacity='1';btn.innerHTML='<i class="fas fa-bolt"></i> Pindai Semua';}
 
-  // Refresh tampilan: badge di kartu bukti dukung + tanda BA di sidebar/peta
   await loadDokLink(numId);
   if(typeof _refreshSidebarItem==='function') _refreshSidebarItem(numId);
   toast('<i class="fas fa-circle-check" style="color:#16A34A"></i> Pindai selesai: '+docHit+'/'+pdfs.length+' dokumen','success');
+}
+
+// Refresh SATU dokumen (tombol kecil di tiap kartu). Hasil tersimpan permanen.
+async function refreshOneDok(btn){
+  const card=btn.closest('[data-url]'); if(!card) return;
+  const url=decodeURIComponent(card.dataset.url||'');
+  const nik=decodeURIComponent(card.dataset.nik||'');
+  const name=decodeURIComponent(card.dataset.name||'');
+  const numId=parseInt(card.dataset.rtlhid||0);
+  const title=decodeURIComponent(card.dataset.title||'dokumen');
+  if(!url||!nik){ toast('Data dokumen tidak lengkap','error'); return; }
+  if(!window.pdfjsLib){ toast('pdf.js belum dimuat','error'); return; }
+  const old=btn.innerHTML;
+  btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i>';
+  btn.style.pointerEvents='none';
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  let worker=null;
+  if(window.Tesseract){
+    try{ worker=await Tesseract.createWorker('eng',1,{logger:()=>{}}); await worker.setParameters({tessedit_pageseg_mode:'4'}); }
+    catch(e){ worker=null; }
+  }
+  let result=null;
+  try{ result=await _scanOnePdf(url, nik, name, numId, worker); }
+  catch(e){ toast('Gagal scan: '+e.message,'error'); }
+  if(worker){ try{await worker.terminate();}catch(e){} }
+  if(result){
+    toast(result.pages.length
+      ? '<i class="fas fa-circle-check" style="color:#16A34A"></i> "'+title+'" di-scan ulang — NIK hal.'+result.pages.join(',')+' (tersimpan)'
+      : 'NIK tidak terdeteksi di "'+title+'"', result.pages.length?'success':'info');
+  }
+  await loadDokLink(numId);
+  if(typeof _refreshSidebarItem==='function') _refreshSidebarItem(numId);
 }
 
 // ==============================================
