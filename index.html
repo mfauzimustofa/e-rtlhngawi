@@ -4638,7 +4638,7 @@ function showDetail(r){
           <span style="font-size:.72rem;font-weight:800;color:var(--gray-700);text-transform:uppercase;letter-spacing:.5px">Bukti Dukung</span>
         </div>
         <div style="display:flex;gap:5px;flex-shrink:0">
-          <button onclick="scanAllDokLink('${r.id}')" id="btnScanAllDok" title="Pindai semua dokumen terhubung: cocokkan NIK + Nama, lalu highlight & simpan"
+          <button onclick="scanAllDokLink('${r.id}')" id="btnScanAllDok" title="Pindai ulang semua bukti dukung BNBA ini (NIK + Nama), hasil tersimpan permanen"
             style="padding:4px 10px;border-radius:7px;border:none;background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;font-size:.62rem;cursor:pointer;font-family:inherit;font-weight:800;display:flex;align-items:center;gap:4px">
             <i class="fas fa-bolt"></i> Pindai Semua
           </button>
@@ -6388,18 +6388,36 @@ async function openDokLib(){
 // simpan link (untuk tanda "ada BA") + highlight kuning (untuk tampilan PDF).
 // TIDAK mengubah data NIK di database.
 async function refreshDokLib(){
-  if(!confirm('Scan ulang semua dokumen & cocokkan NIK dengan database?\n\nData highlight & link lama akan diganti dengan hasil baru (hanya kecocokan NIK yang PERSIS sama).')) return;
+  if(!confirm('Pindai dokumen bukti dukung?\n\nNIK & Nama di setiap PDF akan dicocokkan dengan database, di-highlight, dihubungkan ke BNBA, dan disimpan permanen.')) return;
+  // Mode pindai: hanya dokumen baru (cepat) atau ulang semua dari awal
+  let incremental=false;
+  try{
+    const{count}=await sb.from('rtlh_pdf_scan_results').select('id',{count:'exact',head:true});
+    if(count>0){
+      incremental=confirm('Sebagian dokumen sudah pernah dipindai.\n\nOK = pindai dokumen BARU saja (cepat)\nCancel = pindai ulang SEMUA dari awal');
+    }
+  }catch(e){}
   const btn=document.getElementById('btnRefreshDokLib');
   if(btn){btn.innerHTML='<i class="fas fa-sync-alt fa-spin"></i>';btn.disabled=true;}
   _clearDokLibCache();
   await loadDokLib(true);
 
-  // Bersihkan hasil scan & link lama (yang mungkin salah dari fuzzy match)
-  try{
-    await sb.from('rtlh_pdf_scan_results').delete().neq('id',0);
-    await sb.from('rtlh_dokumen_link').delete().neq('id',0);
-    _pdfOcrCache.clear();
-  }catch(e){ console.warn('clear lama:',e.message); }
+  // Set url_hash yang sudah pernah dipindai (untuk mode cepat)
+  let doneUrlSet=new Set();
+  if(incremental){
+    try{
+      const{data:doneRows}=await sb.from('rtlh_pdf_scan_results').select('url_hash').limit(100000);
+      (doneRows||[]).forEach(r=>doneUrlSet.add(r.url_hash));
+    }catch(e){}
+  }else{
+    // Bersihkan hasil scan & link lama
+    try{
+      await sb.from('rtlh_pdf_scan_results').delete().neq('id',0);
+      await sb.from('rtlh_dokumen_link').delete().neq('id',0);
+      _pdfOcrCache.clear();
+      _docHlCache.clear();
+    }catch(e){ console.warn('clear lama:',e.message); }
+  }
 
   const el=document.getElementById('dokLibList');
   const statusDiv=document.createElement('div');
@@ -6447,7 +6465,12 @@ async function refreshDokLib(){
       const d=docs[di];
       const url=sb.storage.from('dokumen-kab').getPublicUrl(d.path).data.publicUrl;
       const urlH=_urlHash(url);
-      show('Scan '+(di+1)+'/'+docs.length+': '+d.judul);
+      // Mode cepat: lewati dokumen yang sudah pernah dipindai (hasil sudah permanen)
+      if(incremental && doneUrlSet.has(urlH)){
+        show('Lewati '+(di+1)+'/'+docs.length+' (sudah dipindai): '+d.judul);
+        continue;
+      }
+      show('Pindai '+(di+1)+'/'+docs.length+': '+d.judul);
 
       let ext;
       try{
@@ -6456,16 +6479,17 @@ async function refreshDokLib(){
 
       console.log('[REFRESH] '+d.judul+': '+ext.allNiks.size+' NIK 16-digit ditemukan');
 
-      // 3. Cocokkan tiap baris: WAJIB NIK cocok DAN Nama cocok (keduanya tepat)
+      // 3. Cocokkan tiap baris: NIK harus cocok + Nama dicek (toleran salah-baca OCR)
       const nikData={}; // nik(db) -> {pages:Set, highlights:[]}
       Object.entries(ext.pages).forEach(([pg,niks])=>{
         niks.forEach(item=>{
-          const cand=item.nik;                          // 14-18 digit dari dokumen
-          const lineNorm=_normName(item.lineText||'');   // teks baris (untuk cek nama)
-          let matchNik=null;
+          const cand=item.nik;                           // 14-18 digit dari dokumen
+          const lineNorm=_normName(item.lineText||'');    // teks baris (cek nama)
+          const lineNormOcr=_normNameOcr(item.lineText||''); // versi koreksi digit OCR
+          let matchNik=null, matchBoth=false;
 
-          // Cari record DB: NIK cocok (persis, atau OCR mirip <=2) DAN nama ada di baris
-          let best=null, bestDiff=99;
+          // Cari record DB terbaik: NIK paling cocok + nama paling cocok
+          let best=null, bestDiff=99, bestHits=-1;
           for(const rec of dbRecords){
             // Hitung selisih NIK (geser kalau cand 17-18 digit)
             let dmin=99;
@@ -6477,19 +6501,29 @@ async function refreshDokLib(){
               if(off>2) break;
             }
             if(dmin>2) continue; // NIK tidak cocok -> lewati
-            // WAJIB nama cocok: minimal 1 kata nama (>=3 huruf) ada di baris
-            const nameOk = rec.nameTokens.length>0 && rec.nameTokens.some(tok=>lineNorm.includes(tok));
-            if(!nameOk) continue; // nama tidak cocok -> lewati (keduanya harus tepat)
-            // Pilih yang NIK-nya paling cocok
-            if(dmin<bestDiff){ bestDiff=dmin; best=rec; }
+            // Hitung kecocokan nama (fuzzy: toleran 1 huruf salah OCR per kata)
+            const hits=rec.nameTokens.filter(tok=>_tokInHay(lineNorm,tok)||_tokInHay(lineNormOcr,tok)).length;
+            // Aturan: NIK persis (diff 0) -> cukup 1 kata nama.
+            //         NIK meleset 1-2 digit -> WAJIB >=2 kata nama (atau semua bila nama pendek).
+            const need = dmin===0 ? 1 : Math.min(2, rec.nameTokens.length);
+            if(rec.nameTokens.length>0 && hits<need) continue;
+            // Pilih kandidat terbaik: NIK paling persis, lalu nama paling banyak cocok
+            if(dmin<bestDiff || (dmin===bestDiff && hits>bestHits)){
+              bestDiff=dmin; bestHits=hits; best=rec;
+            }
           }
-          if(best) matchNik=best.nik;
+          if(best){
+            matchNik=best.nik;
+            // both=true bila nama cocok kuat (>=2 kata, atau semua kata bila nama 1 kata)
+            const fullNeed=Math.min(2,best.nameTokens.length||1);
+            matchBoth=bestHits>=fullNeed;
+          }
 
           if(!matchNik) return;
           if(!nikData[matchNik]) nikData[matchNik]={pages:new Set(),highlights:[]};
           nikData[matchNik].pages.add(parseInt(pg));
           if(item.y0pct||item.y1pct)
-            nikData[matchNik].highlights.push({page:parseInt(pg),y0pct:item.y0pct,y1pct:item.y1pct,exact:bestDiff===0});
+            nikData[matchNik].highlights.push({page:parseInt(pg),y0pct:item.y0pct,y1pct:item.y1pct,exact:bestDiff===0,both:matchBoth});
         });
       });
 
@@ -6520,13 +6554,14 @@ async function refreshDokLib(){
     // Flush sisa
     if(linkRows.length) await sb.from('rtlh_dokumen_link').upsert(linkRows,{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
     if(scanRows.length) await sb.from('rtlh_pdf_scan_results').upsert(scanRows,{onConflict:'rtlh_id,url_hash,nik_hash'});
+    _docHlCache.clear(); // supaya viewer memuat highlight terbaru
 
-    statusDiv.innerHTML='<i class="fas fa-check-circle" style="color:var(--success)"></i> Selesai -- '+totalLink+' NIK terhubung ke dokumen, '+totalHl+' highlight tersimpan';
+    statusDiv.innerHTML='<i class="fas fa-check-circle" style="color:var(--success)"></i> Selesai -- '+totalLink+' BNBA terhubung & ter-highlight (tersimpan permanen)';
     setTimeout(()=>statusDiv.remove(),5000);
 
-    // Refresh tanda BA/SK di sidebar & peta
-    if(typeof loadBALinks==='function'&&window.brAll) await loadBALinks(brAll.map(r=>parseInt(r.id)));
-    toast('Scan selesai: '+totalLink+' NIK terhubung','success');
+    // Refresh tanda Bukti Dukung di sidebar & peta
+    if(typeof loadBALinks==='function'&&window.brAll) await loadBALinks(brAll.map(r=>parseInt(r.id)), true);
+    toast('Pindai selesai: '+totalLink+' BNBA terhubung','success');
   }catch(e){
     console.error('[REFRESH] error',e);
     statusDiv.innerHTML='<i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i> Error: '+e.message;
@@ -6590,16 +6625,24 @@ function renderDokLib(docs){
           ${kb?' · '+kb:''}
         </div>
       </div>
-      <div style="display:flex;display:flex;gap:5px;flex-shrink:0;align-items:center">
-        ${_linkDokRtlhId?`<button onclick="linkDokToPenerima('${d.id}')" title="Jadikan Bukti Dukung untuk BNBA yang sedang dibuka" style="padding:0 10px;height:28px;border-radius:7px;background:#FEF3C7;color:#92400E;border:1.5px solid #FCD34D;cursor:pointer;font-size:.62rem;font-weight:700;font-family:inherit;display:flex;align-items:center;gap:3px;white-space:nowrap"><i class="fas fa-link" style="color:#EAB308;font-size:.6rem"></i>+ Bukti Dukung</button>`:''}
-        <a href="${url}" target="_blank" title="Buka" style="width:30px;height:30px;border-radius:7px;background:var(--blue-bg);color:var(--blue);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:.75rem"><i class="fas fa-external-link-alt"></i></a>
-        <button onclick="navigator.clipboard.writeText('${url}').then(()=>toast('URL disalin','info'))" title="Salin URL PDF untuk diagnostic" style="width:30px;height:30px;border-radius:7px;background:#F0FDF4;color:#16A34A;border:none;cursor:pointer;font-size:.75rem"><i class="fas fa-copy"></i></button>
-        <button onclick="lihatPenerimaDok('${d.id}','${(d.judul||'').replace(/'/g,"\'")}')" title="Lihat penerima" style="width:30px;height:30px;border-radius:7px;background:#F5F3FF;color:#7C3AED;border:none;cursor:pointer;font-size:.75rem"><i class="fas fa-users"></i></button>
+      <div style="display:flex;gap:5px;flex-shrink:0;align-items:center">
+        ${_linkDokRtlhId?`<button onclick="linkDokToPenerima('${d.id}')" title="Jadikan bukti dukung BNBA yang sedang dibuka" style="padding:0 10px;height:28px;border-radius:7px;background:#FEF3C7;color:#92400E;border:1.5px solid #FCD34D;cursor:pointer;font-size:.62rem;font-weight:700;font-family:inherit;display:flex;align-items:center;gap:3px;white-space:nowrap"><i class="fas fa-link" style="color:#EAB308;font-size:.6rem"></i>+ Bukti Dukung</button>`:''}
+        ${(d.path||'').toLowerCase().endsWith('.pdf')
+          ?`<button onclick="openDokLibViewer(this)" data-url="${encodeURIComponent(url)}" data-title="${encodeURIComponent(d.judul||'Dokumen')}" title="Lihat PDF -- semua NIK ter-highlight + link ke BNBA" style="padding:0 10px;height:30px;border-radius:7px;background:var(--blue-bg);color:var(--blue);border:none;cursor:pointer;font-size:.65rem;font-weight:700;font-family:inherit;display:flex;align-items:center;gap:4px"><i class="fas fa-eye"></i> Lihat</button>`
+          :`<a href="${url}" target="_blank" title="Buka" style="width:30px;height:30px;border-radius:7px;background:var(--blue-bg);color:var(--blue);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:.75rem"><i class="fas fa-external-link-alt"></i></a>`}
+        <button onclick="lihatPenerimaDok('${d.id}','${(d.judul||'').replace(/'/g,"\\'")}')" title="Daftar BNBA terhubung" style="width:30px;height:30px;border-radius:7px;background:#F5F3FF;color:#7C3AED;border:none;cursor:pointer;font-size:.75rem"><i class="fas fa-users"></i></button>
         ${isAdmin?`<button onclick="openEditDokLib('${d.id}')" title="Edit" style="width:30px;height:30px;border-radius:7px;background:#FFF7ED;color:#EA580C;border:none;cursor:pointer;font-size:.75rem"><i class="fas fa-edit"></i></button>`:''}
         ${isSuperAdmin()?`<button onclick="deleteDokLib('${d.id}','${d.path}')" title="Hapus" style="width:30px;height:30px;border-radius:7px;background:var(--danger-bg);color:var(--danger);border:none;cursor:pointer;font-size:.75rem"><i class="fas fa-trash"></i></button>`:''}
       </div>
     </div>`;
   }).join('');
+}
+
+// Buka PDF dari library -- mode dokumen: semua NIK ter-highlight + chip nama BNBA
+function openDokLibViewer(btn){
+  const url=decodeURIComponent(btn.dataset.url||'');
+  const title=decodeURIComponent(btn.dataset.title||'Dokumen');
+  if(url) openPdfViewer(url, title);
 }
 
 function filterDokLib(jenis){
@@ -7198,7 +7241,7 @@ async function linkDokToPenerima(dokId){
     rtlh_id:parseInt(_linkDokRtlhId),dokumen_id:dokId,linked_by:user?.email
   },{onConflict:'rtlh_id,dokumen_id',ignoreDuplicates:true});
   if(error)return toast('Gagal: '+error.message,'error');
-  toast('<i class="fas fa-link" style="color:#EAB308"></i> Ditambahkan ke Bukti Dukung -- scan NIK dimulai...','success');
+  toast('<i class="fas fa-link" style="color:#EAB308"></i> Bukti dukung terhubung -- memindai NIK...','success');
   loadLinkedDok(_linkDokRtlhId);
   loadDokLink(_linkDokRtlhId);
   // Langsung trigger scan NIK di background
@@ -7224,7 +7267,7 @@ async function loadDokLink(rtlhId){
     el.innerHTML='<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;background:#FFFBEB;border:1px dashed #FCD34D">'
       +'<i class="fas fa-hourglass-half" style="color:#D97706;font-size:.85rem"></i>'
       +'<div><div style="font-size:.72rem;font-weight:700;color:#92400E">Bukti dukung belum diupload</div>'
-      +'<div style="font-size:.62rem;color:#B45309;margin-top:1px">Masih dalam proses -- dokumen akan muncul otomatis setelah diupload &amp; dihubungkan</div></div></div>';
+      +'<div style="font-size:.62rem;color:#B45309;margin-top:1px">Masih proses -- akan muncul otomatis setelah diupload</div></div></div>';
     _refreshSidebarItem(numId);
     return;
   }
@@ -7246,10 +7289,10 @@ async function loadDokLink(rtlhId){
     const nikOk = cached && cached.pages && cached.pages.length > 0;
     const bothOk = nikOk && (cached.highlights||[]).some(h=>h.both);
     const nikBadge = bothOk
-      ? '<span style="font-size:.55rem;background:#DCFCE7;color:#166534;border:1px solid #86EFAC;padding:1px 5px;border-radius:99px;font-weight:700;white-space:nowrap"><i class="fas fa-circle-check" style="color:#16A34A;margin-right:2px"></i>NIK+Nama hal.'+cached.pages.join(',')+'</span>'
+      ? '<span style="font-size:.55rem;background:#DCFCE7;color:#166534;border:1px solid #86EFAC;padding:1px 5px;border-radius:99px;font-weight:700;white-space:nowrap"><i class="fas fa-circle-check" style="color:#16A34A;margin-right:2px"></i>Cocok &check; hal '+cached.pages.join(', ')+'</span>'
       : (nikOk
-        ? '<span style="font-size:.55rem;background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;padding:1px 5px;border-radius:99px;font-weight:700;white-space:nowrap"><i class="fas fa-check-circle" style="color:#EAB308;margin-right:2px"></i>NIK hal.'+cached.pages.join(',')+'</span>'
-        : (cached ? '<span style="font-size:.55rem;color:#94A3B8;padding:1px 5px">NIK tdk terdeteksi</span>' : ''));
+        ? '<span style="font-size:.55rem;background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;padding:1px 5px;border-radius:99px;font-weight:700;white-space:nowrap"><i class="fas fa-check-circle" style="color:#EAB308;margin-right:2px"></i>NIK ada &middot; hal '+cached.pages.join(', ')+'</span>'
+        : (cached ? '<span style="font-size:.55rem;color:#94A3B8;padding:1px 5px">Belum terdeteksi</span>' : ''));
     const okColor = bothOk?'#16A34A':'#FCD34D';
     const okBg = bothOk?'#F0FDF4':'#FEFCE8';
     return'<div id="'+uid+'" data-url="'+encodeURIComponent(url)+'" data-title="'+encodeURIComponent(d.judul||'')+'" data-nik="'+encodeURIComponent(nikVal)+'" data-name="'+encodeURIComponent(rec?.kep_kk||'')+'" data-ispdf="'+(isPdf?'1':'0')+'" data-rtlhid="'+numId+'" data-dokid="'+(d.id||'')+
@@ -9893,6 +9936,138 @@ let _pdfDokId = ""; // sedang OCR
 <script>
 const _pdfOcrCache = new Map();
 
+// ==================================================
+// HIGHLIGHT SEMUA NIK DI DOKUMEN + LINK KE BNBA
+// ==================================================
+let _pdfAllHl = [];         // [{rtlhId,name,desa,kec,page,y0pct,y1pct,both,exact}]
+const _docHlCache = new Map(); // url_hash -> _pdfAllHl (cache sesi, sumber tetap DB permanen)
+
+// Muat SEMUA hasil scan untuk dokumen ini (semua BNBA) dari DB
+async function _loadDocScanAll(url){
+  _pdfAllHl=[];
+  try{
+    const uh=_urlHash(url);
+    if(_docHlCache.has(uh)){ _pdfAllHl=_docHlCache.get(uh); return; }
+    const{data}=await sb.from('rtlh_pdf_scan_results')
+      .select('rtlh_id,pages_found,highlights').eq('url_hash',uh).limit(5000);
+    if(!data||!data.length){ _docHlCache.set(uh,[]); return; }
+    // Ambil nama BNBA (batch)
+    const ids=[...new Set(data.map(r=>parseInt(r.rtlh_id)))];
+    const info={};
+    const jobs=[];
+    for(let i=0;i<ids.length;i+=500)
+      jobs.push(sb.from('rtlh').select('id,kep_kk,desa,kec').in('id',ids.slice(i,i+500)));
+    const results=await Promise.all(jobs.map(p=>p.catch(()=>({data:null}))));
+    results.forEach(({data:rows})=>{(rows||[]).forEach(r=>info[parseInt(r.id)]={name:r.kep_kk,desa:r.desa,kec:r.kec});});
+    const out=[];
+    data.forEach(r=>{
+      const rid=parseInt(r.rtlh_id);
+      const inf=info[rid]||{};
+      (r.highlights||[]).forEach(h=>{
+        out.push({rtlhId:rid,name:inf.name||('BNBA '+rid),desa:inf.desa||'',kec:inf.kec||'',
+          page:h.page,y0pct:h.y0pct||0,y1pct:h.y1pct||0.03,both:!!h.both,exact:h.exact!==false});
+      });
+    });
+    _pdfAllHl=out;
+    _docHlCache.set(uh,out);
+  }catch(e){ console.warn('loadDocScanAll',e.message); }
+}
+
+// Highlight baris untuk BNBA LAIN (bukan target) -- biru lembut supaya beda
+function _hlRowOther(svg, canvasH, y0pct, y1pct){
+  const rect=document.createElementNS('http://www.w3.org/2000/svg','rect');
+  rect.setAttribute('x','0');
+  rect.setAttribute('y',String(Math.max(0,y0pct*canvasH-4)));
+  rect.setAttribute('width',svg.getAttribute('width')||'1000');
+  rect.setAttribute('height',String(Math.max((y1pct-y0pct)*canvasH+8,18)));
+  rect.setAttribute('fill','rgba(27,108,168,0.16)');
+  rect.setAttribute('stroke','#1B6CA8');
+  rect.setAttribute('stroke-width','1.5');
+  rect.setAttribute('stroke-dasharray','4 3');
+  rect.setAttribute('rx','3');
+  svg.appendChild(rect);
+}
+
+// Chip nama BNBA di kanan highlight -- klik = buka BNBA-nya
+function _mkBnbaChip(h, H, isTarget){
+  const div=document.createElement('div');
+  const top=Math.max(0,h.y0pct*H-2);
+  div.style.cssText='position:absolute;right:4px;top:'+top+'px;z-index:6;display:flex;align-items:center;gap:4px;'+
+    'background:'+(isTarget?'#16A34A':'rgba(30,41,59,.85)')+';color:#fff;font-size:.6rem;font-weight:700;'+
+    'padding:3px 8px;border-radius:99px;cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.35);max-width:46%';
+  div.innerHTML='<i class="fas '+(isTarget?'fa-user-check':'fa-user')+'" style="font-size:.55rem;flex-shrink:0"></i>'+
+    '<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+showNama(h.name)+'</span>'+
+    '<i class="fas fa-arrow-right" style="font-size:.5rem;flex-shrink:0;opacity:.8"></i>';
+  div.title='Buka BNBA: '+showNama(h.name)+(h.desa?' -- '+normCase(h.desa):'');
+  div.onclick=(e)=>{e.stopPropagation();gotoBNBAFromPdf(h.rtlhId);};
+  return div;
+}
+
+// Buka detail BNBA dari dalam PDF viewer (pindah kecamatan otomatis bila perlu)
+async function gotoBNBAFromPdf(rtlhId){
+  const id=parseInt(rtlhId);
+  closePdfViewer();
+  // Tutup modal yang mungkin masih terbuka
+  ['ovDokLib','ovLinkDok','ovEditDokLib'].forEach(m=>{
+    const el=document.getElementById(m); if(el)el.classList.remove('open');
+  });
+  let r=brAll.find(x=>parseInt(x.id)===id);
+  if(r){ selectItem(id); return; }
+  toast('<i class="fas fa-circle-notch fa-spin"></i> Membuka BNBA...','info');
+  const{data}=await sb.from('rtlh').select('id,kec').eq('id',id).maybeSingle();
+  if(!data){ toast('Data BNBA tidak ditemukan','error'); return; }
+  const kKey=Object.keys(KEC_CONFIG).find(x=>x.toUpperCase()===String(data.kec||'').toUpperCase());
+  if(!kKey){ toast('Kecamatan tidak dikenali: '+(data.kec||'-'),'error'); return; }
+  selectKec(kKey);
+  // Tunggu data kecamatan termuat, lalu pilih BNBA-nya
+  let tries=0;
+  const t=setInterval(()=>{
+    tries++;
+    if(brAll.find(x=>parseInt(x.id)===id)){ clearInterval(t); selectItem(id); }
+    else if(tries>60){ clearInterval(t); }
+  },250);
+}
+
+// ==================================================
+// PINCH ZOOM (HP) -- cubit dua jari untuk zoom
+// ==================================================
+function _initPdfPinch(){
+  const area=document.getElementById('pdfScrollArea');
+  if(!area||area._pinchInit)return;
+  area._pinchInit=true;
+  area.style.touchAction='pan-x pan-y';
+  let d0=0,s0=1,pinching=false,ratio=1;
+  const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
+  area.addEventListener('touchstart',e=>{
+    if(e.touches.length===2){ pinching=true; d0=dist(e.touches); s0=_pdfScale; ratio=1; }
+  },{passive:true});
+  area.addEventListener('touchmove',e=>{
+    if(pinching&&e.touches.length===2){
+      e.preventDefault();
+      const r=dist(e.touches)/d0;
+      ratio=Math.max(0.4/s0*1,Math.min(3.5/s0*1,r));
+      const inner=document.getElementById('pdfZoomInner');
+      if(inner){ inner.style.transformOrigin='top center'; inner.style.transform='scale('+ratio+')'; }
+      const zl=document.getElementById('pdfZoomLabel');
+      if(zl)zl.textContent=Math.round(s0*ratio*100)+'%';
+    }
+  },{passive:false});
+  area.addEventListener('touchend',async e=>{
+    if(pinching&&e.touches.length<2){
+      pinching=false;
+      const inner=document.getElementById('pdfZoomInner');
+      if(inner)inner.style.transform='';
+      const ns=Math.max(0.4,Math.min(3.5,s0*ratio));
+      if(Math.abs(ns-_pdfScale)>0.02){
+        _pdfScale=ns;
+        const zl=document.getElementById('pdfZoomLabel');
+        if(zl)zl.textContent=Math.round(_pdfScale*100)+'%';
+        await _pdfRenderAll();
+      }
+    }
+  });
+}
+
 async function openPdfViewer(url, title, nik, rtlhId, dokId, name){
   _pdfUrl = url;
   _pdfNik = String(nik||'').trim();
@@ -9923,17 +10098,21 @@ async function openPdfViewer(url, title, nik, rtlhId, dokId, name){
   scrollArea.innerHTML = '<div style="color:#94A3B8;font-size:.82rem;padding:40px;text-align:center"><i class="fas fa-circle-notch fa-spin"></i> Membuka dokumen...</div>';
   dlBtn.href = url;
   dlBtn.download = (title||'dokumen')+'.pdf';
+  _initPdfPinch();
 
   if(_pdfNik){
     nikBadge.style.display='flex';
-    nikBadgeText.textContent = 'Cari NIK: '+_pdfNik.slice(0,6)+'**********';
+    nikBadgeText.textContent = 'NIK: '+_pdfNik.slice(0,6)+'**********';
   } else {
     nikBadge.style.display='none';
   }
 
+  // Muat SEMUA highlight tersimpan untuk dokumen ini (semua BNBA) -- background-safe
+  await _loadDocScanAll(url);
+
   // Setup pdf.js worker
   if(!window.pdfjsLib){
-    scrollArea.innerHTML='<div style="color:#F87171;padding:40px;text-align:center">pdf.js belum dimuat -- coba refresh halaman</div>';
+    scrollArea.innerHTML='<div style="color:#F87171;padding:40px;text-align:center">Penampil PDF belum siap -- coba refresh halaman</div>';
     return;
   }
   pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -9941,6 +10120,15 @@ async function openPdfViewer(url, title, nik, rtlhId, dokId, name){
 
   try{
     _pdfDoc = await pdfjsLib.getDocument({url, withCredentials:false}).promise;
+    // Skala awal: pas lebar layar -- nyaman dibaca, tidak kebesaran
+    try{
+      const page1=await _pdfDoc.getPage(1);
+      const vp1=page1.getViewport({scale:1});
+      const avail=(scrollArea.clientWidth||window.innerWidth)-(window.innerWidth<=768?12:48);
+      _pdfScale=Math.max(0.4,Math.min(1.6,avail/vp1.width));
+      const zl=document.getElementById('pdfZoomLabel');
+      if(zl)zl.textContent=Math.round(_pdfScale*100)+'%';
+    }catch(e){}
     document.getElementById('pdfPageCount').textContent = _pdfDoc.numPages;
     document.getElementById('pdfPageNum').textContent = 1;
     _pdfUpdateNavBtns();
@@ -9954,7 +10142,14 @@ async function openPdfViewer(url, title, nik, rtlhId, dokId, name){
 async function _pdfRenderAll(){
   if(!_pdfDoc) return;
   const scrollArea = document.getElementById('pdfScrollArea');
+  // Simpan posisi scroll (proporsional) supaya zoom tidak melempar posisi baca
+  const prevFrac = scrollArea.scrollHeight>0 ? scrollArea.scrollTop/scrollArea.scrollHeight : 0;
   scrollArea.innerHTML = '';
+  // Wrapper dalam untuk pinch-zoom live preview
+  const inner=document.createElement('div');
+  inner.id='pdfZoomInner';
+  inner.style.cssText='display:flex;flex-direction:column;align-items:center;gap:12px;width:100%';
+  scrollArea.appendChild(inner);
 
   const nikFound = [];
   for(let p=1; p<=_pdfDoc.numPages; p++){
@@ -9986,11 +10181,33 @@ async function _pdfRenderAll(){
     svg.dataset.page = p;
     wrap.appendChild(svg);
 
-    // Gambar highlight dari cache (hasil scan tersimpan) -- konsisten di semua zoom
+    // ── HIGHLIGHT SEMUA NIK TERSIMPAN + chip nama BNBA (klik = buka BNBA) ──
+    const pageHl=(_pdfAllHl||[]).filter(h=>h.page===p);
+    if(pageHl.length){
+      const chipByPerson={};
+      pageHl.forEach(h=>{
+        const isTarget=_pdfRtlhId && h.rtlhId===_pdfRtlhId;
+        if(isTarget){
+          _hlRow(svg, vp.height, h.y0pct, h.y1pct, h.exact, h.both);
+          if(!nikFound.includes(p)) nikFound.push(p);
+        }else{
+          _hlRowOther(svg, vp.height, h.y0pct, h.y1pct);
+        }
+        // Satu chip per orang per halaman (ambil posisi teratas)
+        const k=h.rtlhId;
+        if(!chipByPerson[k]||h.y0pct<chipByPerson[k].y0pct) chipByPerson[k]=h;
+      });
+      Object.values(chipByPerson)
+        .sort((a,b)=>a.y0pct-b.y0pct)
+        .forEach(h=>wrap.appendChild(_mkBnbaChip(h, vp.height, _pdfRtlhId&&h.rtlhId===_pdfRtlhId)));
+    }
+
+    // Highlight target dari cache sesi (hasil scan baru yang belum masuk _pdfAllHl)
     if(_pdfNik){
       const ck=_pdfUrl+'|'+_pdfNik;
       const cached=_pdfOcrCache.get(ck);
-      if(cached&&cached.highlights){
+      const covered=pageHl.some(h=>h.rtlhId===_pdfRtlhId);
+      if(cached&&cached.highlights&&!covered){
         cached.highlights.forEach(h=>{
           if(h.page===p){
             _hlRow(svg, vp.height, h.y0pct, h.y1pct, h.exact, h.both);
@@ -10009,19 +10226,29 @@ async function _pdfRenderAll(){
     pageWrapper.style.cssText='display:flex;flex-direction:column;align-items:center';
     pageWrapper.appendChild(wrap);
     pageWrapper.appendChild(pageLabel);
-    scrollArea.appendChild(pageWrapper);
+    inner.appendChild(pageWrapper);
+  }
+  // Kembalikan posisi baca setelah re-render (zoom)
+  if(prevFrac>0) scrollArea.scrollTop=prevFrac*scrollArea.scrollHeight;
+
+  // Info jumlah BNBA ter-highlight di dokumen (mode library / tanpa target)
+  const badge = document.getElementById('pdfNikBadge');
+  const badgeText = document.getElementById('pdfNikBadgeText');
+  if(!_pdfNik && _pdfAllHl && _pdfAllHl.length){
+    const nPeople=new Set(_pdfAllHl.map(h=>h.rtlhId)).size;
+    badge.style.display='flex';
+    badge.style.background='#DBEAFE';
+    badgeText.textContent=nPeople+' BNBA ter-highlight -- ketuk nama untuk membuka';
   }
 
   // Update badge setelah render text PDF
   if(_pdfNik){
-    const badge = document.getElementById('pdfNikBadge');
-    const badgeText = document.getElementById('pdfNikBadgeText');
     if(nikFound.length>0){
       badge.style.display='flex';
       badge.style.background='#FEF3C7';
-      badgeText.textContent='NIK ditemukan di hal. '+[...new Set(nikFound)].join(', ');
+      badgeText.textContent='NIK ditemukan -- hal. '+[...new Set(nikFound)].sort((a,b)=>a-b).join(', ');
       const firstPage = document.getElementById('pdfPageWrap_'+nikFound[0]);
-      if(firstPage) setTimeout(()=>firstPage.scrollIntoView({behavior:'smooth',block:'center'}),300);
+      if(firstPage && prevFrac===0) setTimeout(()=>firstPage.scrollIntoView({behavior:'smooth',block:'center'}),300);
     } else {
       // Cek cache dulu sebelum OCR
       const _cacheKey = _pdfUrl + '|' + _pdfNik;
@@ -10035,8 +10262,8 @@ async function _pdfRenderAll(){
         badge.style.display='flex';
         badge.style.background = _cached.pages.length ? '#FEF3C7' : '#FEE2E2';
         badgeText.textContent = _cached.pages.length
-          ? '[FOUND] NIK ditemukan di hal. '+_cached.pages.join(', ')+' (cached)'
-          : 'NIK tidak terdeteksi';
+          ? 'NIK ditemukan -- hal. '+_cached.pages.join(', ')
+          : 'NIK belum terdeteksi di dokumen ini';
         // Gambar ulang highlight dari cache
         _cached.highlights.forEach(h=>{
           const wrap=document.getElementById('pdfPageWrap_'+h.page);
@@ -10045,11 +10272,11 @@ async function _pdfRenderAll(){
           if(svg&&canvas) _hlRow(svg, canvas.height, h.y0pct, h.y1pct, h.exact, h.both);
         });
         const fp=document.getElementById('pdfPageWrap_'+(_cached.pages[0]||1));
-        if(fp&&_cached.pages.length) setTimeout(()=>fp.scrollIntoView({behavior:'smooth',block:'center'}),300);
+        if(fp&&_cached.pages.length&&prevFrac===0) setTimeout(()=>fp.scrollIntoView({behavior:'smooth',block:'center'}),300);
       } else {
         badge.style.display='flex';
         badge.style.background='#FDE68A';
-        badgeText.textContent='Menganalisa PDF...';
+        badgeText.textContent='Memindai dokumen...';
         // Trigger OCR di background untuk scan pages
         _pdfRunOcr(nikFound);
       }
@@ -10058,7 +10285,7 @@ async function _pdfRenderAll(){
 }
 
 async function pdfZoom(delta){
-  _pdfScale = Math.max(0.5, Math.min(3.0, _pdfScale+delta));
+  _pdfScale = Math.max(0.4, Math.min(3.5, _pdfScale+delta));
   document.getElementById('pdfZoomLabel').textContent = Math.round(_pdfScale*100)+'%';
   await _pdfRenderAll();
 }
@@ -10086,7 +10313,7 @@ function _pdfUpdateNavBtns(){
 
 function closePdfViewer(){
   document.getElementById('ovPdfViewer').classList.remove('open');
-  _pdfDoc=null; _pdfNik=''; _pdfName=''; _pdfUrl=''; _pdfOcrRunning=false;
+  _pdfDoc=null; _pdfNik=''; _pdfName=''; _pdfUrl=''; _pdfOcrRunning=false; _pdfAllHl=[];
   document.getElementById('pdfScrollArea').innerHTML='';
 }
 
@@ -10543,6 +10770,8 @@ async function _saveScanResult(rtlhId,uh,nh,pages,hl){
   try{await sb.from('rtlh_pdf_scan_results').upsert(
     {rtlh_id:parseInt(rtlhId),url_hash:uh,nik_hash:nh,pages_found:pages,highlights:hl,scanned_at:new Date().toISOString()},
     {onConflict:'rtlh_id,url_hash,nik_hash'});}catch(e){}
+  // Hasil baru tersimpan -> segarkan cache highlight dokumen (sinkron di viewer)
+  try{ if(typeof _docHlCache!=='undefined') _docHlCache.delete(uh); }catch(e){}
 }
 async function _loadScanFromDb(rtlhId,uh,nh,ck){
   if(!rtlhId||!sb) return false;
@@ -10612,7 +10841,7 @@ async function scanAllDokLink(rtlhId){
   const statusEl=document.getElementById('dpDokScanStatus');
   const btn=document.getElementById('btnScanAllDok');
   const setStatus=(t)=>{ if(statusEl){statusEl.style.display='block';statusEl.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> '+t;} };
-  if(!nik){ toast('NIK penerima kosong — tidak bisa memindai','error'); return; }
+  if(!nik){ toast('NIK penerima kosong -- tidak bisa dipindai','error'); return; }
   if(!window.pdfjsLib){ toast('pdf.js belum dimuat, coba refresh','error'); return; }
 
   const{data}=await sb.from('rtlh_dokumen_link')
@@ -10626,7 +10855,7 @@ async function scanAllDokLink(rtlhId){
 
   let worker=null;
   if(window.Tesseract){
-    try{ setStatus('Menyiapkan mesin OCR...');
+    try{ setStatus('Menyiapkan pemindai...');
       worker=await Tesseract.createWorker('eng',1,{logger:()=>{}});
       await worker.setParameters({tessedit_pageseg_mode:'4'});
     }catch(e){ worker=null; }
@@ -10649,14 +10878,14 @@ async function scanAllDokLink(rtlhId){
 
   if(statusEl){
     statusEl.style.display='block';
-    statusEl.innerHTML='<i class="fas fa-circle-check" style="color:#16A34A"></i> Selesai — '+docHit+'/'+pdfs.length+' dokumen ter-highlight (tersimpan permanen)';
+    statusEl.innerHTML='<i class="fas fa-circle-check" style="color:#16A34A"></i> Selesai &middot; '+docHit+'/'+pdfs.length+' dokumen cocok &middot; tersimpan';
     setTimeout(()=>{ if(statusEl)statusEl.style.display='none'; },6000);
   }
   if(btn){btn.disabled=false;btn.style.opacity='1';btn.innerHTML='<i class="fas fa-bolt"></i> Pindai Semua';}
 
   await loadDokLink(numId);
   if(typeof _refreshSidebarItem==='function') _refreshSidebarItem(numId);
-  toast('<i class="fas fa-circle-check" style="color:#16A34A"></i> Pindai selesai: '+docHit+'/'+pdfs.length+' dokumen','success');
+  toast('<i class="fas fa-circle-check" style="color:#16A34A"></i> Selesai: '+docHit+'/'+pdfs.length+' dokumen cocok','success');
 }
 
 // Refresh SATU dokumen (tombol kecil di tiap kartu). Hasil tersimpan permanen.
@@ -10684,8 +10913,8 @@ async function refreshOneDok(btn){
   if(worker){ try{await worker.terminate();}catch(e){} }
   if(result){
     toast(result.pages.length
-      ? '<i class="fas fa-circle-check" style="color:#16A34A"></i> "'+title+'" di-scan ulang — NIK hal.'+result.pages.join(',')+' (tersimpan)'
-      : 'NIK tidak terdeteksi di "'+title+'"', result.pages.length?'success':'info');
+      ? '<i class="fas fa-circle-check" style="color:#16A34A"></i> "'+title+'" dipindai ulang &middot; NIK hal '+result.pages.join(', ')+' &middot; tersimpan'
+      : 'NIK belum terdeteksi di "'+title+'"', result.pages.length?'success':'info');
   }
   await loadDokLink(numId);
   if(typeof _refreshSidebarItem==='function') _refreshSidebarItem(numId);
