@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5">
 <title>e-RTLH Kabupaten Ngawi | DPRKP Ngawi</title>
 <meta name="theme-color" content="#0C2340">
 <meta name="description" content="Sistem Informasi Rumah Tidak Layak Huni (RTLH) Kabupaten Ngawi -- DPRKP Kab. Ngawi. Data 19 Kecamatan dan 217 Desa/Kelurahan.">
@@ -1626,10 +1626,10 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 
 <script>
 // ==================================================
@@ -1673,7 +1673,7 @@ const DESIL_COLORS=['','#BE123C','#DC2626','#EA580C','#D97706','#65A30D','#16A34
 
 // State
 let user=null,isAdmin=false,userKec=null,userDesa=null;
-let currentKec='',currentDesa='',filterStatus='all',filterDesil='all';
+let currentKec='',currentDesa='',filterStatus='all',filterDesil='all',filterDok='all';
 let adminLevel=0; // 0=publik, 1=super admin, 2=admin kecamatan, 3=admin desa
 let brAll=[],brFeatures=[];
 let brCache={};
@@ -3813,7 +3813,7 @@ async function loadKec(){
     loadBoundary(kecName);
     // Reload BA links setiap buka kecamatan (data bisa berubah)
     loadBALinks(brAll.map(r=>parseInt(r.id))).then(()=>{
-      renderSidebarList(); updateMap();
+      renderSidebarList(); renderKecDashboard(); updateMap();
     }).catch(()=>{});
     // Cek apakah perlu refresh background
     const cached=cacheGet(cacheKey);
@@ -3832,7 +3832,7 @@ async function loadKec(){
     renderSidebar();renderKecDashboard();updateMap();
     loadBoundary(kecName);
     loadBALinks(brAll.map(r=>parseInt(r.id))).then(()=>{
-      renderSidebarList(); updateMap();
+      renderSidebarList(); renderKecDashboard(); updateMap();
     }).catch(()=>{});
     if(cached.stale)_refreshKecBackground(cacheKey, currentKec, kecName);
     return;
@@ -3877,7 +3877,7 @@ async function _fetchKec(cacheKey, kecName, kecLabel){
     loadBoundary(Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===kecName));
     // Load BA/SK links background -- highlight setelah dapat data
     loadBALinks(allRows.map(r=>parseInt(r.id))).then(()=>{
-      if(currentKec===kecName){ renderSidebarList(); updateMap(); }
+      if(currentKec===kecName){ renderSidebarList(); renderKecDashboard(); updateMap(); }
     }).catch(()=>{});
   }
 }
@@ -3903,7 +3903,7 @@ async function _refreshKecBackground(cacheKey, kecName, kecLabel){
       brAll=brCache[kecName];brFeatures=[...brAll];
       renderSidebar();renderKecDashboard();updateMap();
       loadBALinks(brAll.map(r=>parseInt(r.id))).then(()=>{
-        if(currentKec===kecName){renderSidebarList();updateMap();}
+        if(currentKec===kecName){renderSidebarList();renderKecDashboard();updateMap();}
       }).catch(()=>{});
     }
   }catch(e){console.warn('Background refresh kec failed:',e);}
@@ -3934,28 +3934,54 @@ function applyBoundary(kecName){
 
 // Set rtlh_id yang punya bukti dukung (diisi background setelah loadKec)
 let _baLinkedIds = new Set();
+let _baLinksCache = {}; // per-kecamatan cache: kec -> {ids:Set, ts:number}
 
-// Ambil semua rtlh_id yg punya dok terhubung untuk batch id
-async function loadBALinks(rtlhIds){
-  _baLinkedIds = new Set();
-  if(!rtlhIds||!rtlhIds.length) return;
+// Ambil semua rtlh_id yg punya dok terhubung untuk batch id (paralel + cache)
+async function loadBALinks(rtlhIds, forceRefresh=false){
+  if(!rtlhIds||!rtlhIds.length){ _baLinkedIds=new Set(); _updateBASummary(); return; }
+  const kecKey=currentKec||'_';
+  // Pakai cache dulu supaya badge langsung muncul (instan), lalu refresh background
+  const cached=_baLinksCache[kecKey];
+  if(cached && !forceRefresh){
+    _baLinkedIds=new Set(cached.ids);
+    _updateBASummary();
+    // Refresh background bila cache > 60 detik
+    if(Date.now()-cached.ts>60000) _fetchBALinks(rtlhIds, kecKey).then(()=>{renderSidebarList();updateMap();}).catch(()=>{});
+    return;
+  }
+  await _fetchBALinks(rtlhIds, kecKey);
+}
+
+async function _fetchBALinks(rtlhIds, kecKey){
   const BATCH = 500;
+  const jobs=[];
   for(let i=0; i<rtlhIds.length; i+=BATCH){
     const batch = rtlhIds.slice(i, i+BATCH);
-    const{data} = await sb.from('rtlh_dokumen_link').select('rtlh_id').in('rtlh_id', batch);
-    if(data) data.forEach(r => _baLinkedIds.add(parseInt(r.rtlh_id)));
+    jobs.push(sb.from('rtlh_dokumen_link').select('rtlh_id').in('rtlh_id', batch));
   }
-  // Update badge di sidebar header
+  // Paralel -- jauh lebih cepat dari sekuensial
+  const results=await Promise.all(jobs.map(p=>p.catch(()=>({data:null}))));
+  const ids=new Set();
+  results.forEach(({data})=>{ if(data) data.forEach(r=>ids.add(parseInt(r.rtlh_id))); });
+  _baLinkedIds = ids;
+  _baLinksCache[kecKey]={ids:new Set(ids), ts:Date.now()};
+  _updateBASummary();
+}
+
+// Update badge ringkasan Bukti Dukung di header sidebar
+function _updateBASummary(){
   const badge = document.getElementById('baSummaryBadge');
   const text  = document.getElementById('baSummaryText');
-  if(badge && text){
-    const hasDok = brAll.filter(r => _baLinkedIds.has(parseInt(r.id))).length;
-    if(hasDok>0){
-      badge.style.display='flex';
-      text.textContent = hasDok+' / '+brAll.length+' ada BA/SK';
-    } else {
-      badge.style.display='none';
-    }
+  if(!badge||!text) return;
+  const total=brAll.length;
+  const hasDok = brAll.filter(r => _baLinkedIds.has(parseInt(r.id))).length;
+  badge.style.display='flex';
+  if(hasDok>=total && total>0){
+    badge.style.background='#DCFCE7'; badge.style.borderColor='#86EFAC'; badge.style.color='#166534';
+    text.innerHTML=hasDok+'/'+total+' Bukti Dukung lengkap';
+  } else {
+    badge.style.background='#FEF3C7'; badge.style.borderColor='#FCD34D'; badge.style.color='#92400E';
+    text.innerHTML=hasDok+'/'+total+' Bukti Dukung &middot; '+(total-hasDok)+' proses';
   }
 }
 
@@ -4016,14 +4042,14 @@ function renderSidebar(){
     </div>
 
     <!-- Filter chips -->
-    <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+    <div class="filter-row" style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
       <span style="font-size:.65rem;font-weight:700;color:var(--gray-500)">Status:</span>
       <button class="filter-chip active" data-status-chip="all" onclick="setFilterStatus('all')">Semua</button>
       <button class="filter-chip" data-status-chip="RTLH" onclick="setFilterStatus('RTLH')" style="border-color:#DC2626;color:#DC2626">RTLH</button>
       <button class="filter-chip" data-status-chip="Layak Huni" onclick="setFilterStatus('Layak Huni')" style="border-color:#16A34A;color:#16A34A">Layak Huni</button>
       <button class="filter-chip" data-status-chip="Keterangan Lain" onclick="setFilterStatus('Keterangan Lain')" style="border-color:#7C3AED;color:#7C3AED">Ket. Lain</button>
     </div>
-    <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+    <div class="filter-row" style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
       <span style="font-size:.65rem;font-weight:700;color:var(--gray-500)">Desil:</span>
       <button class="filter-chip active" data-desil-chip="all" onclick="setFilterDesil('all')">Semua</button>
       <button class="filter-chip" data-desil-chip="1" onclick="setFilterDesil('1')" style="color:#BE123C">D1</button>
@@ -4034,6 +4060,12 @@ function renderSidebar(){
       <button class="filter-chip" data-desil-chip="6" onclick="setFilterDesil('6')" style="color:#16A34A">D6</button>
       <button class="filter-chip" data-desil-chip="7" onclick="setFilterDesil('7')" style="color:#0891B2">D7</button>
       <button class="filter-chip" data-desil-chip="8" onclick="setFilterDesil('8')" style="color:#7C3AED">D8</button>
+    </div>
+    <div class="filter-row" style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+      <span style="font-size:.65rem;font-weight:700;color:var(--gray-500)">Bukti Dukung:</span>
+      <button class="filter-chip active" data-dok-chip="all" onclick="setFilterDok('all')">Semua</button>
+      <button class="filter-chip" data-dok-chip="ada" onclick="setFilterDok('ada')" style="border-color:#16A34A;color:#16A34A"><i class="fas fa-circle-check" style="margin-right:3px"></i>Ada</button>
+      <button class="filter-chip" data-dok-chip="proses" onclick="setFilterDok('proses')" style="border-color:#D97706;color:#D97706"><i class="fas fa-hourglass-half" style="margin-right:3px"></i>Proses Upload</button>
     </div>
     <div class="sidebar-list" id="sidebarList"></div>`;
     renderKecDashboard();
@@ -4072,12 +4104,24 @@ function renderKecDashboard(data){
   const batal=src.filter(r=>isKetLain(r)).length;
 
   const modeBadge='';
+  const bd=src.filter(r=>_baLinkedIds.has(parseInt(r.id))).length;
+  const bdPct=total?Math.round(bd/total*100):0;
 
   d.innerHTML=`
     <div class="kd-stat">
       <div class="kd-stat-item"><div class="kdsi-val" style="color:#16A34A">${layak}</div><div class="kdsi-lbl">Layak Huni</div></div>
       <div class="kd-stat-item"><div class="kdsi-val" style="color:#DC2626">${rtlh}</div><div class="kdsi-lbl">RTLH</div></div>
       <div class="kd-stat-item"><div class="kdsi-val" style="color:#7C3AED">${batal}</div><div class="kdsi-lbl">Ket. Lain</div></div>
+    </div>
+    <div style="margin:6px 0 8px;padding:8px 10px;border-radius:9px;background:${bdPct>=100?'#F0FDF4':'#FFFBEB'};border:1px solid ${bdPct>=100?'#BBF7D0':'#FDE68A'}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:.6rem;font-weight:800;color:${bdPct>=100?'#166534':'#92400E'};text-transform:uppercase;letter-spacing:.04em"><i class="fas ${bdPct>=100?'fa-circle-check':'fa-folder-open'}" style="margin-right:3px"></i>Bukti Dukung</span>
+        <span style="font-size:.62rem;font-weight:800;color:${bdPct>=100?'#16A34A':'#D97706'}">${bd}/${total} (${bdPct}%)</span>
+      </div>
+      <div style="height:5px;background:${bdPct>=100?'#DCFCE7':'#FEF3C7'};border-radius:99px;overflow:hidden">
+        <div style="height:100%;width:${bdPct}%;background:${bdPct>=100?'#16A34A':'#D97706'};border-radius:99px;transition:width .4s"></div>
+      </div>
+      ${total-bd>0?`<div style="font-size:.56rem;color:#B45309;margin-top:3px">${total-bd} BNBA belum diupload (masih proses)</div>`:''}
     </div>
     <div class="canvas-wrap"><canvas id="chartKecStatus"></canvas></div>`;
   setTimeout(()=>{
@@ -4126,6 +4170,13 @@ function setFilterDesil(d){
   });
   applyFilters();
 }
+function setFilterDok(d){
+  filterDok=d;
+  document.querySelectorAll('[data-dok-chip]').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.dokChip===d);
+  });
+  applyFilters();
+}
 function applyFilters(){
   // Tampilkan semua data
   brFeatures=brAll.filter(r=>{
@@ -4134,6 +4185,11 @@ function applyFilters(){
       const m=String(r.desil||'').match(/\d+/);
       if(filterDesil==='5+'){if(!m||parseInt(m[0])<5)return false;}
       else{if(!m||String(parseInt(m[0]))!==filterDesil)return false;}
+    }
+    if(filterDok!=='all'){
+      const hasDok=_baLinkedIds.has(parseInt(r.id));
+      if(filterDok==='ada'&&!hasDok)return false;
+      if(filterDok==='proses'&&hasDok)return false;
     }
     return true;
   });
@@ -4270,12 +4326,15 @@ function renderSidebarList(){
     const layak=sortedItems.filter(r=>isLayakHuni(r)).length;
     const rtlh=sortedItems.filter(r=>isRTLH(r)).length;
     const lain=sortedItems.filter(r=>isKetLain(r)).length;
+    const bd=sortedItems.filter(r=>_baLinkedIds.has(parseInt(r.id))).length;
+    const bdFull=bd>=sortedItems.length;
     const dgId='dg_'+desa.replace(/[^a-zA-Z0-9]/g,'_');
     return`<div class="desa-group">
       <div class="desa-header" onclick="toggleDesaGroup('${dgId}')"
         style="padding:7px 12px;background:linear-gradient(90deg,#EFF6FF,#F8FAFC);border-bottom:1px solid #DBEAFE;border-top:2px solid #BFDBFE;display:flex;align-items:center;gap:6px;cursor:pointer;position:sticky;top:0;z-index:5">
         <i class="fas fa-map-marker-alt" style="color:#1B6CA8;font-size:.68rem;flex-shrink:0"></i>
         <span style="font-size:.73rem;font-weight:800;color:#1E3A5F;flex:1">${desa}</span>
+        <span title="Bukti Dukung: ${bd} dari ${sortedItems.length}" style="font-size:.58rem;font-weight:700;padding:1px 6px;border-radius:99px;${bdFull?'color:#166534;background:#DCFCE7':'color:#92400E;background:#FEF3C7'}"><i class="fas ${bdFull?'fa-circle-check':'fa-folder-open'}" style="font-size:.52rem"></i> ${bd}/${sortedItems.length} BD</span>
         ${layak?`<span style="font-size:.58rem;color:#16A34A;font-weight:700;background:#DCFCE7;padding:1px 6px;border-radius:99px">${layak} LH</span>`:''}
         ${rtlh?`<span style="font-size:.58rem;color:#DC2626;font-weight:700;background:#FEE2E2;padding:1px 6px;border-radius:99px">${rtlh} RTLH</span>`:''}
         ${lain?`<span style="font-size:.58rem;color:#7C3AED;font-weight:700;background:#EDE9FE;padding:1px 6px;border-radius:99px">${lain}</span>`:''}
@@ -4299,7 +4358,9 @@ function renderSidebarList(){
           const iconBorder='none';
           const iconColor=sc;
           const desilHtml=desilNum?' · <span style="color:'+desilColor+'">D'+desilNum+'</span>':'';
-          const dokBadge=hasDok?'<span class="ba-badge" title="Ada BA/SK" style="color:#16A34A;font-size:.8rem"><i class="fas fa-circle-check"></i></span>':'';
+          const dokBadge=hasDok
+            ?'<span class="ba-badge" title="Bukti dukung tersedia" style="font-size:.55rem;font-weight:700;color:#166534;background:#DCFCE7;border:1px solid #86EFAC;padding:1px 6px;border-radius:99px;white-space:nowrap"><i class="fas fa-circle-check" style="color:#16A34A"></i> Bukti Dukung</span>'
+            :'<span class="ba-badge" title="Bukti dukung belum diupload -- masih proses" style="font-size:.55rem;font-weight:700;color:#92400E;background:#FFFBEB;border:1px dashed #FCD34D;padding:1px 6px;border-radius:99px;white-space:nowrap"><i class="fas fa-hourglass-half" style="color:#D97706"></i> Proses</span>';
           const jenisBadge=r.jenis_bantuan?'<span style="font-size:.55rem;color:#64748B;background:#F1F5F9;padding:1px 5px;border-radius:99px">'+r.jenis_bantuan+(r.tahun_bantuan?' '+r.tahun_bantuan:'')+'</span>':'';
           return '<div class="rtlh-item" id="ri_'+r.id+'"'+
             ' onclick="selectItem('+r.id+')"'+
@@ -7096,7 +7157,7 @@ async function loadLinkedDok(rtlhId){
   const{data}=await sb.from('rtlh_dokumen_link')
     .select('id,keterangan,dokumen_id,rtlh_dokumen_kabupaten(*)')
     .eq('rtlh_id',parseInt(rtlhId));
-  if(!data?.length){el.innerHTML='<div style="color:var(--gray-400);font-size:.72rem">Belum ada bukti dukung</div>';return;}
+  if(!data?.length){el.innerHTML='<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;background:#FFFBEB;border:1px dashed #FCD34D;font-size:.72rem;color:#92400E"><i class="fas fa-hourglass-half" style="color:#D97706"></i> Bukti dukung belum diupload -- masih dalam proses</div>';return;}
   el.innerHTML=data.map(lnk=>{
     const d=lnk.rtlh_dokumen_kabupaten;
     if(!d)return'';
@@ -7160,7 +7221,10 @@ async function loadDokLink(rtlhId){
     .eq('rtlh_id',numId);
   if(!data?.length){
     _baLinkedIds.delete(numId);
-    el.innerHTML='<span style="color:var(--gray-400)">Belum ada bukti dukung</span>';
+    el.innerHTML='<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;background:#FFFBEB;border:1px dashed #FCD34D">'
+      +'<i class="fas fa-hourglass-half" style="color:#D97706;font-size:.85rem"></i>'
+      +'<div><div style="font-size:.72rem;font-weight:700;color:#92400E">Bukti dukung belum diupload</div>'
+      +'<div style="font-size:.62rem;color:#B45309;margin-top:1px">Masih dalam proses -- dokumen akan muncul otomatis setelah diupload &amp; dihubungkan</div></div></div>';
     _refreshSidebarItem(numId);
     return;
   }
@@ -7253,33 +7317,27 @@ function _refreshSidebarItem(id){
   const numId=parseInt(id);
   const el=document.getElementById('ri_'+id);
   const hasDok=_baLinkedIds.has(numId);
-  // Update badge BA/SK di dalam item (ikon kecil, tanpa ubah background)
+  // Update badge Bukti Dukung di dalam item (ganti in-place, tanpa rebuild)
   if(el){
     const existingBadge=el.querySelector('.ba-badge');
-    if(hasDok&&!existingBadge){
-      const firstCol=el.querySelector('[style*="flex-direction:column"]');
-      if(firstCol){
-        const badge=document.createElement('span');
-        badge.className='ba-badge';
-        badge.title='Ada BA/SK';
-        badge.style.cssText='color:#16A34A;font-size:.8rem';
-        badge.innerHTML='<i class="fas fa-circle-check"></i>';
-        firstCol.insertBefore(badge,firstCol.firstChild);
+    if(existingBadge){
+      if(hasDok){
+        existingBadge.title='Bukti dukung tersedia';
+        existingBadge.style.cssText='font-size:.55rem;font-weight:700;color:#166534;background:#DCFCE7;border:1px solid #86EFAC;padding:1px 6px;border-radius:99px;white-space:nowrap';
+        existingBadge.innerHTML='<i class="fas fa-circle-check" style="color:#16A34A"></i> Bukti Dukung';
+      }else{
+        existingBadge.title='Bukti dukung belum diupload -- masih proses';
+        existingBadge.style.cssText='font-size:.55rem;font-weight:700;color:#92400E;background:#FFFBEB;border:1px dashed #FCD34D;padding:1px 6px;border-radius:99px;white-space:nowrap';
+        existingBadge.innerHTML='<i class="fas fa-hourglass-half" style="color:#D97706"></i> Proses';
       }
-    } else if(!hasDok&&existingBadge){
-      existingBadge.remove();
     }
   }
   // Update marker peta
   updateMap();
-  // Update badge summary di header
-  const badge=document.getElementById('baSummaryBadge');
-  const text=document.getElementById('baSummaryText');
-  if(badge&&text){
-    const cnt=brAll.filter(x=>_baLinkedIds.has(parseInt(x.id))).length;
-    if(cnt>0){badge.style.display='flex';text.textContent=cnt+' / '+brAll.length+' ada BA/SK';}
-    else badge.style.display='none';
-  }
+  // Update badge summary di header (pakai fungsi terpusat)
+  _updateBASummary();
+  // Invalidate cache BD kecamatan ini supaya data tetap sinkron
+  if(currentKec&&_baLinksCache[currentKec])_baLinksCache[currentKec]={ids:new Set(_baLinkedIds),ts:Date.now()};
 }
 
 // == AUTO-LINK DOKUMEN berdasarkan Jenis Bantuan + Tahun ==
@@ -9060,6 +9118,60 @@ function exportDtsenWord(){
   toast('Word berhasil diunduh','success');
 }
 
+// ==================================================
+// SINKRONISASI OTOMATIS
+// ==================================================
+// 1) Saat user kembali ke tab/aplikasi: refresh data kecamatan aktif
+//    secara diam-diam (tanpa loading, tanpa ganggu UI).
+let _lastSyncTs=Date.now();
+function _syncNow(){
+  try{
+    if(!user||!currentKec)return;
+    const kecName=Object.keys(KEC_CONFIG).find(k=>k.toUpperCase()===currentKec);
+    _refreshKecBackground('kec_'+currentKec, currentKec, kecName);
+    // Refresh status Bukti Dukung juga
+    if(brAll.length){
+      loadBALinks(brAll.map(r=>parseInt(r.id)), true).then(()=>{
+        renderSidebarList(); renderKecDashboard(); updateMap();
+      }).catch(()=>{});
+    }
+  }catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible' && Date.now()-_lastSyncTs>60000){
+    _lastSyncTs=Date.now();
+    _syncNow();
+  }
+});
+
+// 2) Realtime Supabase (bila replication aktif): perubahan data RTLH /
+//    bukti dukung dari perangkat lain langsung tersinkron ke layar ini.
+let _rtChannel=null, _rtDebounce=null;
+function _initRealtimeSync(){
+  try{
+    if(!sb||!sb.channel||_rtChannel)return;
+    _rtChannel=sb.channel('ertlh-sync')
+      .on('postgres_changes',{event:'*',schema:'public',table:'rtlh_dokumen_link'},()=>{
+        // Debounce 2 detik supaya batch perubahan tidak membanjiri query
+        clearTimeout(_rtDebounce);
+        _rtDebounce=setTimeout(()=>{
+          if(brAll.length){
+            loadBALinks(brAll.map(r=>parseInt(r.id)), true).then(()=>{
+              renderSidebarList(); renderKecDashboard(); updateMap();
+            }).catch(()=>{});
+          }
+        },2000);
+      })
+      .on('postgres_changes',{event:'*',schema:'public',table:'rtlh'},()=>{
+        clearTimeout(_rtDebounce);
+        _rtDebounce=setTimeout(()=>{ _lastSyncTs=Date.now(); _syncNow(); },3000);
+      })
+      .subscribe();
+  }catch(e){ /* realtime opsional -- abaikan bila tidak aktif */ }
+}
+// Init realtime setelah app siap (sb sudah ada)
+setTimeout(_initRealtimeSync, 4000);
+
 
 </script>
 
@@ -10086,12 +10198,38 @@ function _nikMatch(raw, target){
 function _nameTokens(name){
   return _normName(name).split(' ').filter(w=>w.length>=3);
 }
+// Normalisasi haystack untuk pencocokan nama: petakan digit hasil salah-OCR
+// kembali ke huruf (0->O, 1->I, 5->S, dst) supaya "SUM1NEM" tetap cocok "SUMINEM".
+function _normNameOcr(s){
+  return String(s||'').toUpperCase()
+    .replace(/0/g,'O').replace(/1/g,'I').replace(/2/g,'Z').replace(/4/g,'A')
+    .replace(/5/g,'S').replace(/6/g,'G').replace(/7/g,'T').replace(/8/g,'B')
+    .replace(/[^A-Z\s]/g,' ').replace(/\s+/g,' ').trim();
+}
+// Cek token nama dengan toleransi 1 kesalahan OCR (substitusi 1 huruf)
+// untuk token panjang >=5. Token pendek harus persis (hindari false positive).
+function _tokInHay(hay, tok){
+  if(hay.includes(tok)) return true;
+  if(tok.length<5) return false;
+  // Sliding window: cari substring sepanjang tok dengan maksimal 1 huruf beda
+  const L=tok.length;
+  for(let i=0;i<=hay.length-L;i++){
+    let diff=0;
+    for(let j=0;j<L;j++){
+      if(hay.charCodeAt(i+j)!==tok.charCodeAt(j)){ diff++; if(diff>1)break; }
+    }
+    if(diff<=1) return true;
+  }
+  return false;
+}
 function _nameMatch(rawText, name){
   const toks=_nameTokens(name);
   if(!toks.length) return {match:false, hits:0, total:0};
-  const hay=_normName(rawText);
+  // Dua versi haystack: normal + koreksi digit OCR -- ambil yang terbaik
+  const hay1=_normName(rawText);
+  const hay2=_normNameOcr(rawText);
   let hits=0;
-  toks.forEach(t=>{ if(hay.includes(t)) hits++; });
+  toks.forEach(t=>{ if(_tokInHay(hay1,t)||_tokInHay(hay2,t)) hits++; });
   const need = toks.length>=2 ? 2 : toks.length; // butuh 2 kata, atau semua bila 1 kata
   return {match: hits>=need, hits, total:toks.length};
 }
@@ -10252,9 +10390,13 @@ async function _ocrCanvasForNik(worker, ocrCanvas, nik, name, appliedDeg, W, H){
   };
   if(data.lines){
     let nikOnly=null;
-    for(const line of data.lines){
+    for(let li=0;li<data.lines.length;li++){
+      const line=data.lines[li];
       if(!_nikMatch(line.text,nik).match) continue;
-      const both = name ? _nameMatch(line.text,name).match : false;
+      // Cek nama di baris yang sama ATAU baris tetangga (atas/bawah) --
+      // pada tabel BNBA, nama & NIK sering ada di sel/baris berdekatan.
+      const ctx=[data.lines[li-1]?.text||'', line.text, data.lines[li+1]?.text||''].join(' ');
+      const both = name ? _nameMatch(ctx,name).match : false;
       const box=mkBox(line,both);
       if(both) return box;
       if(!nikOnly) nikOnly=box;
