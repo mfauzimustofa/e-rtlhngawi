@@ -6387,6 +6387,43 @@ async function openDokLib(){
 // REFRESH = scan semua dokumen, ekstrak NIK, cocokkan dengan BNBA database,
 // simpan link (untuk tanda "ada BA") + highlight kuning (untuk tampilan PDF).
 // TIDAK mengubah data NIK di database.
+// Bersihkan link yang salah wilayah: BNBA desa/kecamatan lain yang terlanjur
+// terhubung ke dokumen ber-metadata desa/kecamatan (hasil pencocokan lama).
+// Menghapus link + highlight tersimpan untuk BNBA yang tidak sesuai wilayah dokumen.
+async function _cleanupWrongLinks(docs, show){
+  let removed=0;
+  for(let i=0;i<docs.length;i++){
+    const d=docs[i];
+    const docDesa=_normName(d.desa||'');
+    const docKec=_normName(d.kecamatan||'');
+    if(!docDesa && !docKec) continue; // dokumen tingkat kabupaten: tidak divalidasi per wilayah
+    if(show) show('Validasi wilayah '+(i+1)+'/'+docs.length+': '+d.judul);
+    const{data:links}=await sb.from('rtlh_dokumen_link').select('rtlh_id').eq('dokumen_id',d.id).limit(5000);
+    if(!links||!links.length) continue;
+    const ids=[...new Set(links.map(l=>parseInt(l.rtlh_id)))];
+    const wrong=[];
+    for(let j=0;j<ids.length;j+=500){
+      const{data:rows}=await sb.from('rtlh').select('id,desa,kec').in('id',ids.slice(j,j+500));
+      (rows||[]).forEach(r=>{
+        const rd=_normName(r.desa||''), rk=_normName(r.kec||'');
+        if((docDesa && rd && rd!==docDesa) || (docKec && rk && rk!==docKec)) wrong.push(parseInt(r.id));
+      });
+    }
+    if(!wrong.length) continue;
+    const url=sb.storage.from('dokumen-kab').getPublicUrl(d.path).data.publicUrl;
+    const uh=_urlHash(url);
+    for(let j=0;j<wrong.length;j+=200){
+      const part=wrong.slice(j,j+200);
+      await sb.from('rtlh_dokumen_link').delete().eq('dokumen_id',d.id).in('rtlh_id',part);
+      await sb.from('rtlh_pdf_scan_results').delete().eq('url_hash',uh).in('rtlh_id',part);
+    }
+    removed+=wrong.length;
+    _docHlCache.delete(uh);
+    console.log('[CLEANUP] '+d.judul+': '+wrong.length+' link salah wilayah dihapus');
+  }
+  return removed;
+}
+
 async function refreshDokLib(){
   if(!confirm('Pindai dokumen bukti dukung?\n\nNIK & Nama di setiap PDF akan dicocokkan dengan database, di-highlight, dihubungkan ke BNBA, dan disimpan permanen.')) return;
   // Mode pindai: hanya dokumen baru (cepat) atau ulang semua dari awal
@@ -6427,12 +6464,12 @@ async function refreshDokLib(){
   const show=t=>{statusDiv.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> '+t;};
 
   try{
-    // 1. Muat NIK + nama + desa dari database
+    // 1. Muat NIK + nama + desa + kec dari database
     const nikToRtlh={};      // nik(16) -> rtlhId (untuk exact cepat)
-    const dbRecords=[];      // [{nik, rtlhId, nameTokens:[], desaNorm}] (untuk fuzzy 3-faktor)
+    const dbRecords=[];      // [{nik, rtlhId, nameTokens:[], desaNorm, kecNorm}]
     let from=0;
     while(true){
-      const{data,error}=await sb.from('rtlh').select('id,nik,kep_kk,desa').range(from,from+999);
+      const{data,error}=await sb.from('rtlh').select('id,nik,kep_kk,desa,kec').range(from,from+999);
       if(error||!data?.length) break;
       data.forEach(r=>{
         if(!r.nik) return;
@@ -6442,7 +6479,8 @@ async function refreshDokLib(){
         dbRecords.push({
           nik:n, rtlhId:r.id,
           nameTokens:_normName(r.kep_kk).split(' ').filter(w=>w.length>=3),
-          desaNorm:_normName(r.desa)
+          desaNorm:_normName(r.desa),
+          kecNorm:_normName(r.kec)
         });
       });
       if(data.length<1000) break;
@@ -6457,6 +6495,12 @@ async function refreshDokLib(){
       const e=(d.path||'').toLowerCase().split('.').pop();
       return ['pdf','xlsx','xls','csv','docx'].includes(e);
     });
+
+    // 2b. Mode cepat: bersihkan dulu link salah wilayah dari pemindaian lama
+    if(incremental){
+      const removed=await _cleanupWrongLinks(docs, show);
+      if(removed>0) toast(removed+' link salah wilayah dibersihkan','info');
+    }
 
     let totalLink=0, totalHl=0;
     const linkRows=[], scanRows=[];
@@ -6479,7 +6523,18 @@ async function refreshDokLib(){
 
       console.log('[REFRESH] '+d.judul+': '+ext.allNiks.size+' NIK 16-digit ditemukan');
 
-      // 3. Cocokkan tiap baris: NIK harus cocok + Nama dicek (toleran salah-baca OCR)
+      // 3. Cocokkan tiap baris -- ATURAN KETAT (mencegah salah orang / salah desa):
+      //    a. Bila dokumen punya metadata desa/kecamatan, HANYA BNBA wilayah itu yang boleh cocok.
+      //    b. NIK persis 16 digit -> cocok (cek nama bila ada).
+      //    c. NIK meleset 1 digit (salah baca OCR) -> WAJIB nama cocok kuat (>=2 kata, minimal 1 persis).
+      //    d. NIK meleset 2+ digit -> TIDAK PERNAH dicocokkan (NIK satu wilayah sangat mirip).
+      const docDesa=_normName(d.desa||'');
+      const docKec=_normName(d.kecamatan||'');
+      const candRecords=dbRecords.filter(rec=>{
+        if(docDesa && rec.desaNorm && rec.desaNorm!==docDesa) return false;
+        if(docKec && rec.kecNorm && rec.kecNorm!==docKec) return false;
+        return true;
+      });
       const nikData={}; // nik(db) -> {pages:Set, highlights:[]}
       Object.entries(ext.pages).forEach(([pg,niks])=>{
         niks.forEach(item=>{
@@ -6490,31 +6545,36 @@ async function refreshDokLib(){
 
           // Cari record DB terbaik: NIK paling cocok + nama paling cocok
           let best=null, bestDiff=99, bestHits=-1;
-          for(const rec of dbRecords){
+          for(const rec of candRecords){
             // Hitung selisih NIK (geser kalau cand 17-18 digit)
             let dmin=99;
             for(let off=0; off+16<=cand.length || off===0; off++){
               const seg=cand.substr(off,16);
               if(seg.length<16) break;
-              let d=0; for(let j=0;j<16;j++) if(seg[j]!==rec.nik[j]) d++;
-              if(d<dmin) dmin=d;
+              let dd=0; for(let j=0;j<16;j++) if(seg[j]!==rec.nik[j]) dd++;
+              if(dd<dmin) dmin=dd;
               if(off>2) break;
             }
-            if(dmin>2) continue; // NIK tidak cocok -> lewati
-            // Hitung kecocokan nama (fuzzy: toleran 1 huruf salah OCR per kata)
-            const hits=rec.nameTokens.filter(tok=>_tokInHay(lineNorm,tok)||_tokInHay(lineNormOcr,tok)).length;
-            // Aturan: NIK persis (diff 0) -> cukup 1 kata nama.
-            //         NIK meleset 1-2 digit -> WAJIB >=2 kata nama (atau semua bila nama pendek).
-            const need = dmin===0 ? 1 : Math.min(2, rec.nameTokens.length);
-            if(rec.nameTokens.length>0 && hits<need) continue;
+            if(dmin>1) continue; // hanya persis atau meleset 1 digit
+            // Kecocokan nama: persis (tanpa toleransi) dan fuzzy (toleransi 1 huruf)
+            const hitsExact=rec.nameTokens.filter(tok=>lineNorm.includes(tok)||lineNormOcr.includes(tok)).length;
+            const hitsFuzzy=rec.nameTokens.filter(tok=>_tokInHay(lineNorm,tok)||_tokInHay(lineNormOcr,tok)).length;
+            if(dmin===0){
+              // NIK persis: bila ada nama di DB, minimal 1 kata harus terlihat (persis/fuzzy)
+              if(rec.nameTokens.length>0 && hitsFuzzy<1) continue;
+            }else{
+              // NIK meleset 1 digit: WAJIB nama kuat -- >=2 kata cocok DAN >=1 persis
+              // (atau semua kata bila nama hanya 1 kata, dan harus persis)
+              const need=Math.min(2,rec.nameTokens.length||99);
+              if(!(hitsFuzzy>=need && hitsExact>=1)) continue;
+            }
             // Pilih kandidat terbaik: NIK paling persis, lalu nama paling banyak cocok
-            if(dmin<bestDiff || (dmin===bestDiff && hits>bestHits)){
-              bestDiff=dmin; bestHits=hits; best=rec;
+            if(dmin<bestDiff || (dmin===bestDiff && hitsFuzzy>bestHits)){
+              bestDiff=dmin; bestHits=hitsFuzzy; best=rec;
             }
           }
           if(best){
             matchNik=best.nik;
-            // both=true bila nama cocok kuat (>=2 kata, atau semua kata bila nama 1 kata)
             const fullNeed=Math.min(2,best.nameTokens.length||1);
             matchBoth=bestHits>=fullNeed;
           }
@@ -6840,15 +6900,28 @@ function renderPenerimaDok(list){
 }      '<div style="padding:5px 8px;background:var(--blue-bg);border-radius:6px;display:flex;align-items:center;gap:6px;margin-bottom:4px">'+
       '<i class="fas fa-map-marker-alt" style="color:var(--blue);font-size:.68rem"></i>'+
 async function unlinkPenerimaDok(rtlhId, dokId){
-  if(!confirm('Hapus link dokumen ini dari penerima?'))return;
+  if(!confirm('Lepaskan BNBA ini dari dokumen?\n\nLink dan highlight tersimpan untuk BNBA ini di dokumen ini akan dihapus.'))return;
   const{error}=await sb.from('rtlh_dokumen_link').delete()
     .eq('rtlh_id',parseInt(rtlhId)).eq('dokumen_id',dokId);
   if(error)return toast('Gagal: '+error.message,'error');
-  toast('Link dihapus','success');
+  // Hapus juga highlight tersimpan (supaya chip & garis hilang dari PDF)
+  try{
+    const{data:dok}=await sb.from('rtlh_dokumen_kabupaten').select('path').eq('id',dokId).maybeSingle();
+    if(dok?.path){
+      const url=sb.storage.from('dokumen-kab').getPublicUrl(dok.path).data.publicUrl;
+      const uh=_urlHash(url);
+      await sb.from('rtlh_pdf_scan_results').delete().eq('rtlh_id',parseInt(rtlhId)).eq('url_hash',uh);
+      _docHlCache.delete(uh);
+      // Bersihkan cache sesi untuk NIK terkait
+      const rec=brAll.find(x=>parseInt(x.id)===parseInt(rtlhId));
+      if(rec?.nik) _pdfOcrCache.delete(url+'|'+String(rec.nik).trim());
+    }
+  }catch(e){}
+  toast('Link & highlight dihapus','success');
   _penerimaDokAll=_penerimaDokAll.filter(r=>String(r.id)!==String(rtlhId));
   document.getElementById('penerimaDokCount').innerHTML='<strong>'+_penerimaDokAll.length+'</strong> penerima terhubung';
   renderPenerimaDok(_penerimaDokAll);
-  // Refresh detail panel jika sedang terbuka
+  // Refresh detail panel & status Bukti Dukung di sidebar
   loadDokLink(rtlhId);
 }
 
@@ -7249,8 +7322,26 @@ async function linkDokToPenerima(dokId){
 }
 
 async function unlinkDok(linkId){
+  // Ambil info link dulu (untuk hapus highlight tersimpan juga)
+  let lnk=null;
+  try{
+    const{data}=await sb.from('rtlh_dokumen_link')
+      .select('rtlh_id,rtlh_dokumen_kabupaten(path)').eq('id',linkId).maybeSingle();
+    lnk=data;
+  }catch(e){}
   await sb.from('rtlh_dokumen_link').delete().eq('id',linkId);
-  toast('Link dihapus','success');
+  // Hapus highlight tersimpan untuk pasangan BNBA+dokumen ini
+  try{
+    if(lnk?.rtlh_dokumen_kabupaten?.path){
+      const url=sb.storage.from('dokumen-kab').getPublicUrl(lnk.rtlh_dokumen_kabupaten.path).data.publicUrl;
+      const uh=_urlHash(url);
+      await sb.from('rtlh_pdf_scan_results').delete().eq('rtlh_id',parseInt(lnk.rtlh_id)).eq('url_hash',uh);
+      _docHlCache.delete(uh);
+      const rec=brAll.find(x=>parseInt(x.id)===parseInt(lnk.rtlh_id));
+      if(rec?.nik) _pdfOcrCache.delete(url+'|'+String(rec.nik).trim());
+    }
+  }catch(e){}
+  toast('Link & highlight dihapus','success');
   loadLinkedDok(_linkDokRtlhId);
   loadDokLink(_linkDokRtlhId);
 }
