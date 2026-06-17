@@ -2393,12 +2393,19 @@ function statusKategori(s){
      su==='SUDAH'||su==='DIBANTU'||su.startsWith('LAYAK'))return 'Layak Huni';
   return 'Keterangan Lain';
 }
-// statusRow: prioritas SK Dibatalkan -> Keterangan Lain, lalu cek jenis_bantuan
+// statusRow: status_rtlh eksplisit selalu menang, kecuali SK Dibatalkan (hanya jika status_rtlh memang 'SK Dibatalkan')
 function statusRow(r){
   if(!r) return statusKategori(null);
   const sr=String(r.status_rtlh||'').toUpperCase().trim();
   const sb2=String(r.status_batal||'').trim();
-  if(sr==='SK DIBATALKAN'||(sb2&&sb2!=='-'))return 'Keterangan Lain';
+  // SK Dibatalkan hanya berlaku jika status_rtlh sendiri = 'SK Dibatalkan'
+  // Jika status_rtlh diubah ke RTLH/Layak Huni, status_batal diabaikan
+  if(sr==='SK DIBATALKAN')return 'Keterangan Lain';
+  // status_rtlh eksplisit diisi -> gunakan itu sebagai acuan utama, abaikan status_batal & jenis_bantuan
+  if(sr) return statusKategori(r.status_rtlh);
+  // status_rtlh kosong + status_batal ada -> Keterangan Lain (data lama)
+  if(sb2&&sb2!=='-')return 'Keterangan Lain';
+  // status_rtlh kosong: gunakan jenis_bantuan sebagai petunjuk (data lama tanpa status eksplisit)
   if(r.jenis_bantuan){
     const jb=String(r.jenis_bantuan).toUpperCase().trim();
     if(jb.includes('RTLH')||jb.includes('BSPS')||jb==='DD'||jb.startsWith('DD ')||jb.includes(' DD')||jb.includes('DANA DESA'))
@@ -4804,7 +4811,7 @@ const FIELDS=[
   {key:'kondisi_at',label:'Kondisi Atap',type:'text'},
   {key:'material_l',label:'Material Lantai',type:'text'},
   {key:'kondisi_la',label:'Kondisi Lantai',type:'text'},
-  {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['RTLH','Layak Huni','Keterangan Lain']},
+  {key:'status_rtlh',label:'Status RTLH',type:'select',opts:['RTLH','Layak Huni','Keterangan Lain'],onChange:'handleStatusRtlhChange(this)'},
   {key:'status_batal',label:'Alasan SK Dibatalkan',type:'select',opts:['','-','Meninggal Dunia','Tidak Bersedia Dibantu','Tidak Ada Biaya','Pindah Tempat Tinggal','Sudah Mampu Mandiri','Tidak Memenuhi Syarat','Lainnya'],onChange:'handleAlasanBatal(this)'},
 
   {key:'jenis_bantuan',label:'Jenis Bantuan',type:'select',opts:['','RTLH','BSPS','DD','CSR','Lainnya']},
@@ -4832,6 +4839,15 @@ function handleAlasanBatal(sel){
     if(jbEl&&jbEl.value)statusEl.value='Layak Huni';
     else statusEl.value='RTLH';
     sel.value='';
+  }
+}
+
+function handleStatusRtlhChange(sel){
+  // Jika user mengubah status ke RTLH atau Layak Huni, kosongkan alasan SK Dibatalkan
+  // supaya statusRow() tidak override dengan 'Keterangan Lain'
+  if(sel.value==='RTLH'||sel.value==='Layak Huni'){
+    const batalEl=document.getElementById('ff_status_batal');
+    if(batalEl){batalEl.value='';}
   }
 }
 
@@ -4924,6 +4940,8 @@ async function saveForm(){
   }
   // Tambah timestamp update
   obj.updated_at=new Date().toISOString();
+  // Jika status diubah ke RTLH atau Layak Huni, hapus alasan batal agar tidak override statusRow()
+  if(obj.status_rtlh==='RTLH'||obj.status_rtlh==='Layak Huni'){obj.status_batal=null;}
   console.log('[saveForm] obj:', JSON.stringify(obj));
 
   let saved;
