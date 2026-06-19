@@ -3499,22 +3499,24 @@ async function showNonDbModal(){
               <th style="padding:8px 10px;text-align:left;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em">Nama KK</th>
               <th style="padding:8px 10px;text-align:left;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em">Desa / Kec</th>
               <th style="padding:8px 10px;text-align:left;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em">Status</th>
+              ${canEdit()?`<th style="padding:8px 10px;text-align:center;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em">Aksi</th>`:''}
             </tr>
           </thead>
           <tbody>
             ${nonDB.map((r,i)=>`
-              <tr style="background:${i%2?'#F9FAFB':'#fff'};cursor:pointer" onclick="closeModal('ovNonDb');navWithNIK('${r.nik||r.id}')" onmouseover="this.style.background='#EFF6FF'" onmouseout="this.style.background='${i%2?'#F9FAFB':'#fff'}'">
-                <td style="padding:7px 10px;color:var(--gray-400);font-family:monospace;font-size:.68rem">${r.id}</td>
-                <td style="padding:7px 10px;font-family:monospace;font-size:.68rem">${r.nik||'-'}</td>
-                <td style="padding:7px 10px;font-weight:600">${r.kep_kk||'-'}</td>
-                <td style="padding:7px 10px;color:var(--gray-500);font-size:.7rem">${r.desa||'-'} / ${r.kec||'-'}</td>
-                <td style="padding:7px 10px"><span style="background:${STATUS_COLORS[statusRow(r)]||'#94A3B8'}20;color:${STATUS_COLORS[statusRow(r)]||'#94A3B8'};border-radius:99px;padding:2px 8px;font-size:.62rem;font-weight:700">${statusRow(r)}</span></td>
+              <tr style="background:${i%2?'#F9FAFB':'#fff'}" onmouseover="this.style.background='#EFF6FF'" onmouseout="this.style.background='${i%2?'#F9FAFB':'#fff'}'">
+                <td style="padding:7px 10px;color:var(--gray-400);font-family:monospace;font-size:.68rem;cursor:pointer" onclick="closeModal('ovNonDb');navWithNIK('${r.nik||r.id}')">${r.id}</td>
+                <td style="padding:7px 10px;font-family:monospace;font-size:.68rem;cursor:pointer" onclick="closeModal('ovNonDb');navWithNIK('${r.nik||r.id}')">${r.nik||'-'}</td>
+                <td style="padding:7px 10px;font-weight:600;cursor:pointer" onclick="closeModal('ovNonDb');navWithNIK('${r.nik||r.id}')">${r.kep_kk||'-'}</td>
+                <td style="padding:7px 10px;color:var(--gray-500);font-size:.7rem;cursor:pointer" onclick="closeModal('ovNonDb');navWithNIK('${r.nik||r.id}')">${r.desa||'-'} / ${r.kec||'-'}</td>
+                <td style="padding:7px 10px;cursor:pointer" onclick="closeModal('ovNonDb');navWithNIK('${r.nik||r.id}')"><span style="background:${STATUS_COLORS[statusRow(r)]||'#94A3B8'}20;color:${STATUS_COLORS[statusRow(r)]||'#94A3B8'};border-radius:99px;padding:2px 8px;font-size:.62rem;font-weight:700">${statusRow(r)}</span></td>
+                ${canEdit()?`<td style="padding:7px 10px;text-align:center"><button onclick="closeModal('ovNonDb');_editTambahan('${r.id}')" style="padding:3px 10px;border-radius:6px;background:var(--blue);color:#fff;border:none;cursor:pointer;font-family:inherit;font-size:.65rem;font-weight:700;display:inline-flex;align-items:center;gap:4px"><i class='fas fa-edit'></i> Edit</button></td>`:''}
               </tr>`).join('')}
           </tbody>
         </table>
       </div>
       <div style="padding:8px 16px;background:var(--gray-50);border-top:1px solid var(--gray-200);font-size:.68rem;color:var(--gray-500)">
-        Klik baris untuk melihat detail · Total: ${nonDB.length} data
+        Klik baris untuk melihat detail · Tombol <strong>Edit</strong> untuk ubah data · Total: ${nonDB.length} data
       </div>`;
 
     // Update gs-nondb
@@ -3531,6 +3533,36 @@ function navWithNIK(nik){
     const inp=document.getElementById('kecSearchList');
     if(inp){inp.value=nik;searchKeclist();}
   },300);
+}
+// Edit BNBA Tambahan langsung dari modal daftar tambahan
+async function _editTambahan(id){
+  if(!canEdit())return toast('Tidak ada akses edit','error');
+  let r=null;
+  for(const kec of Object.keys(brCache)){
+    r=(brCache[kec]||[]).find(x=>String(x.id)===String(id));
+    if(r)break;
+  }
+  if(!r){
+    const cols='id,kec,desa,kep_kk,alamat,latitude,longitude,luas_rum,jml_peng,pekerjaan,jen_kel,umur,pend_ter,pengh,luas_tan,material_d,kondisi_di,material_a,kondisi_at,material_l,kondisi_la,status_kep,nama_foto,status_rtlh,status_batal,jenis_bantuan,tahun_bantuan,backlog,desil,nik,no_kk,updated_at,keterangan';
+    const{data,error}=await sb.from('rtlh').select(cols).eq('id',parseInt(id)).single();
+    if(error||!data)return toast('Gagal memuat data: '+(error?.message||'tidak ditemukan'),'error');
+    r=data;
+    r._score=calcScore(r);r._cat=getCat(r._score);
+    if(!brAll.find(x=>String(x.id)===String(id))){
+      brAll.push(r);
+      if(r.kec)brCache[r.kec]=(brCache[r.kec]||[]).concat(r);
+    }
+  }
+  if(r.kec&&r.kec.toUpperCase()!==currentKec){
+    currentKec=r.kec.toUpperCase();
+    brAll=brCache[currentKec]||[];
+    if(!brAll.find(x=>String(x.id)===String(id))){
+      r._score=r._score||calcScore(r);r._cat=r._cat||getCat(r._score);
+      brAll.push(r);brCache[currentKec]=brAll;
+    }
+    brFeatures=[...brAll];
+  }
+  openForm(String(id));
 }
 
 function clearKeclistSearch(){
