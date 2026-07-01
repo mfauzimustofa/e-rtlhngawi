@@ -2447,14 +2447,30 @@ async function loadGlobalStats(){
   }
 }
 
-// Force refresh stats tanpa cache (dipanggil setelah import/update)
+// Force refresh stats tanpa cache (dipanggil setelah import/update/hapus)
+// Membuat SEMUA menu (Beranda, Daftar Kecamatan, WebGIS, DTSEN, pencarian) sinkron
+// dengan data Supabase terbaru -- baik untuk data Database (10.379) maupun Tambahan.
 async function forceRefreshStats(){
   cacheDel('global_stats');
   cacheDel('report_data');
+  cacheDel('dtsen_data');
   invalidateDtsenCache();
   Object.keys(_kecCacheTime||{}).forEach(k=>delete _kecCacheTime[k]);
   Object.keys(brCache||{}).forEach(k=>delete brCache[k]);
-  await loadGlobalStats();
+  _dtLoaded=false;_dtData=null;
+  _rpLoaded=false;_rpData=null;
+  if(typeof _bnbaArea!=='undefined')_bnbaArea.loaded=false;
+  await loadGlobalStats();      // Beranda: gs-total, gs-nondb, gs-layak, gs-belum, chart, kec grid, desil grid, progress 10.379
+  await ensureKecCounts(true);  // Hitung ulang kecCounts dipakai di Daftar Kecamatan & hasil pencarian per-kecamatan
+
+  // Sinkron tampilan halaman yang sedang aktif saat ini juga (tanpa perlu pindah halaman)
+  const activePg=document.querySelector('.page.active')?.id;
+  try{
+    if(activePg==='pgKecList')renderKecList();
+    else if(activePg==='pgWebgis'&&currentKec){brAll=[];await loadKec();}
+    else if(activePg==='pgDTSEN')await loadDtsen();
+    else if(activePg==='pgReport'){await loadReport();await loadBnbaSplit(true);}
+  }catch(e){console.warn('forceRefreshStats page sync:',e);}
 }
 
 function _applyGlobalStats(data){
@@ -3510,7 +3526,7 @@ async function showNonDbModal(){
                 <td style="padding:7px 10px;font-weight:600;cursor:pointer" onclick="closeModal('ovNonDb');navWithNIK('${r.nik||r.id}')">${r.kep_kk||'-'}</td>
                 <td style="padding:7px 10px;color:var(--gray-500);font-size:.7rem;cursor:pointer" onclick="closeModal('ovNonDb');navWithNIK('${r.nik||r.id}')">${r.desa||'-'} / ${r.kec||'-'}</td>
                 <td style="padding:7px 10px;cursor:pointer" onclick="closeModal('ovNonDb');navWithNIK('${r.nik||r.id}')"><span style="background:${STATUS_COLORS[statusRow(r)]||'#94A3B8'}20;color:${STATUS_COLORS[statusRow(r)]||'#94A3B8'};border-radius:99px;padding:2px 8px;font-size:.62rem;font-weight:700">${statusRow(r)}</span></td>
-                ${canEdit()?`<td style="padding:7px 10px;text-align:center"><button onclick="closeModal('ovNonDb');_editTambahan('${r.id}')" style="padding:3px 10px;border-radius:6px;background:var(--blue);color:#fff;border:none;cursor:pointer;font-family:inherit;font-size:.65rem;font-weight:700;display:inline-flex;align-items:center;gap:4px"><i class='fas fa-edit'></i> Edit</button></td>`:''}
+              ${canEdit()?`<td style="padding:7px 10px;text-align:center"><div style="display:inline-flex;gap:5px"><button onclick="closeModal('ovNonDb');_editTambahan('${r.id}')" style="padding:3px 10px;border-radius:6px;background:var(--blue);color:#fff;border:none;cursor:pointer;font-family:inherit;font-size:.65rem;font-weight:700;display:inline-flex;align-items:center;gap:4px"><i class='fas fa-edit'></i> Edit</button><button onclick="_deleteTambahan('${r.id}','${(r.kep_kk||'').replace(/'/g,"\\'")}')" style="padding:3px 10px;border-radius:6px;background:var(--danger);color:#fff;border:none;cursor:pointer;font-family:inherit;font-size:.65rem;font-weight:700;display:inline-flex;align-items:center;gap:4px"><i class='fas fa-trash'></i> Hapus</button></div></td>`:''}
               </tr>`).join('')}
           </tbody>
         </table>
@@ -3563,6 +3579,37 @@ async function _editTambahan(id){
     brFeatures=[...brAll];
   }
   openForm(String(id));
+}
+
+// Hapus BNBA Tambahan langsung dari modal daftar tambahan.
+// Setelah dihapus: tersimpan ke Supabase, lalu sinkronkan jumlah & pencarian di SEMUA menu
+// (Beranda, Daftar Kecamatan, WebGIS, DTSEN) -- termasuk pemisahan jumlah Database (10.379) vs Tambahan.
+async function _deleteTambahan(id,nama){
+  if(!canEdit())return toast('Tidak ada akses hapus','error');
+  if(!confirm(`Hapus data "${nama||'ini'}" dari BNBA Tambahan?\n\nData akan dihapus permanen dari database dan tidak dapat dikembalikan.`))return;
+
+  const{error}=await sb.from('rtlh').delete().eq('id',id);
+  if(error)return toast('Gagal hapus: '+error.message,'error');
+
+  // Bersihkan dari cache lokal di semua kecamatan supaya tidak muncul lagi di mana pun
+  Object.keys(brCache||{}).forEach(k=>{
+    brCache[k]=(brCache[k]||[]).filter(x=>String(x.id)!==String(id));
+  });
+  if(brAll)brAll=brAll.filter(x=>String(x.id)!==String(id));
+  if(brFeatures)brFeatures=brFeatures.filter(x=>String(x.id)!==String(id));
+
+  toast('Data tambahan dihapus','success');
+  notifyDataChanged();
+
+  // Sinkronkan jumlah RTLH & hasil pencarian di semua menu (Beranda, Kec List, WebGIS, DTSEN)
+  await forceRefreshStats().catch(e=>console.warn('sync after _deleteTambahan:',e));
+
+  // Refresh tampilan modal BNBA Tambahan agar baris yang dihapus langsung hilang
+  if(document.getElementById('ovNonDb')?.classList.contains('open')){
+    await showNonDbModal();
+  }
+  // Jika sedang di halaman WebGIS kecamatan yang sama, sidebar & peta sudah di-refresh oleh forceRefreshStats()
+  renderSidebar();updateMap();
 }
 
 function clearKeclistSearch(){
@@ -5034,6 +5081,8 @@ async function saveForm(){
     autoLinkDokumen(saved.id, saved.jenis_bantuan, saved.tahun_bantuan).catch(()=>{});
   }
   renderSidebar();updateMap();
+  notifyDataChanged();
+  forceRefreshStats().catch(e=>console.warn('sync after saveForm:',e));
 }
 
 async function deleteItem(id){
@@ -5043,6 +5092,8 @@ async function deleteItem(id){
   brAll=brAll.filter(x=>x.id!==id);brFeatures=brFeatures.filter(x=>x.id!==id);
   brCache[currentKec]=brAll;
   closeDetail();renderSidebar();updateMap();toast('Data dihapus','success');
+  notifyDataChanged();
+  forceRefreshStats().catch(e=>console.warn('sync after delete:',e));
 }
 
 async function deleteAllKec(){
@@ -5052,6 +5103,8 @@ async function deleteAllKec(){
   if(error)return toast('Gagal: '+error.message,'error');
   brAll=[];brFeatures=[];brCache[currentKec]=[];
   renderSidebar();updateMap();toast('Semua data dihapus','success');
+  notifyDataChanged();
+  forceRefreshStats().catch(e=>console.warn('sync after deleteAllKec:',e));
 }
 
 // ==================================================
