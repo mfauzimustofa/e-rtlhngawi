@@ -3520,7 +3520,7 @@ async function showNonDbModal(){
           </thead>
           <tbody>
             ${nonDB.map((r,i)=>`
-              <tr style="background:${i%2?'#F9FAFB':'#fff'}" onmouseover="this.style.background='#EFF6FF'" onmouseout="this.style.background='${i%2?'#F9FAFB':'#fff'}'">
+              <tr data-rtlh-id="${r.id}" style="background:${i%2?'#F9FAFB':'#fff'}" onmouseover="this.style.background='#EFF6FF'" onmouseout="this.style.background='${i%2?'#F9FAFB':'#fff'}'">
                 <td style="padding:7px 10px;color:var(--gray-400);font-family:monospace;font-size:.68rem;cursor:pointer" onclick="closeModal('ovNonDb');navWithNIK('${r.nik||r.id}')">${r.id}</td>
                 <td style="padding:7px 10px;font-family:monospace;font-size:.68rem;cursor:pointer" onclick="closeModal('ovNonDb');navWithNIK('${r.nik||r.id}')">${r.nik||'-'}</td>
                 <td style="padding:7px 10px;font-weight:600;cursor:pointer" onclick="closeModal('ovNonDb');navWithNIK('${r.nik||r.id}')">${r.kep_kk||'-'}</td>
@@ -3532,7 +3532,7 @@ async function showNonDbModal(){
         </table>
       </div>
       <div style="padding:8px 16px;background:var(--gray-50);border-top:1px solid var(--gray-200);font-size:.68rem;color:var(--gray-500)">
-        Klik baris untuk melihat detail · Tombol <strong>Edit</strong> untuk ubah data · Total: ${nonDB.length} data
+        Klik baris untuk melihat detail · Tombol <strong>Edit</strong> untuk ubah data · Total: <span id="nonDbModalCount">${nonDB.length}</span> data
       </div>`;
 
     // Update gs-nondb
@@ -3582,33 +3582,67 @@ async function _editTambahan(id){
 }
 
 // Hapus BNBA Tambahan langsung dari modal daftar tambahan.
-// Setelah dihapus: tersimpan ke Supabase, lalu sinkronkan jumlah & pencarian di SEMUA menu
-// (Beranda, Daftar Kecamatan, WebGIS, DTSEN) -- termasuk pemisahan jumlah Database (10.379) vs Tambahan.
+// Alur: (1) konfirmasi, (2) optimistic remove dari DOM, (3) Supabase delete dgn verifikasi count,
+// (4) jika gagal → restore baris + tampilkan error, (5) background sync semua menu.
 async function _deleteTambahan(id,nama){
   if(!canEdit())return toast('Tidak ada akses hapus','error');
-  if(!confirm(`Hapus data "${nama||'ini'}" dari BNBA Tambahan?\n\nData akan dihapus permanen dari database dan tidak dapat dikembalikan.`))return;
+  if(!confirm(`Hapus data "${nama||'ini'}" dari BNBA Tambahan?\n\nData akan dihapus permanen dari database.`))return;
 
-  const{error}=await sb.from('rtlh').delete().eq('id',id);
-  if(error)return toast('Gagal hapus: '+error.message,'error');
+  // ── Optimistic UI: sembunyikan baris sebelum request selesai ──
+  const row=document.querySelector(`tr[data-rtlh-id="${id}"]`);
+  const tbody=row?.parentNode;
+  if(row){row.style.opacity='0.3';row.style.pointerEvents='none';}
 
-  // Bersihkan dari cache lokal di semua kecamatan supaya tidak muncul lagi di mana pun
+  // ── Supabase delete + verifikasi jumlah baris terhapus ──
+  let deleted=0;
+  try{
+    const res=await sb.from('rtlh').delete({count:'exact'}).eq('id',id);
+    if(res.error) throw new Error(res.error.message);
+    deleted=res.count||0;
+    // Fallback: jika count tidak didukung, cek data kosong artinya ok
+    if(res.count===null&&!res.error) deleted=1;
+  }catch(e){
+    // Gagal request: restore baris
+    if(row){row.style.opacity='';row.style.pointerEvents='';}
+    return toast('Gagal hapus: '+(e.message||'error jaringan'),'error');
+  }
+
+  if(deleted===0){
+    // Delete tidak mengenai row mana pun → mungkin RLS atau id tidak cocok
+    if(row){row.style.opacity='';row.style.pointerEvents='';}
+    return toast('Data tidak terhapus — periksa akses atau refresh halaman','error');
+  }
+
+  // ── Hapus baris dari DOM seketika ──
+  if(row) row.remove();
+
+  // ── Update counter di footer modal & gs-nondb ──
+  const countEl=document.getElementById('nonDbModalCount');
+  if(countEl){
+    const cur=parseInt(countEl.textContent)||0;
+    const newVal=Math.max(0,cur-1);
+    countEl.textContent=newVal;
+  }
+  const gsEl=document.getElementById('gs-nondb');
+  if(gsEl){
+    const cur=parseInt((gsEl.textContent||'0').replace(/\./g,''))||0;
+    gsEl.textContent=Math.max(0,cur-1).toLocaleString('id');
+  }
+
+  // ── Bersihkan cache lokal (semua kecamatan) ──
   Object.keys(brCache||{}).forEach(k=>{
     brCache[k]=(brCache[k]||[]).filter(x=>String(x.id)!==String(id));
   });
-  if(brAll)brAll=brAll.filter(x=>String(x.id)!==String(id));
-  if(brFeatures)brFeatures=brFeatures.filter(x=>String(x.id)!==String(id));
+  if(typeof brAll!=='undefined')brAll=(brAll||[]).filter(x=>String(x.id)!==String(id));
+  if(typeof brFeatures!=='undefined')brFeatures=(brFeatures||[]).filter(x=>String(x.id)!==String(id));
 
-  toast('Data tambahan dihapus','success');
+  toast('Data tambahan berhasil dihapus','success');
   notifyDataChanged();
 
-  // Sinkronkan jumlah RTLH & hasil pencarian di semua menu (Beranda, Kec List, WebGIS, DTSEN)
-  await forceRefreshStats().catch(e=>console.warn('sync after _deleteTambahan:',e));
-
-  // Refresh tampilan modal BNBA Tambahan agar baris yang dihapus langsung hilang
-  if(document.getElementById('ovNonDb')?.classList.contains('open')){
-    await showNonDbModal();
-  }
-  // Jika sedang di halaman WebGIS kecamatan yang sama, sidebar & peta sudah di-refresh oleh forceRefreshStats()
+  // ── Background: sinkronkan SEMUA menu (Beranda, KecList, WebGIS, DTSEN, Laporan) ──
+  // Tidak di-await agar UI tetap responsif; silently catch error sync
+  forceRefreshStats().catch(e=>console.warn('sync after _deleteTambahan:',e));
+  // Setelah background sync selesai, update sidebar/peta jika user sedang di WebGIS
   renderSidebar();updateMap();
 }
 
@@ -5087,11 +5121,18 @@ async function saveForm(){
 
 async function deleteItem(id){
   if(!confirm('Hapus data ini?'))return;
-  const{error}=await sb.from('rtlh').delete().eq('id',id);
-  if(error)return toast('Gagal hapus: '+error.message,'error');
-  brAll=brAll.filter(x=>x.id!==id);brFeatures=brFeatures.filter(x=>x.id!==id);
+  let deleted=0;
+  try{
+    const res=await sb.from('rtlh').delete({count:'exact'}).eq('id',id);
+    if(res.error)throw new Error(res.error.message);
+    deleted=(res.count===null)?1:(res.count||0); // jika count null tapi no error = sukses
+  }catch(e){return toast('Gagal hapus: '+(e.message||'error'),'error');}
+  if(deleted===0)return toast('Data tidak terhapus — refresh halaman dan coba lagi','error');
+  // Hapus dari cache lokal (gunakan String() untuk menghindari type mismatch int vs string)
+  brAll=brAll.filter(x=>String(x.id)!==String(id));
+  brFeatures=brFeatures.filter(x=>String(x.id)!==String(id));
   brCache[currentKec]=brAll;
-  closeDetail();renderSidebar();updateMap();toast('Data dihapus','success');
+  closeDetail();renderSidebar();updateMap();toast('Data berhasil dihapus','success');
   notifyDataChanged();
   forceRefreshStats().catch(e=>console.warn('sync after delete:',e));
 }
@@ -5099,10 +5140,15 @@ async function deleteItem(id){
 async function deleteAllKec(){
   if(!isSuperAdmin())return toast('Hanya admin inti','error');
   if(!confirm(`Hapus SEMUA data kecamatan ${currentKec}? Tindakan ini tidak dapat dibatalkan!`))return;
-  const{error}=await sb.from('rtlh').delete().eq('kec',currentKec);
-  if(error)return toast('Gagal: '+error.message,'error');
+  let deleted=0;
+  try{
+    const res=await sb.from('rtlh').delete({count:'exact'}).eq('kec',currentKec);
+    if(res.error)throw new Error(res.error.message);
+    deleted=(res.count===null)?1:(res.count||0);
+  }catch(e){return toast('Gagal: '+(e.message||'error'),'error');}
+  if(deleted===0)return toast('Tidak ada data yang dihapus','error');
   brAll=[];brFeatures=[];brCache[currentKec]=[];
-  renderSidebar();updateMap();toast('Semua data dihapus','success');
+  renderSidebar();updateMap();toast(`${deleted} data dihapus`,'success');
   notifyDataChanged();
   forceRefreshStats().catch(e=>console.warn('sync after deleteAllKec:',e));
 }
