@@ -1413,7 +1413,8 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
         <i class="fas fa-circle-notch fa-spin" style="font-size:1.5rem;display:block;margin-bottom:10px"></i> Memuat...
       </div>
     </div>
-    <div class="modal-footer">
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="btn btn-ghost" onclick="_diagnosisRLS()" title="Diagnosa masalah hapus data" style="font-size:.75rem;color:var(--gray-400)"><i class="fas fa-stethoscope"></i> Cek Akses</button>
       <button class="btn btn-ghost" onclick="closeModal('ovNonDb')">Tutup</button>
     </div>
   </div>
@@ -3582,46 +3583,54 @@ async function _editTambahan(id){
 }
 
 // Hapus BNBA Tambahan langsung dari modal daftar tambahan.
-// Alur: (1) konfirmasi, (2) optimistic remove dari DOM, (3) Supabase delete dgn verifikasi count,
-// (4) jika gagal → restore baris + tampilkan error, (5) background sync semua menu.
+// Alur: (1) konfirmasi, (2) optimistic UI, (3) Supabase delete dengan .select('id') untuk verifikasi,
+// (4) jika gagal → restore baris + error spesifik, (5) background sync semua menu.
 async function _deleteTambahan(id,nama){
   if(!canEdit())return toast('Tidak ada akses hapus','error');
   if(!confirm(`Hapus data "${nama||'ini'}" dari BNBA Tambahan?\n\nData akan dihapus permanen dari database.`))return;
 
   // ── Optimistic UI: sembunyikan baris sebelum request selesai ──
   const row=document.querySelector(`tr[data-rtlh-id="${id}"]`);
-  const tbody=row?.parentNode;
   if(row){row.style.opacity='0.3';row.style.pointerEvents='none';}
 
-  // ── Supabase delete + verifikasi jumlah baris terhapus ──
-  let deleted=0;
+  // ── Debug: log session & id sebelum delete ──
   try{
-    const res=await sb.from('rtlh').delete({count:'exact'}).eq('id',id);
-    if(res.error) throw new Error(res.error.message);
-    deleted=res.count||0;
-    // Fallback: jika count tidak didukung, cek data kosong artinya ok
-    if(res.count===null&&!res.error) deleted=1;
+    const{data:{session}}=await sb.auth.getSession();
+    console.log('[DELETE] id=',id,'type=',typeof id,'session=',session?.user?.email||'NO SESSION');
+  }catch(_){}
+
+  // ── Supabase DELETE dengan .select('id') untuk verifikasi row benar-benar terhapus ──
+  // .select('id') memaksa PostgREST return rows yang berhasil dihapus (RETURNING clause).
+  // Kalau array kosong → tidak ada row yang dihapus (id tidak cocok atau RLS memblokir).
+  let deletedRows=[];
+  try{
+    const{data,error}=await sb.from('rtlh').delete().eq('id',id).select('id');
+    console.log('[DELETE] result data=',data,'error=',error);
+    if(error) throw new Error(error.message);
+    deletedRows=data||[];
   }catch(e){
-    // Gagal request: restore baris
     if(row){row.style.opacity='';row.style.pointerEvents='';}
+    console.error('[DELETE] exception:',e);
     return toast('Gagal hapus: '+(e.message||'error jaringan'),'error');
   }
 
-  if(deleted===0){
-    // Delete tidak mengenai row mana pun → mungkin RLS atau id tidak cocok
+  if(!deletedRows.length){
+    // Tidak ada row terhapus → kemungkinan RLS aktif tanpa DELETE policy
     if(row){row.style.opacity='';row.style.pointerEvents='';}
-    return toast('Data tidak terhapus — periksa akses atau refresh halaman','error');
+    console.warn('[DELETE] 0 rows deleted — kemungkinan RLS aktif, jalankan SQL:',
+      'ALTER TABLE rtlh DISABLE ROW LEVEL SECURITY;');
+    toast('Hapus gagal: akses ditolak Supabase (RLS). Jalankan SQL di dashboard: ALTER TABLE rtlh DISABLE ROW LEVEL SECURITY;','error');
+    return;
   }
 
-  // ── Hapus baris dari DOM seketika ──
+  // ── DELETE berhasil: hapus baris dari DOM seketika ──
   if(row) row.remove();
 
   // ── Update counter di footer modal & gs-nondb ──
   const countEl=document.getElementById('nonDbModalCount');
   if(countEl){
     const cur=parseInt(countEl.textContent)||0;
-    const newVal=Math.max(0,cur-1);
-    countEl.textContent=newVal;
+    countEl.textContent=Math.max(0,cur-1);
   }
   const gsEl=document.getElementById('gs-nondb');
   if(gsEl){
@@ -3638,12 +3647,46 @@ async function _deleteTambahan(id,nama){
 
   toast('Data tambahan berhasil dihapus','success');
   notifyDataChanged();
-
-  // ── Background: sinkronkan SEMUA menu (Beranda, KecList, WebGIS, DTSEN, Laporan) ──
-  // Tidak di-await agar UI tetap responsif; silently catch error sync
   forceRefreshStats().catch(e=>console.warn('sync after _deleteTambahan:',e));
-  // Setelah background sync selesai, update sidebar/peta jika user sedang di WebGIS
   renderSidebar();updateMap();
+}
+
+// Diagnosa akses Supabase: cek session, SELECT, dan DELETE permission di tabel rtlh.
+// Dipanggil dari tombol "Cek Akses" di modal BNBA Tambahan.
+async function _diagnosisRLS(){
+  const log=[];
+  // 1. Cek session
+  try{
+    const{data:{session}}=await sb.auth.getSession();
+    if(session){
+      log.push('✅ Session aktif: '+session.user.email);
+    }else{
+      log.push('❌ Tidak ada session! Silakan login ulang.');
+    }
+  }catch(e){log.push('❌ getSession error: '+e.message);}
+
+  // 2. Cek apakah bisa SELECT 1 row dari rtlh
+  try{
+    const{data,error}=await sb.from('rtlh').select('id').limit(1);
+    if(error)log.push('❌ SELECT gagal: '+error.message);
+    else log.push('✅ SELECT OK ('+( data?.length||0)+' baris)');
+  }catch(e){log.push('❌ SELECT exception: '+e.message);}
+
+  // 3. Coba DELETE id=0 (pasti tidak ada row, tapi kalau RLS aktif akan error 403 atau 0 rows)
+  try{
+    const{data,error}=await sb.from('rtlh').delete().eq('id',-9999999).select('id');
+    if(error){
+      log.push('❌ DELETE ditolak: '+error.message+' (code: '+error.code+')');
+      log.push('⚠️  Fix: Jalankan di Supabase SQL Editor → ALTER TABLE rtlh DISABLE ROW LEVEL SECURITY;');
+    }else{
+      log.push('✅ DELETE permission OK (0 baris terhapus, normal karena id=-9999999 tidak ada)');
+      log.push('ℹ️  Jika data masih tidak terhapus, kemungkinan id tidak cocok (coba cek console)');
+    }
+  }catch(e){log.push('❌ DELETE exception: '+e.message);}
+
+  const msg=log.join('\n');
+  console.log('[DIAGNOSIS RLS]\n'+msg);
+  alert('[DIAGNOSIS AKSES SUPABASE]\n\n'+msg+'\n\n(Detail ada di DevTools Console)');
 }
 
 function clearKeclistSearch(){
@@ -5121,34 +5164,42 @@ async function saveForm(){
 
 async function deleteItem(id){
   if(!confirm('Hapus data ini?'))return;
-  let deleted=0;
   try{
-    const res=await sb.from('rtlh').delete({count:'exact'}).eq('id',id);
-    if(res.error)throw new Error(res.error.message);
-    deleted=(res.count===null)?1:(res.count||0); // jika count null tapi no error = sukses
+    const{data:{session}}=await sb.auth.getSession();
+    console.log('[deleteItem] id=',id,'type=',typeof id,'session=',session?.user?.email||'NO SESSION');
+  }catch(_){}
+  let deletedRows=[];
+  try{
+    const{data,error}=await sb.from('rtlh').delete().eq('id',id).select('id');
+    console.log('[deleteItem] result data=',data,'error=',error);
+    if(error)throw new Error(error.message);
+    deletedRows=data||[];
   }catch(e){return toast('Gagal hapus: '+(e.message||'error'),'error');}
-  if(deleted===0)return toast('Data tidak terhapus — refresh halaman dan coba lagi','error');
-  // Hapus dari cache lokal (gunakan String() untuk menghindari type mismatch int vs string)
+  if(!deletedRows.length){
+    console.warn('[deleteItem] 0 rows deleted — kemungkinan RLS aktif. Jalankan: ALTER TABLE rtlh DISABLE ROW LEVEL SECURITY;');
+    return toast('Hapus gagal: akses ditolak Supabase (RLS). Jalankan SQL: ALTER TABLE rtlh DISABLE ROW LEVEL SECURITY;','error');
+  }
   brAll=brAll.filter(x=>String(x.id)!==String(id));
   brFeatures=brFeatures.filter(x=>String(x.id)!==String(id));
   brCache[currentKec]=brAll;
   closeDetail();renderSidebar();updateMap();toast('Data berhasil dihapus','success');
   notifyDataChanged();
-  forceRefreshStats().catch(e=>console.warn('sync after delete:',e));
+  forceRefreshStats().catch(e=>console.warn('sync after deleteItem:',e));
 }
 
 async function deleteAllKec(){
   if(!isSuperAdmin())return toast('Hanya admin inti','error');
   if(!confirm(`Hapus SEMUA data kecamatan ${currentKec}? Tindakan ini tidak dapat dibatalkan!`))return;
-  let deleted=0;
+  let deletedRows=[];
   try{
-    const res=await sb.from('rtlh').delete({count:'exact'}).eq('kec',currentKec);
-    if(res.error)throw new Error(res.error.message);
-    deleted=(res.count===null)?1:(res.count||0);
+    const{data,error}=await sb.from('rtlh').delete().eq('kec',currentKec).select('id');
+    console.log('[deleteAllKec] deleted=',data?.length,'error=',error);
+    if(error)throw new Error(error.message);
+    deletedRows=data||[];
   }catch(e){return toast('Gagal: '+(e.message||'error'),'error');}
-  if(deleted===0)return toast('Tidak ada data yang dihapus','error');
+  if(!deletedRows.length)return toast('Tidak ada data yang dihapus (periksa akses RLS)','error');
   brAll=[];brFeatures=[];brCache[currentKec]=[];
-  renderSidebar();updateMap();toast(`${deleted} data dihapus`,'success');
+  renderSidebar();updateMap();toast(`${deletedRows.length} data dihapus`,'success');
   notifyDataChanged();
   forceRefreshStats().catch(e=>console.warn('sync after deleteAllKec:',e));
 }
