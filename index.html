@@ -1644,6 +1644,45 @@ let _dbMode='semua'; // selalu semua -- mode tidak ditampilkan ke user
 
 let sb=null; // akan diinit di DOMContentLoaded
 
+// ==================================================
+// URL FILE STORAGE (bucket privat)
+// getPublicUrl hanya membentuk string URL stabil (tanpa token); dipakai sebagai kunci cache/hash.
+// Untuk membuka file sungguhan, URL stabil ditukar dengan signed URL sementara lewat _fileUrl().
+// ==================================================
+const _signedCache=new Map();
+async function _fileUrl(stable,ttl){
+  try{
+    const m=/\/storage\/v1\/object\/public\/([^\/]+)\/(.+?)(?:\?.*)?$/.exec(stable||'');
+    if(!m)return stable;
+    const bucket=m[1],path=decodeURIComponent(m[2]);
+    const key=bucket+'|'+path,life=ttl||3600;
+    const c=_signedCache.get(key);
+    if(c&&c.exp>Date.now()+120000)return c.url;
+    const{data,error}=await sb.storage.from(bucket).createSignedUrl(path,life);
+    if(error||!data||!data.signedUrl)return stable;
+    _signedCache.set(key,{url:data.signedUrl,exp:Date.now()+life*1000});
+    return data.signedUrl;
+  }catch(e){return stable;}
+}
+function _hydrateEl(el){
+  if(!el||el._sdone||!el.getAttribute)return;
+  const u=el.getAttribute('data-surl');
+  if(!u)return;
+  el._sdone=1;
+  _fileUrl(u).then(function(x){
+    if(!x)return;
+    if(el.tagName==='IMG')el.src=x;else el.href=x;
+  });
+}
+function _hydrateSigned(root){
+  if(!root||root.nodeType!==1)return;
+  _hydrateEl(root);
+  if(root.querySelectorAll)root.querySelectorAll('[data-surl]').forEach(_hydrateEl);
+}
+new MutationObserver(function(ms){
+  ms.forEach(function(m){m.addedNodes.forEach(_hydrateSigned);});
+}).observe(document.documentElement,{childList:true,subtree:true});
+
 const KEC_CONFIG={
   "SINE":{lat:-7.5159,lng:111.1713,desa:[{kode:'3521012001',nama:'WONOSARI'},{kode:'3521012002',nama:'PANDANSARI'},{kode:'3521012003',nama:'GIRIKERTO'},{kode:'3521012004',nama:'NGRENDENG'},{kode:'3521012005',nama:'HARGOSARI'},{kode:'3521012006',nama:'POCOL'},{kode:'3521012007',nama:'GENDOL'},{kode:'3521012008',nama:'SINE'},{kode:'3521012009',nama:'SUMBEREJO'},{kode:'3521012010',nama:'SUMBERSARI'},{kode:'3521012011',nama:'KUNIRAN'},{kode:'3521012012',nama:'TULAKAN'},{kode:'3521012013',nama:'KETANGGUNG'},{kode:'3521012014',nama:'JAGIR'},{kode:'3521012015',nama:'KAUMAN'}]},
   "NGRAMBE":{lat:-7.5018,lng:111.2123,desa:[{kode:'3521022001',nama:'HARGOMULYO'},{kode:'3521022002',nama:'GIRIHARJO'},{kode:'3521022003',nama:'SETONO'},{kode:'3521022004',nama:'WAKAH'},{kode:'3521022005',nama:'TAWANGREJO'},{kode:'3521022006',nama:'SAMBIREJO'},{kode:'3521022007',nama:'MANISHARJO'},{kode:'3521022008',nama:'SIDOMULYO'},{kode:'3521022009',nama:'NGRAMBE'},{kode:'3521022010',nama:'BABADAN'},{kode:'3521022011',nama:'KRANDEGAN'},{kode:'3521022012',nama:'PUCANGAN'},{kode:'3521022013',nama:'CEPOKO'},{kode:'3521022014',nama:'MENDIRO'}]},
@@ -2222,7 +2261,7 @@ async function doLogin(){
   const btn=document.querySelector('#ovLogin .btn-primary');
   btn.disabled=true;btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Memverifikasi...';
   try{
-    const{data:adm}=await sb.from('admin_users').select('email,status').eq('username',input).single();
+    const{data:_em}=await sb.rpc('login_email',{p_username:input});const adm=_em?{email:_em,status:'active'}:null;
     if(!adm||adm.status!=='active')return toast('Username atau password salah','error');
     const{error}=await sb.auth.signInWithPassword({email:adm.email,password:pass});
     if(error)return toast('Username atau password salah','error');
@@ -2235,7 +2274,7 @@ async function doGoogleLogin(){
   if(error)toast('Error: '+error.message,'error');
 }
 async function doLogout(){
-  await sb.auth.signOut();
+  _signedCache.clear();await sb.auth.signOut();
   if(_realtimeChannel)try{sb.removeChannel(_realtimeChannel);}catch(e){}
   if(_pollTimer)clearInterval(_pollTimer);
   toast('Logout berhasil','info');
@@ -5626,7 +5665,7 @@ function renderFotoThumbs(){
       ?'<div style="position:absolute;top:2px;right:2px;background:#16A34A;border-radius:50%;width:14px;height:14px;display:flex;align-items:center;justify-content:center"><i class="fas fa-check" style="color:#fff;font-size:.45rem"></i></div>'
       :'';
     return`<div onclick="toggleFotoSelect(${i})" style="position:relative;width:60px;height:60px;border-radius:6px;border:2px solid ${border};background:${bg};cursor:pointer;overflow:hidden;flex-shrink:0">
-      <img src="${f.url}" style="width:100%;height:100%;object-fit:cover" loading="lazy">
+      <img data-surl="${f.url}" style="width:100%;height:100%;object-fit:cover" loading="lazy">
       ${icon}
       <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);font-size:.45rem;color:#fff;padding:1px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${f.tempName.replace(/\.[^.]+$/,'').slice(0,18)}</div>
     </div>`;
@@ -6395,7 +6434,7 @@ async function loadDokList(rtlhId){
   imgs.forEach(function(d,i){
     var url=sb.storage.from('rtlh-dokumen').getPublicUrl(d.path).data.publicUrl;
     html+='<div style="flex-shrink:0;cursor:pointer;position:relative" onclick="openLightboxDok('+i+')">'+
-      '<img src="'+url+'" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:2px solid var(--gray-200)">'+
+      '<img data-surl="'+url+'" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:2px solid var(--gray-200)">'+
       '<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.5);border-radius:0 0 6px 6px;padding:2px 3px;font-size:.5rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+
         (DOK_LABELS[d.jenis]||d.jenis)+
       '</div></div>';
@@ -6423,7 +6462,7 @@ async function loadDokFileList(rtlhId){
     card.onclick=function(){openLightboxDok(i);};
     if(isImg){
       var img=document.createElement('img');
-      img.src=url;img.style.cssText='width:100%;height:90px;object-fit:cover;display:block';
+      _fileUrl(url).then(function(u){if(u)img.src=u;});img.style.cssText='width:100%;height:90px;object-fit:cover;display:block';
       card.appendChild(img);
     }else{
       var ph=document.createElement('div');
@@ -6472,7 +6511,7 @@ function openLightboxDok(idx){
   var d=_lbPhotos[idx];
   if(!d)return;
   var url=sb.storage.from('rtlh-dokumen').getPublicUrl(d.path).data.publicUrl;
-  document.getElementById('lbImg').src=url;
+  _fileUrl(url).then(function(u){if(u&&_lbIdx===idx)document.getElementById('lbImg').src=u;});
   document.getElementById('lbCaption').textContent=(DOK_LABELS[d.jenis]||d.jenis)+(d.keterangan?' · '+d.keterangan:'');
   document.getElementById('lbCounter').textContent=(idx+1)+' / '+_lbPhotos.length;
   var prev=document.getElementById('lbPrev');
@@ -6889,7 +6928,7 @@ function renderDokLib(docs){
         ${_linkDokRtlhId?`<button onclick="linkDokToPenerima('${d.id}')" title="Jadikan bukti dukung BNBA yang sedang dibuka" style="padding:0 10px;height:28px;border-radius:7px;background:#FEF3C7;color:#92400E;border:1.5px solid #FCD34D;cursor:pointer;font-size:.62rem;font-weight:700;font-family:inherit;display:flex;align-items:center;gap:3px;white-space:nowrap"><i class="fas fa-link" style="color:#EAB308;font-size:.6rem"></i>+ Bukti Dukung</button>`:''}
         ${(d.path||'').toLowerCase().endsWith('.pdf')
           ?`<button onclick="openDokLibViewer(this)" data-url="${encodeURIComponent(url)}" data-title="${encodeURIComponent(d.judul||'Dokumen')}" title="Lihat PDF -- semua NIK ter-highlight + link ke BNBA" style="padding:0 10px;height:30px;border-radius:7px;background:var(--blue-bg);color:var(--blue);border:none;cursor:pointer;font-size:.65rem;font-weight:700;font-family:inherit;display:flex;align-items:center;gap:4px"><i class="fas fa-eye"></i> Lihat</button>`
-          :`<a href="${url}" target="_blank" title="Buka" style="width:30px;height:30px;border-radius:7px;background:var(--blue-bg);color:var(--blue);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:.75rem"><i class="fas fa-external-link-alt"></i></a>`}
+          :`<a href="#" data-surl="${url}" target="_blank" title="Buka" style="width:30px;height:30px;border-radius:7px;background:var(--blue-bg);color:var(--blue);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:.75rem"><i class="fas fa-external-link-alt"></i></a>`}
         <button onclick="lihatPenerimaDok('${d.id}','${(d.judul||'').replace(/'/g,"\\'")}')" title="Daftar BNBA terhubung" style="width:30px;height:30px;border-radius:7px;background:#F5F3FF;color:#7C3AED;border:none;cursor:pointer;font-size:.75rem"><i class="fas fa-users"></i></button>
         ${isAdmin?`<button onclick="openEditDokLib('${d.id}')" title="Edit" style="width:30px;height:30px;border-radius:7px;background:#FFF7ED;color:#EA580C;border:none;cursor:pointer;font-size:.75rem"><i class="fas fa-edit"></i></button>`:''}
         ${isSuperAdmin()?`<button onclick="deleteDokLib('${d.id}','${d.path}')" title="Hapus" style="width:30px;height:30px;border-radius:7px;background:var(--danger-bg);color:var(--danger);border:none;cursor:pointer;font-size:.75rem"><i class="fas fa-trash"></i></button>`:''}
@@ -7485,7 +7524,7 @@ async function loadLinkedDok(rtlhId){
         <div style="font-weight:700;font-size:.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.judul}</div>
         <div style="font-size:.62rem;color:var(--gray-400)">${d.jenis} ${d.tahun||''} ${lnk.keterangan?'· '+lnk.keterangan:''}</div>
       </div>
-      <a href="${url}" target="_blank" style="color:var(--blue);font-size:.72rem;padding:3px 8px;border-radius:6px;background:var(--blue-bg);text-decoration:none"><i class="fas fa-external-link-alt"></i></a>
+      <a href="#" data-surl="${url}" target="_blank" style="color:var(--blue);font-size:.72rem;padding:3px 8px;border-radius:6px;background:var(--blue-bg);text-decoration:none"><i class="fas fa-external-link-alt"></i></a>
       <button onclick="unlinkDok('${lnk.id}')" style="background:none;border:none;color:var(--gray-300);cursor:pointer;font-size:.72rem;padding:3px"><i class="fas fa-unlink"></i></button>
     </div>`;
   }).join('');
@@ -7643,7 +7682,7 @@ function _openDok(el){
   const dokId=el.dataset.dokid||'';
   if(!url)return;
   if(isPdf) openPdfViewer(url,title,nik,rtlhId,dokId,name);
-  else window.open(url,'_blank');
+  else{const w=window.open('','_blank');_fileUrl(url).then(function(u){if(w&&u)w.location=u;else if(w)w.close();});}
 }
 
 // Refresh hanya satu item di sidebar tanpa full re-render
@@ -7732,7 +7771,7 @@ async function doMaintenanceLogin(){
   if(!input||!pass){errEl.innerHTML='<i class="fas fa-exclamation-circle"></i> Isi username dan password';return;}
   btn.disabled=true;btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Memverifikasi...';
   try{
-    const{data:adm}=await sb.from('admin_users').select('email,status').eq('username',input).single();
+    const{data:_em}=await sb.rpc('login_email',{p_username:input});const adm=_em?{email:_em,status:'active'}:null;
     if(!adm||adm.status!=='active'){errEl.innerHTML='<i class="fas fa-exclamation-circle"></i> Username atau password salah';return;}
     const{error}=await sb.auth.signInWithPassword({email:adm.email,password:pass});
     if(error){errEl.innerHTML='<i class="fas fa-exclamation-circle"></i> Username atau password salah';return;}
@@ -7772,7 +7811,7 @@ window.addEventListener('DOMContentLoaded',async()=>{
         adminKecamatan=data.kecamatan||'';
         hideMaintenanceOverlay(); // user valid, lanjut
       }else{
-        await sb.auth.signOut();
+        _signedCache.clear();await sb.auth.signOut();
         showMaintenanceOverlay();
       }
     }else{
@@ -10410,7 +10449,7 @@ async function openPdfViewer(url, title, nik, rtlhId, dokId, name){
     'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
   try{
-    _pdfDoc = await pdfjsLib.getDocument({url, withCredentials:false}).promise;
+    _pdfDoc = await pdfjsLib.getDocument({url:await _fileUrl(url), withCredentials:false}).promise;
     // Skala awal: pas lebar layar -- nyaman dibaca, tidak kebesaran
     try{
       const page1=await _pdfDoc.getPage(1);
@@ -11033,7 +11072,7 @@ async function _pdfSilentScan(url, nik, rtlhId, name){
   try{
     pdfjsLib.GlobalWorkerOptions.workerSrc=
       'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    const pdf=await pdfjsLib.getDocument({url,withCredentials:false}).promise;
+    const pdf=await pdfjsLib.getDocument({url:await _fileUrl(url),withCredentials:false}).promise;
     const found=[],highlights=[];
     for(let p=1;p<=pdf.numPages;p++){
       const page=await pdf.getPage(p);
@@ -11107,7 +11146,7 @@ async function _scanOnePdf(url, nik, name, numId, worker, onProgress){
   _pdfOcrCache.delete(ck);
   try{ await sb.from('rtlh_pdf_scan_results').delete()
     .eq('rtlh_id',numId).eq('url_hash',_urlHash(url)).eq('nik_hash',_nikHash(nik)); }catch(e){}
-  const pdf=await pdfjsLib.getDocument({url,withCredentials:false}).promise;
+  const pdf=await pdfjsLib.getDocument({url:await _fileUrl(url),withCredentials:false}).promise;
   const found=[], highlights=[];
   for(let p=1;p<=pdf.numPages;p++){
     if(onProgress) onProgress(p, pdf.numPages);
@@ -11224,7 +11263,7 @@ async function _extractNiksFromPdf(url, onProgress, validNiks){
   const result={pages:{}, allNiks:new Set()};
   if(!window.pdfjsLib) return result;
   pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-  const pdf=await pdfjsLib.getDocument({url,withCredentials:false}).promise;
+  const pdf=await pdfjsLib.getDocument({url:await _fileUrl(url),withCredentials:false}).promise;
   let worker=null;
 
   for(let p=1;p<=pdf.numPages;p++){
@@ -11301,7 +11340,7 @@ async function _extractNiksFromPdf(url, onProgress, validNiks){
 async function _extractNiksFromExcel(url){
   const result={pages:{}, allNiks:new Set()};
   if(!window.XLSX) return result;
-  const resp=await fetch(url);
+  const resp=await fetch(await _fileUrl(url));
   const buf=await resp.arrayBuffer();
   const wb=XLSX.read(buf,{type:'array'});
   wb.SheetNames.forEach((sn,si)=>{
@@ -11326,7 +11365,7 @@ async function _extractNiksFromExcel(url){
 async function _extractNiksFromWord(url){
   const result={pages:{}, allNiks:new Set()};
   if(!window.mammoth) return result;
-  const resp=await fetch(url);
+  const resp=await fetch(await _fileUrl(url));
   const buf=await resp.arrayBuffer();
   const {value}=await mammoth.extractRawText({arrayBuffer:buf});
   const pageNiks=[];
@@ -11413,7 +11452,7 @@ async function scanMassalDokLib(){
       let pdf;
       try{
         if(!window.pdfjsLib) throw new Error('pdfjsLib not loaded');
-        pdf=await pdfjsLib.getDocument({url,withCredentials:false}).promise;
+        pdf=await pdfjsLib.getDocument({url:await _fileUrl(url),withCredentials:false}).promise;
       }catch(e){
         show('Gagal buka: '+doc.judul);
         console.warn('[SCAN] load error:',e.message);
@@ -11545,7 +11584,7 @@ async function diagScanNIK(url, nik){
   
   try{
     console.log('Loading PDF...');
-    const pdf=await pdfjsLib.getDocument({url,withCredentials:false}).promise;
+    const pdf=await pdfjsLib.getDocument({url:await _fileUrl(url),withCredentials:false}).promise;
     console.log('PDF loaded, pages:', pdf.numPages);
     
     for(let p=1;p<=pdf.numPages;p++){
