@@ -1736,7 +1736,29 @@ function escHtml(v){
   return String(v==null?'':v).replace(/[&<>"'`]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;'}[c]));
 }
 // fetch khusus Supabase: bersihkan respons REST, kembalikan karakter asli saat menulis
+// Batasi permintaan baca paralel ke Supabase (maks 4) + ulangi otomatis bila server timeout.
+// Dulu aplikasi menembak 11-22 query besar sekaligus -> server membatalkan sebagian
+// ("statement timeout") -> data hilang sebagian / cache tersimpan kosong.
+const _REST_MAX=4;let _restActive=0;const _restQ=[];
+function _restSlot(){return new Promise(res=>{const go=()=>{_restActive++;res();};if(_restActive<_REST_MAX)go();else _restQ.push(go);});}
+function _restDone(){_restActive--;const n=_restQ.shift();if(n)n();}
 async function _secureFetch(input,init){
+  const _u0=typeof input==='string'?input:(input&&input.url)||'';
+  const _meth=((init&&init.method)||'GET').toUpperCase();
+  if(_u0.indexOf('/rest/v1/')!==-1&&(_meth==='GET'||_meth==='HEAD')){
+    for(let attempt=0;;attempt++){
+      await _restSlot();
+      let res;
+      try{res=await _secureFetchInner(input,init);}finally{_restDone();}
+      if(attempt<2&&(res.status===500||res.status===502||res.status===503||res.status===504||res.status===520)){
+        await new Promise(r=>setTimeout(r,600*(attempt+1)));continue;
+      }
+      return res;
+    }
+  }
+  return _secureFetchInner(input,init);
+}
+async function _secureFetchInner(input,init){
   let url=typeof input==='string'?input:(input&&input.url)||'';
   const isRest=url.indexOf('/rest/v1/')!==-1;
   if(isRest){
@@ -2413,7 +2435,12 @@ async function setUser(u){
     userDesa=null;
   }
   updAuth();
-  if(isAdmin){startAutoRefresh();preloadLibs();}
+  if(isAdmin){
+    startAutoRefresh();preloadLibs();
+    const ap=document.querySelector('.page.active')?.id;
+    if(!ap||ap==='pgBeranda')loadGlobalStats().catch(()=>{});
+    loadBatasNgawi().catch(()=>{});
+  }
 }
 function updAuth(){
   const a=document.getElementById('authArea');
@@ -2674,7 +2701,9 @@ async function loadGlobalStats(){
         sb.from('rtlh').select('kec,desa,status_rtlh,status_batal,desil,nik,jenis_bantuan').range(p*pageSize,(p+1)*pageSize-1)
       )
     );
+    if(results.some(r=>r.error)){console.warn('[Stats] sebagian query gagal -- data lama dipertahankan');return;}
     const data=results.flatMap(r=>r.data||[]);
+    if(count&&data.length<count*0.98){console.warn('[Stats] data tidak lengkap',data.length,'/',count);return;}
     cacheSet(CACHE_KEY, data);
     _applyGlobalStats(data);
   }
@@ -2682,12 +2711,17 @@ async function loadGlobalStats(){
   if(cached){
     _applyGlobalStats(cached.data); // tampilkan cache instan
     // Stats beranda: stale setelah 60 detik (lebih agresif dari cache biasa)
-    const isStale=Date.now()-cached.age > (CACHE_TTL_STATS||60000);
+    const isStale=cached.age > (CACHE_TTL_STATS||60000);
     if(isStale||cached.stale)fetchAndRender(true);
   }else{
     await fetchAndRender(false);
   }
 }
+// Cegah loadGlobalStats berjalan dobel bersamaan (dipanggil dari banyak tempat saat start)
+(function(){
+  const _orig=loadGlobalStats;let _p=null;
+  loadGlobalStats=function(){if(_p)return _p;_p=Promise.resolve().then(_orig).finally(()=>{_p=null;});return _p;};
+})();
 
 // Force refresh stats tanpa cache (dipanggil setelah import/update/hapus)
 // Membuat SEMUA menu (Beranda, Daftar Kecamatan, WebGIS, DTSEN, pencarian) sinkron
@@ -3584,6 +3618,7 @@ async function ensureNikDB(){
         sb.from('nik_database').select('nik').range(p*pageSize,(p+1)*pageSize-1)
       )
     );
+    if(results.some(r=>r.error))throw new Error('sebagian halaman nik_database gagal');
     const niks=results.flatMap(r=>(r.data||[]).map(x=>String(x.nik||'').replace(/\D/g,'')));
     _nikDBSet=new Set(niks.filter(n=>n.length>=10));
     console.log('[NIK-DB] Loaded',_nikDBSet.size,'NIK dari server');
@@ -3595,7 +3630,8 @@ async function ensureNikDB(){
     }catch(_e){}
   }catch(e){
     console.warn('[NIK-DB] Gagal load:',e.message);
-    _nikDBSet=new Set();
+    _nikDBSet=null; // coba lagi di pemanggilan berikutnya (jangan anggap semua 'Tambahan')
+    return new Set();
   }
   return _nikDBSet;
 }
@@ -4139,6 +4175,8 @@ const CACHE_TTL_STATS = 60 * 1000; // 60 detik untuk stats beranda
 const CACHE_PREFIX = 'ertlh_v3_';
 
 function cacheSet(key, data){
+  // Hasil kosong biasanya = query gagal; jangan timpa cache yang sudah berisi
+  if(Array.isArray(data)&&!data.length){const old=cacheGet(key);if(old&&Array.isArray(old.data)&&old.data.length)return;}
   try{
     localStorage.setItem(CACHE_PREFIX+key, JSON.stringify({t:Date.now(),d:data}));
   }catch(e){} // QuotaExceededError -- skip
