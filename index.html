@@ -4933,6 +4933,64 @@ function selectItem(id){
   }
 }
 
+
+// ==================================================
+// CEK DESIL MANUAL via Cek Bansos Kemensos
+// Salin NIK -> buka cekbansos.kemensos.go.id (staf isi captcha sendiri)
+// -> staf memasukkan hasil -> tersimpan + tercatat di riwayat
+// ==================================================
+function _findRow(id){return (typeof brAll!=='undefined'?brAll:[]).find(x=>String(x.id)===String(id))||window._lastDetailRow;}
+async function cekDesilBansos(id){
+  const r=_findRow(id);
+  if(!r||!r.nik){toast('NIK tidak ditemukan','error');return;}
+  const nik=String(r.nik).replace(/\D/g,'');
+  try{await navigator.clipboard.writeText(nik);}catch(e){}
+  window.open('https://cekbansos.kemensos.go.id/','_blank','noopener');
+  const old=document.getElementById('cdbModal');if(old)old.remove();
+  const cur=String(r.desil||'').match(/\d+/)?.[0]||'';
+  const opts=['<option value="">-- pilih hasil --</option>']
+    .concat(Array.from({length:10},(_,i)=>`<option value="${i+1}" ${String(i+1)===cur?'selected':''}>Desil ${i+1}</option>`))
+    .concat(['<option value="TT">Tidak terdaftar di DTSEN</option>']).join('');
+  const m=document.createElement('div');
+  m.id='cdbModal';
+  m.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(12,35,64,.45);display:flex;align-items:center;justify-content:center;padding:16px';
+  m.innerHTML=`<div style="background:#fff;border-radius:14px;max-width:380px;width:100%;padding:18px 18px 14px;box-shadow:0 20px 50px rgba(0,0,0,.25);font-family:inherit">
+    <div style="font-weight:800;font-size:.95rem;color:#0C2340;margin-bottom:4px"><i class="fas fa-magnifying-glass"></i> Cek Desil — Cek Bansos</div>
+    <div style="font-size:.75rem;color:#555;line-height:1.5;margin-bottom:12px">
+      <b>${escHtml(r.kep_kk||'-')}</b><br>NIK <span style="font-family:monospace">${escHtml(nik)}</span> <span style="color:#1a7f37">✓ sudah disalin</span><br>
+      Di tab Cek Bansos: tempel NIK (Ctrl+V), isi captcha, klik <i>Cari Data</i>, lalu pilih hasilnya di sini.
+    </div>
+    <label style="font-size:.7rem;font-weight:700;color:#333">Hasil desil</label>
+    <select id="cdbVal" style="width:100%;padding:9px;border:1px solid #ccd;border-radius:8px;margin:4px 0 12px;font-size:16px">${opts}</select>
+    <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+      <button onclick="window.open('https://cekbansos.kemensos.go.id/','_blank','noopener')" style="margin-right:auto;background:none;border:1px solid #ccd;border-radius:8px;padding:8px 10px;font-size:.72rem;cursor:pointer">Buka lagi</button>
+      <button onclick="document.getElementById('cdbModal').remove()" style="background:none;border:1px solid #ccd;border-radius:8px;padding:8px 12px;font-size:.75rem;cursor:pointer">Batal</button>
+      <button id="cdbSave" onclick="simpanDesilBansos('${String(r.id).replace(/[^0-9a-zA-Z-]/g,'')}')" style="background:#0C2340;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:.75rem;font-weight:700;cursor:pointer">Simpan</button>
+    </div></div>`;
+  m.addEventListener('click',e=>{if(e.target===m)m.remove();});
+  document.body.appendChild(m);
+  toast('NIK disalin — tempel di Cek Bansos','success');
+}
+async function simpanDesilBansos(id){
+  const v=document.getElementById('cdbVal')?.value;
+  if(!v){toast('Pilih hasil desil dulu','error');return;}
+  const r=_findRow(id);if(!r)return;
+  const btn=document.getElementById('cdbSave');if(btn){btn.disabled=true;btn.textContent='Menyimpan...';}
+  // Ikuti format yang sudah dipakai di data (mis. "3" atau "Desil 3")
+  const usesPrefix=/desil/i.test(String(r.desil||''));
+  const baru=v==='TT'?'Tidak Terdaftar':(usesPrefix?'Desil '+v:v);
+  const lama=r.desil==null?null:String(r.desil);
+  const tgl=new Date().toLocaleDateString('id-ID');
+  const{error}=await sb.from('rtlh').update({desil:baru}).eq('id',r.id);
+  if(error){toast('Gagal menyimpan: '+error.message,'error');if(btn){btn.disabled=false;btn.textContent='Simpan';}return;}
+  try{await sb.from('rtlh_riwayat').insert({nik:r.nik,rtlh_id:parseInt(r.id),field_name:'Desil (Cek Bansos '+tgl+')',nilai_lama:lama,nilai_baru:baru,diubah_oleh:user?.email});}catch(e){}
+  r.desil=baru;
+  try{cacheDel('kec_'+String(r.kec||'').toUpperCase());cacheDel('global_stats');}catch(e){}
+  document.getElementById('cdbModal')?.remove();
+  toast('Desil tersimpan: '+baru,'success');
+  try{showDetail(r);if(typeof renderSidebarList==='function')renderSidebarList();}catch(e){}
+}
+
 function showDetail(r){
   window._lastDetailRow=r;
   const p=document.getElementById('detailPanel');
@@ -5004,6 +5062,7 @@ function showDetail(r){
             <span style="font-family:monospace;font-size:.82rem;font-weight:700;letter-spacing:1px">${showNIK(r.nik)}</span>
             ${r.nik?`<button onclick="navigator.clipboard.writeText('${r.nik}');toast('NIK disalin','success')" style="background:none;border:1px solid var(--gray-200);border-radius:5px;padding:2px 7px;font-size:.6rem;cursor:pointer;color:var(--gray-500)"><i class='fas fa-copy'></i></button>`:''}
             ${isSuperAdmin()?`<button onclick="openNIKModal(${r.id})" style="background:none;border:1px solid var(--blue);border-radius:5px;padding:2px 7px;font-size:.6rem;cursor:pointer;color:var(--blue)"><i class='fas fa-edit'></i></button>`:''}
+            ${r.nik&&(isSuperAdmin()||isAdminL2())?`<button onclick="cekDesilBansos(${r.id})" title="Salin NIK & buka Cek Bansos Kemensos" style="background:#FFF7E6;border:1px solid #F0A500;border-radius:5px;padding:2px 8px;font-size:.6rem;font-weight:700;cursor:pointer;color:#9A6700"><i class='fas fa-magnifying-glass'></i> Cek Desil</button>`:''}
           </div>
         </div>
         <div class="detail-item full">
