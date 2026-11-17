@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <!-- CSP: skrip hanya dari situs sendiri (+jsDelivr untuk mesin OCR), koneksi data hanya ke Supabase -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net blob:; worker-src 'self' blob: https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://oiygddbzugipepatswxi.supabase.co wss://oiygddbzugipepatswxi.supabase.co https://cdn.jsdelivr.net data: blob:; frame-src 'self' blob: https://oiygddbzugipepatswxi.supabase.co; media-src 'self' blob: data: https://oiygddbzugipepatswxi.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net blob:; worker-src 'self' blob: https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data: https://cdn.jsdelivr.net; img-src 'self' data: blob: https:; connect-src 'self' https://oiygddbzugipepatswxi.supabase.co wss://oiygddbzugipepatswxi.supabase.co https://cdn.jsdelivr.net data: blob:; frame-src 'self' blob: https://oiygddbzugipepatswxi.supabase.co; media-src 'self' blob: data: https://oiygddbzugipepatswxi.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,viewport-fit=cover">
 <title>e-RTLH Kabupaten Ngawi | DPRKP Ngawi</title>
 <meta name="theme-color" content="#0C2340">
@@ -28,19 +28,18 @@
 <meta property="og:url" content="https://e-rtlhngawi.id">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="id_ID">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://oiygddbzugipepatswxi.supabase.co" crossorigin>
-<link rel="preload" href="vendor/fonts/plus-jakarta-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="vendor/fonts/plus-jakarta-sans-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="vendor/fonts/jakarta.css">
-<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
-<link rel="stylesheet" href="vendor/leaflet/MarkerCluster.css">
-<link rel="stylesheet" href="vendor/leaflet/MarkerCluster.Default.css">
-<link rel="stylesheet" href="vendor/fa/css/all.min.css">
-<!-- Library inti di-host sendiri (tanpa CDN pihak ketiga) & defer agar tidak memblokir render -->
-<script defer src="vendor/supabase.js"></script>
-<script defer src="vendor/chart.umd.min.js"></script>
-<script defer src="vendor/leaflet/leaflet.js"></script>
-<script defer src="vendor/leaflet/leaflet.markercluster.js"></script>
+<style>@font-face{font-family:'Plus Jakarta Sans';font-style:normal;font-display:swap;font-weight:400;src:url(https://cdn.jsdelivr.net/npm/@fontsource/plus-jakarta-sans@5.3.0/files/plus-jakarta-sans-latin-400-normal.woff2) format('woff2')}@font-face{font-family:'Plus Jakarta Sans';font-style:normal;font-display:swap;font-weight:500;src:url(https://cdn.jsdelivr.net/npm/@fontsource/plus-jakarta-sans@5.3.0/files/plus-jakarta-sans-latin-500-normal.woff2) format('woff2')}@font-face{font-family:'Plus Jakarta Sans';font-style:normal;font-display:swap;font-weight:600;src:url(https://cdn.jsdelivr.net/npm/@fontsource/plus-jakarta-sans@5.3.0/files/plus-jakarta-sans-latin-600-normal.woff2) format('woff2')}@font-face{font-family:'Plus Jakarta Sans';font-style:normal;font-display:swap;font-weight:700;src:url(https://cdn.jsdelivr.net/npm/@fontsource/plus-jakarta-sans@5.3.0/files/plus-jakarta-sans-latin-700-normal.woff2) format('woff2')}@font-face{font-family:'Plus Jakarta Sans';font-style:normal;font-display:swap;font-weight:800;src:url(https://cdn.jsdelivr.net/npm/@fontsource/plus-jakarta-sans@5.3.0/files/plus-jakarta-sans-latin-800-normal.woff2) format('woff2')}</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" integrity="sha384-pmjIAcz2bAn0xukfxADbZIb3t8oRT9Sv0rvO+BR5Csr6Dhqq+nZs59P0pPKQJkEV" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" integrity="sha384-wgw+aLYNQ7dlhK47ZPK7FRACiq7ROZwgFNg0m04avm4CaXS+Z9Y7nMu8yNjBKYC+" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css" integrity="sha384-t1nt8BQoYMLFN5p42tRAtuAAFQaCQODekUVeKKZrEnEyp4H2R0RHFz0KWpmj7i8g" crossorigin="anonymous">
+<!-- Library dari jsDelivr: versi terkunci + SRI (browser menolak file yang isinya diubah) -->
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" integrity="sha384-uteMfOloLDGt042uDz+xHGF3ym63/WQ6rFq7murQRG8Ih7QrXGEGNtWd8688sb4O" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js" integrity="sha384-FcQlsUOd0TJjROrBxhJdUhXTUgNJQxTMcxZe6nHbaEfFL1zjQ+bq/uRoBQxb0KMo" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" integrity="sha384-eXVCORTRlv4FUUgS/xmOyr66XBVraen8ATNLMESp92FKXLAMiKkerixTiBvXriZr" crossorigin="anonymous"></script>
 <style>
 :root{--navy:#0C2340;--navy-80:#1B3A5C;--gold:#C8A951;--gold-light:#E8D48B;
 --blue:#1B6CA8;--blue-light:#2D8FD5;--blue-bg:#EBF5FF;
@@ -1773,14 +1772,14 @@ async function _secureFetch(input,init){
 
 // 3) Lazy-load library berat (XLSX ~880KB, pdf.js, mammoth, Tesseract) -- hanya saat dibutuhkan
 const _LIBS={
-  xlsx:{src:'vendor/xlsx.full.min.js',g:'XLSX',init(){
+  xlsx:{src:'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',sri:'sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw',g:'XLSX',init(){
     // Data hasil baca Excel juga dinetralkan sebelum ditampilkan di pratinjau
     const orig=XLSX.utils.sheet_to_json;
     XLSX.utils.sheet_to_json=function(){return _deepClean(orig.apply(this,arguments));};
   }},
-  pdf:{src:'vendor/pdf.min.js',g:'pdfjsLib',init(){pdfjsLib.GlobalWorkerOptions.workerSrc='vendor/pdf.worker.min.js';}},
-  mammoth:{src:'vendor/mammoth.browser.min.js',g:'mammoth'},
-  tesseract:{src:'vendor/tesseract.min.js',g:'Tesseract'}
+  pdf:{src:'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js',sri:'sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e',g:'pdfjsLib',init(){pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';}},
+  mammoth:{src:'https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js',sri:'sha384-nFoSjZIoH3CCp8W639jJyQkuPHinJ2NHe7on1xvlUA7SuGfJAfvMldrsoAVm6ECz',g:'mammoth'},
+  tesseract:{src:'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js',sri:'sha384-GJqSu7vueQ9qN0E9yLPb3Wtpd7OrgK8KmYzC8T1IysG1bcvxvIO4qtYR/D3A991F',g:'Tesseract'}
 };
 const _libP={};
 function ensureLib(n){
@@ -1791,6 +1790,7 @@ function ensureLib(n){
   return _libP[n]=new Promise(res=>{
     const sc=document.createElement('script');
     sc.src=d.src;sc.async=true;
+    if(d.sri){sc.integrity=d.sri;sc.crossOrigin='anonymous';}
     sc.onload=()=>{try{d.init&&d.init();}catch(e){console.warn('init lib',n,e);}d._ok=true;res(!!window[d.g]);};
     sc.onerror=()=>{delete _libP[n];res(false);};
     document.head.appendChild(sc);
@@ -10648,7 +10648,7 @@ async function openPdfViewer(url, title, nik, rtlhId, dokId, name){
     return;
   }
   pdfjsLib.GlobalWorkerOptions.workerSrc =
-    'vendor/pdf.worker.min.js';
+    'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
 
   try{
     _pdfDoc = await pdfjsLib.getDocument({url:await _fileUrl(url), withCredentials:false}).promise;
@@ -11273,7 +11273,7 @@ async function _pdfSilentScan(url, nik, rtlhId, name){
   }
   try{
     pdfjsLib.GlobalWorkerOptions.workerSrc=
-      'vendor/pdf.worker.min.js';
+      'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
     const pdf=await pdfjsLib.getDocument({url:await _fileUrl(url),withCredentials:false}).promise;
     const found=[],highlights=[];
     for(let p=1;p<=pdf.numPages;p++){
@@ -11383,7 +11383,7 @@ async function scanAllDokLink(rtlhId){
   if(!pdfs.length){ toast('Belum ada dokumen PDF terhubung','info'); return; }
 
   if(btn){btn.disabled=true;btn.style.opacity='.7';btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Memindai...';}
-  pdfjsLib.GlobalWorkerOptions.workerSrc='vendor/pdf.worker.min.js';
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
 
   let worker=null;
   if(await ensureLib('tesseract')){
@@ -11433,7 +11433,7 @@ async function refreshOneDok(btn){
   const old=btn.innerHTML;
   btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i>';
   btn.style.pointerEvents='none';
-  pdfjsLib.GlobalWorkerOptions.workerSrc='vendor/pdf.worker.min.js';
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
   let worker=null;
   if(await ensureLib('tesseract')){
     try{ worker=await Tesseract.createWorker('eng',1,{logger:()=>{}}); await worker.setParameters({tessedit_pageseg_mode:'4'}); }
@@ -11464,7 +11464,7 @@ async function refreshOneDok(btn){
 async function _extractNiksFromPdf(url, onProgress, validNiks){
   const result={pages:{}, allNiks:new Set()};
   if(!(await ensureLib('pdf'))) return result;
-  pdfjsLib.GlobalWorkerOptions.workerSrc='vendor/pdf.worker.min.js';
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
   const pdf=await pdfjsLib.getDocument({url:await _fileUrl(url),withCredentials:false}).promise;
   let worker=null;
 
@@ -11603,7 +11603,7 @@ async function scanMassalDokLib(){
   try{
     show('Memuat data...');
     if(await ensureLib('pdf')) pdfjsLib.GlobalWorkerOptions.workerSrc=
-      'vendor/pdf.worker.min.js';
+      'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
 
     // Ambil semua PDF
     const{data:docsRaw}=await sb.from('rtlh_dokumen_kabupaten').select('id,path,judul').limit(200);
@@ -11782,7 +11782,7 @@ async function diagScanNIK(url, nik){
   
   if(!(await ensureLib('pdf'))){console.log('ERROR: pdfjsLib not loaded');return;}
   pdfjsLib.GlobalWorkerOptions.workerSrc=
-    'vendor/pdf.worker.min.js';
+    'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
   
   try{
     console.log('Loading PDF...');
