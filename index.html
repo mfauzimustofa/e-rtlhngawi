@@ -623,6 +623,7 @@ button,a,[onclick],.nav-tab,.filter-chip,.tb-btn,.mob-nav-btn{-webkit-tap-highli
   <div class="header-right">
     <button class="btn-icon-sm" id="btnDokLib" onclick="openDokLib()" title="Library Dokumen Kabupaten" style="display:none"><i class="fas fa-folder-open"></i></button>
     <button class="btn-icon-sm" id="btnExcelKab" onclick="openExcelKab()" title="Unduh / Unggah Excel Kabupaten" style="display:none"><i class="fas fa-file-excel"></i></button>
+    <button class="btn-icon-sm" id="btnAdminTools" onclick="openAdminTools()" title="Alat Admin: Backup & Cek Kualitas Data" style="display:none"><i class="fas fa-screwdriver-wrench"></i></button>
     <div id="authArea"></div>
   </div>
 </header>
@@ -2472,6 +2473,8 @@ function updAuth(){
   document.getElementById('btnDelAll').style.display=(isSuperAdmin()&&currentKec)?'flex':'none';
   document.getElementById('btnDokLib').style.display=isAdmin?'flex':'none';
   document.getElementById('btnExcelKab').style.display=isAdmin?'flex':'none';
+  {const bt=document.getElementById('btnAdminTools');if(bt)bt.style.display=isSuperAdmin()?'flex':'none';}
+  try{_updBackupBanner();}catch(e){}
   const exSec=document.getElementById('btnExcelKabSection');
   if(exSec)exSec.style.display=isAdmin?'flex':'none';
   document.getElementById('btnDlFull') && (document.getElementById('btnDlFull').style.display=isSuperAdmin()?'flex':'none');
@@ -2975,6 +2978,142 @@ async function _dlExport(){
   const data=_dlRows(true).map((r,i)=>({No:i+1,Nama:r.kep_kk,Kecamatan:r.kec,Desa:r.desa,Status:typeof statusRow==='function'?statusRow(r):r.status_rtlh,Desil:label,NIK:showNIK(r.nik)}));
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(data),label);
   XLSX.writeFile(wb,`RTLH_${label.replace(' ','_')}${_dlState.kec?'_'+_dlState.kec:''}.xlsx`);
+}
+
+// ==================================================
+// ALAT ADMIN (Super Admin): Backup Data & Cek Kualitas Data
+// ==================================================
+const _BACKUP_TABLES=[
+  ['rtlh','Data RTLH'],['nik_database','Database 10379'],['rtlh_riwayat','Riwayat'],
+  ['rtlh_verifikasi','Verifikasi'],['rtlh_dokumen','Foto & Dokumen'],['rtlh_dokumen_link','Link Dokumen'],
+  ['rtlh_dokumen_kabupaten','Dokumen Kabupaten'],['admin_users','Admin']
+];
+function _atModal(title,html){
+  document.getElementById('atModal')?.remove();
+  const m=document.createElement('div');m.id='atModal';
+  m.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(12,35,64,.5);display:flex;align-items:center;justify-content:center;padding:12px';
+  m.innerHTML=`<div style="background:#fff;border-radius:14px;max-width:760px;width:100%;max-height:92dvh;display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.3)">
+    <div style="padding:14px 16px;border-bottom:1px solid #eee;display:flex;align-items:center;gap:8px">
+      <div id="atTitle" style="font-weight:800;color:#0C2340;flex:1">${title}</div>
+      <button onclick="document.getElementById('atModal').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;min-width:40px;min-height:40px">&times;</button>
+    </div><div id="atBody" style="padding:16px;overflow:auto;font-size:.8rem;line-height:1.5">${html}</div></div>`;
+  m.addEventListener('click',e=>{if(e.target===m)m.remove();});
+  document.body.appendChild(m);
+}
+function _atSet(html){const b=document.getElementById('atBody');if(b)b.innerHTML=html;}
+function _lastBackup(){try{return parseInt(localStorage.getItem('ertlh_last_backup')||'0',10)||0;}catch(e){return 0;}}
+function openAdminTools(){
+  if(!isSuperAdmin())return toast('Khusus Super Admin','error');
+  const lb=_lastBackup();
+  const days=lb?Math.floor((Date.now()-lb)/86400000):null;
+  const card=(icon,color,title,desc,fn)=>`<button onclick="${fn}" style="text-align:left;display:flex;gap:12px;align-items:flex-start;width:100%;padding:14px;border:1px solid #e2e8f0;border-radius:12px;background:#fff;cursor:pointer;font-family:inherit;margin-bottom:10px">
+    <i class="fas ${icon}" style="font-size:1.3rem;color:${color};margin-top:2px;width:24px;text-align:center"></i>
+    <div><div style="font-weight:800;color:#0C2340">${title}</div><div style="font-size:.74rem;color:#64748B">${desc}</div></div></button>`;
+  _atModal('<i class="fas fa-screwdriver-wrench"></i> Alat Admin',
+    card('fa-database','#1B6CA8','Backup Data Sekarang',`Unduh salinan lengkap semua tabel (Excel + JSON). ${lb?`Backup terakhir di perangkat ini: <b>${days===0?'hari ini':days+' hari lalu'}</b>.`:'<b style="color:#b91c1c">Belum pernah backup dari perangkat ini.</b>'}`,'runBackup()')+
+    card('fa-stethoscope','#16A34A','Cek Kualitas Data','Temukan kecamatan/desa kosong, NIK tidak valid atau ganda, desil kosong, dan data tanpa koordinat.','runDataQuality()'));
+}
+async function _fetchAllRows(table,cols='*'){
+  const{count,error}=await sb.from(table).select('*',{count:'exact',head:true});
+  if(error)throw new Error(table+': '+error.message);
+  const pages=Math.ceil((count||0)/1000);
+  const out=[];
+  for(let p=0;p<pages;p++){
+    const{data,error:e}=await sb.from(table).select(cols).range(p*1000,p*1000+999);
+    if(e)throw new Error(table+': '+e.message);
+    for(const r of data||[])out.push(r);
+  }
+  return out;
+}
+async function runBackup(){
+  _atSet('<div id="bkLog" style="font-family:monospace;font-size:.72rem;line-height:1.7"></div>');
+  const log=t=>{const el=document.getElementById('bkLog');if(el)el.innerHTML+=t+'<br>';};
+  if(!(await ensureLib('xlsx'))){log('❌ Gagal memuat pembuat Excel.');return;}
+  const res={},fails=[];
+  for(const [t,label] of _BACKUP_TABLES){
+    try{log(`⏳ ${label}...`);res[t]=_unClean(await _fetchAllRows(t));log(`✅ ${label}: ${res[t].length.toLocaleString('id')} baris`);}
+    catch(e){fails.push(label);log(`⚠️ ${label}: dilewati (${escHtml(e.message)})`);}
+  }
+  const _d=new Date(),_p=n=>String(n).padStart(2,'0');
+  const stamp=`${_d.getFullYear()}-${_p(_d.getMonth()+1)}-${_p(_d.getDate())}_${_p(_d.getHours())}${_p(_d.getMinutes())}`; // waktu lokal (WIB)
+  // JSON (lengkap, untuk pemulihan)
+  const blob=new Blob([JSON.stringify({dibuat:new Date().toISOString(),oleh:user?.email,tabel:res})],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`backup-ertlh-${stamp}.json`;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  // Excel (mudah dibaca)
+  const wb=XLSX.utils.book_new();
+  for(const [t,label] of _BACKUP_TABLES){if(res[t]){
+    const rows=res[t].map(r=>{const o={};for(const k in r)o[k]=(r[k]!==null&&typeof r[k]==='object')?JSON.stringify(r[k]):r[k];return o;});
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows.length?rows:[{info:'kosong'}]),label.slice(0,31));
+  }}
+  XLSX.writeFile(wb,`backup-ertlh-${stamp}.xlsx`);
+  try{localStorage.setItem('ertlh_last_backup',String(Date.now()));}catch(e){}
+  _logExport('Backup lengkap',Object.values(res).reduce((a,r)=>a+r.length,0));
+  log(`<br><b>${fails.length?'⚠️ Backup selesai sebagian':'✅ Backup selesai'}</b> — 2 file terunduh (.json untuk pemulihan, .xlsx untuk dibaca).`);
+  log('Simpan kedua file di Google Drive / flashdisk DINAS, jangan hanya di laptop pribadi.');
+  _updBackupBanner();
+}
+async function runDataQuality(){
+  _atSet('<div style="padding:20px;text-align:center"><i class="fas fa-spinner fa-spin"></i> Memeriksa seluruh data...</div>');
+  let rows;
+  try{rows=await _fetchAllRows('rtlh','id,kep_kk,kec,desa,nik,no_kk,desil,latitude,longitude');}
+  catch(e){_atSet('Gagal memuat data: '+escHtml(e.message));return;}
+  const kecSet=new Set(Object.keys(KEC_CONFIG).map(k=>k.toUpperCase()));
+  const nikCount={};rows.forEach(r=>{const n=String(r.nik||'').replace(/\D/g,'');if(n)nikCount[n]=(nikCount[n]||0)+1;});
+  const lat=r=>parseFloat(r.latitude),lng=r=>parseFloat(r.longitude);
+  const checks=[
+    ['kec','Kecamatan kosong / tidak dikenal',r=>!r.kec||!kecSet.has(String(r.kec).toUpperCase().trim())],
+    ['desa','Desa kosong',r=>!String(r.desa||'').trim()],
+    ['nik','NIK bukan 16 digit',r=>String(r.nik||'').replace(/\D/g,'').length!==16],
+    ['dup','NIK ganda (muncul lebih dari 1x)',r=>{const n=String(r.nik||'').replace(/\D/g,'');return n&&nikCount[n]>1;}],
+    ['desil','Desil kosong / tidak valid',r=>!(parseDt(r.desil)>=1)],
+    ['geo','Tanpa koordinat / di luar Ngawi',r=>!(lat(r)<-7.0&&lat(r)>-7.75&&lng(r)>111.0&&lng(r)<111.7)],
+  ];
+  window._dqRes={rows,checks:checks.map(([k,l,f])=>({k,l,list:rows.filter(f)}))};
+  const tot=rows.length;
+  const okAll=rows.filter(r=>!checks.some(c=>c[2](r))).length;
+  _atSet(`<div style="background:${okAll/tot>.9?'#DCFCE7':'#FEF3C7'};border-radius:10px;padding:12px;margin-bottom:12px">
+      <b style="font-size:1.1rem">${(okAll/tot*100).toFixed(1)}% data bersih</b> — ${okAll.toLocaleString('id')} dari ${tot.toLocaleString('id')} baris lolos semua pemeriksaan.</div>
+    ${_dqRes.checks.map((c,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid #f1f5f9">
+      <i class="fas ${c.list.length?'fa-triangle-exclamation':'fa-circle-check'}" style="color:${c.list.length?'#D97706':'#16A34A'};width:18px"></i>
+      <div style="flex:1">${c.l}</div><b>${c.list.length.toLocaleString('id')}</b>
+      ${c.list.length?`<button onclick="_dqShow(${i})" style="padding:5px 10px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font-size:.7rem">Lihat</button>`:''}</div>`).join('')}
+    <div style="display:flex;justify-content:flex-end;margin-top:12px"><button onclick="_dqExport()" style="padding:9px 14px;border:none;border-radius:8px;background:#16A34A;color:#fff;font-weight:700;cursor:pointer"><i class="fas fa-file-excel"></i> Unduh laporan lengkap</button></div>`);
+}
+function _dqShow(i){
+  const c=_dqRes.checks[i];
+  const td='padding:6px 8px;border-bottom:1px solid #f1f5f9;font-size:.72rem';
+  _atSet(`<button onclick="runDataQuality()" style="margin-bottom:10px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer">&larr; Kembali</button>
+    <div style="font-weight:800;margin-bottom:6px">${c.l}: ${c.list.length.toLocaleString('id')} data</div>
+    <div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f8fafc"><th style="${td};text-align:left">Nama</th><th style="${td};text-align:left">Kec / Desa</th><th style="${td};text-align:left">NIK</th><th style="${td}">Desil</th></tr></thead>
+    <tbody>${c.list.slice(0,300).map(r=>`<tr style="cursor:pointer" onclick="document.getElementById('atModal').remove();navWithNIK('${String(r.nik||r.id).replace(/[^0-9a-zA-Z]/g,'')}')"><td style="${td};color:var(--blue);font-weight:700">${escHtml(r.kep_kk||'-')}</td><td style="${td}">${escHtml(r.kec||'—')} / ${escHtml(r.desa||'—')}</td><td style="${td};font-family:monospace">${escHtml(showNIK(r.nik)||'—')}</td><td style="${td};text-align:center">${escHtml(r.desil||'—')}</td></tr>`).join('')}</tbody></table></div>
+    ${c.list.length>300?`<div style="padding:8px;color:#64748b">Menampilkan 300 pertama — lengkapnya di laporan Excel.</div>`:''}`);
+}
+async function _dqExport(){
+  if(!(await ensureLib('xlsx')))return;
+  const wb=XLSX.utils.book_new();
+  for(const c of _dqRes.checks){
+    const rows=c.list.map(r=>({ID:r.id,Nama:r.kep_kk,Kecamatan:r.kec,Desa:r.desa,NIK:showNIK(r.nik),Desil:r.desil,Lat:r.latitude,Lng:r.longitude}));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows.length?rows:[{Info:'Tidak ada masalah'}]),c.l.slice(0,31).replace(/[\\/?*\[\]:]/g,''));
+  }
+  XLSX.writeFile(wb,`Kualitas_Data_RTLH_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+// Catat setiap ekspor data ber-NIK ke riwayat (jejak audit)
+function _logExport(jenis,jumlah){
+  try{sb.from('rtlh_riwayat').insert({nik:null,rtlh_id:null,field_name:'EKSPOR: '+jenis,nilai_lama:null,nilai_baru:String(jumlah||''),diubah_oleh:user?.email}).then(()=>{},()=>{});}catch(e){}
+}
+// Pengingat backup untuk Super Admin
+function _updBackupBanner(){
+  document.getElementById('bkBanner')?.remove();
+  if(!isSuperAdmin())return;
+  const lb=_lastBackup();
+  if(lb&&Date.now()-lb<7*86400000)return;
+  const b=document.createElement('div');b.id='bkBanner';
+  b.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:calc(70px + env(safe-area-inset-bottom));z-index:9000;background:#0C2340;color:#fff;border-radius:12px;padding:10px 12px;display:flex;gap:10px;align-items:center;box-shadow:0 10px 30px rgba(0,0,0,.25);font-size:.75rem;max-width:calc(100vw - 24px)';
+  b.innerHTML=`<i class="fas fa-database" style="color:var(--gold)"></i><span>${lb?'Backup terakhir lebih dari 7 hari lalu.':'Data belum pernah di-backup dari perangkat ini.'}</span>
+    <button onclick="openAdminTools();runBackup()" style="background:var(--gold);color:#0C2340;border:none;border-radius:8px;padding:6px 10px;font-weight:800;cursor:pointer;white-space:nowrap">Backup sekarang</button>
+    <button onclick="this.parentElement.remove()" style="background:none;border:none;color:#fff;opacity:.6;cursor:pointer;font-size:1rem">&times;</button>`;
+  document.body.appendChild(b);
 }
 
 function renderDesilGrid(counts){
@@ -3955,7 +4094,7 @@ async function showNonDbModal(){
                 <td style="padding:7px 10px;font-weight:600;cursor:pointer" onclick="closeModal('ovNonDb');navWithNIK('${r.nik||r.id}')">${r.kep_kk||'-'}</td>
                 <td style="padding:7px 10px;color:var(--gray-500);font-size:.7rem;cursor:pointer" onclick="closeModal('ovNonDb');navWithNIK('${r.nik||r.id}')">${r.desa||'-'} / ${r.kec||'-'}</td>
                 <td style="padding:7px 10px;cursor:pointer" onclick="closeModal('ovNonDb');navWithNIK('${r.nik||r.id}')"><span style="background:${STATUS_COLORS[statusRow(r)]||'#94A3B8'}20;color:${STATUS_COLORS[statusRow(r)]||'#94A3B8'};border-radius:99px;padding:2px 8px;font-size:.62rem;font-weight:700">${statusRow(r)}</span></td>
-              ${canEdit()?`<td style="padding:7px 10px;text-align:center"><div style="display:inline-flex;gap:5px"><button onclick="closeModal('ovNonDb');_editTambahan('${r.id}')" style="padding:3px 10px;border-radius:6px;background:var(--blue);color:#fff;border:none;cursor:pointer;font-family:inherit;font-size:.65rem;font-weight:700;display:inline-flex;align-items:center;gap:4px"><i class='fas fa-edit'></i> Edit</button><button onclick="_deleteTambahan('${r.id}','${(r.kep_kk||'').replace(/'/g,"\\'")}')" style="padding:3px 10px;border-radius:6px;background:var(--danger);color:#fff;border:none;cursor:pointer;font-family:inherit;font-size:.65rem;font-weight:700;display:inline-flex;align-items:center;gap:4px"><i class='fas fa-trash'></i> Hapus</button></div></td>`:''}
+              ${canEdit()?`<td style="padding:7px 10px;text-align:center"><div style="display:inline-flex;gap:5px"><button onclick="closeModal('ovNonDb');_editTambahan('${r.id}')" style="padding:3px 10px;border-radius:6px;background:var(--blue);color:#fff;border:none;cursor:pointer;font-family:inherit;font-size:.65rem;font-weight:700;display:inline-flex;align-items:center;gap:4px"><i class='fas fa-edit'></i> Edit</button>${isSuperAdmin()?`<button onclick="_deleteTambahan('${r.id}','${(r.kep_kk||'').replace(/'/g,"\\'")}')" style="padding:3px 10px;border-radius:6px;background:var(--danger);color:#fff;border:none;cursor:pointer;font-family:inherit;font-size:.65rem;font-weight:700;display:inline-flex;align-items:center;gap:4px"><i class='fas fa-trash'></i> Hapus</button>`:''}</div></td>`:''}
               </tr>`).join('')}
           </tbody>
         </table>
@@ -4014,7 +4153,7 @@ async function _editTambahan(id){
 // Alur: (1) konfirmasi, (2) optimistic UI, (3) Supabase delete dengan .select('id') untuk verifikasi,
 // (4) jika gagal → restore baris + error spesifik, (5) background sync semua menu.
 async function _deleteTambahan(id,nama){
-  if(!canEdit())return toast('Tidak ada akses hapus','error');
+  if(!isSuperAdmin())return toast('Hapus data hanya bisa dilakukan Super Admin','error');
   if(!confirm(`Hapus data "${nama||'ini'}" dari BNBA Tambahan?\n\nData akan dihapus permanen dari database.`))return;
 
   // ── Optimistic UI: sembunyikan baris sebelum request selesai ──
@@ -5527,10 +5666,12 @@ function showDetail(r){
     eb.className='btn btn-primary';eb.innerHTML='<i class="fas fa-edit"></i> Edit Data';
     eb.onclick=()=>openForm(String(r.id));
     acts.appendChild(eb);
-    const db=document.createElement('button');
-    db.className='btn btn-danger';db.innerHTML='<i class="fas fa-trash"></i> Hapus';
-    db.onclick=()=>deleteItem(r.id);
-    acts.appendChild(db);
+    if(isSuperAdmin()){ // hapus data hanya Super Admin (sesuai aturan database)
+      const db=document.createElement('button');
+      db.className='btn btn-danger';db.innerHTML='<i class="fas fa-trash"></i> Hapus';
+      db.onclick=()=>deleteItem(r.id);
+      acts.appendChild(db);
+    }
   }
   // Tombol unduh Excel per individu
   const xb=document.createElement('button');
@@ -5838,6 +5979,7 @@ async function saveForm(){
 }
 
 async function deleteItem(id){
+  if(!isSuperAdmin()){toast('Hapus data hanya bisa dilakukan Super Admin','error');return;}
   if(!confirm('Hapus data ini?'))return;
   try{
     const{data:{session}}=await sb.auth.getSession();
@@ -5922,6 +6064,7 @@ function addExcelDropdowns(ws, rows){
 
 async function downloadExcel(withNIK){
   await ensureLib('xlsx');
+  if(withNIK)_logExport('Excel kecamatan '+(currentKec||'')+' (dengan NIK)','');
   const superAdmin=isSuperAdmin();
   await ensureNikDB();
   // Fetch verifikasi untuk semua data di kecamatan ini
@@ -6075,6 +6218,7 @@ function updateExDesaList(){
 
 async function downloadExcelKab(withNIK){
   await ensureLib('xlsx');
+  if(withNIK)_logExport('Excel kabupaten (dengan NIK)','');
   const superAdmin=isSuperAdmin();
   await ensureNikDB();
   const kec=(document.getElementById('exKec')?.value||'').trim();
