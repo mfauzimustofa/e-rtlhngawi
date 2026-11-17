@@ -849,6 +849,8 @@ button,a,[onclick],.nav-tab,.filter-chip,.tb-btn,.mob-nav-btn{-webkit-tap-highli
           <option value="6">Desil 6</option>
           <option value="7">Desil 7</option>
           <option value="8">Desil 8</option>
+          <option value="9">Desil 9</option>
+          <option value="10">Desil 10</option>
           <option value="0">Tanpa Desil</option>
         </select>
         <!-- Export buttons -->
@@ -2544,6 +2546,33 @@ let _realtimeChannel=null;
 let _pollTimer=null;
 let _rtPending=false; // debounce rapid changes
 
+// ==================================================
+// SINKRON OTOMATIS TAMPILAN DESIL
+// Dipanggil setelah desil berubah (Cek Desil, Sinkron Desil, atau perubahan
+// dari admin lain via realtime). Beranda, DTSEN & Laporan dihitung ulang
+// tanpa perlu reload halaman.
+// ==================================================
+let _rtTrailing=false,_rtDirtyHidden=false;
+async function _refreshVisibleDesil(){
+  ['global_stats','report_data','dtsen_data'].forEach(k=>{try{cacheDel(k);}catch(e){}});
+  try{_dtData=null;_dtLoaded=false;_rpData=null;_rpLoaded=false;}catch(e){}
+  const ap=document.querySelector('.page.active')?.id;
+  try{
+    if(!ap||ap==='pgBeranda')await loadGlobalStats();
+    else if(ap==='pgDTSEN'&&typeof loadDtsen==='function')await loadDtsen();
+    else if(ap==='pgReport'&&typeof loadReport==='function')await loadReport();
+    else if(ap==='pgWebgis'&&currentKec&&typeof _syncNow==='function')_syncNow();
+  }catch(e){console.warn('[Sync desil]',e);}
+}
+function _rtFullRefresh(){
+  try{Object.keys(brCache).forEach(k=>delete brCache[k]);}catch(e){}
+  Object.keys(localStorage).filter(k=>k.startsWith(CACHE_PREFIX+'kec_')).forEach(k=>{try{localStorage.removeItem(k);}catch(e){}});
+  _refreshVisibleDesil();
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&_rtDirtyHidden){_rtDirtyHidden=false;_rtFullRefresh();}
+});
+
 function startAutoRefresh(){
   Object.keys(_kecCacheTime).forEach(k=>delete _kecCacheTime[k]);
   if(_realtimeChannel)try{sb.removeChannel(_realtimeChannel);}catch(e){}
@@ -2552,10 +2581,13 @@ function startAutoRefresh(){
   // Supabase Realtime -- berlaku untuk semua user (bukan hanya admin)
   _realtimeChannel=sb.channel('rtlh-live')
     .on('postgres_changes',{event:'*',schema:'public',table:'rtlh'},async(payload)=>{
-      if(document.hidden)return;
-      if(_rtPending)return; // debounce
+      // Tab tersembunyi: tandai, segarkan begitu tab dibuka lagi
+      if(document.hidden){_rtDirtyHidden=true;return;}
+      // Perubahan beruntun (mis. Sinkron Desil 1.000 data): proses yang pertama,
+      // lalu SATU kali segarkan penuh setelah perubahan berhenti -- dulu sisanya dibuang
+      if(_rtPending){_rtTrailing=true;return;}
       _rtPending=true;
-      setTimeout(()=>_rtPending=false, 2000);
+      setTimeout(()=>{_rtPending=false;if(_rtTrailing){_rtTrailing=false;_rtFullRefresh();}},2500);
 
       const changed=payload.new||payload.old||{};
       const changedKec=(changed.kec||'').toUpperCase().trim();
@@ -2838,9 +2870,9 @@ function _applyGlobalStats(data){
 }
 
 function renderDesilGrid(counts){
-  const labels=['Desil 1','Desil 2','Desil 3','Desil 4','Desil 5','Desil 6','Desil 7','Desil 8'];
-  const colors=['#BE123C','#DC2626','#EA580C','#D97706','#84CC16','#16A34A','#0891B2','#7C3AED'];
-  const bgs=['#FFF1F2','#FEF2F2','#FFF7ED','#FFFBEB','#F7FEE7','#F0FDF4','#ECFEFF','#F5F3FF'];
+  const labels=['Desil 1','Desil 2','Desil 3','Desil 4','Desil 5','Desil 6','Desil 7','Desil 8','Desil 9','Desil 10'];
+  const colors=['#BE123C','#DC2626','#EA580C','#D97706','#84CC16','#16A34A','#0891B2','#7C3AED','#0F766E','#475569'];
+  const bgs=['#FFF1F2','#FEF2F2','#FFF7ED','#FFFBEB','#F7FEE7','#F0FDF4','#ECFEFF','#F5F3FF','#F0FDFA','#F1F5F9'];
   const g=document.getElementById('desilGrid');
   const desilCards=labels.map((l,i)=>`<div class="desil-chip" style="background:${bgs[i]};border-color:${colors[i]}30;cursor:pointer" title="Klik untuk lihat detail di DTSEN" onclick="nav('dtsen');setTimeout(()=>{const s=document.getElementById('dtFilterDesil');if(s){s.value='${i+1}';renderDtsen();}},300)">
       <div class="dc-label" style="color:${colors[i]};font-size:.7rem;font-weight:800">${l}</div>
@@ -4452,7 +4484,7 @@ function calcScore(r){
 }
 function getDesilColor(d){
   const n=parseInt(d)||99;
-  if(n<=2)return'#BE123C';if(n<=4)return'#EA580C';if(n<=6)return'#1B6CA8';if(n<=8)return'#0369A1';
+  if(n<=2)return'#BE123C';if(n<=4)return'#EA580C';if(n<=6)return'#1B6CA8';if(n<=8)return'#0369A1';if(n<=10)return'#475569';
   return'#94A3B8';
 }
 function getCat(s){return'';}  // tidak dipakai
@@ -4514,6 +4546,8 @@ function renderSidebar(){
       <button class="filter-chip" data-desil-chip="6" onclick="setFilterDesil('6')" style="color:#16A34A">D6</button>
       <button class="filter-chip" data-desil-chip="7" onclick="setFilterDesil('7')" style="color:#0891B2">D7</button>
       <button class="filter-chip" data-desil-chip="8" onclick="setFilterDesil('8')" style="color:#7C3AED">D8</button>
+      <button class="filter-chip" data-desil-chip="9" onclick="setFilterDesil('9')" style="color:#0F766E">D9</button>
+      <button class="filter-chip" data-desil-chip="10" onclick="setFilterDesil('10')" style="color:#475569">D10</button>
     </div>
     <div class="filter-row" style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
       <span style="font-size:.65rem;font-weight:700;color:var(--gray-500)">Bukti Dukung:</span>
@@ -4989,7 +5023,8 @@ async function simpanDesilBansos(id){
   if(error){toast('Gagal menyimpan: '+error.message,'error');if(btn){btn.disabled=false;btn.textContent='Simpan';}return;}
   try{await sb.from('rtlh_riwayat').insert({nik:r.nik,rtlh_id:parseInt(r.id),field_name:'Desil (Cek Bansos '+tgl+')',nilai_lama:lama,nilai_baru:baru,diubah_oleh:user?.email});}catch(e){}
   r.desil=baru;
-  try{cacheDel('kec_'+String(r.kec||'').toUpperCase());cacheDel('global_stats');}catch(e){}
+  try{cacheDel('kec_'+String(r.kec||'').toUpperCase());}catch(e){}
+  _refreshVisibleDesil();
   document.getElementById('cdbModal')?.remove();
   toast('Desil tersimpan: '+baru,'success');
   try{showDetail(r);if(typeof renderSidebarList==='function')renderSidebarList();}catch(e){}
@@ -5152,9 +5187,7 @@ async function sdApply(){
   const hist=st.changes.filter(c=>okIds.has(c.r.id)).map(c=>({nik:c.r.nik,rtlh_id:c.r.id,field_name:`Desil (Sinkron DTSEN ${tgl})`,nilai_lama:c.from==='(kosong)'?null:c.from,nilai_baru:st.prefix?'Desil '+c.to:String(c.to),diubah_oleh:user?.email}));
   for(let i=0;i<hist.length;i+=500){try{await sb.from('rtlh_riwayat').insert(hist.slice(i,i+500));}catch(e){}}
   // segarkan cache & tampilan
-  try{cacheClear();}catch(e){}
-  try{Object.keys(brCache||{}).forEach(k=>delete brCache[k]);}catch(e){}
-  try{_dtLoaded=false;_dtData=null;}catch(e){}
+  _rtFullRefresh(); // Beranda/DTSEN/Laporan langsung dihitung ulang
   _sdSet(`<div style="padding:16px;text-align:center">
     <div style="font-size:2rem">${failed?'⚠️':'✅'}</div>
     <div style="font-weight:800;font-size:1rem;margin:6px 0">${okIds.size.toLocaleString('id')} desil berhasil diperbarui</div>
@@ -5162,7 +5195,7 @@ async function sdApply(){
     <div style="color:#666;font-size:.75rem;margin-top:6px">Perubahan tercatat di riwayat tiap penerima.</div>
     <div style="display:flex;gap:8px;justify-content:center;margin-top:14px">
       <button onclick="sdReport()" style="background:#fff;border:1px solid #16A34A;color:#16A34A;border-radius:8px;padding:9px 12px;cursor:pointer"><i class="fas fa-file-excel"></i> Laporan</button>
-      <button onclick="document.getElementById('sdModal').remove();location.reload()" style="background:#0C2340;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:700;cursor:pointer">Selesai</button>
+      <button onclick="document.getElementById('sdModal').remove()" style="background:#0C2340;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:700;cursor:pointer">Selesai</button>
     </div></div>`);
 }
 async function sdReport(){
@@ -5507,7 +5540,7 @@ const FIELDS=[
   {key:'jenis_bantuan',label:'Jenis Bantuan',type:'select',opts:['','RTLH','BSPS','DD','CSR','Lainnya']},
   {key:'tahun_bantuan',label:'Tahun Bantuan',type:'text',placeholder:'misal: 2025'},
   {key:'backlog',label:'Backlog',type:'select',opts:['','Backlog 1','Backlog 2']},
-  {key:'desil',label:'Desil',type:'select',opts:['','Desil 1','Desil 2','Desil 3','Desil 4','Desil 5','Desil 6','Desil 7','Desil 8']},
+  {key:'desil',label:'Desil',type:'select',opts:['','Desil 1','Desil 2','Desil 3','Desil 4','Desil 5','Desil 6','Desil 7','Desil 8','Desil 9','Desil 10']},
   {key:'keterangan',label:'Keterangan',type:'text',full:true,noNorm:true},
   {key:'latitude',label:'Latitude',type:'number'},
   {key:'longitude',label:'Longitude',type:'number'},
@@ -9185,8 +9218,8 @@ function parseDt(v){
   const m=String(v).match(/\d+/);
   if(!m)return 0;
   const d=parseInt(m[0]);
-  // Cap desil ke 1-8 (sesuai skema DTSEN), lebih dari itu -> 0 (tanpa desil valid)
-  return(d>=1&&d<=8)?d:0;
+  // Desil DTSEN 1-10; di luar itu -> 0 (tanpa desil valid)
+  return(d>=1&&d<=10)?d:0;
 }
 
 function renderDtsen(){
@@ -9197,12 +9230,12 @@ function renderDtsen(){
   // Struktur per desil: { total, rtlh, layak, lain }
   function mkDesilStat(){
     const o={0:{t:0,r:0,l:0,k:0}};
-    for(let i=1;i<=8;i++)o[i]={t:0,r:0,l:0,k:0};
+    for(let i=1;i<=10;i++)o[i]={t:0,r:0,l:0,k:0};
     return o;
   }
 
   // Hitung global desil (untuk summary cards & chart)
-  const globalDC={0:0};for(let i=1;i<=8;i++)globalDC[i]=0;
+  const globalDC={0:0};for(let i=1;i<=10;i++)globalDC[i]=0;
   // Global breakdown per desil
   const globalDS=mkDesilStat(); // {desil: {t,r,l,k}}
 
@@ -9261,7 +9294,7 @@ function renderDtsen(){
   }).sort((a,b)=>_dtTab==='desa'?a.kec.localeCompare(b.kec)||a.desa.localeCompare(b.desa):a.kec.localeCompare(b.kec));
 
   const isMobile=window.innerWidth<640;
-  const visD=[1,2,3,4,5,6,7,8].filter(d=>globalDC[d]>0);
+  const visD=[1,2,3,4,5,6,7,8,9,10].filter(d=>globalDC[d]>0);
 
   // Grand total accumulator
   const grandDS=mkDesilStat();
@@ -9286,7 +9319,7 @@ function renderDtsen(){
     const bg=i%2===0?'#fff':'#F9FAFB';
     const kecKey=Object.keys(KEC_CONFIG||{}).find(k=>k.toUpperCase()===(r.kec||'').toUpperCase())||'';
     grandTotal+=r.total;grandRtlh+=r.rtlh;grandLayak+=r.layak;grandLain+=r.lain;
-    for(let d=0;d<=8;d++){
+    for(let d=0;d<=10;d++){
       const s=r.desil[d]||{t:0,r:0,l:0,k:0};
       if(!grandDS[d])grandDS[d]={t:0,r:0,l:0,k:0};
       grandDS[d].t+=(s.t||0);grandDS[d].r+=(s.r||0);grandDS[d].l+=(s.l||0);grandDS[d].k+=(s.k||0);
@@ -9380,7 +9413,7 @@ function _renderDtDesilSummary(counts,ds){
   if(!el)return;
   const total=Object.values(counts).reduce((a,b)=>a+b,0)||1;
   let html='';
-  for(let i=1;i<=8;i++){
+  for(let i=1;i<=10;i++){
     const cnt=counts[i]||0;if(!cnt)continue;
     const pct=Math.round(cnt/total*100);
     const s=ds?ds[i]:{t:cnt,r:0,l:0,k:0};
@@ -9426,7 +9459,7 @@ function _renderChartDtsenDesil(counts){
   if(!canvas||!window.Chart)return;
   if(_chartDtsenDesil){try{_chartDtsenDesil.destroy();}catch(e){}  _chartDtsenDesil=null;}
   const labels=[],data=[],colors=[];
-  for(let i=1;i<=8;i++){
+  for(let i=1;i<=10;i++){
     if((counts[i]||0)>0){labels.push('D'+i);data.push(counts[i]);colors.push(DESIL_COLORS_DT[i-1]);}
   }
   if(!data.length)return;
@@ -9466,7 +9499,7 @@ function _getDtsenExportData(){
   const q=(document.getElementById('dtSearch')?.value||'').toLowerCase().trim();
   const filterDesil=document.getElementById('dtFilterDesil')?.value||'';
 
-  function mkDesilStat2(){const o={0:{t:0,r:0,l:0,k:0}};for(let i=1;i<=8;i++)o[i]={t:0,r:0,l:0,k:0};return o;}
+  function mkDesilStat2(){const o={0:{t:0,r:0,l:0,k:0}};for(let i=1;i<=10;i++)o[i]={t:0,r:0,l:0,k:0};return o;}
 
   const byKec={},byDesa={};
   Object.entries(KEC_CONFIG||{}).forEach(([kn,kv])=>{
@@ -9508,7 +9541,7 @@ function _getDtsenExportData(){
 
   // Desil yg aktif (ada data)
   const globalDC={};_dtData.forEach(r=>{const d=parseDt(r.desil);globalDC[d]=(globalDC[d]||0)+1;});
-  const visD=[1,2,3,4,5,6,7,8].filter(d=>globalDC[d]>0);
+  const visD=[1,2,3,4,5,6,7,8,9,10].filter(d=>globalDC[d]>0);
 
   const tab=_dtTab;
   const filterLabel=filterDesil?(filterDesil==='0'?'Tanpa Desil':'Desil '+filterDesil):'Semua Desil';
@@ -9524,7 +9557,7 @@ async function exportDtsenExcel(){
   const{filtered,visD,tab}=_getDtsenExportData();
   if(!filtered.length){toast('Tidak ada data untuk diekspor','error');return;}
 
-  const desil_labels={1:'Desil 1',2:'Desil 2',3:'Desil 3',4:'Desil 4',5:'Desil 5',6:'Desil 6',7:'Desil 7',8:'Desil 8',0:'Tanpa Desil'};
+  const desil_labels={1:'Desil 1',2:'Desil 2',3:'Desil 3',4:'Desil 4',5:'Desil 5',6:'Desil 6',7:'Desil 7',8:'Desil 8',9:'Desil 9',10:'Desil 10',0:'Tanpa Desil'};
 
   const rows=filtered.map(r=>{
     const obj={};
@@ -9617,9 +9650,9 @@ function _buildDtsenSheetRows(tab){
   if(!_dtData)return[];
   const q=(document.getElementById('dtSearch')?.value||'').toLowerCase().trim();
   const filterDesil=document.getElementById('dtFilterDesil')?.value||'';
-  const desil_labels={1:'Desil 1',2:'Desil 2',3:'Desil 3',4:'Desil 4',5:'Desil 5',6:'Desil 6',7:'Desil 7',8:'Desil 8',0:'Tanpa Desil'};
+  const desil_labels={1:'Desil 1',2:'Desil 2',3:'Desil 3',4:'Desil 4',5:'Desil 5',6:'Desil 6',7:'Desil 7',8:'Desil 8',9:'Desil 9',10:'Desil 10',0:'Tanpa Desil'};
 
-  function mkDs(){const o={0:{t:0,r:0,l:0,k:0}};for(let i=1;i<=8;i++)o[i]={t:0,r:0,l:0,k:0};return o;}
+  function mkDs(){const o={0:{t:0,r:0,l:0,k:0}};for(let i=1;i<=10;i++)o[i]={t:0,r:0,l:0,k:0};return o;}
   const byKec={},byDesa={};
   Object.entries(KEC_CONFIG||{}).forEach(([kn,kv])=>{
     const kec=normCase(kn)||kn;
@@ -9645,7 +9678,7 @@ function _buildDtsenSheetRows(tab){
     const ds=byDesa[desaKey].desil[d]||{t:0,r:0,l:0,k:0};ds.t++;if(isR)ds.r++;else if(isL)ds.l++;else ds.k++;byDesa[desaKey].desil[d]=ds;
   });
   const globalDC={};_dtData.forEach(r=>{const d=parseDt(r.desil);globalDC[d]=(globalDC[d]||0)+1;});
-  const visD=[1,2,3,4,5,6,7,8].filter(d=>globalDC[d]>0);
+  const visD=[1,2,3,4,5,6,7,8,9,10].filter(d=>globalDC[d]>0);
 
   const allRows=tab==='kec'?Object.values(byKec):Object.values(byDesa);
   const filtered=allRows.filter(r=>{
@@ -9740,7 +9773,7 @@ function exportDtsenPDF(){
 
   const tgl=new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
   const judulTab=tab==='kec'?'Per Kecamatan':'Per Desa';
-  const desil_labels={1:'D1',2:'D2',3:'D3',4:'D4',5:'D5',6:'D6',7:'D7',8:'D8',0:'Tanpa'};
+  const desil_labels={1:'D1',2:'D2',3:'D3',4:'D4',5:'D5',6:'D6',7:'D7',8:'D8',9:'D9',10:'D10',0:'Tanpa'};
   const DESIL_COLORS_PDF=['#BE123C','#DC2626','#EA580C','#D97706','#84CC16','#16A34A','#0891B2','#7C3AED'];
 
   // Build tabel HTML untuk print
