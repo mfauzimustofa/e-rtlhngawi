@@ -2555,6 +2555,7 @@ let _rtPending=false; // debounce rapid changes
 let _rtTrailing=false,_rtDirtyHidden=false;
 async function _refreshVisibleDesil(){
   ['global_stats','report_data','dtsen_data'].forEach(k=>{try{cacheDel(k);}catch(e){}});
+  try{_dlInvalidate();}catch(e){}
   try{_dtData=null;_dtLoaded=false;_rpData=null;_rpLoaded=false;}catch(e){}
   const ap=document.querySelector('.page.active')?.id;
   try{
@@ -2603,6 +2604,7 @@ function startAutoRefresh(){
       cacheDel('global_stats');
       cacheDel('report_data');
       if(typeof invalidateDtsenCache==='function')invalidateDtsenCache();
+      try{_dlInvalidate();}catch(e){}
 
       const activePage=document.querySelector('.page.active')?.id;
 
@@ -2869,19 +2871,125 @@ function _applyGlobalStats(data){
   }
 }
 
+// ==================================================
+// DAFTAR PENERIMA PER DESIL (klik kartu desil di Beranda)
+// ==================================================
+let _dlData=null,_dlPromise=null,_dlState={d:null,q:'',kec:'',shown:300};
+function _dlInvalidate(){_dlData=null;}
+function _dlLoad(){
+  if(_dlData)return Promise.resolve(_dlData);
+  if(_dlPromise)return _dlPromise;
+  _dlPromise=(async()=>{
+    const{count,error}=await sb.from('rtlh').select('*',{count:'exact',head:true});
+    if(error)throw error;
+    const pages=Math.ceil((count||0)/1000);
+    const res=await Promise.all(Array.from({length:pages},(_,p)=>sb.from('rtlh').select('id,kep_kk,kec,desa,status_rtlh,status_batal,desil,nik').order('id').range(p*1000,p*1000+999)));
+    if(res.some(r=>r.error))throw new Error('sebagian data gagal dimuat, coba lagi');
+    _dlData=res.flatMap(r=>r.data||[]);
+    return _dlData;
+  })().finally(()=>{_dlPromise=null;});
+  return _dlPromise;
+}
+function _ensureDlModal(){
+  if(document.getElementById('ovDesilList'))return;
+  const o=document.createElement('div');
+  o.className='overlay';o.id='ovDesilList';
+  o.innerHTML=`<div class="modal" style="max-width:760px;max-height:92dvh;display:flex;flex-direction:column">
+    <div class="modal-head">
+      <div><h3 id="dslTitle"><i class="fas fa-layer-group"></i> Desil</h3><div class="sub" id="dslSub">Memuat...</div></div>
+      <button class="modal-x" onclick="closeModal('ovDesilList')"><i class="fas fa-times"></i></button>
+    </div>
+    <div style="padding:10px 14px;border-bottom:1px solid var(--gray-200);display:flex;gap:8px;flex-wrap:wrap">
+      <input id="dslSearch" type="search" placeholder="Cari nama / NIK / desa..." autocomplete="off"
+        oninput="clearTimeout(this._t);this._t=setTimeout(()=>{_dlState.q=this.value;_dlState.shown=300;_dlRender();},200)"
+        style="flex:1;min-width:160px;padding:8px 10px;border:1px solid var(--gray-300);border-radius:8px;font-family:inherit">
+      <select id="dslKec" onchange="_dlState.kec=this.value;_dlState.shown=300;_dlRender()" style="padding:8px;border:1px solid var(--gray-300);border-radius:8px;font-family:inherit"></select>
+      <button onclick="_dlExport()" style="padding:8px 12px;border-radius:8px;border:none;background:#16A34A;color:#fff;font-weight:700;cursor:pointer;font-family:inherit"><i class="fas fa-file-excel"></i> Excel</button>
+    </div>
+    <div class="modal-body" id="dslBody" style="padding:0;flex:1;overflow:auto"></div>
+  </div>`;
+  o.addEventListener('click',e=>{if(e.target===o)closeModal('ovDesilList');});
+  document.body.appendChild(o);
+}
+async function openDesilList(d){
+  _ensureDlModal();
+  _dlState={d:+d,q:'',kec:'',shown:300};
+  const label=+d===0?'Tanpa Desil':'Desil '+d;
+  document.getElementById('dslTitle').innerHTML=`<i class="fas fa-layer-group" style="color:${+d===0?'#6B7280':getDesilColor(d)}"></i> ${label}`;
+  document.getElementById('dslSub').textContent='Memuat data...';
+  document.getElementById('dslSearch').value='';
+  document.getElementById('dslBody').innerHTML='<div style="padding:30px;text-align:center;color:var(--gray-400)"><i class="fas fa-circle-notch fa-spin fa-2x"></i></div>';
+  document.getElementById('ovDesilList').classList.add('open');
+  try{await _dlLoad();}catch(e){document.getElementById('dslBody').innerHTML=`<div style="padding:20px;color:#b91c1c">Gagal memuat: ${escHtml(e.message)}</div>`;return;}
+  const rows=_dlRows(false);
+  const kecs=[...new Set(rows.map(r=>(r.kec||'').toUpperCase().trim()).filter(Boolean))].sort();
+  document.getElementById('dslKec').innerHTML='<option value="">Semua kecamatan</option>'+kecs.map(k=>`<option value="${escHtml(k)}">${escHtml(k)} (${rows.filter(r=>(r.kec||'').toUpperCase().trim()===k).length})</option>`).join('');
+  _dlRender();
+}
+function _dlRows(applyFilters=true){
+  let rows=(_dlData||[]).filter(r=>parseDt(r.desil)===_dlState.d);
+  if(!applyFilters)return rows;
+  if(_dlState.kec)rows=rows.filter(r=>(r.kec||'').toUpperCase().trim()===_dlState.kec);
+  const q=_dlState.q.trim().toLowerCase();
+  if(q)rows=rows.filter(r=>(String(r.kep_kk||'')+' '+String(r.desa||'')+' '+String(r.kec||'')).toLowerCase().includes(q)||String(r.nik||'').includes(q.replace(/\D/g,'')||'#'));
+  return rows.sort((a,b)=>String(a.kec).localeCompare(String(b.kec))||String(a.desa).localeCompare(String(b.desa))||String(a.kep_kk).localeCompare(String(b.kep_kk)));
+}
+function _dlStatus(r){
+  const s=typeof statusRow==='function'?statusRow(r):(r.status_rtlh||'-');
+  const c=s==='Layak Huni'?'#16A34A':s==='RTLH'?'#DC2626':'#7C3AED';
+  return `<span style="font-size:.62rem;font-weight:700;color:${c};background:${c}14;padding:2px 7px;border-radius:10px;white-space:nowrap">${escHtml(s)}</span>`;
+}
+function _dlRender(){
+  const all=_dlRows(true),total=_dlRows(false).length;
+  document.getElementById('dslSub').textContent=`${total.toLocaleString('id')} penerima`+(all.length!==total?` · ${all.length.toLocaleString('id')} sesuai filter`:'')+' · klik nama untuk membuka detail';
+  if(!all.length){document.getElementById('dslBody').innerHTML='<div style="padding:30px;text-align:center;color:var(--gray-400)">Tidak ada data</div>';return;}
+  const rows=all.slice(0,_dlState.shown);
+  const td='padding:8px 10px;border-bottom:1px solid var(--gray-100);font-size:.75rem';
+  const more=all.length>rows.length?`<div style="padding:12px;text-align:center"><button onclick="_dlState.shown+=300;_dlRender()" style="padding:8px 16px;border-radius:8px;border:1px solid var(--gray-300);background:#fff;cursor:pointer;font-family:inherit">Tampilkan ${Math.min(300,all.length-rows.length)} lagi (sisa ${(all.length-rows.length).toLocaleString('id')})</button></div>`:'';
+  const go=r=>`closeModal('ovDesilList');navWithNIK('${String(r.nik||r.id).replace(/[^0-9a-zA-Z]/g,'')}')`;
+  if(window.innerWidth<640){
+    // HP: daftar kartu (tabel terlalu sempit)
+    document.getElementById('dslBody').innerHTML=rows.map((r,i)=>`<div onclick="${go(r)}" style="padding:10px 14px;border-bottom:1px solid var(--gray-100);cursor:pointer;display:flex;gap:10px;align-items:flex-start">
+      <div style="color:var(--gray-400);font-size:.7rem;min-width:22px;padding-top:2px">${i+1}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><span style="font-weight:700;color:var(--blue);font-size:.85rem">${escHtml(r.kep_kk||'-')}</span>${_dlStatus(r)}</div>
+        <div style="font-size:.72rem;color:var(--gray-600);margin-top:2px">${escHtml(r.kec||'-')} / ${escHtml(r.desa||'-')}</div>
+        <div style="font-size:.68rem;color:var(--gray-500);font-family:monospace;margin-top:1px">${escHtml(showNIK(r.nik))}</div>
+      </div><i class="fas fa-chevron-right" style="color:var(--gray-300);font-size:.7rem;padding-top:4px"></i></div>`).join('')+more;
+    return;
+  }
+  document.getElementById('dslBody').innerHTML=`<table style="width:100%;border-collapse:collapse">
+    <thead><tr style="background:var(--gray-50);position:sticky;top:0;z-index:1">
+      <th style="${td};text-align:left;width:40px">No</th><th style="${td};text-align:left">Nama</th><th style="${td};text-align:left">Kecamatan / Desa</th><th style="${td};text-align:left">Status</th><th style="${td};text-align:left">NIK</th></tr></thead>
+    <tbody>${rows.map((r,i)=>`<tr style="cursor:pointer" onclick="closeModal('ovDesilList');navWithNIK('${String(r.nik||r.id).replace(/[^0-9a-zA-Z]/g,'')}')" onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
+      <td style="${td};color:var(--gray-400)">${i+1}</td>
+      <td style="${td};font-weight:700;color:var(--blue)">${escHtml(r.kep_kk||'-')}</td>
+      <td style="${td}">${escHtml(r.kec||'-')} / ${escHtml(r.desa||'-')}</td>
+      <td style="${td}">${_dlStatus(r)}</td>
+      <td style="${td};font-family:monospace;font-size:.7rem">${escHtml(showNIK(r.nik))}</td></tr>`).join('')}</tbody></table>
+    ${all.length>rows.length?`<div style="padding:12px;text-align:center"><button onclick="_dlState.shown+=300;_dlRender()" style="padding:8px 16px;border-radius:8px;border:1px solid var(--gray-300);background:#fff;cursor:pointer;font-family:inherit">Tampilkan ${Math.min(300,all.length-rows.length)} lagi (sisa ${(all.length-rows.length).toLocaleString('id')})</button></div>`:''}`;
+}
+async function _dlExport(){
+  if(!(await ensureLib('xlsx')))return toast('Gagal memuat Excel','error');
+  const label=_dlState.d===0?'Tanpa Desil':'Desil '+_dlState.d;
+  const data=_dlRows(true).map((r,i)=>({No:i+1,Nama:r.kep_kk,Kecamatan:r.kec,Desa:r.desa,Status:typeof statusRow==='function'?statusRow(r):r.status_rtlh,Desil:label,NIK:showNIK(r.nik)}));
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(data),label);
+  XLSX.writeFile(wb,`RTLH_${label.replace(' ','_')}${_dlState.kec?'_'+_dlState.kec:''}.xlsx`);
+}
+
 function renderDesilGrid(counts){
   const labels=['Desil 1','Desil 2','Desil 3','Desil 4','Desil 5','Desil 6','Desil 7','Desil 8','Desil 9','Desil 10'];
   const colors=['#BE123C','#DC2626','#EA580C','#D97706','#84CC16','#16A34A','#0891B2','#7C3AED','#0F766E','#475569'];
   const bgs=['#FFF1F2','#FEF2F2','#FFF7ED','#FFFBEB','#F7FEE7','#F0FDF4','#ECFEFF','#F5F3FF','#F0FDFA','#F1F5F9'];
   const g=document.getElementById('desilGrid');
-  const desilCards=labels.map((l,i)=>`<div class="desil-chip" style="background:${bgs[i]};border-color:${colors[i]}30;cursor:pointer" title="Klik untuk lihat detail di DTSEN" onclick="nav('dtsen');setTimeout(()=>{const s=document.getElementById('dtFilterDesil');if(s){s.value='${i+1}';renderDtsen();}},300)">
+  const desilCards=labels.map((l,i)=>`<div class="desil-chip" style="background:${bgs[i]};border-color:${colors[i]}30;cursor:pointer" title="Klik untuk lihat daftar penerima ${l}" onclick="openDesilList(${i+1})">
       <div class="dc-label" style="color:${colors[i]};font-size:.7rem;font-weight:800">${l}</div>
       <div class="dc-count" style="color:var(--gray-800);font-size:1.3rem;font-weight:900;line-height:1.1">${counts[i+1]||0}</div>
       <div style="font-size:.55rem;color:var(--gray-500)">data <i class="fas fa-arrow-right" style="font-size:.5rem;opacity:.4"></i></div>
     </div>`);
   // Tambah kartu Tanpa Desil jika ada
   if(counts[0]>0){
-    desilCards.push(`<div class="desil-chip" style="background:#F9FAFB;border-color:#9CA3AF30;cursor:pointer" title="Klik untuk lihat Tanpa Desil di DTSEN" onclick="nav('dtsen');setTimeout(()=>{const s=document.getElementById('dtFilterDesil');if(s){s.value='0';renderDtsen();}},300)">
+    desilCards.push(`<div class="desil-chip" style="background:#F9FAFB;border-color:#9CA3AF30;cursor:pointer" title="Klik untuk lihat daftar penerima tanpa desil" onclick="openDesilList(0)">
       <div class="dc-label" style="color:#6B7280;font-size:.7rem;font-weight:800">Tanpa Desil</div>
       <div class="dc-count" style="color:var(--gray-800);font-size:1.3rem;font-weight:900;line-height:1.1">${counts[0]}</div>
       <div style="font-size:.55rem;color:var(--gray-500)">data <i class="fas fa-arrow-right" style="font-size:.5rem;opacity:.4"></i></div>
