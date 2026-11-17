@@ -1757,7 +1757,9 @@ async function _secureFetch(input,init){
     }catch(e){}
   }
   const res=await fetch(input,init);
-  if(!isRest)return res;
+  // Tanpa isi (HEAD/hitung jumlah, 204 setelah simpan/hapus) -> teruskan apa adanya
+  const _m=((init&&init.method)||'GET').toUpperCase();
+  if(!isRest||_m==='HEAD'||res.status===204||res.status===205||res.status===304||!res.body)return res;
   const ct=res.headers.get('content-type')||'';
   if(ct.indexOf('json')===-1)return res;
   const text=await res.text();
@@ -1815,9 +1817,13 @@ function loadBatasNgawi(){
   return _batasPromise;
 }
 
-// 5) Bersihkan sisa cache data pribadi (NIK/nama) versi lama yang tersimpan permanen di localStorage
+// 5) Buang cache data (NIK/nama) yang berumur > 24 jam, dan cache kalau tidak ada sesi login
 try{
-  Object.keys(localStorage).filter(k=>k.indexOf('ertlh_v3_')===0).forEach(k=>localStorage.removeItem(k));
+  const _now=Date.now(),_hasSess=!!localStorage.getItem('ertlh-auth');
+  Object.keys(localStorage).filter(k=>k.indexOf('ertlh_v3_')===0).forEach(k=>{
+    try{const t=JSON.parse(localStorage.getItem(k)).t;if(!_hasSess||!(t>_now-86400000))localStorage.removeItem(k);}
+    catch(e){localStorage.removeItem(k);}
+  });
   sessionStorage.removeItem('e-rtlh-batas-ngawi-v1');
 }catch(e){}
 
@@ -4124,8 +4130,9 @@ function initMap(){
 
 // Cache timestamp per kecamatan
 // ==================================================
-// CACHE SYSTEM -- sessionStorage + stale-while-revalidate
-// (sessionStorage: data NIK/nama otomatis terhapus saat tab ditutup -- aman di PC bersama)
+// CACHE SYSTEM -- localStorage + stale-while-revalidate
+// Cache permanen agar buka ulang instan. Pengaman: dihapus saat logout/sesi habis,
+// dan cache berumur > 24 jam dibuang otomatis saat aplikasi dibuka.
 // ==================================================
 const CACHE_TTL = 5 * 60 * 1000; // 5 menit
 const CACHE_TTL_STATS = 60 * 1000; // 60 detik untuk stats beranda
@@ -4133,13 +4140,13 @@ const CACHE_PREFIX = 'ertlh_v3_';
 
 function cacheSet(key, data){
   try{
-    sessionStorage.setItem(CACHE_PREFIX+key, JSON.stringify({t:Date.now(),d:data}));
+    localStorage.setItem(CACHE_PREFIX+key, JSON.stringify({t:Date.now(),d:data}));
   }catch(e){} // QuotaExceededError -- skip
 }
 
 function cacheGet(key, ttl){
   try{
-    const raw=sessionStorage.getItem(CACHE_PREFIX+key);
+    const raw=localStorage.getItem(CACHE_PREFIX+key);
     if(!raw)return null;
     const{t,d}=JSON.parse(raw);
     const useTTL=ttl||(key==='global_stats'?CACHE_TTL_STATS:CACHE_TTL);
@@ -4147,10 +4154,10 @@ function cacheGet(key, ttl){
   }catch(e){return null;}
 }
 
-function cacheDel(key){try{sessionStorage.removeItem(CACHE_PREFIX+key);}catch(e){}}
+function cacheDel(key){try{localStorage.removeItem(CACHE_PREFIX+key);}catch(e){}}
 function cacheClear(){
   try{
-    Object.keys(sessionStorage).filter(k=>k.startsWith(CACHE_PREFIX)).forEach(k=>sessionStorage.removeItem(k));
+    Object.keys(localStorage).filter(k=>k.startsWith(CACHE_PREFIX)).forEach(k=>localStorage.removeItem(k));
   }catch(e){}
 }
 
