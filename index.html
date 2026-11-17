@@ -3605,7 +3605,14 @@ async function setWgDbMode(mode){
 // TIDAK pernah disimpan di HTML -- diambil server-side saat login
 let _nikDBSet=null; // null = belum dimuat
 
-async function ensureNikDB(){
+let _nikDBPromise=null;
+function ensureNikDB(){
+  if(_nikDBSet)return Promise.resolve(_nikDBSet);
+  // Satu unduhan untuk semua pemanggil (dulu terunduh 4x bersamaan saat start)
+  if(!_nikDBPromise)_nikDBPromise=_ensureNikDBInner().finally(()=>{_nikDBPromise=null;});
+  return _nikDBPromise;
+}
+async function _ensureNikDBInner(){
   if(_nikDBSet)return _nikDBSet;
   // Fetch dari tabel nik_database di Supabase (hanya admin yang bisa akses via RLS)
   try{
