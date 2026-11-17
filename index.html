@@ -2,7 +2,9 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5">
+<!-- CSP: skrip hanya dari situs sendiri (+jsDelivr untuk mesin OCR), koneksi data hanya ke Supabase -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net blob:; worker-src 'self' blob: https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://oiygddbzugipepatswxi.supabase.co wss://oiygddbzugipepatswxi.supabase.co https://cdn.jsdelivr.net data: blob:; frame-src 'self' blob: https://oiygddbzugipepatswxi.supabase.co; media-src 'self' blob: data: https://oiygddbzugipepatswxi.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,viewport-fit=cover">
 <title>e-RTLH Kabupaten Ngawi | DPRKP Ngawi</title>
 <meta name="theme-color" content="#0C2340">
 <meta name="description" content="Sistem Informasi Rumah Tidak Layak Huni (RTLH) Kabupaten Ngawi -- DPRKP Kab. Ngawi. Data 19 Kecamatan dan 217 Desa/Kelurahan.">
@@ -26,19 +28,19 @@
 <meta property="og:url" content="https://e-rtlhngawi.id">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="id_ID">
-<link rel="preconnect" href="https://cdn.jsdelivr.net">
-<link rel="preconnect" href="https://unpkg.com">
-<link rel="preconnect" href="https://cdnjs.cloudflare.com">
-<link rel="preconnect" href="https://oiygddbzugipepatswxi.supabase.co">
-<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
-<link rel="dns-prefetch" href="https://unpkg.com">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://oiygddbzugipepatswxi.supabase.co" crossorigin>
+<link rel="preload" href="vendor/fonts/plus-jakarta-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="vendor/fonts/plus-jakarta-sans-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="vendor/fonts/jakarta.css">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="vendor/leaflet/MarkerCluster.css">
+<link rel="stylesheet" href="vendor/leaflet/MarkerCluster.Default.css">
+<link rel="stylesheet" href="vendor/fa/css/all.min.css">
+<!-- Library inti di-host sendiri (tanpa CDN pihak ketiga) & defer agar tidak memblokir render -->
+<script defer src="vendor/supabase.js"></script>
+<script defer src="vendor/chart.umd.min.js"></script>
+<script defer src="vendor/leaflet/leaflet.js"></script>
+<script defer src="vendor/leaflet/leaflet.markercluster.js"></script>
 <style>
 :root{--navy:#0C2340;--navy-80:#1B3A5C;--gold:#C8A951;--gold-light:#E8D48B;
 --blue:#1B6CA8;--blue-light:#2D8FD5;--blue-bg:#EBF5FF;
@@ -505,6 +507,61 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 .empty-state{text-align:center;padding:36px 20px;color:var(--gray-400)}
 .empty-state i{font-size:2rem;margin-bottom:12px;display:block;opacity:.4}
 .empty-state p{font-size:.82rem}
+
+/* ═══ RESPONSIF & AKSESIBILITAS (audit Nov 2026) ═══ */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+button,a,[onclick],.nav-tab,.filter-chip,.tb-btn,.mob-nav-btn{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+:focus-visible{outline:2px solid var(--blue-light);outline-offset:2px}
+.modal-body{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.modal-body{overflow-x:auto}
+.page-scroll{overscroll-behavior-y:contain}
+/* Layar sentuh: cegah zoom otomatis iOS saat fokus input (<16px) & perbesar area sentuh */
+@media (pointer:coarse){
+  input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea{font-size:16px!important}
+  .btn-icon-sm,.modal-x{min-width:40px;min-height:40px}
+  .filter-chip{padding:7px 12px}
+  .tb-btn{min-height:38px}
+  .leaflet-touch .leaflet-bar a{width:36px;height:36px;line-height:36px}
+}
+/* Efek hover "lengket" di HP dimatikan */
+@media (hover:none){
+  .mini-stat:hover,.kec-card:hover,.desil-chip:hover{transform:none}
+}
+/* Notch / home-indicator iPhone */
+@supports(padding:max(0px)){
+  .app-header{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+  .mob-bottom-nav{padding-bottom:env(safe-area-inset-bottom);height:calc(54px + env(safe-area-inset-bottom))}
+}
+/* HP kecil (≤380px) */
+@media (max-width:380px){
+  .brand-title{font-size:.78rem}
+  .brand-sub{display:none}
+  .section{padding:0 12px 24px}
+  .grid-4{grid-template-columns:repeat(2,1fr)}
+  .grid-kec{grid-template-columns:1fr}
+  .toast{max-width:calc(100vw - 32px)}
+}
+@media (max-width:768px){
+  .page-scroll{padding-bottom:calc(60px + env(safe-area-inset-bottom))!important}
+  #pgWebgis .map-wrap{padding-bottom:0}
+  #toastWrap{left:16px;right:16px;align-items:stretch}
+  .toast{max-width:none}
+}
+/* Laptop layar pendek (1366×768 dll.) */
+@media (min-width:1024px) and (max-height:800px){
+  .hero{padding:32px 24px 60px}
+  .modal{max-height:94dvh}
+}
+/* Peta WebGIS: wadah ikut tinggi peta (dulu peta 60dvh "bocor" keluar wadah 340px sehingga
+   menimpa kolom pencarian), dan legenda/marker terkunci di dalam peta */
+.map-wrap{height:auto!important;position:relative;z-index:0;isolation:isolate}
+@media (max-width:768px){
+  #pgWebgis .map-legend{bottom:22px;right:8px;padding:8px 10px;min-width:0;transform:scale(.9);transform-origin:bottom right}
+  #pgWebgis .wg-body{padding-bottom:calc(70px + env(safe-area-inset-bottom))}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
 </style>
 </head>
 <body>
@@ -732,7 +789,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
       <div class="section-head"><i class="fas fa-map-marker-alt"></i> Sebaran per Kecamatan
         <span style="margin-left:auto;display:flex;align-items:center;gap:8px">
           <button id="btnExcelKabSection" onclick="openExcelKab()" style="display:none;padding:5px 12px;border-radius:8px;background:var(--success);color:#fff;border:none;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;align-items:center;gap:5px"><i class="fas fa-file-excel"></i> Excel Kabupaten</button>
-          <input type="text" id="kecSearch" placeholder="🔍 Cari kecamatan..." oninput="renderKecGrid()" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.72rem;font-family:inherit;outline:none;width:160px">
+          <input type="text" id="kecSearch" placeholder="🔍 Cari kecamatan..." oninput="clearTimeout(this._t);this._t=setTimeout(renderKecGrid,200)" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.72rem;font-family:inherit;outline:none;width:160px">
         </span>
       </div>
       <div class="grid-kec" id="kecGrid">
@@ -775,7 +832,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
         <div style="flex:1;position:relative;min-width:150px">
           <i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.4);font-size:.72rem;pointer-events:none"></i>
           <input id="dtSearch" type="text" placeholder="Cari kecamatan / desa..."
-            oninput="renderDtsen()"
+            oninput="clearTimeout(this._t);this._t=setTimeout(renderDtsen,250)"
             style="width:100%;padding:7px 10px 7px 30px;border-radius:7px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;font-size:.75rem;font-family:inherit;outline:none;box-sizing:border-box">
         </div>
         <!-- Filter desil -->
@@ -883,7 +940,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
         <div style="flex:1;position:relative;min-width:160px">
           <i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.4);font-size:.72rem;pointer-events:none"></i>
           <input id="rpSearch" type="text" placeholder="Cari kecamatan / desa..."
-            oninput="renderReport()"
+            oninput="clearTimeout(this._t);this._t=setTimeout(renderReport,250)"
             style="width:100%;padding:7px 10px 7px 30px;border-radius:7px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;font-size:.75rem;font-family:inherit;outline:none;box-sizing:border-box">
         </div>
         <button onclick="exportReportExcel()"
@@ -1162,7 +1219,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
     <!-- Filter & Download toolbar -->
     <div id="cnToolbar" style="display:none;background:#fff;border-radius:var(--radius-sm);border:1px solid var(--gray-200);padding:10px 14px;margin-bottom:10px;display:none;align-items:center;gap:8px;flex-wrap:wrap">
       <input id="cnFilterInput" type="text" placeholder="Filter nama, NIK, desa, kecamatan..."
-        oninput="cnRenderTable()"
+        oninput="clearTimeout(this._t);this._t=setTimeout(cnRenderTable,250)"
         style="flex:1;min-width:160px;padding:6px 12px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.78rem;font-family:inherit;outline:none">
       <select id="cnFilterStatus" onchange="cnRenderTable()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.75rem;font-family:inherit">
         <option value="">Semua Status</option>
@@ -1337,7 +1394,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
           <div style="position:relative;margin-bottom:8px">
             <input type="text" id="fotoSearchInput" placeholder="Ketik nama atau desa..." autocomplete="off"
               style="width:100%;padding:8px 10px 8px 32px;border:1.5px solid #C4B5FD;border-radius:8px;font-size:.75rem;outline:none"
-              oninput="fotoSearchPenerima(this.value)">
+              oninput="const v=this.value;clearTimeout(this._t);this._t=setTimeout(()=>fotoSearchPenerima(v),250)">
             <i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#A78BFA;font-size:.7rem"></i>
             <div id="fotoSearchDrop" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid #C4B5FD;border-radius:0 0 8px 8px;max-height:160px;overflow-y:auto;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,.1)"></div>
           </div>
@@ -1625,14 +1682,145 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--gray-800);min
 
 <!-- NIK/KK MODAL (Super Admin only - dedicated, never re-renders) -->
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<!-- XLSX / pdf.js / mammoth / Tesseract dimuat belakangan (lazy) lewat ensureLib() -->
 
 <script>
+// ==================================================
+// INTI KEAMANAN & PERFORMA (ditambahkan saat audit Nov 2026)
+// ==================================================
+// 1) Anti-clickjacking: aplikasi tidak boleh dimuat di dalam <iframe> situs lain
+(function(){
+  if(window.top!==window.self){
+    try{window.top.location.replace(window.self.location.href);}
+    catch(e){document.documentElement.style.display='none';}
+  }
+})();
+
+// 2) Anti-XSS terpusat.
+//    Semua data dari Supabase (REST) dinetralkan SEBELUM dipakai aplikasi, sehingga
+//    teks seperti <img onerror=...> atau '); hapusData()// di nama/alamat/keterangan
+//    tidak pernah bisa dieksekusi di innerHTML maupun onclick="...".
+//    Karakter berbahaya diganti padanan Unicode yang tampilannya sama, lalu
+//    dikembalikan ke aslinya saat data DITULIS ke database (round-trip tanpa rusak).
+const _XSS_MAP={'<':'\u2039','>':'\u203A','"':'\u201D',"'":'\u2019','\\':'\u2216','`':'\u02CB'};
+const _XSS_REV={'\u2039':'<','\u203A':'>','\u201D':'"','\u2019':"'",'\u2216':'\\','\u02CB':'`','\uFF06':'&'};
+const _XSS_RE=/[<>"'\\`]/g;
+const _XSS_REV_RE=/[\u2039\u203A\u201D\u2019\u2216\u02CB\uFF06]/g;
+const _XSS_REV_T=/[\u2039\u203A\u201D\u2019\u2216\u02CB\uFF06]/;
+const _XSS_T=/[<>"'\\`]/;
+const _URL_KEY_RE=/url|link|href|path|foto|src|avatar/i;
+const _BAD_SCHEME_RE=/^(javascript|vbscript):|^data:text\/html/i;
+function _cleanStr(v,key){
+  if(typeof v!=='string'||!v)return v;
+  // Skema URL berbahaya (javascript:, vbscript:, data:text/html) -> kosongkan
+  if(v.length<4096&&_BAD_SCHEME_RE.test(v.replace(/[\s\x00-\x1f]/g,'')))return '';
+  if(key&&_URL_KEY_RE.test(key)){
+    return v.replace(/[<>"'\\`]/g,c=>'%'+c.charCodeAt(0).toString(16).toUpperCase().padStart(2,'0'));
+  }
+  let out=v.replace(/&(?=#|[a-z][a-z0-9]*;)/gi,'\uFF06');
+  return _XSS_T.test(out)?out.replace(_XSS_RE,c=>_XSS_MAP[c]):out;
+}
+function _deepClean(o,key){
+  if(typeof o==='string')return _cleanStr(o,key);
+  if(Array.isArray(o)){for(let i=0;i<o.length;i++)o[i]=_deepClean(o[i],key);return o;}
+  if(o&&typeof o==='object'){for(const k in o)if(Object.prototype.hasOwnProperty.call(o,k))o[k]=_deepClean(o[k],k);return o;}
+  return o;
+}
+function _unClean(o){
+  if(typeof o==='string')return o.replace(_XSS_REV_RE,c=>_XSS_REV[c]);
+  if(Array.isArray(o))return o.map(_unClean);
+  if(o&&typeof o==='object'){const r={};for(const k in o)if(Object.prototype.hasOwnProperty.call(o,k))r[k]=_unClean(o[k]);return r;}
+  return o;
+}
+// Escape HTML biasa -- untuk kode baru yang menyisipkan teks ke innerHTML
+function escHtml(v){
+  return String(v==null?'':v).replace(/[&<>"'`]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;'}[c]));
+}
+// fetch khusus Supabase: bersihkan respons REST, kembalikan karakter asli saat menulis
+async function _secureFetch(input,init){
+  let url=typeof input==='string'?input:(input&&input.url)||'';
+  const isRest=url.indexOf('/rest/v1/')!==-1;
+  if(isRest){
+    try{
+      // Filter query (?kep_kk=eq.xxx) memakai karakter asli
+      let dec=url;try{dec=decodeURIComponent(url);}catch(e){}
+      if(_XSS_REV_T.test(dec)){
+        const u=new URL(url);
+        const sp=new URLSearchParams();
+        u.searchParams.forEach((v,k)=>sp.append(k,v.replace(_XSS_REV_RE,c=>_XSS_REV[c])));
+        u.search=sp.toString();
+        url=u.toString();
+        input=typeof input==='string'?url:new Request(url,input);
+      }
+      if(init&&typeof init.body==='string'&&init.body&&_XSS_REV_T.test(init.body)){
+        init=Object.assign({},init,{body:JSON.stringify(_unClean(JSON.parse(init.body)))});
+      }
+    }catch(e){}
+  }
+  const res=await fetch(input,init);
+  if(!isRest)return res;
+  const ct=res.headers.get('content-type')||'';
+  if(ct.indexOf('json')===-1)return res;
+  const text=await res.text();
+  // Jalur cepat: tidak ada karakter berisiko -> kembalikan apa adanya
+  if(!/[<>'`&\\]|script:|data:text/i.test(text)){
+    return new Response(text,{status:res.status,statusText:res.statusText,headers:res.headers});
+  }
+  let body=text;
+  try{body=JSON.stringify(_deepClean(JSON.parse(text)));}catch(e){}
+  return new Response(body,{status:res.status,statusText:res.statusText,headers:res.headers});
+}
+
+// 3) Lazy-load library berat (XLSX ~880KB, pdf.js, mammoth, Tesseract) -- hanya saat dibutuhkan
+const _LIBS={
+  xlsx:{src:'vendor/xlsx.full.min.js',g:'XLSX',init(){
+    // Data hasil baca Excel juga dinetralkan sebelum ditampilkan di pratinjau
+    const orig=XLSX.utils.sheet_to_json;
+    XLSX.utils.sheet_to_json=function(){return _deepClean(orig.apply(this,arguments));};
+  }},
+  pdf:{src:'vendor/pdf.min.js',g:'pdfjsLib',init(){pdfjsLib.GlobalWorkerOptions.workerSrc='vendor/pdf.worker.min.js';}},
+  mammoth:{src:'vendor/mammoth.browser.min.js',g:'mammoth'},
+  tesseract:{src:'vendor/tesseract.min.js',g:'Tesseract'}
+};
+const _libP={};
+function ensureLib(n){
+  const d=_LIBS[n];
+  if(!d)return Promise.resolve(false);
+  if(window[d.g]&&d._ok)return Promise.resolve(true);
+  if(_libP[n])return _libP[n];
+  return _libP[n]=new Promise(res=>{
+    const sc=document.createElement('script');
+    sc.src=d.src;sc.async=true;
+    sc.onload=()=>{try{d.init&&d.init();}catch(e){console.warn('init lib',n,e);}d._ok=true;res(!!window[d.g]);};
+    sc.onerror=()=>{delete _libP[n];res(false);};
+    document.head.appendChild(sc);
+  });
+}
+// Pramuat library Excel di waktu senggang setelah login (supaya tombol Excel tetap instan)
+function preloadLibs(){
+  const idle=window.requestIdleCallback||(f=>setTimeout(f,1500));
+  idle(()=>ensureLib('xlsx'),{timeout:5000});
+}
+
+// 4) Data GeoJSON batas desa: satu kali unduh, dipakai bersama (dulu bisa terunduh 3x)
+let _batasPromise=null;
+function loadBatasNgawi(){
+  if(window._batasNgawi)return Promise.resolve(window._batasNgawi);
+  if(!_batasPromise){
+    _batasPromise=fetch('data/batas-desa-ngawi.json')
+      .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+      .then(gj=>{window._batasNgawi=gj;return gj;})
+      .catch(e=>{_batasPromise=null;throw e;});
+  }
+  return _batasPromise;
+}
+
+// 5) Bersihkan sisa cache data pribadi (NIK/nama) versi lama yang tersimpan permanen di localStorage
+try{
+  Object.keys(localStorage).filter(k=>k.indexOf('ertlh_v3_')===0).forEach(k=>localStorage.removeItem(k));
+  sessionStorage.removeItem('e-rtlh-batas-ngawi-v1');
+}catch(e){}
+
 // ==================================================
 // INIT
 // ==================================================
@@ -2125,7 +2313,8 @@ function renderReport(){
   document.getElementById('rpTable').innerHTML=html;
 }
 
-function exportReportExcel(){
+async function exportReportExcel(){
+  await ensureLib('xlsx');
   if(!_rpData||!window.XLSX){toast('Data belum dimuat','error');return;}
   const q=(document.getElementById('rpSearch')?.value||'').toLowerCase();
   const byKec={},byDesa={};
@@ -2218,7 +2407,7 @@ async function setUser(u){
     userDesa=null;
   }
   updAuth();
-  if(isAdmin)startAutoRefresh();
+  if(isAdmin){startAutoRefresh();preloadLibs();}
 }
 function updAuth(){
   const a=document.getElementById('authArea');
@@ -2230,9 +2419,9 @@ function updAuth(){
     a.innerHTML=`<div style="display:flex;align-items:center;gap:6px">
 
       <div class="user-chip">
-        ${user.user_metadata?.avatar_url?`<img src="${user.user_metadata.avatar_url}" alt="">`:
-          `<div style="width:26px;height:26px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;color:var(--navy)">${(user.email||'?')[0].toUpperCase()}</div>`}
-        <div><div class="user-chip span">${_adminUsername||user.email?.split('@')[0]}</div>${badge}</div>
+        ${user.user_metadata?.avatar_url&&_cleanStr(user.user_metadata.avatar_url,'avatar_url')?`<img src="${_cleanStr(user.user_metadata.avatar_url,'avatar_url')}" alt="" referrerpolicy="no-referrer">`:
+          `<div style="width:26px;height:26px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;color:var(--navy)">${escHtml((user.email||'?')[0].toUpperCase())}</div>`}
+        <div><div class="user-chip span">${escHtml(_adminUsername||user.email?.split('@')[0])}</div>${badge}</div>
       </div>
       <button class="btn-logout" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i><span class="logout-text"> Logout</span></button>
     </div>`;
@@ -2273,8 +2462,15 @@ async function doGoogleLogin(){
   const{error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+window.location.pathname}});
   if(error)toast('Error: '+error.message,'error');
 }
+function _wipeLocalData(){
+  try{cacheClear();}catch(e){}
+  try{sessionStorage.removeItem('ertlh_detail');}catch(e){}
+  try{Object.keys(brCache||{}).forEach(k=>delete brCache[k]);}catch(e){}
+  try{_signedCache.clear();}catch(e){}
+  brAll=[];brFeatures=[];
+}
 async function doLogout(){
-  _signedCache.clear();await sb.auth.signOut();
+  _wipeLocalData();await sb.auth.signOut();
   if(_realtimeChannel)try{sb.removeChannel(_realtimeChannel);}catch(e){}
   if(_pollTimer)clearInterval(_pollTimer);
   toast('Logout berhasil','info');
@@ -2698,7 +2894,7 @@ let mapBeranda=null,tileLayerBeranda=null,kecBoundaryLayer=null,isSatellite=fals
 function initMapBeranda(){
   if(!window.L)return;
   if(!mapBeranda){
-    mapBeranda=L.map('mapBeranda',{zoomControl:true,scrollWheelZoom:true}).setView([-7.42,111.42],10);
+    mapBeranda=L.map('mapBeranda',{zoomControl:true,scrollWheelZoom:true,preferCanvas:true}).setView([-7.42,111.42],10);
     tileLayerBeranda=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
       attribution:'© OpenStreetMap',maxZoom:19
     }).addTo(mapBeranda);
@@ -2708,8 +2904,8 @@ function initMapBeranda(){
     addKecBoundary();
     _fitMapToNgawi();
   } else if(!window._batasNgawi){
-    fetch('data/batas-desa-ngawi.json').then(r=>r.json()).then(gj=>{
-      window._batasNgawi=gj;
+    loadBatasNgawi().then(()=>{
+      if(kecBoundaryLayer)return;
       addKecBoundary();
       _fitMapToNgawi();
     }).catch(()=>{});
@@ -3920,14 +4116,16 @@ function renderKecList(){
 function initMap(){
   if(map)return;
   if(!window.L){console.warn("Leaflet not ready");return;}
-  map=L.map('map',{zoomControl:true}).setView([-7.4,111.4],11);
+  // preferCanvas: ribuan titik digambar di <canvas> (jauh lebih ringan di HP daripada SVG)
+  map=L.map('map',{zoomControl:true,preferCanvas:true}).setView([-7.4,111.4],11);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:19}).addTo(map);
-  mcg=L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:40}).addTo(map);
+  mcg=L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:40,chunkedLoading:true,chunkInterval:120,removeOutsideVisibleBounds:true}).addTo(map);
 }
 
 // Cache timestamp per kecamatan
 // ==================================================
-// CACHE SYSTEM -- localStorage + stale-while-revalidate
+// CACHE SYSTEM -- sessionStorage + stale-while-revalidate
+// (sessionStorage: data NIK/nama otomatis terhapus saat tab ditutup -- aman di PC bersama)
 // ==================================================
 const CACHE_TTL = 5 * 60 * 1000; // 5 menit
 const CACHE_TTL_STATS = 60 * 1000; // 60 detik untuk stats beranda
@@ -3935,13 +4133,13 @@ const CACHE_PREFIX = 'ertlh_v3_';
 
 function cacheSet(key, data){
   try{
-    localStorage.setItem(CACHE_PREFIX+key, JSON.stringify({t:Date.now(),d:data}));
+    sessionStorage.setItem(CACHE_PREFIX+key, JSON.stringify({t:Date.now(),d:data}));
   }catch(e){} // QuotaExceededError -- skip
 }
 
 function cacheGet(key, ttl){
   try{
-    const raw=localStorage.getItem(CACHE_PREFIX+key);
+    const raw=sessionStorage.getItem(CACHE_PREFIX+key);
     if(!raw)return null;
     const{t,d}=JSON.parse(raw);
     const useTTL=ttl||(key==='global_stats'?CACHE_TTL_STATS:CACHE_TTL);
@@ -3949,10 +4147,10 @@ function cacheGet(key, ttl){
   }catch(e){return null;}
 }
 
-function cacheDel(key){try{localStorage.removeItem(CACHE_PREFIX+key);}catch(e){}}
+function cacheDel(key){try{sessionStorage.removeItem(CACHE_PREFIX+key);}catch(e){}}
 function cacheClear(){
   try{
-    Object.keys(localStorage).filter(k=>k.startsWith(CACHE_PREFIX)).forEach(k=>localStorage.removeItem(k));
+    Object.keys(sessionStorage).filter(k=>k.startsWith(CACHE_PREFIX)).forEach(k=>sessionStorage.removeItem(k));
   }catch(e){}
 }
 
@@ -4065,7 +4263,7 @@ async function _fetchKec(cacheKey, kecName, kecLabel){
     if(kecName)q=q.ilike('kec',kecName);
     const{data,error}=await q;
     if(error){toast('Gagal memuat data','error');return;}
-    allRows=[...allRows,...(data||[])];
+    if(data)for(const _r of data)allRows.push(_r);
     if(!data||data.length<pgSize)isDone=true;
     else pg++;
   }
@@ -4094,7 +4292,7 @@ async function _refreshKecBackground(cacheKey, kecName, kecLabel){
       if(kecName)q=q.ilike('kec',kecName);
       const{data,error}=await q;
       if(error)return;
-      allRows=[...allRows,...(data||[])];
+      if(data)for(const _r of data)allRows.push(_r);
       if(!data||data.length<pgSize)isDone=true;
       else pg++;
     }
@@ -4113,20 +4311,18 @@ async function _refreshKecBackground(cacheKey, kecName, kecLabel){
 
 function loadBoundary(kecName){
   if(window._batasNgawi){applyBoundary(kecName);return;}
-  const _ck='e-rtlh-batas-ngawi-v1';
-  const _cc=sessionStorage.getItem(_ck);
-  if(_cc){try{window._batasNgawi=JSON.parse(_cc);applyBoundary(kecName);return;}catch(e){sessionStorage.removeItem(_ck);}}
-  fetch('data/batas-desa-ngawi.json').then(r=>r.json()).then(gj=>{
-    window._batasNgawi=gj;
-    try{sessionStorage.setItem(_ck,JSON.stringify(gj));}catch(e){}
-    applyBoundary(kecName);
-  }).catch(()=>{});
+  loadBatasNgawi().then(()=>applyBoundary(kecName)).catch(()=>{});
 }
 function applyBoundary(kecName){
   if(!window._batasNgawi||!map)return;
-  const feats=window._batasNgawi.features.filter(f=>f.properties.WADMKC===kecName);
+  // Bandingkan tanpa beda huruf besar/kecil (GeoJSON: 'Bringin', aplikasi: 'BRINGIN')
+  const _kn=String(kecName||'').toUpperCase();
+  const feats=window._batasNgawi.features.filter(f=>String(f.properties.WADMKC||'').toUpperCase()===_kn);
   if(!feats.length)return;
-  const layer=L.geoJSON({type:'FeatureCollection',features:feats},{style:{color:'#1B6CA8',weight:1.5,fillOpacity:.04}}).addTo(map);
+  // Hapus batas kecamatan sebelumnya -- dulu layer menumpuk tiap ganti/refresh kecamatan
+  if(window._kecBoundaryLayer){try{map.removeLayer(window._kecBoundaryLayer);}catch(e){}}
+  const layer=L.geoJSON({type:'FeatureCollection',features:feats},{style:{color:'#1B6CA8',weight:1.5,fillOpacity:.04},interactive:false}).addTo(map);
+  window._kecBoundaryLayer=layer;
   map.fitBounds(layer.getBounds(),{padding:[30,30]});
 }
 
@@ -4606,6 +4802,7 @@ function updateMap(){
   if(!map||!mcg)return;
   mcg.clearLayers();
   let added=0;
+  const _mks=[];
   brFeatures.forEach(r=>{
     const lat=parseFloat(r.latitude);
     const lng=parseFloat(r.longitude);
@@ -4630,9 +4827,11 @@ function updateMap(){
       '<b>'+showNama(r.kep_kk)+'</b>'+(hasDok?' <span style="color:#16A34A" title="Ada BA/SK">&#10004;</span>':'')+'<br>'+dn(r.desa)+' · <span style="color:'+markerColor+'">'+kat+'</span>'+(_nikDBSet?'<br><span style="color:'+(isAdd?'#D97706':'#1D4ED8')+';font-weight:700">'+(isAdd?'BNBA Tambahan':'BNBA Database')+'</span>':''),
       {direction:'top',offset:[0,-8]}
     );
-    mcg.addLayer(mk);
+    _mks.push(mk);
     added++;
   });
+  // Tambah sekaligus (batch) -- jauh lebih cepat daripada addLayer satu per satu
+  if(_mks.length)mcg.addLayers(_mks);
 
   // Fit bounds kalau ada marker
   if(added>0){
@@ -5285,6 +5484,7 @@ function addExcelDropdowns(ws, rows){
 }
 
 async function downloadExcel(withNIK){
+  await ensureLib('xlsx');
   const superAdmin=isSuperAdmin();
   await ensureNikDB();
   // Fetch verifikasi untuk semua data di kecamatan ini
@@ -5341,6 +5541,7 @@ async function importExcel(input){
   if(!canEdit())return toast('Tidak ada akses','error');
   const reader=new FileReader();
   reader.onload=async(e)=>{
+    await ensureLib('xlsx');
     const wb=XLSX.read(e.target.result,{type:'binary'});
     const ws=wb.Sheets[wb.SheetNames[0]];
     const rows=XLSX.utils.sheet_to_json(ws);
@@ -5436,6 +5637,7 @@ function updateExDesaList(){
 }
 
 async function downloadExcelKab(withNIK){
+  await ensureLib('xlsx');
   const superAdmin=isSuperAdmin();
   await ensureNikDB();
   const kec=(document.getElementById('exKec')?.value||'').trim();
@@ -5802,6 +6004,7 @@ async function importExcelKab(input){
   log.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Membaca file...';
   const reader=new FileReader();
   reader.onload=async(e)=>{
+    await ensureLib('xlsx');
     try{
       const wb=XLSX.read(e.target.result,{type:'binary',cellText:true,cellDates:true});
       const ws=wb.Sheets[wb.SheetNames[0]];
@@ -6218,7 +6421,8 @@ async function deleteVerif(id){
 // ==================================================
 // DOWNLOAD & UPLOAD EXCEL PER INDIVIDU
 // ==================================================
-function downloadExcelIndividu(r){
+async function downloadExcelIndividu(r){
+  await ensureLib('xlsx');
   const row={
     ID:r.id, NIK:r.nik||'', 'No. KK':r.no_kk||'',
     'Nama KK':r.kep_kk||'', Kecamatan:r.kec||'', Desa:r.desa||'',
@@ -6249,6 +6453,7 @@ async function uploadExcelIndividu(input, rtlhId){
   if(log)log.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Memproses...';
   const reader=new FileReader();
   reader.onload=async(e)=>{
+    await ensureLib('xlsx');
     try{
       const wb=XLSX.read(e.target.result,{type:'binary',cellText:true});
       const ws=wb.Sheets[wb.SheetNames[0]];
@@ -7787,7 +7992,7 @@ async function doMaintenanceLogin(){
 async function waitLibs(){
   const MAX=50; // max 5 detik
   for(let i=0;i<MAX;i++){
-    if(window.L&&window.Chart&&window.XLSX&&window.supabase)return true;
+    if(window.L&&window.Chart&&window.supabase)return true;
     await new Promise(r=>setTimeout(r,100));
   }
   return false; // timeout
@@ -7797,7 +8002,7 @@ window.addEventListener('DOMContentLoaded',async()=>{
   // Tunggu library siap
   await waitLibs();
   // Init Supabase client dulu sebelum apapun
-  sb = window.supabase.createClient(SUPA_URL, SUPA_KEY, {auth:{persistSession:true,storageKey:'ertlh-auth',autoRefreshToken:true}});
+  sb = window.supabase.createClient(SUPA_URL, SUPA_KEY, {auth:{persistSession:true,storageKey:'ertlh-auth',autoRefreshToken:true},global:{fetch:_secureFetch}});
   // Cek session dulu
   const{data:{session}}=await sb.auth.getSession();
   if(MAINTENANCE_MODE){
@@ -7819,7 +8024,7 @@ window.addEventListener('DOMContentLoaded',async()=>{
     }
     // Kalau maintenance off dan ada login dari overlay, ikuti auth state change
     sb.auth.onAuthStateChange((ev,sess)=>{
-      if(ev==='SIGNED_OUT'&&MAINTENANCE_MODE)showMaintenanceOverlay();
+      if(ev==='SIGNED_OUT'){_wipeLocalData();if(MAINTENANCE_MODE)showMaintenanceOverlay();}
     });
   }
   await initAuth();
@@ -7832,17 +8037,9 @@ window.addEventListener('DOMContentLoaded',async()=>{
     const activePg=document.querySelector('.page.active')?.id;
     if(activePg==='pgBeranda'||!activePg)await loadGlobalStats();
   }
-  // Load GeoJSON boundary -- cache di sessionStorage biar tidak fetch ulang
-  const _geoKey='e-rtlh-batas-ngawi-v1';
-  const _geoCached=sessionStorage.getItem(_geoKey);
-  if(_geoCached){
-    try{window._batasNgawi=JSON.parse(_geoCached);if(typeof _fitMapToNgawi==='function')_fitMapToNgawi();}catch(e){sessionStorage.removeItem(_geoKey);}
-  }else{
-    fetch('data/batas-desa-ngawi.json').then(r=>r.json()).then(gj=>{
-      window._batasNgawi=gj;
-      try{sessionStorage.setItem(_geoKey,JSON.stringify(gj));}catch(e){}
-      if(typeof _fitMapToNgawi==='function')_fitMapToNgawi();
-    }).catch(()=>{});
+  // Load GeoJSON boundary hanya setelah login (halaman login tetap ringan)
+  if(user||(sb&&(await sb.auth.getSession()).data.session)){
+    loadBatasNgawi().then(()=>{if(typeof _fitMapToNgawi==='function')_fitMapToNgawi();}).catch(()=>{});
   }
 });
 
@@ -8040,7 +8237,7 @@ function importExcelKab(input){
   let loaded=0;
   files.forEach((file)=>{
     const reader=new FileReader();
-    reader.onload=(e)=>{
+    reader.onload=async(e)=>{ await ensureLib('xlsx');
       try{
         const wb=XLSX.read(e.target.result,{type:'binary',cellText:true,cellDates:true});
 
@@ -9024,7 +9221,8 @@ function _getDtsenExportData(){
 }
 
 // -- EXPORT EXCEL --
-function exportDtsenExcel(){
+async function exportDtsenExcel(){
+  await ensureLib('xlsx');
   if(!_dtData){toast('Data belum dimuat','error');return;}
   if(!window.XLSX){toast('Library Excel belum siap','error');return;}
   const{filtered,visD,tab}=_getDtsenExportData();
@@ -9199,7 +9397,8 @@ function _buildDtsenSheetRows(tab){
 }
 
 // Export hanya kec atau hanya desa
-function exportDtsenExcelOnly(tab){
+async function exportDtsenExcelOnly(tab){
+  await ensureLib('xlsx');
   if(!_dtData){toast('Data belum dimuat','error');return;}
   if(!window.XLSX){toast('Library Excel belum siap','error');return;}
   const rows=_buildDtsenSheetRows(tab);
@@ -9214,7 +9413,8 @@ function exportDtsenExcelOnly(tab){
 }
 
 // Export keduanya dalam satu file 2 sheet
-function exportDtsenExcelBoth(){
+async function exportDtsenExcelBoth(){
+  await ensureLib('xlsx');
   if(!_dtData){toast('Data belum dimuat','error');return;}
   if(!window.XLSX){toast('Library Excel belum siap','error');return;}
   const rowsKec=_buildDtsenSheetRows('kec');
@@ -9698,7 +9898,7 @@ setTimeout(_initRealtimeSync, 4000);
       <div style="font-size:.72rem;font-weight:700;color:var(--gray-600);margin-bottom:8px;border-top:1px solid var(--gray-200);padding-top:12px">Tambah Link Dokumen:</div>
       <div class="form-group" style="margin-bottom:10px">
         <label>Cari Dokumen</label>
-        <input type="text" id="linkDokSearch" placeholder="Ketik judul atau jenis..." oninput="searchDokForLink(this.value)">
+        <input type="text" id="linkDokSearch" placeholder="Ketik judul atau jenis..." oninput="const v=this.value;clearTimeout(this._t);this._t=setTimeout(()=>searchDokForLink(v),250)">
       </div>
       <div id="dokSearchResults" style="max-height:200px;overflow-y:auto"></div>
     </div>
@@ -9721,7 +9921,7 @@ setTimeout(_initRealtimeSync, 4000);
     <div class="modal-body" style="padding:0">
       <div style="padding:10px 16px;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;justify-content:space-between;gap:8px">
         <div id="penerimaDokCount" style="font-size:.75rem;color:var(--gray-500)"></div>
-        <input type="text" id="penerimaDokSearch" placeholder="Cari nama atau desa..." oninput="filterPenerimaDok(this.value)"
+        <input type="text" id="penerimaDokSearch" placeholder="Cari nama atau desa..." oninput="const v=this.value;clearTimeout(this._t);this._t=setTimeout(()=>filterPenerimaDok(v),250)"
           style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--gray-200);font-size:.75rem;font-family:inherit;outline:none;width:180px">
       </div>
       <div id="penerimaDokList" style="max-height:60vh;overflow-y:auto;padding:10px 14px"></div>
@@ -9885,13 +10085,14 @@ function cnHandleDrop(e){
   if(f) cnHandleFile(f);
 }
 
-function cnHandleFile(file){
+async function cnHandleFile(file){
+  await ensureLib('xlsx');
   if(!file) return;
   if(!window.XLSX){ toast('Library XLSX belum dimuat, coba refresh halaman','error'); return; }
   const label = document.getElementById('cnFileLabel');
   label.textContent = file.name;
   const reader = new FileReader();
-  reader.onload = function(e){
+  reader.onload = async function(e){ await ensureLib('xlsx');
     try{
       const wb = XLSX.read(e.target.result, {type:'binary'});
       const ws = wb.Sheets[wb.SheetNames[0]];
@@ -10195,7 +10396,8 @@ function cnUpdateTable(extraCols){
 }
 
 // --- DOWNLOAD EXCEL -- selalu dari _cnFiltered (sama dengan yang tampil di tabel) ---
-function cnDownloadExcel(){
+async function cnDownloadExcel(){
+  await ensureLib('xlsx');
   if(!_cnFiltered.length){ toast('Belum ada data untuk diunduh','error'); return; }
   if(!window.XLSX){ toast('Library XLSX tidak tersedia','error'); return; }
 
@@ -10441,12 +10643,12 @@ async function openPdfViewer(url, title, nik, rtlhId, dokId, name){
   await _loadDocScanAll(url);
 
   // Setup pdf.js worker
-  if(!window.pdfjsLib){
+  if(!(await ensureLib('pdf'))){
     scrollArea.innerHTML='<div style="color:#F87171;padding:40px;text-align:center">Penampil PDF belum siap -- coba refresh halaman</div>';
     return;
   }
   pdfjsLib.GlobalWorkerOptions.workerSrc =
-    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    'vendor/pdf.worker.min.js';
 
   try{
     _pdfDoc = await pdfjsLib.getDocument({url:await _fileUrl(url), withCredentials:false}).promise;
@@ -10998,7 +11200,7 @@ async function _scanPage(page, nik, worker, name){
 // Main OCR untuk viewer (dengan progress UI)
 async function _pdfRunOcr(nikFoundSoFar){
   if(!_pdfNik||_pdfOcrRunning) return;
-  if(!window.Tesseract){_pdfSetNikBadge('error','Tesseract belum dimuat');return;}
+  if(!(await ensureLib('tesseract'))){_pdfSetNikBadge('error','Tesseract belum dimuat');return;}
   _pdfOcrRunning=true;
   const ocrStatus=document.getElementById('pdfOcrStatus');
   const ocrText=document.getElementById('pdfOcrStatusText');
@@ -11062,7 +11264,7 @@ async function _pdfRunOcr(nikFoundSoFar){
 async function _pdfSilentScan(url, nik, rtlhId, name){
   const ck=url+'|'+nik;
   if(_pdfOcrCache.has(ck)) return;
-  if(!window.pdfjsLib) return;
+  if(!(await ensureLib('pdf'))) return;
   // Cek DB dulu
   if(rtlhId){
     const uh=_urlHash(url),nh=_nikHash(nik);
@@ -11071,7 +11273,7 @@ async function _pdfSilentScan(url, nik, rtlhId, name){
   }
   try{
     pdfjsLib.GlobalWorkerOptions.workerSrc=
-      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      'vendor/pdf.worker.min.js';
     const pdf=await pdfjsLib.getDocument({url:await _fileUrl(url),withCredentials:false}).promise;
     const found=[],highlights=[];
     for(let p=1;p<=pdf.numPages;p++){
@@ -11172,7 +11374,7 @@ async function scanAllDokLink(rtlhId){
   const btn=document.getElementById('btnScanAllDok');
   const setStatus=(t)=>{ if(statusEl){statusEl.style.display='block';statusEl.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> '+t;} };
   if(!nik){ toast('NIK penerima kosong -- tidak bisa dipindai','error'); return; }
-  if(!window.pdfjsLib){ toast('pdf.js belum dimuat, coba refresh','error'); return; }
+  if(!(await ensureLib('pdf'))){ toast('pdf.js belum dimuat, coba refresh','error'); return; }
 
   const{data}=await sb.from('rtlh_dokumen_link')
     .select('rtlh_dokumen_kabupaten(id,path,judul)').eq('rtlh_id',numId);
@@ -11181,10 +11383,10 @@ async function scanAllDokLink(rtlhId){
   if(!pdfs.length){ toast('Belum ada dokumen PDF terhubung','info'); return; }
 
   if(btn){btn.disabled=true;btn.style.opacity='.7';btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i> Memindai...';}
-  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  pdfjsLib.GlobalWorkerOptions.workerSrc='vendor/pdf.worker.min.js';
 
   let worker=null;
-  if(window.Tesseract){
+  if(await ensureLib('tesseract')){
     try{ setStatus('Menyiapkan pemindai...');
       worker=await Tesseract.createWorker('eng',1,{logger:()=>{}});
       await worker.setParameters({tessedit_pageseg_mode:'4'});
@@ -11227,13 +11429,13 @@ async function refreshOneDok(btn){
   const numId=parseInt(card.dataset.rtlhid||0);
   const title=decodeURIComponent(card.dataset.title||'dokumen');
   if(!url||!nik){ toast('Data dokumen tidak lengkap','error'); return; }
-  if(!window.pdfjsLib){ toast('pdf.js belum dimuat','error'); return; }
+  if(!(await ensureLib('pdf'))){ toast('pdf.js belum dimuat','error'); return; }
   const old=btn.innerHTML;
   btn.innerHTML='<i class="fas fa-circle-notch fa-spin"></i>';
   btn.style.pointerEvents='none';
-  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  pdfjsLib.GlobalWorkerOptions.workerSrc='vendor/pdf.worker.min.js';
   let worker=null;
-  if(window.Tesseract){
+  if(await ensureLib('tesseract')){
     try{ worker=await Tesseract.createWorker('eng',1,{logger:()=>{}}); await worker.setParameters({tessedit_pageseg_mode:'4'}); }
     catch(e){ worker=null; }
   }
@@ -11261,8 +11463,8 @@ async function refreshOneDok(btn){
 // Ekstrak NIK dari PDF (text layer + OCR fallback) dengan posisi highlight
 async function _extractNiksFromPdf(url, onProgress, validNiks){
   const result={pages:{}, allNiks:new Set()};
-  if(!window.pdfjsLib) return result;
-  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  if(!(await ensureLib('pdf'))) return result;
+  pdfjsLib.GlobalWorkerOptions.workerSrc='vendor/pdf.worker.min.js';
   const pdf=await pdfjsLib.getDocument({url:await _fileUrl(url),withCredentials:false}).promise;
   let worker=null;
 
@@ -11339,7 +11541,7 @@ async function _extractNiksFromPdf(url, onProgress, validNiks){
 // Ekstrak NIK dari Excel (semua sheet, semua sel)
 async function _extractNiksFromExcel(url){
   const result={pages:{}, allNiks:new Set()};
-  if(!window.XLSX) return result;
+  if(!(await ensureLib('xlsx'))) return result;
   const resp=await fetch(await _fileUrl(url));
   const buf=await resp.arrayBuffer();
   const wb=XLSX.read(buf,{type:'array'});
@@ -11364,7 +11566,7 @@ async function _extractNiksFromExcel(url){
 // Ekstrak NIK dari Word (.docx)
 async function _extractNiksFromWord(url){
   const result={pages:{}, allNiks:new Set()};
-  if(!window.mammoth) return result;
+  if(!(await ensureLib('mammoth'))) return result;
   const resp=await fetch(await _fileUrl(url));
   const buf=await resp.arrayBuffer();
   const {value}=await mammoth.extractRawText({arrayBuffer:buf});
@@ -11400,8 +11602,8 @@ async function scanMassalDokLib(){
   if(prog)prog.style.display='flex';
   try{
     show('Memuat data...');
-    if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc=
-      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    if(await ensureLib('pdf')) pdfjsLib.GlobalWorkerOptions.workerSrc=
+      'vendor/pdf.worker.min.js';
 
     // Ambil semua PDF
     const{data:docsRaw}=await sb.from('rtlh_dokumen_kabupaten').select('id,path,judul').limit(200);
@@ -11451,7 +11653,7 @@ async function scanMassalDokLib(){
       // Load PDF
       let pdf;
       try{
-        if(!window.pdfjsLib) throw new Error('pdfjsLib not loaded');
+        if(!(await ensureLib('pdf'))) throw new Error('pdfjsLib not loaded');
         pdf=await pdfjsLib.getDocument({url:await _fileUrl(url),withCredentials:false}).promise;
       }catch(e){
         show('Gagal buka: '+doc.judul);
@@ -11464,7 +11666,7 @@ async function scanMassalDokLib(){
       let worker=null;
       const pageOcr=[]; // {p, ocrText, ocrNorm, lines:[{text,y0pct,y1pct}]}
       try{
-        if(!window.Tesseract) throw new Error('Tesseract not loaded');
+        if(!(await ensureLib('tesseract'))) throw new Error('Tesseract not loaded');
         worker=await Tesseract.createWorker('eng',1,{
           logger:m=>{if(m.status==='recognizing text')show('OCR '+doc.judul+' '+(m.progress*100|0)+'%');}
         });
@@ -11578,9 +11780,9 @@ async function diagScanNIK(url, nik){
   console.log('URL:', url.slice(-50));
   console.log('NIK:', nik);
   
-  if(!window.pdfjsLib){console.log('ERROR: pdfjsLib not loaded');return;}
+  if(!(await ensureLib('pdf'))){console.log('ERROR: pdfjsLib not loaded');return;}
   pdfjsLib.GlobalWorkerOptions.workerSrc=
-    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    'vendor/pdf.worker.min.js';
   
   try{
     console.log('Loading PDF...');
