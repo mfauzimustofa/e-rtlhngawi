@@ -814,6 +814,9 @@ button,a,[onclick],.nav-tab,.filter-chip,.tb-btn,.mob-nav-btn{-webkit-tap-highli
           <h2 style="font-size:1rem;font-weight:800;margin:0"><i class="fas fa-layer-group" style="color:var(--gold)"></i> Data DTSEN / MyPKP</h2>
           <p style="font-size:.68rem;color:rgba(255,255,255,.55);margin:0">Distribusi desil per kecamatan dan desa</p>
         </div>
+        <button id="btnSinkronDesil" onclick="openSinkronDesil()" style="display:none;margin-left:auto;background:var(--gold);border:none;border-radius:8px;padding:8px 12px;color:#0C2340;font-size:.72rem;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap">
+          <i class="fas fa-rotate"></i> Sinkron Desil
+        </button>
       </div>
 
       <!-- Tab & Search Bar -->
@@ -2435,6 +2438,7 @@ async function setUser(u){
     userDesa=null;
   }
   updAuth();
+  try{const b=document.getElementById('btnSinkronDesil');if(b)b.style.display=isSuperAdmin()?'':'none';}catch(e){}
   if(isAdmin){
     startAutoRefresh();preloadLibs();
     const ap=document.querySelector('.page.active')?.id;
@@ -4989,6 +4993,187 @@ async function simpanDesilBansos(id){
   document.getElementById('cdbModal')?.remove();
   toast('Desil tersimpan: '+baru,'success');
   try{showDetail(r);if(typeof renderSidebarList==='function')renderSidebarList();}catch(e){}
+}
+
+// ==================================================
+// SINKRON DESIL OTOMATIS dari file ekspor DTSEN (Excel/CSV)
+// Cocokkan per NIK -> perbarui desil massal -> catat riwayat
+// ==================================================
+let _sdState=null;
+const _SD_NIK_RE=/(^|[^a-z])nik([^a-z]|$)|nik_?art|nik_?krt|nik_?kepala|no[\s._]*ktp/i;
+const _SD_DESIL_RE=/desil/i;
+function openSinkronDesil(){
+  if(!isSuperAdmin()){toast('Khusus Super Admin','error');return;}
+  document.getElementById('sdModal')?.remove();
+  const m=document.createElement('div');
+  m.id='sdModal';
+  m.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(12,35,64,.5);display:flex;align-items:center;justify-content:center;padding:12px';
+  m.innerHTML=`<div style="background:#fff;border-radius:14px;max-width:720px;width:100%;max-height:92dvh;display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.3)">
+    <div style="padding:14px 16px;border-bottom:1px solid #eee;display:flex;align-items:center;gap:8px">
+      <div style="font-weight:800;color:#0C2340;flex:1"><i class="fas fa-rotate"></i> Sinkron Desil dari File DTSEN</div>
+      <button onclick="document.getElementById('sdModal').remove()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;min-width:40px;min-height:40px">&times;</button>
+    </div>
+    <div id="sdBody" style="padding:16px;overflow:auto;font-size:.8rem;line-height:1.5">
+      <p style="margin:0 0 10px;color:#555">Unggah file ekspor DTSEN/SIKS-NG (Excel atau CSV) yang berisi kolom <b>NIK</b> dan <b>Desil</b>. Desil semua penerima RTLH akan dicocokkan lewat NIK. Data yang NIK-nya tidak ada di file <b>tidak diubah</b>.</p>
+      <label style="display:block;border:2px dashed #b9c6d8;border-radius:10px;padding:22px;text-align:center;cursor:pointer;background:#F8FAFC">
+        <i class="fas fa-file-excel" style="font-size:1.6rem;color:#16A34A"></i><br>
+        <b>Pilih file .xlsx / .xls / .csv</b>
+        <input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="sdReadFile(this.files[0])">
+      </label>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+}
+function _sdSet(html){const b=document.getElementById('sdBody');if(b)b.innerHTML=html;}
+async function sdReadFile(file){
+  if(!file)return;
+  _sdSet('<div style="padding:20px;text-align:center"><i class="fas fa-spinner fa-spin"></i> Membaca file...</div>');
+  if(!(await ensureLib('xlsx'))){_sdSet('Gagal memuat pembaca Excel. Periksa koneksi lalu coba lagi.');return;}
+  try{
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(buf,{type:'array'});
+    const sheets=wb.SheetNames.map(n=>({name:n,rows:XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,defval:'',raw:false})}));
+    // pilih sheet yang punya kolom NIK & Desil
+    let best=null;
+    for(const sh of sheets){
+      for(let i=0;i<Math.min(20,sh.rows.length);i++){
+        const r=sh.rows[i].map(c=>String(c||''));
+        if(r.some(c=>_SD_NIK_RE.test(c))&&r.some(c=>_SD_DESIL_RE.test(c))){best={sheet:sh,hdr:i};break;}
+      }
+      if(best)break;
+    }
+    if(!best){
+      const sh=sheets[0];
+      let h=0;for(let i=0;i<Math.min(20,sh.rows.length);i++){if(sh.rows[i].filter(c=>String(c).trim()).length>=2){h=i;break;}}
+      best={sheet:sh,hdr:h};
+    }
+    _sdState={file:file.name,sheets,sheet:best.sheet,hdr:best.hdr};
+    sdShowMapping();
+  }catch(e){_sdSet('Gagal membaca file: '+escHtml(e.message));}
+}
+function sdShowMapping(){
+  const st=_sdState,rows=st.sheet.rows,hdr=rows[st.hdr]||[];
+  const cols=hdr.map((h,i)=>({i,h:String(h||'Kolom '+(i+1)).trim()}));
+  const nikI=(cols.find(c=>_SD_NIK_RE.test(c.h))||{}).i;
+  // utamakan "desil nasional" bila ada beberapa kolom desil
+  const desilCols=cols.filter(c=>_SD_DESIL_RE.test(c.h));
+  const desilI=((desilCols.find(c=>/nasional/i.test(c.h))||desilCols[0])||{}).i;
+  const opt=(sel)=>cols.map(c=>`<option value="${c.i}" ${c.i===sel?'selected':''}>${escHtml(c.h)}</option>`).join('');
+  const sheetOpt=st.sheets.map((s,i)=>`<option value="${i}" ${s===st.sheet?'selected':''}>${escHtml(s.name)} (${s.rows.length} baris)</option>`).join('');
+  const prev=rows.slice(st.hdr+1,st.hdr+4).map(r=>`<tr>${cols.slice(0,8).map(c=>`<td style="padding:3px 6px;border-bottom:1px solid #eee;white-space:nowrap">${escHtml(String(r[c.i]??''))}</td>`).join('')}</tr>`).join('');
+  _sdSet(`
+    <div style="margin-bottom:8px"><b>File:</b> ${escHtml(st.file)}</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px">
+      <label>Sheet<select id="sdSheet" onchange="_sdState.sheet=_sdState.sheets[this.value];_sdState.hdr=0;sdShowMapping()" style="width:100%;padding:8px;border:1px solid #ccd;border-radius:8px">${sheetOpt}</select></label>
+      <label>Baris judul ke-<input id="sdHdr" type="number" min="1" value="${st.hdr+1}" onchange="_sdState.hdr=Math.max(0,this.value-1);sdShowMapping()" style="width:100%;padding:8px;border:1px solid #ccd;border-radius:8px"></label>
+      <label>Kolom NIK<select id="sdNik" style="width:100%;padding:8px;border:1px solid ${nikI==null?'#e11':'#ccd'};border-radius:8px">${nikI==null?'<option value="">-- pilih --</option>':''}${opt(nikI)}</select></label>
+      <label>Kolom Desil<select id="sdDesil" style="width:100%;padding:8px;border:1px solid ${desilI==null?'#e11':'#ccd'};border-radius:8px">${desilI==null?'<option value="">-- pilih --</option>':''}${opt(desilI)}</select></label>
+    </div>
+    <div style="overflow:auto;border:1px solid #eee;border-radius:8px;margin-bottom:12px;font-size:.7rem">
+      <table style="border-collapse:collapse;width:100%"><thead><tr>${cols.slice(0,8).map(c=>`<th style="padding:4px 6px;background:#F1F5F9;text-align:left;white-space:nowrap">${escHtml(c.h)}</th>`).join('')}</tr></thead><tbody>${prev}</tbody></table>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px">
+      <button onclick="openSinkronDesil()" style="background:none;border:1px solid #ccd;border-radius:8px;padding:9px 14px;cursor:pointer">Ganti file</button>
+      <button onclick="sdAnalyze()" style="background:#0C2340;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:700;cursor:pointer">Cocokkan dengan data RTLH &rarr;</button>
+    </div>`);
+}
+async function sdAnalyze(){
+  const st=_sdState;
+  const ni=document.getElementById('sdNik').value, di=document.getElementById('sdDesil').value;
+  if(ni===''||di===''){toast('Pilih kolom NIK dan Desil dulu','error');return;}
+  st.ni=+ni;st.di=+di;
+  _sdSet('<div style="padding:20px;text-align:center"><i class="fas fa-spinner fa-spin"></i> Mencocokkan dengan 13 ribu data RTLH...</div>');
+  // 1) peta NIK -> desil dari file
+  const map=new Map();let fileInvalid=0,fileRows=0;
+  for(const r of st.sheet.rows.slice(st.hdr+1)){
+    const nik=String(r[st.ni]??'').replace(/\D/g,'');
+    if(!nik&&!String(r[st.di]??'').trim())continue;
+    fileRows++;
+    const d=parseInt(String(r[st.di]??'').match(/\d+/)?.[0]||'',10);
+    if(nik.length!==16||!(d>=1&&d<=10)){fileInvalid++;continue;}
+    map.set(nik,d);
+  }
+  if(!map.size){_sdSet('Tidak ada pasangan NIK (16 digit) & Desil (1–10) yang valid di file ini. <button onclick="sdShowMapping()">Kembali</button>');return;}
+  // 2) ambil semua RTLH
+  const{count,error:ce}=await sb.from('rtlh').select('*',{count:'exact',head:true});
+  if(ce){_sdSet('Gagal membaca data: '+escHtml(ce.message));return;}
+  const pages=Math.ceil((count||0)/1000);
+  const res=await Promise.all(Array.from({length:pages},(_,p)=>sb.from('rtlh').select('id,nik,desil,kec,desa,kep_kk').order('id').range(p*1000,p*1000+999)));
+  if(res.some(r=>r.error)){_sdSet('Sebagian data gagal dibaca dari server. Coba lagi sebentar.');return;}
+  const all=res.flatMap(r=>r.data||[]);
+  // format penyimpanan mengikuti data yang ada ("3" vs "Desil 3")
+  const withPrefix=all.filter(r=>/desil/i.test(String(r.desil||''))).length;
+  const withDigit=all.filter(r=>/^\s*\d+\s*$/.test(String(r.desil||''))).length;
+  st.prefix=withPrefix>withDigit;
+  const changes=[],same=[],notFound=[];
+  for(const r of all){
+    const nik=String(r.nik||'').replace(/\D/g,'');
+    if(!map.has(nik)){notFound.push(r);continue;}
+    const nd=map.get(nik);
+    const od=parseInt(String(r.desil||'').match(/\d+/)?.[0]||'',10);
+    if(od===nd)same.push(r);else changes.push({r,from:r.desil==null||r.desil===''?'(kosong)':String(r.desil),to:nd});
+  }
+  st.changes=changes;st.notFound=notFound;
+  const rowsHtml=changes.slice(0,100).map(c=>`<tr><td style="padding:3px 6px;border-bottom:1px solid #eee">${escHtml(c.r.kep_kk||'-')}</td><td style="padding:3px 6px;border-bottom:1px solid #eee">${escHtml(c.r.kec||'-')} / ${escHtml(c.r.desa||'-')}</td><td style="padding:3px 6px;border-bottom:1px solid #eee;text-align:center">${escHtml(c.from)}</td><td style="padding:3px 6px;border-bottom:1px solid #eee;text-align:center;font-weight:800;color:#0C2340">${c.to}</td></tr>`).join('');
+  const box=(n,l,c)=>`<div style="flex:1;min-width:130px;background:${c};border-radius:10px;padding:10px"><div style="font-size:1.25rem;font-weight:800">${n.toLocaleString('id')}</div><div style="font-size:.68rem;font-weight:700">${l}</div></div>`;
+  _sdSet(`
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      ${box(changes.length,'AKAN DIPERBARUI','#FEF3C7')}
+      ${box(same.length,'SUDAH SAMA','#DCFCE7')}
+      ${box(notFound.length,'TIDAK ADA DI FILE (tidak diubah)','#F1F5F9')}
+    </div>
+    <div style="font-size:.7rem;color:#666;margin-bottom:8px">File: ${map.size.toLocaleString('id')} NIK valid dari ${fileRows.toLocaleString('id')} baris${fileInvalid?` · ${fileInvalid.toLocaleString('id')} baris dilewati (NIK bukan 16 digit / desil bukan 1–10)`:''}</div>
+    ${changes.length?`<div style="max-height:38dvh;overflow:auto;border:1px solid #eee;border-radius:8px;font-size:.72rem;margin-bottom:12px">
+      <table style="border-collapse:collapse;width:100%"><thead><tr style="background:#F1F5F9;position:sticky;top:0"><th style="padding:5px 6px;text-align:left">Nama</th><th style="padding:5px 6px;text-align:left">Kec / Desa</th><th style="padding:5px 6px">Lama</th><th style="padding:5px 6px">Baru</th></tr></thead><tbody>${rowsHtml}</tbody></table>
+      ${changes.length>100?`<div style="padding:6px;color:#666">...dan ${(changes.length-100).toLocaleString('id')} lainnya (lengkap di laporan Excel)</div>`:''}</div>`:'<p>Semua desil sudah sesuai dengan file. Tidak ada yang perlu diperbarui. ✅</p>'}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+      <button onclick="sdReport()" style="margin-right:auto;background:#fff;border:1px solid #16A34A;color:#16A34A;border-radius:8px;padding:9px 12px;cursor:pointer"><i class="fas fa-file-excel"></i> Laporan</button>
+      <button onclick="sdShowMapping()" style="background:none;border:1px solid #ccd;border-radius:8px;padding:9px 14px;cursor:pointer">Kembali</button>
+      ${changes.length?`<button id="sdApplyBtn" onclick="sdApply()" style="background:#16A34A;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:700;cursor:pointer">Perbarui ${changes.length.toLocaleString('id')} desil</button>`:''}
+    </div>`);
+}
+async function sdApply(){
+  const st=_sdState;if(!st||!st.changes.length)return;
+  const btn=document.getElementById('sdApplyBtn');if(btn){btn.disabled=true;}
+  // kelompokkan per nilai desil -> update .in('id',[...]) per 200 id (puluhan request, bukan ribuan)
+  const groups={};st.changes.forEach(c=>{(groups[c.to]=groups[c.to]||[]).push(c.r.id);});
+  const jobs=[];
+  for(const d in groups){const ids=groups[d];for(let i=0;i<ids.length;i+=200)jobs.push({d:+d,ids:ids.slice(i,i+200)});}
+  let done=0,failed=0;const okIds=new Set();
+  const prog=()=>{if(btn)btn.textContent=`Menyimpan... ${Math.round(done/jobs.length*100)}%`;};
+  for(const j of jobs){
+    const val=st.prefix?'Desil '+j.d:String(j.d);
+    const{error}=await sb.from('rtlh').update({desil:val}).in('id',j.ids);
+    if(error)failed+=j.ids.length;else j.ids.forEach(id=>okIds.add(id));
+    done++;prog();
+  }
+  // riwayat (per 500 baris)
+  const tgl=new Date().toLocaleDateString('id-ID');
+  const hist=st.changes.filter(c=>okIds.has(c.r.id)).map(c=>({nik:c.r.nik,rtlh_id:c.r.id,field_name:`Desil (Sinkron DTSEN ${tgl})`,nilai_lama:c.from==='(kosong)'?null:c.from,nilai_baru:st.prefix?'Desil '+c.to:String(c.to),diubah_oleh:user?.email}));
+  for(let i=0;i<hist.length;i+=500){try{await sb.from('rtlh_riwayat').insert(hist.slice(i,i+500));}catch(e){}}
+  // segarkan cache & tampilan
+  try{cacheClear();}catch(e){}
+  try{Object.keys(brCache||{}).forEach(k=>delete brCache[k]);}catch(e){}
+  try{_dtLoaded=false;_dtData=null;}catch(e){}
+  _sdSet(`<div style="padding:16px;text-align:center">
+    <div style="font-size:2rem">${failed?'⚠️':'✅'}</div>
+    <div style="font-weight:800;font-size:1rem;margin:6px 0">${okIds.size.toLocaleString('id')} desil berhasil diperbarui</div>
+    ${failed?`<div style="color:#b91c1c">${failed.toLocaleString('id')} gagal disimpan (cek hak akses / koneksi), silakan jalankan ulang.</div>`:''}
+    <div style="color:#666;font-size:.75rem;margin-top:6px">Perubahan tercatat di riwayat tiap penerima.</div>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:14px">
+      <button onclick="sdReport()" style="background:#fff;border:1px solid #16A34A;color:#16A34A;border-radius:8px;padding:9px 12px;cursor:pointer"><i class="fas fa-file-excel"></i> Laporan</button>
+      <button onclick="document.getElementById('sdModal').remove();location.reload()" style="background:#0C2340;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:700;cursor:pointer">Selesai</button>
+    </div></div>`);
+}
+async function sdReport(){
+  const st=_sdState;if(!st)return;
+  await ensureLib('xlsx');
+  const wb=XLSX.utils.book_new();
+  const ch=st.changes.map(c=>({NIK:c.r.nik,Nama:c.r.kep_kk,Kecamatan:c.r.kec,Desa:c.r.desa,'Desil Lama':c.from,'Desil Baru':c.to}));
+  const nf=st.notFound.map(r=>({NIK:r.nik,Nama:r.kep_kk,Kecamatan:r.kec,Desa:r.desa,'Desil Saat Ini':r.desil||''}));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(ch.length?ch:[{Info:'Tidak ada perubahan'}]),'Perubahan Desil');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(nf.length?nf:[{Info:'Semua ditemukan'}]),'Tidak Ada di DTSEN');
+  XLSX.writeFile(wb,`Sinkron_Desil_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
 function showDetail(r){
