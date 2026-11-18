@@ -3039,7 +3039,8 @@ function openAdminTools(){
     <div><div style="font-weight:800;color:#0C2340">${title}</div><div style="font-size:.74rem;color:#64748B">${desc}</div></div></button>`;
   _atModal('<i class="fas fa-screwdriver-wrench"></i> Alat Admin',
     card('fa-database','#1B6CA8','Backup Data Sekarang',`Unduh salinan lengkap semua tabel (Excel + JSON). ${lb?`Backup terakhir di perangkat ini: <b>${days===0?'hari ini':days+' hari lalu'}</b>.`:'<b style="color:#b91c1c">Belum pernah backup dari perangkat ini.</b>'}`,'runBackup()')+
-    card('fa-stethoscope','#16A34A','Cek Kualitas Data','Temukan kecamatan/desa kosong, NIK tidak valid atau ganda, desil kosong, dan data tanpa koordinat.','runDataQuality()'));
+    card('fa-stethoscope','#16A34A','Cek Kualitas Data','Temukan kecamatan/desa kosong, NIK tidak valid atau ganda, desil kosong, dan data tanpa koordinat.','runDataQuality()')+
+    card('fa-globe','#D97706','Pratinjau Halaman Publik','Lihat dashboard untuk masyarakat (angka gabungan, tanpa nama/NIK). Selama belum dibuka, hanya petugas yang login yang bisa melihatnya.',"window.open('publik.html','_blank','noopener')"));
 }
 async function _fetchAllRows(table,cols='*'){
   const{count,error}=await sb.from(table).select('*',{count:'exact',head:true});
@@ -4104,64 +4105,36 @@ async function update10379Progress(){
 
 // Tambah progress bar 10.379 di beranda
 async function render10379Beranda(data){
-  // Capaian penanganan: baseline 10.379 vs di luar baseline.
-  // Memakai data statistik Beranda yang sudah dimuat (tidak mengunduh ulang 13 ribu baris).
-  if(!document.getElementById('prog10379Beranda'))return;
-  if(!data){const c=cacheGet('global_stats');data=c&&c.data;}
-  if(!data||!data.length)return;
-  await ensureNikDB();
-  if(!_nikDBSet||!_nikDBSet.size)return;
-  try{
-    let bLayak=0,bRtlh=0,bLain=0,nBase=0,oLayak=0,oLain=0;
-    for(const r of data){
-      const k=statusRow(r);
-      if(isInDB(r)){nBase++;if(k==='Layak Huni')bLayak++;else if(k==='RTLH')bRtlh++;else bLain++;}
-      else{if(k==='Layak Huni')oLayak++;else oLain++;}
-    }
-    const missing=Math.max(0,NIK_DB_TOTAL-nBase);
-    const sisa=NIK_DB_TOTAL-bLayak;
-    const p=n=>(n/NIK_DB_TOTAL*100);
-    const f=n=>n.toLocaleString('id');
-    const box=(n,l,bg,bd,c,extra='')=>`<div style="text-align:center;padding:8px 4px;background:${bg};border-radius:8px;border:1px solid ${bd};${extra}">
-        <div style="font-size:1.05rem;font-weight:800;color:${c}">${f(n)}</div>
-        <div style="font-size:.58rem;font-weight:700;color:${c};text-transform:uppercase;opacity:.85">${l}</div></div>`;
-    document.getElementById('prog10379Beranda').innerHTML=`
-      <div style="text-align:left">
-      <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-        <div>
-          <div style="font-size:.72rem;font-weight:800;color:var(--gray-700)"><i class="fas fa-flag-checkered" style="color:var(--blue)"></i> Capaian Penanganan Rumah</div>
-          <div style="font-size:.62rem;color:var(--gray-500)">Layak Huni = sudah tertangani</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:1.35rem;font-weight:900;color:#16A34A;line-height:1">${f(bLayak+oLayak)}</div>
-          <div style="font-size:.6rem;font-weight:700;color:var(--gray-500)">TOTAL RUMAH TERTANGANI</div>
-        </div>
-      </div>
-
-      <div style="font-size:.66rem;font-weight:800;color:var(--gray-600);margin-bottom:4px">DATABASE RESMI ${f(NIK_DB_TOTAL)}
-        <span style="float:right;color:#16A34A">${p(bLayak).toFixed(1)}% tertangani · sisa ${f(sisa)}</span></div>
-      <div style="display:flex;height:10px;background:var(--gray-100);border-radius:99px;overflow:hidden;margin-bottom:8px" title="Hijau: Layak Huni · Merah: RTLH · Ungu: Ket. Lain · Abu: belum diinput">
-        <div style="width:${p(bLayak)}%;background:#16A34A"></div>
-        <div style="width:${p(bRtlh)}%;background:#DC2626"></div>
-        <div style="width:${p(bLain)}%;background:#7C3AED"></div>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px">
-        ${box(bLayak,'Tertangani','#F0FDF4','#BBF7D0','#16A34A')}
-        ${box(bRtlh,'Masih RTLH','#FEF2F2','#FECACA','#DC2626')}
-        ${box(bLain,'Ket. Lain','#F5F3FF','#DDD6FE','#7C3AED')}
-        ${box(missing,'Belum Input','#F8FAFC','#E2E8F0','#64748B')}
-      </div>
-
-      <div onclick="showNonDbModal()" title="Lihat data di luar database resmi" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;background:#FFFBEB;border:1px solid #FDE68A">
-        <i class="fas fa-plus-circle" style="color:#D97706;font-size:1.1rem"></i>
-        <div style="flex:1">
-          <div style="font-size:.66rem;font-weight:800;color:#92400E">DI LUAR DATABASE RESMI (BSPS, dll.)</div>
-          <div style="font-size:.72rem;color:#92400E"><b>${f(oLayak)}</b> rumah tertangani${oLain?` · ${f(oLain)} lainnya`:''}</div>
-        </div>
-        <i class="fas fa-arrow-right" style="color:#D97706;font-size:.7rem"></i>
-      </div>
-      </div>`;
-  }catch(e){console.error('render10379Beranda',e);}
+  // Capaian penanganan -- satu sumber angka dengan halaman publik (fungsi statistik_publik).
+  // Memisahkan: diperbaiki program / dibangun mandiri / terverifikasi layak.
+  const el=document.getElementById('prog10379Beranda');if(!el)return;
+  let S=null;
+  try{const r=await sb.rpc('statistik_publik');if(!r.error&&r.data)S=typeof r.data==='string'?JSON.parse(r.data):r.data;}catch(e){}
+  if(!S){el.innerHTML='<div style="font-size:.7rem;color:var(--gray-500);padding:6px">Panel capaian membutuhkan fungsi <b>statistik_publik</b> di database (jalankan statistik-publik.sql).</div>';return;}
+  const B=S.baseline,Lr=S.luar,tot=S.baseline_total||1,f=n=>Number(n||0).toLocaleString('id'),p=n=>n/tot*100;
+  const box=(n,l,bg,bd,c)=>`<div style="text-align:center;padding:8px 4px;background:${bg};border-radius:8px;border:1px solid ${bd}"><div style="font-size:1.02rem;font-weight:800;color:${c}">${f(n)}</div><div style="font-size:.56rem;font-weight:700;color:${c};text-transform:uppercase;opacity:.85">${l}</div></div>`;
+  el.innerHTML=`<div style="text-align:left">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <div><div style="font-size:.72rem;font-weight:800;color:var(--gray-700)"><i class="fas fa-flag-checkered" style="color:var(--blue)"></i> Capaian Penanganan Rumah</div>
+        <div style="font-size:.62rem;color:var(--gray-500)">Sama dengan angka di <a href="publik.html" target="_blank" rel="noopener" style="color:var(--blue)">halaman publik</a></div></div>
+      <div style="text-align:right"><div style="font-size:1.35rem;font-weight:900;color:#16A34A;line-height:1">${f(S.program_total)}</div>
+        <div style="font-size:.6rem;font-weight:700;color:var(--gray-500)">DIPERBAIKI LEWAT PROGRAM</div></div>
+    </div>
+    <div style="font-size:.66rem;font-weight:800;color:var(--gray-600);margin-bottom:4px">DATABASE RESMI ${f(tot)}<span style="float:right;color:#DC2626">masih RTLH ${f(B.rtlh)}</span></div>
+    <div style="display:flex;height:10px;background:var(--gray-100);border-radius:99px;overflow:hidden;margin-bottom:8px">
+      <div style="width:${p(B.program)}%;background:#15803D" title="Program"></div><div style="width:${p(B.mandiri)}%;background:#0E7490" title="Mandiri"></div>
+      <div style="width:${p(B.verifikasi_layak)}%;background:#94A3B8" title="Terverifikasi layak"></div><div style="width:${p(B.lain)}%;background:#A78BFA" title="Ket. lain"></div>
+      <div style="width:${p(B.rtlh)}%;background:#DC2626" title="Masih RTLH"></div></div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:12px">
+      ${box(B.program,'Program','#F0FDF4','#BBF7D0','#15803D')}${box(B.mandiri,'Mandiri','#ECFEFF','#A5F3FC','#0E7490')}
+      ${box(B.verifikasi_layak,'Sudah layak','#F8FAFC','#E2E8F0','#64748B')}${box(B.lain,'Ket. lain','#F5F3FF','#DDD6FE','#7C3AED')}${box(B.rtlh,'Masih RTLH','#FEF2F2','#FECACA','#DC2626')}
+    </div>
+    <div onclick="showNonDbModal()" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;background:#FFFBEB;border:1px solid #FDE68A">
+      <i class="fas fa-plus-circle" style="color:#D97706;font-size:1.1rem"></i>
+      <div style="flex:1"><div style="font-size:.66rem;font-weight:800;color:#92400E">DI LUAR DATABASE RESMI</div>
+        <div style="font-size:.72rem;color:#92400E"><b>${f(Lr.program)}</b> diperbaiki program · ${f(Lr.total-Lr.program)} lainnya</div></div>
+      <i class="fas fa-arrow-right" style="color:#D97706;font-size:.7rem"></i></div>
+  </div>`;
 }
 
 // -- BNBA Tambahan Modal --
