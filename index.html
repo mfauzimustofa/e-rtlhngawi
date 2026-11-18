@@ -815,7 +815,10 @@ button,a,[onclick],.nav-tab,.filter-chip,.tb-btn,.mob-nav-btn{-webkit-tap-highli
           <h2 style="font-size:1rem;font-weight:800;margin:0"><i class="fas fa-layer-group" style="color:var(--gold)"></i> Data DTSEN / MyPKP</h2>
           <p style="font-size:.68rem;color:rgba(255,255,255,.55);margin:0">Distribusi desil per kecamatan dan desa</p>
         </div>
-        <button id="btnSinkronDesil" onclick="openSinkronDesil()" style="display:none;margin-left:auto;background:var(--gold);border:none;border-radius:8px;padding:8px 12px;color:#0C2340;font-size:.72rem;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap">
+        <button id="btnDesilQueue" onclick="openAdminTools();openDesilQueue()" style="display:none;margin-left:auto;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:8px 12px;color:#fff;font-size:.72rem;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap">
+          <i class="fas fa-forward"></i> Cek Beruntun
+        </button>
+        <button id="btnSinkronDesil" onclick="openSinkronDesil()" style="display:none;background:var(--gold);border:none;border-radius:8px;padding:8px 12px;color:#0C2340;font-size:.72rem;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap">
           <i class="fas fa-rotate"></i> Sinkron Desil
         </button>
       </div>
@@ -2469,7 +2472,7 @@ async function setUser(u){
     userDesa=null;
   }
   updAuth();
-  try{const b=document.getElementById('btnSinkronDesil');if(b)b.style.display=isSuperAdmin()?'':'none';}catch(e){}
+  try{const b=document.getElementById('btnSinkronDesil');if(b)b.style.display=isSuperAdmin()?'':'none';const q=document.getElementById('btnDesilQueue');if(q)q.style.display=(isSuperAdmin()||isAdminL2())?'':'none';}catch(e){}
   if(isAdmin){
     startAutoRefresh();preloadLibs();
     const ap=document.querySelector('.page.active')?.id;
@@ -3040,6 +3043,7 @@ function openAdminTools(){
   _atModal('<i class="fas fa-screwdriver-wrench"></i> Alat Admin',
     card('fa-database','#1B6CA8','Backup Data Sekarang',`Unduh salinan lengkap semua tabel (Excel + JSON). ${lb?`Backup terakhir di perangkat ini: <b>${days===0?'hari ini':days+' hari lalu'}</b>.`:'<b style="color:#b91c1c">Belum pernah backup dari perangkat ini.</b>'}`,'runBackup()')+
     card('fa-stethoscope','#16A34A','Cek Kualitas Data','Temukan kecamatan/desa kosong, NIK tidak valid atau ganda, desil kosong, dan data tanpa koordinat.','runDataQuality()')+
+    card('fa-forward','#7C3AED','Cek Desil Beruntun','Cek desil lewat Cek Bansos satu per satu tanpa bolak-balik: NIK tersalin otomatis, pilih angka, langsung lanjut.','openDesilQueue()')+
     card('fa-globe','#D97706','Pratinjau Halaman Publik','Lihat dashboard untuk masyarakat (angka gabungan, tanpa nama/NIK). Selama belum dibuka, hanya petugas yang login yang bisa melihatnya.',"window.open('publik.html','_blank','noopener')"));
 }
 async function _fetchAllRows(table,cols='*'){
@@ -5347,6 +5351,120 @@ async function cekDesilBansos(id){
   document.body.appendChild(m);
   toast('NIK disalin — tempel di Cek Bansos','success');
 }
+// ==================================================
+// CEK DESIL BERUNTUN -- satu per satu tanpa bolak-balik
+// NIK otomatis disalin & tab Cek Bansos yang SAMA dipakai ulang.
+// Staf hanya: tempel NIK, isi captcha, lalu klik/tekan angka desil.
+// ==================================================
+let _dq=null;
+async function openDesilQueue(){
+  if(!(isSuperAdmin()||isAdminL2()))return toast('Khusus Super Admin / Admin L2','error');
+  try{await _dlLoad();}catch(e){return toast('Gagal memuat data: '+e.message,'error');}
+  const kecs=[...new Set(_dlData.map(r=>(r.kec||'').toUpperCase().trim()).filter(Boolean))].sort();
+  _atModal('<i class="fas fa-forward"></i> Cek Desil Beruntun',`
+    <p style="margin:0 0 10px;color:#475569">Cek desil satu per satu tanpa bolak-balik: NIK otomatis tersalin, tab Cek Bansos dipakai ulang, dan setelah memilih hasil langsung lanjut ke orang berikutnya.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px">
+      <label>Yang dicek<select id="dqWho" style="width:100%;padding:8px;border:1px solid #ccd;border-radius:8px">
+        <option value="kosong">Belum punya desil</option><option value="semua">Semua (perbarui ulang)</option></select></label>
+      <label>Kecamatan<select id="dqKec" style="width:100%;padding:8px;border:1px solid #ccd;border-radius:8px"><option value="">Semua kecamatan</option>${kecs.map(k=>`<option>${escHtml(k)}</option>`).join('')}</select></label>
+      <label>Kelompok<select id="dqGrp" style="width:100%;padding:8px;border:1px solid #ccd;border-radius:8px"><option value="db">Database resmi 10.379</option><option value="all">Semua data</option></select></label>
+    </div>
+    <div id="dqCount" style="font-size:.78rem;color:#475569;margin-bottom:12px"></div>
+    <div style="display:flex;justify-content:flex-end"><button onclick="_dqStart()" style="background:#0C2340;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-weight:800;cursor:pointer">Mulai &rarr;</button></div>`);
+  const upd=()=>{const n=_dqBuild().length;document.getElementById('dqCount').innerHTML=`<b>${n.toLocaleString('id')}</b> orang akan dicek · perkiraan ±${Math.ceil(n*25/3600)} jam kerja (±25 detik/orang).`+(n>300?' <br><span style="color:#B45309">Untuk ratusan data, meminta file ekspor desil dari Dinsos lalu memakai <b>Sinkron Desil</b> jauh lebih cepat.</span>':'');};
+  ['dqWho','dqKec','dqGrp'].forEach(id=>document.getElementById(id).onchange=upd);upd();
+}
+function _dqBuild(){
+  const who=document.getElementById('dqWho')?.value||'kosong',kec=document.getElementById('dqKec')?.value||'',grp=document.getElementById('dqGrp')?.value||'db';
+  return (_dlData||[]).filter(r=>{
+    if(String(r.nik||'').replace(/\D/g,'').length!==16)return false;
+    if(grp==='db'&&!isInDB(r))return false;
+    if(kec&&(r.kec||'').toUpperCase().trim()!==kec)return false;
+    if(who==='kosong'&&(parseDt(r.desil)>=1||/tidak terdaftar/i.test(String(r.desil||''))))return false; // yang sudah dicek & tidak terdaftar tidak diulang
+    return true;
+  }).sort((a,b)=>String(a.kec).localeCompare(String(b.kec))||String(a.desa).localeCompare(String(b.desa)));
+}
+function _dqStart(){
+  const list=_dqBuild();
+  if(!list.length)return toast('Tidak ada data yang perlu dicek','success');
+  _dq={list,i:0,done:0,skip:0,start:Date.now()};
+  document.addEventListener('keydown',_dqKey);
+  _dqShowCur(true);
+}
+function _dqOpenBansos(){window.open('https://cekbansos.kemensos.go.id/','cekbansos');} // tab bernama: dipakai ulang
+async function _dqShowCur(openTab){
+  if(!_dq)return;
+  if(_dq.i>=_dq.list.length){return _dqFinish();}
+  const r=_dq.list[_dq.i],nik=String(r.nik).replace(/\D/g,'');
+  try{await navigator.clipboard.writeText(nik);}catch(e){}
+  if(openTab)_dqOpenBansos();
+  const n=_dq.list.length,pct=Math.round(_dq.i/n*100);
+  const cur=parseDt(r.desil);
+  const btn=(v,l,bg,c)=>`<button onclick="_dqPick('${v}')" style="padding:12px 0;border:1px solid ${bg};background:${bg}14;color:${c};border-radius:10px;font-weight:800;font-size:1rem;cursor:pointer">${l}</button>`;
+  _atSet(`
+    <div style="display:flex;justify-content:space-between;font-size:.72rem;color:#64748B;margin-bottom:4px"><span>${(_dq.i+1).toLocaleString('id')} / ${n.toLocaleString('id')}</span><span>✓ ${_dq.done} · lewati ${_dq.skip}</span></div>
+    <div style="height:6px;background:#EEF1F5;border-radius:99px;overflow:hidden;margin-bottom:14px"><div style="height:100%;width:${pct}%;background:#16A34A"></div></div>
+    <div style="font-size:1.1rem;font-weight:800;color:#0C2340">${escHtml(r.kep_kk||'-')}</div>
+    <div style="font-size:.78rem;color:#475569">${escHtml(r.kec||'—')} / ${escHtml(r.desa||'—')} · desil saat ini: <b>${cur?cur:'kosong'}</b></div>
+    <div style="margin:10px 0 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span style="font-family:monospace;font-size:1.05rem;font-weight:800;letter-spacing:1px;background:#F1F5F9;padding:6px 10px;border-radius:8px">${escHtml(nik)}</span>
+      <span style="color:#16A34A;font-size:.75rem">✓ tersalin</span>
+      <button onclick="navigator.clipboard.writeText('${nik}');_dqOpenBansos()" style="margin-left:auto;padding:7px 10px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;font-size:.75rem">Buka Cek Bansos</button>
+    </div>
+    <div style="font-size:.72rem;color:#64748B;margin-bottom:6px">Di tab Cek Bansos: tempel NIK, isi captcha, Cari Data — lalu pilih hasilnya:</div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:8px">
+      ${[1,2,3,4,5,6,7,8,9,10].map(d=>btn(d,d,getDesilColor(d),getDesilColor(d))).join('')}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      ${btn('TT','Tidak terdaftar','#64748B','#334155')}${btn('SKIP','Lewati','#CBD5E1','#475569')}
+    </div>
+    <div style="font-size:.66rem;color:#94A3B8;margin-top:10px">Pintasan keyboard: angka 1–9, 0 = Desil 10, T = tidak terdaftar, S = lewati, Esc = berhenti.</div>
+    <div style="display:flex;justify-content:flex-end;margin-top:10px"><button onclick="_dqFinish()" style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer">Berhenti</button></div>`);
+}
+async function _dqPick(v){
+  if(!_dq||_dq.busy)return;
+  const r=_dq.list[_dq.i];
+  if(v!=='SKIP'){
+    _dq.busy=true;
+    const ok=await _saveDesilValue(r,v==='TT'?'TT':String(v));
+    _dq.busy=false;
+    if(!ok)return; // gagal -> tetap di orang yang sama
+    _dq.done++;
+  }else _dq.skip++;
+  _dq.i++;
+  _dqShowCur(true); // klik = gestur pengguna -> salin NIK berikutnya & muat ulang tab Cek Bansos
+}
+function _dqKey(e){
+  if(!_dq||!document.getElementById('atModal'))return;
+  if(e.target&&/input|select|textarea/i.test(e.target.tagName))return;
+  const k=e.key.toUpperCase();
+  if(/^[1-9]$/.test(k))_dqPick(k);else if(k==='0')_dqPick('10');else if(k==='T')_dqPick('TT');else if(k==='S')_dqPick('SKIP');else if(k==='ESCAPE')_dqFinish();else return;
+  e.preventDefault();
+}
+function _dqFinish(){
+  document.removeEventListener('keydown',_dqKey);
+  if(!_dq)return;
+  const mins=Math.round((Date.now()-_dq.start)/60000);
+  _atSet(`<div style="text-align:center;padding:14px"><div style="font-size:2rem">✅</div>
+    <div style="font-weight:800;font-size:1rem;margin:6px 0">${_dq.done} desil diperbarui</div>
+    <div style="color:#64748B;font-size:.78rem">${_dq.skip} dilewati · ${Math.max(0,_dq.list.length-_dq.i)} belum dicek · ${mins} menit</div>
+    <div style="color:#64748B;font-size:.72rem;margin-top:6px">Semua perubahan tercatat di riwayat masing-masing penerima.</div></div>`);
+  _dq=null;
+  try{_refreshVisibleDesil();}catch(e){}
+}
+// Simpan satu desil (dipakai Cek Desil & Cek Beruntun)
+async function _saveDesilValue(r,v){
+  const usesPrefix=/desil/i.test(String(r.desil||''));
+  const baru=v==='TT'?'Tidak Terdaftar':(usesPrefix?'Desil '+v:String(v));
+  const lama=r.desil==null?null:String(r.desil);
+  const{error}=await sb.from('rtlh').update({desil:baru}).eq('id',r.id);
+  if(error){toast('Gagal menyimpan: '+error.message,'error');return false;}
+  try{await sb.from('rtlh_riwayat').insert({nik:r.nik,rtlh_id:parseInt(r.id),field_name:'Desil (Cek Bansos '+new Date().toLocaleDateString('id-ID')+')',nilai_lama:lama,nilai_baru:baru,diubah_oleh:user?.email});}catch(e){}
+  r.desil=baru;
+  try{cacheDel('kec_'+String(r.kec||'').toUpperCase());}catch(e){}
+  return true;
+}
+
 async function simpanDesilBansos(id){
   const v=document.getElementById('cdbVal')?.value;
   if(!v){toast('Pilih hasil desil dulu','error');return;}
