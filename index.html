@@ -1764,6 +1764,26 @@ async function _secureFetch(input,init){
   }
   return _secureFetchInner(input,init);
 }
+// Perbaikan koordinat yang kehilangan tanda desimal (mis. -7471930000 -> -7.47193),
+// termasuk lat/lng tertukar. Hanya diubah bila hasilnya pasti jatuh di wilayah Ngawi.
+function _fixCoordVal(v,lo,hi){
+  if(v===null||v===undefined||v==='')return null;
+  const n=typeof v==='number'?v:parseFloat(String(v).trim().replace(',','.'));
+  if(!isFinite(n)||n===0)return null;
+  if(n>lo&&n<hi)return n;
+  for(let k=1;k<=15;k++){const c=n/Math.pow(10,k);if(c>lo&&c<hi)return +c.toFixed(6);}
+  return null;
+}
+function _fixCoordObj(o){
+  if(!o||typeof o!=='object')return;
+  if(Array.isArray(o)){o.forEach(_fixCoordObj);return;}
+  if(!('latitude' in o)||!('longitude' in o))return;
+  const la=o.latitude,lo=o.longitude;
+  if(la==null||lo==null||la===''||lo==='')return;
+  let a=_fixCoordVal(la,-7.75,-7.0),b=_fixCoordVal(lo,111.0,111.7);
+  if(a==null||b==null){const a2=_fixCoordVal(lo,-7.75,-7.0),b2=_fixCoordVal(la,111.0,111.7);if(a2!=null&&b2!=null){a=a2;b=b2;}}
+  if(a!=null&&b!=null&&(a!==la||b!==lo)){o.latitude=a;o.longitude=b;}
+}
 async function _secureFetchInner(input,init){
   let url=typeof input==='string'?input:(input&&input.url)||'';
   const isRest=url.indexOf('/rest/v1/')!==-1;
@@ -1779,8 +1799,14 @@ async function _secureFetchInner(input,init){
         url=u.toString();
         input=typeof input==='string'?url:new Request(url,input);
       }
-      if(init&&typeof init.body==='string'&&init.body&&_XSS_REV_T.test(init.body)){
-        init=Object.assign({},init,{body:JSON.stringify(_unClean(JSON.parse(init.body)))});
+      if(init&&typeof init.body==='string'&&init.body){
+        const hasLook=_XSS_REV_T.test(init.body),hasCoord=init.body.indexOf('"latitude"')!==-1;
+        if(hasLook||hasCoord){
+          let obj=JSON.parse(init.body);
+          if(hasLook)obj=_unClean(obj);
+          if(hasCoord)_fixCoordObj(obj); // koordinat rusak dibetulkan sebelum disimpan
+          init=Object.assign({},init,{body:JSON.stringify(obj)});
+        }
       }
     }catch(e){}
   }
@@ -1791,12 +1817,14 @@ async function _secureFetchInner(input,init){
   const ct=res.headers.get('content-type')||'';
   if(ct.indexOf('json')===-1)return res;
   const text=await res.text();
-  // Jalur cepat: tidak ada karakter berisiko -> kembalikan apa adanya
-  if(!/[<>'`&\\]|script:|data:text/i.test(text)){
+  const risky=/[<>'`&\\]|script:|data:text/i.test(text);
+  const coord=text.indexOf('"latitude"')!==-1;
+  // Jalur cepat: tidak ada karakter berisiko & tidak ada koordinat -> kembalikan apa adanya
+  if(!risky&&!coord){
     return new Response(text,{status:res.status,statusText:res.statusText,headers:res.headers});
   }
   let body=text;
-  try{body=JSON.stringify(_deepClean(JSON.parse(text)));}catch(e){}
+  try{let o=JSON.parse(text);if(coord)_fixCoordObj(o);if(risky)o=_deepClean(o);body=JSON.stringify(o);}catch(e){}
   return new Response(body,{status:res.status,statusText:res.statusText,headers:res.headers});
 }
 
@@ -2853,7 +2881,7 @@ function _applyGlobalStats(data){
   // -- Map & progress --
   initMapBeranda();
   updateMapMarkers();
-  render10379Beranda();
+  render10379Beranda(data);
 
   // -- gs-nondb async (tidak blokir render utama) --
   if(el('gs-nondb')){
@@ -3053,38 +3081,56 @@ async function runBackup(){
   log('Simpan kedua file di Google Drive / flashdisk DINAS, jangan hanya di laptop pribadi.');
   _updBackupBanner();
 }
+// Kode kecamatan pada digit 5-6 NIK (pola dari data baseline, akurasi ~98%).
+// Dipakai HANYA sebagai saran saat melengkapi alamat, tidak pernah diisi otomatis.
+const _NIK_KEC={'01':'SINE','02':'NGRAMBE','03':'JOGOROGO','04':'KENDAL','05':'GENENG','06':'KWADUNGAN','07':'KARANGJATI','08':'PADAS','09':'NGAWI','10':'PARON','11':'KEDUNGGALAR','12':'WIDODAREN','13':'MANTINGAN','14':'PANGKUR','15':'BRINGIN','16':'PITU','17':'KARANGANYAR','18':'GERIH','19':'KASREMAN'};
+function _kecFromNik(n){n=String(n||'').replace(/\D/g,'');return n.length===16&&n.startsWith('3521')?(_NIK_KEC[n.slice(4,6)]||null):null;}
 async function runDataQuality(){
   _atSet('<div style="padding:20px;text-align:center"><i class="fas fa-spinner fa-spin"></i> Memeriksa seluruh data...</div>');
   let rows;
-  try{rows=await _fetchAllRows('rtlh','id,kep_kk,kec,desa,nik,no_kk,desil,latitude,longitude');}
+  try{rows=await _fetchAllRows('rtlh','id,kep_kk,kec,desa,nik,no_kk,desil,latitude,longitude,status_rtlh,status_batal,keterangan');}
   catch(e){_atSet('Gagal memuat data: '+escHtml(e.message));return;}
+  await ensureNikDB();
   const kecSet=new Set(Object.keys(KEC_CONFIG).map(k=>k.toUpperCase()));
   const nikCount={};rows.forEach(r=>{const n=String(r.nik||'').replace(/\D/g,'');if(n)nikCount[n]=(nikCount[n]||0)+1;});
   const lat=r=>parseFloat(r.latitude),lng=r=>parseFloat(r.longitude);
+  const noKec=r=>!r.kec||!kecSet.has(String(r.kec).toUpperCase().trim());
   const checks=[
-    ['kec','Kecamatan kosong / tidak dikenal',r=>!r.kec||!kecSet.has(String(r.kec).toUpperCase().trim())],
-    ['desa','Desa kosong',r=>!String(r.desa||'').trim()],
-    ['nik','NIK bukan 16 digit',r=>String(r.nik||'').replace(/\D/g,'').length!==16],
-    ['dup','NIK ganda (muncul lebih dari 1x)',r=>{const n=String(r.nik||'').replace(/\D/g,'');return n&&nikCount[n]>1;}],
-    ['desil','Desil kosong / tidak valid',r=>!(parseDt(r.desil)>=1)],
-    ['geo','Tanpa koordinat / di luar Ngawi',r=>!(lat(r)<-7.0&&lat(r)>-7.75&&lng(r)>111.0&&lng(r)<111.7)],
+    ['Kecamatan kosong / tidak dikenal',noKec],
+    ['Desa kosong',r=>!String(r.desa||'').trim()],
+    ['NIK bukan 16 digit',r=>String(r.nik||'').replace(/\D/g,'').length!==16],
+    ['NIK ganda (muncul lebih dari 1x)',r=>{const n=String(r.nik||'').replace(/\D/g,'');return n&&nikCount[n]>1;}],
+    ['Desil kosong / tidak valid',r=>!(parseDt(r.desil)>=1)],
+    ['Tanpa koordinat / di luar Ngawi',r=>!(lat(r)<-7.0&&lat(r)>-7.75&&lng(r)>111.0&&lng(r)<111.7)],
   ];
-  window._dqRes={rows,checks:checks.map(([k,l,f])=>({k,l,list:rows.filter(f)}))};
-  const tot=rows.length;
-  const okAll=rows.filter(r=>!checks.some(c=>c[2](r))).length;
-  _atSet(`<div style="background:${okAll/tot>.9?'#DCFCE7':'#FEF3C7'};border-radius:10px;padding:12px;margin-bottom:12px">
-      <b style="font-size:1.1rem">${(okAll/tot*100).toFixed(1)}% data bersih</b> — ${okAll.toLocaleString('id')} dari ${tot.toLocaleString('id')} baris lolos semua pemeriksaan.</div>
-    ${_dqRes.checks.map((c,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid #f1f5f9">
-      <i class="fas ${c.list.length?'fa-triangle-exclamation':'fa-circle-check'}" style="color:${c.list.length?'#D97706':'#16A34A'};width:18px"></i>
-      <div style="flex:1">${c.l}</div><b>${c.list.length.toLocaleString('id')}</b>
-      ${c.list.length?`<button onclick="_dqShow(${i})" style="padding:5px 10px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font-size:.7rem">Lihat</button>`:''}</div>`).join('')}
-    <div style="display:flex;justify-content:flex-end;margin-top:12px"><button onclick="_dqExport()" style="padding:9px 14px;border:none;border-radius:8px;background:#16A34A;color:#fff;font-weight:700;cursor:pointer"><i class="fas fa-file-excel"></i> Unduh laporan lengkap</button></div>`);
+  const base=rows.filter(r=>isInDB(r)),tam=rows.filter(r=>!isInDB(r));
+  const mk=(list)=>checks.map(([l,f])=>({l,list:list.filter(f)}));
+  window._dqRes={rows,base,tam,cBase:mk(base),cTam:mk(tam)};
+  const clean=(list)=>list.filter(r=>!checks.some(c=>c[1](r))).length;
+  const sec=(title,list,cs,grp,note)=>{
+    const ok=clean(list),pct=list.length?ok/list.length*100:100;
+    return `<div style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;background:${pct>90?'#DCFCE7':pct>60?'#FEF3C7':'#FEE2E2'};border-radius:10px;padding:10px 12px;margin-bottom:6px">
+        <b>${title}</b><span><b>${pct.toFixed(1)}%</b> bersih · ${ok.toLocaleString('id')}/${list.length.toLocaleString('id')}</span></div>
+      ${note||''}
+      ${cs.map((c,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid #f1f5f9">
+        <i class="fas ${c.list.length?'fa-triangle-exclamation':'fa-circle-check'}" style="color:${c.list.length?'#D97706':'#16A34A'};width:18px"></i>
+        <div style="flex:1">${c.l}</div><b>${c.list.length.toLocaleString('id')}</b>
+        ${c.list.length?`<button onclick="_dqShow('${grp}',${i})" style="padding:5px 10px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font-size:.7rem">Lihat</button>`:''}</div>`).join('')}
+    </div>`;};
+  const tamNoAddr=tam.filter(r=>noKec(r)||!String(r.desa||'').trim()).length;
+  _atSet(sec(`Database resmi (${NIK_DB_TOTAL.toLocaleString('id')})`,base,_dqRes.cBase,'b')+
+    sec('Di luar database (Tambahan)',tam,_dqRes.cTam,'t',
+      tamNoAddr?`<div style="display:flex;gap:10px;align-items:center;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:10px;margin-bottom:6px;font-size:.75rem">
+        <i class="fas fa-map-location-dot" style="color:#1D4ED8"></i><div style="flex:1"><b>${tamNoAddr.toLocaleString('id')}</b> data belum punya kecamatan/desa — tidak tampil di peta & rekap per kecamatan.</div>
+        <button onclick="openLengkapiAlamat()" style="padding:7px 12px;border:none;border-radius:8px;background:#1D4ED8;color:#fff;font-weight:700;cursor:pointer;white-space:nowrap">Lengkapi alamat</button></div>`:'')+
+    `<div style="display:flex;justify-content:flex-end"><button onclick="_dqExport()" style="padding:9px 14px;border:none;border-radius:8px;background:#16A34A;color:#fff;font-weight:700;cursor:pointer"><i class="fas fa-file-excel"></i> Unduh laporan lengkap</button></div>`);
 }
-function _dqShow(i){
-  const c=_dqRes.checks[i];
+function _dqShow(grp,i){
+  const c=(grp==='b'?_dqRes.cBase:_dqRes.cTam)[i];
   const td='padding:6px 8px;border-bottom:1px solid #f1f5f9;font-size:.72rem';
   _atSet(`<button onclick="runDataQuality()" style="margin-bottom:10px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer">&larr; Kembali</button>
-    <div style="font-weight:800;margin-bottom:6px">${c.l}: ${c.list.length.toLocaleString('id')} data</div>
+    <div style="font-weight:800;margin-bottom:6px">${grp==='b'?'Database resmi':'Tambahan'} — ${c.l}: ${c.list.length.toLocaleString('id')} data</div>
     <div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f8fafc"><th style="${td};text-align:left">Nama</th><th style="${td};text-align:left">Kec / Desa</th><th style="${td};text-align:left">NIK</th><th style="${td}">Desil</th></tr></thead>
     <tbody>${c.list.slice(0,300).map(r=>`<tr style="cursor:pointer" onclick="document.getElementById('atModal').remove();navWithNIK('${String(r.nik||r.id).replace(/[^0-9a-zA-Z]/g,'')}')"><td style="${td};color:var(--blue);font-weight:700">${escHtml(r.kep_kk||'-')}</td><td style="${td}">${escHtml(r.kec||'—')} / ${escHtml(r.desa||'—')}</td><td style="${td};font-family:monospace">${escHtml(showNIK(r.nik)||'—')}</td><td style="${td};text-align:center">${escHtml(r.desil||'—')}</td></tr>`).join('')}</tbody></table></div>
     ${c.list.length>300?`<div style="padding:8px;color:#64748b">Menampilkan 300 pertama — lengkapnya di laporan Excel.</div>`:''}`);
@@ -3092,11 +3138,76 @@ function _dqShow(i){
 async function _dqExport(){
   if(!(await ensureLib('xlsx')))return;
   const wb=XLSX.utils.book_new();
-  for(const c of _dqRes.checks){
-    const rows=c.list.map(r=>({ID:r.id,Nama:r.kep_kk,Kecamatan:r.kec,Desa:r.desa,NIK:showNIK(r.nik),Desil:r.desil,Lat:r.latitude,Lng:r.longitude}));
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows.length?rows:[{Info:'Tidak ada masalah'}]),c.l.slice(0,31).replace(/[\\/?*\[\]:]/g,''));
+  for(const [grp,cs] of [['DB',_dqRes.cBase],['Tambahan',_dqRes.cTam]]){
+    for(const c of cs){
+      const rows=c.list.map(r=>({ID:r.id,Nama:r.kep_kk,Kecamatan:r.kec,Desa:r.desa,NIK:showNIK(r.nik),Desil:r.desil,Lat:r.latitude,Lng:r.longitude,Keterangan:r.keterangan}));
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows.length?rows:[{Info:'Tidak ada masalah'}]),(grp+' '+c.l).slice(0,31).replace(/[\\/?*\[\]:]/g,''));
+    }
   }
   XLSX.writeFile(wb,`Kualitas_Data_RTLH_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+// ---- Melengkapi alamat data Tambahan (manual, dengan saran kecamatan dari NIK) ----
+let _laState={q:'',onlyHint:'',shown:100};
+function openLengkapiAlamat(){
+  if(!window._dqRes)return runDataQuality();
+  if(!canEdit()&&!isSuperAdmin()&&!isAdminL2())return toast('Tidak ada akses ubah','error');
+  loadBatasNgawi().catch(()=>{});
+  _laState={q:'',onlyHint:'',shown:100};
+  _laRender();
+}
+function _laList(){
+  const kecSet=new Set(Object.keys(KEC_CONFIG).map(k=>k.toUpperCase()));
+  let L=_dqRes.tam.filter(r=>!r.kec||!kecSet.has(String(r.kec).toUpperCase().trim())||!String(r.desa||'').trim());
+  const q=_laState.q.trim().toLowerCase();
+  if(q)L=L.filter(r=>String(r.kep_kk||'').toLowerCase().includes(q)||String(r.nik||'').includes(q.replace(/\D/g,'')||'#'));
+  if(_laState.onlyHint)L=L.filter(r=>_kecFromNik(r.nik)===_laState.onlyHint);
+  return L;
+}
+function _desaOpts(kec){
+  const gj=window._batasNgawi;if(!gj||!kec)return '';
+  const K=String(kec).toUpperCase();
+  return [...new Set(gj.features.filter(f=>String(f.properties.WADMKC||'').toUpperCase()===K).map(f=>f.properties.NAMOBJ))].sort().map(d=>`<option value="${escHtml(d)}">`).join('');
+}
+function _laRender(){
+  const L=_laList(),rows=L.slice(0,_laState.shown);
+  const kecs=Object.keys(KEC_CONFIG).map(k=>k.toUpperCase()).sort();
+  const hintCount={};_dqRes.tam.forEach(r=>{const h=_kecFromNik(r.nik);if(h&&(!r.kec||!String(r.desa||'').trim()))hintCount[h]=(hintCount[h]||0)+1;});
+  const td='padding:6px;border-bottom:1px solid #f1f5f9;font-size:.72rem;vertical-align:top';
+  _atSet(`<button onclick="runDataQuality()" style="margin-bottom:10px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer">&larr; Kembali</button>
+    <div style="font-weight:800">Lengkapi alamat data Tambahan</div>
+    <div style="font-size:.72rem;color:#64748B;margin-bottom:8px">Pilih kecamatan & isi desa, lalu klik <b>Simpan</b> per baris. Saran kecamatan diambil dari kode wilayah NIK (tempat KTP dibuat, ±98% cocok) — <b>periksa dulu sebelum dipakai</b>.</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+      <input type="search" placeholder="Cari nama / NIK" value="${escHtml(_laState.q)}" oninput="clearTimeout(this._t);const v=this.value;this._t=setTimeout(()=>{_laState.q=v;_laState.shown=100;_laRender();},250)" style="flex:1;min-width:140px;padding:7px 9px;border:1px solid #cbd5e1;border-radius:8px">
+      <select onchange="_laState.onlyHint=this.value;_laState.shown=100;_laRender()" style="padding:7px;border:1px solid #cbd5e1;border-radius:8px"><option value="">Semua saran kecamatan</option>${Object.keys(hintCount).sort().map(k=>`<option value="${k}" ${_laState.onlyHint===k?'selected':''}>${k} (${hintCount[k]})</option>`).join('')}</select>
+    </div>
+    <div style="font-size:.7rem;color:#64748B;margin-bottom:4px">${L.length.toLocaleString('id')} data belum lengkap</div>
+    <div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><tbody>
+    ${rows.map(r=>{const h=_kecFromNik(r.nik);const cur=String(r.kec||'').toUpperCase().trim();return `<tr id="la_${r.id}">
+      <td style="${td}"><b>${escHtml(r.kep_kk||'-')}</b><div style="font-family:monospace;color:#64748B">${escHtml(showNIK(r.nik)||'—')}</div><div style="color:#94A3B8">${escHtml(r.keterangan||'')}</div></td>
+      <td style="${td};min-width:150px"><select id="lak_${r.id}" onchange="document.getElementById('lad_list_${r.id}').innerHTML=_desaOpts(this.value)" style="width:100%;padding:6px;border:1px solid #cbd5e1;border-radius:7px">
+        <option value="">-- kecamatan --</option>${kecs.map(k=>`<option ${k===cur?'selected':''}>${k}</option>`).join('')}</select>
+        ${h&&h!==cur?`<button onclick="const s=document.getElementById('lak_${r.id}');s.value='${h}';s.onchange()" style="margin-top:3px;padding:2px 6px;border:1px dashed #1D4ED8;border-radius:6px;background:#EFF6FF;color:#1D4ED8;font-size:.62rem;cursor:pointer">saran NIK: ${h}</button>`:''}</td>
+      <td style="${td};min-width:130px"><input id="lad_${r.id}" list="lad_list_${r.id}" value="${escHtml(r.desa||'')}" placeholder="Desa" style="width:100%;padding:6px;border:1px solid #cbd5e1;border-radius:7px"><datalist id="lad_list_${r.id}">${_desaOpts(cur)}</datalist></td>
+      <td style="${td}"><button onclick="_laSave(${r.id})" style="padding:6px 10px;border:none;border-radius:7px;background:#0C2340;color:#fff;font-weight:700;cursor:pointer">Simpan</button></td></tr>`;}).join('')}
+    </tbody></table></div>
+    ${L.length>rows.length?`<div style="text-align:center;padding:10px"><button onclick="_laState.shown+=100;_laRender()" style="padding:7px 14px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer">Tampilkan 100 lagi</button></div>`:''}`);
+}
+async function _laSave(id){
+  const r=_dqRes.tam.find(x=>x.id===id);if(!r)return;
+  const kec=document.getElementById('lak_'+id).value.trim(),desa=document.getElementById('lad_'+id).value.trim();
+  if(!kec){toast('Pilih kecamatan dulu','error');return;}
+  const upd={kec};if(desa)upd.desa=desa;
+  const{error}=await sb.from('rtlh').update(upd).eq('id',id);
+  if(error){toast('Gagal: '+error.message,'error');return;}
+  const hist=[];
+  if(String(r.kec||'')!==kec)hist.push({nik:r.nik,rtlh_id:id,field_name:'Kecamatan (lengkapi alamat)',nilai_lama:r.kec||null,nilai_baru:kec,diubah_oleh:user?.email});
+  if(desa&&String(r.desa||'')!==desa)hist.push({nik:r.nik,rtlh_id:id,field_name:'Desa (lengkapi alamat)',nilai_lama:r.desa||null,nilai_baru:desa,diubah_oleh:user?.email});
+  if(hist.length)try{await sb.from('rtlh_riwayat').insert(hist);}catch(e){}
+  r.kec=kec;if(desa)r.desa=desa;
+  const tr=document.getElementById('la_'+id);
+  if(tr&&desa){tr.style.transition='opacity .4s';tr.style.opacity='.25';setTimeout(()=>tr.remove(),400);}
+  toast(`Tersimpan: ${r.kep_kk||''} → ${kec}${desa?' / '+desa:''}`,'success');
+  try{_rtFullRefresh&&cacheDel('kec_'+kec.toUpperCase());}catch(e){}
 }
 // Catat setiap ekspor data ber-NIK ke riwayat (jejak audit)
 function _logExport(jenis,jumlah){
@@ -3992,57 +4103,64 @@ async function update10379Progress(){
 }
 
 // Tambah progress bar 10.379 di beranda
-async function render10379Beranda(){
+async function render10379Beranda(data){
+  // Capaian penanganan: baseline 10.379 vs di luar baseline.
+  // Memakai data statistik Beranda yang sudah dimuat (tidak mengunduh ulang 13 ribu baris).
   if(!document.getElementById('prog10379Beranda'))return;
+  if(!data){const c=cacheGet('global_stats');data=c&&c.data;}
+  if(!data||!data.length)return;
   await ensureNikDB();
+  if(!_nikDBSet||!_nikDBSet.size)return;
   try{
-    const pageSize=1000;
-    const{count}=await sb.from('rtlh').select('*',{count:'exact',head:true});
-    const pages=Math.ceil((count||0)/pageSize);
-    const results=await Promise.all(
-      Array.from({length:pages},(_,p)=>
-        sb.from('rtlh').select('nik,status_rtlh').range(p*pageSize,(p+1)*pageSize-1)
-      )
-    );
-    const allData=results.flatMap(r=>r.data||[]);
-    const inDB=allData.filter(r=>isInDB(r));
-    const layak=inDB.filter(r=>r.status_rtlh==='Layak Huni').length;
-    const rtlh=inDB.filter(r=>r.status_rtlh==='RTLH'||!r.status_rtlh).length;
-    const nonDB=allData.filter(r=>!isInDB(r)).length;
-    const missing=NIK_DB_TOTAL-inDB.length;
-    const pLayak=Math.round(layak/NIK_DB_TOTAL*100);
+    let bLayak=0,bRtlh=0,bLain=0,nBase=0,oLayak=0,oLain=0;
+    for(const r of data){
+      const k=statusRow(r);
+      if(isInDB(r)){nBase++;if(k==='Layak Huni')bLayak++;else if(k==='RTLH')bRtlh++;else bLain++;}
+      else{if(k==='Layak Huni')oLayak++;else oLain++;}
+    }
+    const missing=Math.max(0,NIK_DB_TOTAL-nBase);
+    const sisa=NIK_DB_TOTAL-bLayak;
+    const p=n=>(n/NIK_DB_TOTAL*100);
+    const f=n=>n.toLocaleString('id');
+    const box=(n,l,bg,bd,c,extra='')=>`<div style="text-align:center;padding:8px 4px;background:${bg};border-radius:8px;border:1px solid ${bd};${extra}">
+        <div style="font-size:1.05rem;font-weight:800;color:${c}">${f(n)}</div>
+        <div style="font-size:.58rem;font-weight:700;color:${c};text-transform:uppercase;opacity:.85">${l}</div></div>`;
+    document.getElementById('prog10379Beranda').innerHTML=`
+      <div style="text-align:left">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <div>
+          <div style="font-size:.72rem;font-weight:800;color:var(--gray-700)"><i class="fas fa-flag-checkered" style="color:var(--blue)"></i> Capaian Penanganan Rumah</div>
+          <div style="font-size:.62rem;color:var(--gray-500)">Layak Huni = sudah tertangani</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:1.35rem;font-weight:900;color:#16A34A;line-height:1">${f(bLayak+oLayak)}</div>
+          <div style="font-size:.6rem;font-weight:700;color:var(--gray-500)">TOTAL RUMAH TERTANGANI</div>
+        </div>
+      </div>
 
-    const el=document.getElementById('prog10379Beranda');
-    if(!el)return;
-    el.innerHTML=`
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div style="font-size:.72rem;font-weight:800;color:var(--gray-700)">
-          <i class="fas fa-database" style="color:var(--blue)"></i> Progress BNBA Database Resmi (10.379)
-        </div>
-        <div style="font-size:.78rem;font-weight:800;color:var(--success)">${pLayak}% Layak Huni</div>
+      <div style="font-size:.66rem;font-weight:800;color:var(--gray-600);margin-bottom:4px">DATABASE RESMI ${f(NIK_DB_TOTAL)}
+        <span style="float:right;color:#16A34A">${p(bLayak).toFixed(1)}% tertangani · sisa ${f(sisa)}</span></div>
+      <div style="display:flex;height:10px;background:var(--gray-100);border-radius:99px;overflow:hidden;margin-bottom:8px" title="Hijau: Layak Huni · Merah: RTLH · Ungu: Ket. Lain · Abu: belum diinput">
+        <div style="width:${p(bLayak)}%;background:#16A34A"></div>
+        <div style="width:${p(bRtlh)}%;background:#DC2626"></div>
+        <div style="width:${p(bLain)}%;background:#7C3AED"></div>
       </div>
-      <div style="height:10px;background:var(--gray-100);border-radius:99px;overflow:hidden;margin-bottom:10px">
-        <div style="height:100%;width:${pLayak}%;background:linear-gradient(90deg,#16A34A,#22C55E);border-radius:99px;transition:width .8s"></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px">
+        ${box(bLayak,'Tertangani','#F0FDF4','#BBF7D0','#16A34A')}
+        ${box(bRtlh,'Masih RTLH','#FEF2F2','#FECACA','#DC2626')}
+        ${box(bLain,'Ket. Lain','#F5F3FF','#DDD6FE','#7C3AED')}
+        ${box(missing,'Belum Input','#F8FAFC','#E2E8F0','#64748B')}
       </div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
-        <div style="text-align:center;padding:8px;background:#F0FDF4;border-radius:8px;border:1px solid #BBF7D0">
-          <div style="font-size:1.1rem;font-weight:800;color:#16A34A">${layak.toLocaleString('id')}</div>
-          <div style="font-size:.6rem;font-weight:700;color:#15803D;text-transform:uppercase">Layak Huni</div>
+
+      <div onclick="showNonDbModal()" title="Lihat data di luar database resmi" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;background:#FFFBEB;border:1px solid #FDE68A">
+        <i class="fas fa-plus-circle" style="color:#D97706;font-size:1.1rem"></i>
+        <div style="flex:1">
+          <div style="font-size:.66rem;font-weight:800;color:#92400E">DI LUAR DATABASE RESMI (BSPS, dll.)</div>
+          <div style="font-size:.72rem;color:#92400E"><b>${f(oLayak)}</b> rumah tertangani${oLain?` · ${f(oLain)} lainnya`:''}</div>
         </div>
-        <div style="text-align:center;padding:8px;background:#FEF2F2;border-radius:8px;border:1px solid #FECACA">
-          <div style="font-size:1.1rem;font-weight:800;color:#DC2626">${rtlh.toLocaleString('id')}</div>
-          <div style="font-size:.6rem;font-weight:700;color:#B91C1C;text-transform:uppercase">Masih RTLH</div>
-        </div>
-        <div style="text-align:center;padding:8px;background:#FFFBEB;border-radius:8px;border:1px solid #FDE68A">
-          <div style="font-size:1.1rem;font-weight:800;color:#D97706">${missing.toLocaleString('id')}</div>
-          <div style="font-size:.6rem;font-weight:700;color:#B45309;text-transform:uppercase">Belum Input</div>
-        </div>
-        <div style="text-align:center;padding:8px;background:#FFFBEB;border-radius:8px;border:1px solid #FDE68A;cursor:pointer" onclick="showNonDbModal()" title="Lihat BNBA Tambahan">
-          <div style="font-size:1.1rem;font-weight:800;color:#D97706">${nonDB.toLocaleString('id')}</div>
-          <div style="font-size:.6rem;font-weight:700;color:#B45309;text-transform:uppercase">BNBA Tambahan <i class='fas fa-arrow-right' style='font-size:.5rem'></i></div>
-        </div>
+        <i class="fas fa-arrow-right" style="color:#D97706;font-size:.7rem"></i>
       </div>
-    `;
+      </div>`;
   }catch(e){console.error('render10379Beranda',e);}
 }
 
