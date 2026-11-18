@@ -3033,6 +3033,15 @@ function _atModal(title,html){
 }
 function _atSet(html){const b=document.getElementById('atBody');if(b)b.innerHTML=html;}
 function _lastBackup(){try{return parseInt(localStorage.getItem('ertlh_last_backup')||'0',10)||0;}catch(e){return 0;}}
+// Perangkat backup: pengingat backup hanya muncul di perangkat yang ditandai
+function _isBackupDevice(){try{return localStorage.getItem('ertlh_backup_device')==='1';}catch(e){return false;}}
+function toggleBackupDevice(){
+  const on=_isBackupDevice();
+  try{on?localStorage.removeItem('ertlh_backup_device'):localStorage.setItem('ertlh_backup_device','1');}catch(e){}
+  toast(on?'Perangkat ini tidak lagi menjadi perangkat backup':'Perangkat ini ditandai sebagai perangkat backup','success');
+  document.getElementById('atModal')?.remove();
+  openAdminTools();_updBackupBanner();
+}
 function openAdminTools(){
   if(!isSuperAdmin())return toast('Khusus Super Admin','error');
   const lb=_lastBackup();
@@ -3042,6 +3051,7 @@ function openAdminTools(){
     <div><div style="font-weight:800;color:#0C2340">${title}</div><div style="font-size:.74rem;color:#64748B">${desc}</div></div></button>`;
   _atModal('<i class="fas fa-screwdriver-wrench"></i> Alat Admin',
     card('fa-database','#1B6CA8','Backup Data Sekarang',`Unduh salinan lengkap semua tabel (Excel + JSON). ${lb?`Backup terakhir di perangkat ini: <b>${days===0?'hari ini':days+' hari lalu'}</b>.`:'<b style="color:#b91c1c">Belum pernah backup dari perangkat ini.</b>'}`,'runBackup()')+
+    card('fa-laptop','#0C2340',_isBackupDevice()?'Perangkat Backup: AKTIF':'Jadikan Perangkat Backup',_isBackupDevice()?'Pengingat backup tampil di perangkat ini. Klik untuk menonaktifkan.':'Pengingat backup hanya tampil di perangkat yang ditandai. Klik untuk menjadikan perangkat ini perangkat backup.','toggleBackupDevice()')+
     card('fa-stethoscope','#16A34A','Cek Kualitas Data','Temukan kecamatan/desa kosong, NIK tidak valid atau ganda, desil kosong, dan data tanpa koordinat.','runDataQuality()')+
     card('fa-forward','#7C3AED','Cek Desil Beruntun','Cek desil lewat Cek Bansos satu per satu tanpa bolak-balik: NIK tersalin otomatis, pilih angka, langsung lanjut.','openDesilQueue()')+
     card('fa-globe','#D97706','Pratinjau Halaman Publik','Lihat dashboard untuk masyarakat (angka gabungan, tanpa nama/NIK). Selama belum dibuka, hanya petugas yang login yang bisa melihatnya.',"window.open('publik.html','_blank','noopener')"));
@@ -3221,7 +3231,7 @@ function _logExport(jenis,jumlah){
 // Pengingat backup untuk Super Admin
 function _updBackupBanner(){
   document.getElementById('bkBanner')?.remove();
-  if(!isSuperAdmin())return;
+  if(!isSuperAdmin()||!_isBackupDevice())return;
   const lb=_lastBackup();
   if(lb&&Date.now()-lb<7*86400000)return;
   const b=document.createElement('div');b.id='bkBanner';
