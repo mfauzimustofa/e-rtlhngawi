@@ -3330,13 +3330,33 @@ function renderKecTable(){
 
 let mapBeranda=null,tileLayerBeranda=null,kecBoundaryLayer=null,isSatellite=false,showKecBoundary=true;
 
+// ==================================================
+// BASEMAP: Citra satelit terbaru (Esri World Imagery) sebagai bawaan
+// + label nama tempat & jalan, dengan pilihan kembali ke peta jalan (OSM).
+// Pilihan pengguna diingat per perangkat.
+// ==================================================
+const _ESRI='https://server.arcgisonline.com/ArcGIS/rest/services/';
+const _CITRA_ATTR='Citra © Esri, Maxar, Earthstar Geographics, GIS User Community';
+function _mkBase(kind){
+  if(kind==='osm')return L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:20,maxNativeZoom:19});
+  return L.tileLayer(_ESRI+'World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:_CITRA_ATTR,maxZoom:21,maxNativeZoom:19});
+}
+function _mkLabels(){
+  return L.layerGroup([
+    L.tileLayer(_ESRI+'Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',{maxZoom:21,maxNativeZoom:19,opacity:.85}),
+    L.tileLayer(_ESRI+'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{maxZoom:21,maxNativeZoom:19})
+  ]);
+}
+function _basePref(){try{return localStorage.getItem('ertlh_basemap')||'citra';}catch(e){return 'citra';}}
+function _setBasePref(v){try{localStorage.setItem('ertlh_basemap',v);}catch(e){}}
 function initMapBeranda(){
   if(!window.L)return;
   if(!mapBeranda){
     mapBeranda=L.map('mapBeranda',{zoomControl:true,scrollWheelZoom:true,preferCanvas:true}).setView([-7.42,111.42],10);
-    tileLayerBeranda=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-      attribution:'© OpenStreetMap',maxZoom:19
-    }).addTo(mapBeranda);
+    isSatellite=_basePref()!=='osm';
+    tileLayerBeranda=isSatellite?L.layerGroup([_mkBase('citra'),_mkLabels()]):_mkBase('osm');
+    tileLayerBeranda.addTo(mapBeranda);
+    setTimeout(_updTileBtn,0);
   }
   // Load batas kecamatan dari GeoJSON kalau belum ada
   if(!kecBoundaryLayer&&window._batasNgawi){
@@ -3379,7 +3399,7 @@ function addKecBoundary(){
       const c=kecCounts[kecName.toUpperCase()]||{total:0};
       const cnt=c.total;
       const fillColor=cnt>100?'#DC2626':cnt>50?'#F97316':cnt>20?'#F59E0B':'#3B82F6';
-      return{color:'#1B3A5C',weight:1.5,fillColor,fillOpacity:.15,dashArray:'3 2'};
+      return{color:isSatellite?'#FDE047':'#1B3A5C',weight:isSatellite?1.8:1.5,fillColor,fillOpacity:isSatellite?.12:.15,dashArray:'3 2'};
     },
     onEachFeature:(f,layer)=>{
       const kecName=f.properties.WADMKC||'';
@@ -3500,18 +3520,15 @@ function updateMapMarkers(){
 function toggleSatellite(){
   isSatellite=!isSatellite;
   if(tileLayerBeranda)tileLayerBeranda.remove();
-  if(isSatellite){
-    tileLayerBeranda=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
-      attribution:'© Esri',maxZoom:19
-    });
-  }else{
-    tileLayerBeranda=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-      attribution:'© OpenStreetMap',maxZoom:19
-    });
-  }
+  _setBasePref(isSatellite?'citra':'osm');
+  tileLayerBeranda=isSatellite?L.layerGroup([_mkBase('citra'),_mkLabels()]):_mkBase('osm');
   tileLayerBeranda.addTo(mapBeranda);
-  if(kecBoundaryLayer&&showKecBoundary)kecBoundaryLayer.addTo(mapBeranda);
+  if(tileLayerBeranda.bringToBack)tileLayerBeranda.bringToBack();
+  if(showKecBoundary&&window._batasNgawi){addKecBoundary();} // warna garis menyesuaikan basemap
   updateMapMarkers();
+  _updTileBtn();
+}
+function _updTileBtn(){
   const btn=document.getElementById('btnToggleTile');
   if(btn){
     btn.style.background=isSatellite?'var(--navy)':'var(--gray-100)';
@@ -4545,7 +4562,18 @@ function initMap(){
   if(!window.L){console.warn("Leaflet not ready");return;}
   // preferCanvas: ribuan titik digambar di <canvas> (jauh lebih ringan di HP daripada SVG)
   map=L.map('map',{zoomControl:true,preferCanvas:true}).setView([-7.4,111.4],11);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:19}).addTo(map);
+  // Basemap: citra satelit terbaru (bawaan) atau peta jalan; label bisa dinyalakan/dimatikan
+  const _bCitra=_mkBase('citra'),_bOsm=_mkBase('osm'),_lbl=_mkLabels();
+  const _pref=_basePref();
+  (_pref==='osm'?_bOsm:_bCitra).addTo(map);
+  if(_pref!=='osm')_lbl.addTo(map);
+  L.control.layers({'Citra Satelit':_bCitra,'Peta Jalan':_bOsm},{'Label jalan & tempat':_lbl},{position:'topright',collapsed:true}).addTo(map);
+  map.on('baselayerchange',e=>{
+    const osm=e.layer===_bOsm;_setBasePref(osm?'osm':'citra');
+    if(osm&&map.hasLayer(_lbl))map.removeLayer(_lbl);
+    if(!osm&&!map.hasLayer(_lbl))_lbl.addTo(map);
+    _restyleBoundary();
+  });
   mcg=L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:40,chunkedLoading:true,chunkInterval:120,removeOutsideVisibleBounds:true}).addTo(map);
 }
 
@@ -4743,6 +4771,8 @@ function loadBoundary(kecName){
   if(window._batasNgawi){applyBoundary(kecName);return;}
   loadBatasNgawi().then(()=>applyBoundary(kecName)).catch(()=>{});
 }
+function _boundaryStyle(){return _basePref()==='osm'?{color:'#1B6CA8',weight:1.5,fillOpacity:.04}:{color:'#FDE047',weight:2,opacity:.95,fillOpacity:0,dashArray:'6 4'};}
+function _restyleBoundary(){try{if(window._kecBoundaryLayer)window._kecBoundaryLayer.setStyle(_boundaryStyle());}catch(e){}}
 function applyBoundary(kecName){
   if(!window._batasNgawi||!map)return;
   // Bandingkan tanpa beda huruf besar/kecil (GeoJSON: 'Bringin', aplikasi: 'BRINGIN')
@@ -4751,7 +4781,7 @@ function applyBoundary(kecName){
   if(!feats.length)return;
   // Hapus batas kecamatan sebelumnya -- dulu layer menumpuk tiap ganti/refresh kecamatan
   if(window._kecBoundaryLayer){try{map.removeLayer(window._kecBoundaryLayer);}catch(e){}}
-  const layer=L.geoJSON({type:'FeatureCollection',features:feats},{style:{color:'#1B6CA8',weight:1.5,fillOpacity:.04},interactive:false}).addTo(map);
+  const layer=L.geoJSON({type:'FeatureCollection',features:feats},{style:_boundaryStyle(),interactive:false}).addTo(map);
   window._kecBoundaryLayer=layer;
   map.fitBounds(layer.getBounds(),{padding:[30,30]});
 }
